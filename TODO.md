@@ -58,8 +58,8 @@ Implemented:
 - built-in pack editor in the TUI with local-only optional pack toggles
 - built-in pack state exposed in status / doctor inventory
 - optional packs now show `configured` vs `installed` truthfully depending on whether managed user-skill assets were exported
-- exported `sane-router` skill and global AGENTS overlay now reflect enabled guidance packs
-- status/doctor now catch drift when exported guidance assets no longer match enabled packs
+- exported `sane-router` skill and global AGENTS overlay now reflect enabled guidance packs and current model-role defaults
+- status/doctor now catch drift when exported guidance assets no longer match enabled packs or model-role defaults
 - `export all` / `uninstall all` for current managed targets
 - pure adaptive policy crate with typed obligations and tests
 - internal backend policy preview for canonical adaptive scenarios

@@ -18,9 +18,9 @@ use ratatui::widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wra
 use ratatui::{Frame, Terminal};
 use sane_config::{AVAILABLE_MODELS, LocalConfig, ModelPreset, ReasoningEffort, TelemetryLevel};
 use sane_core::{
-    GuidancePacks, InventoryItem, InventoryScope, InventoryStatus, NAME, OperationKind,
-    OperationResult, SANE_EXPLORER_AGENT_NAME, SANE_GLOBAL_AGENTS_BEGIN, SANE_GLOBAL_AGENTS_END,
-    SANE_REVIEWER_AGENT_NAME, SANE_ROUTER_SKILL_NAME, sane_explorer_agent,
+    GuidancePacks, InventoryItem, InventoryScope, InventoryStatus, ModelRoleGuidance, NAME,
+    OperationKind, OperationResult, SANE_EXPLORER_AGENT_NAME, SANE_GLOBAL_AGENTS_BEGIN,
+    SANE_GLOBAL_AGENTS_END, SANE_REVIEWER_AGENT_NAME, SANE_ROUTER_SKILL_NAME, sane_explorer_agent,
     sane_global_agents_overlay, sane_optional_pack_skill, sane_optional_pack_skill_name,
     sane_reviewer_agent, sane_router_skill,
 };
@@ -1991,6 +1991,27 @@ fn active_guidance_packs(paths: &ProjectPaths) -> Result<GuidancePacks, String> 
     })
 }
 
+fn active_model_role_guidance(paths: &ProjectPaths) -> Result<ModelRoleGuidance, String> {
+    let config = load_or_default_config(paths)?;
+    Ok(model_role_guidance_from_config(&config))
+}
+
+fn model_role_guidance_from_config(config: &LocalConfig) -> ModelRoleGuidance {
+    ModelRoleGuidance {
+        coordinator_model: config.models.coordinator.model.clone(),
+        coordinator_reasoning: config
+            .models
+            .coordinator
+            .reasoning_effort
+            .as_str()
+            .to_string(),
+        sidecar_model: config.models.sidecar.model.clone(),
+        sidecar_reasoning: config.models.sidecar.reasoning_effort.as_str().to_string(),
+        verifier_model: config.models.verifier.model.clone(),
+        verifier_reasoning: config.models.verifier.reasoning_effort.as_str().to_string(),
+    }
+}
+
 fn format_guidance_packs(packs: GuidancePacks) -> String {
     let mut enabled = vec!["core"];
     if packs.caveman {
@@ -2193,9 +2214,23 @@ fn inspect_inventory(
     let hooks_inventory = inspect_hooks_inventory(codex_paths)?;
     let custom_agents_inventory = inspect_custom_agents_inventory(codex_paths);
     let pack_inventory = inspect_pack_inventory(paths, codex_paths);
-    let expected_packs = active_guidance_packs(paths).ok();
-    let expected_user_skill = expected_packs.map(sane_router_skill);
-    let expected_global_agents = expected_packs.map(sane_global_agents_overlay);
+    let expected_guidance = load_or_default_config(paths).ok().map(|config| {
+        (
+            GuidancePacks {
+                caveman: config.packs.caveman,
+                cavemem: config.packs.cavemem,
+                rtk: config.packs.rtk,
+                frontend_craft: config.packs.frontend_craft,
+            },
+            model_role_guidance_from_config(&config),
+        )
+    });
+    let expected_user_skill = expected_guidance
+        .as_ref()
+        .map(|(packs, roles)| sane_router_skill(*packs, roles));
+    let expected_global_agents = expected_guidance
+        .as_ref()
+        .map(|(packs, roles)| sane_global_agents_overlay(*packs, roles));
 
     let global_agents_inventory = if !codex_paths.global_agents_md.exists() {
         InventoryItem {
@@ -2569,7 +2604,8 @@ fn export_user_skills(
     fs::create_dir_all(&skill_dir).map_err(|error| error.to_string())?;
     let skill_path = skill_dir.join("SKILL.md");
     let packs = active_guidance_packs(paths)?;
-    fs::write(&skill_path, sane_router_skill(packs)).map_err(|error| error.to_string())?;
+    let roles = active_model_role_guidance(paths)?;
+    fs::write(&skill_path, sane_router_skill(packs, &roles)).map_err(|error| error.to_string())?;
     let mut paths_touched = vec![skill_path.display().to_string()];
 
     for (pack_name, content) in enabled_optional_pack_skills(packs) {
@@ -2636,11 +2672,12 @@ fn export_global_agents(
     };
 
     let packs = active_guidance_packs(paths)?;
+    let roles = active_model_role_guidance(paths)?;
     let updated = upsert_managed_block(
         &existing,
         SANE_GLOBAL_AGENTS_BEGIN,
         SANE_GLOBAL_AGENTS_END,
-        &sane_global_agents_overlay(packs),
+        &sane_global_agents_overlay(packs, &roles),
     );
     fs::write(&codex_paths.global_agents_md, updated).map_err(|error| error.to_string())?;
 
@@ -3827,6 +3864,9 @@ mod tests {
         let body = std::fs::read_to_string(skill_path).unwrap();
         assert!(body.contains("name: sane-router"));
         assert!(body.contains("plain-language"));
+        assert!(body.contains("coordinator: gpt-5.4 (high)"));
+        assert!(body.contains("sidecar: gpt-5.4-mini (medium)"));
+        assert!(body.contains("verifier: gpt-5.4 (medium)"));
     }
 
     #[test]
@@ -3839,6 +3879,8 @@ mod tests {
         config.packs.caveman = true;
         config.packs.rtk = true;
         config.packs.frontend_craft = true;
+        config.models.coordinator.model = "gpt-5.2-codex".to_string();
+        config.models.coordinator.reasoning_effort = sane_config::ReasoningEffort::XHigh;
         let _ = super::save_config(&paths, &config).unwrap();
 
         let _ = run_with_home(&["export", "user-skills"], project.path(), home.path()).unwrap();
@@ -3872,6 +3914,7 @@ mod tests {
         assert!(body.contains("caveman pack active"));
         assert!(body.contains("rtk pack active"));
         assert!(body.contains("frontend-craft pack active"));
+        assert!(body.contains("coordinator: gpt-5.2-codex (xhigh)"));
         assert!(caveman_path.exists());
         assert!(rtk_path.exists());
         assert!(frontend_craft_path.exists());
@@ -3892,6 +3935,7 @@ mod tests {
         let body = std::fs::read_to_string(agents_path).unwrap();
         assert!(body.contains("<!-- sane:global-agents:start -->"));
         assert!(body.contains("Plain-language first"));
+        assert!(body.contains("Current coordinator default: gpt-5.4 (high)"));
     }
 
     #[test]
@@ -3903,6 +3947,8 @@ mod tests {
         let mut config = sane_config::LocalConfig::default();
         config.packs.cavemem = true;
         config.packs.rtk = true;
+        config.models.sidecar.model = "gpt-5.3-codex-spark".to_string();
+        config.models.sidecar.reasoning_effort = sane_config::ReasoningEffort::Low;
         let _ = super::save_config(&paths, &config).unwrap();
 
         let _ = run_with_home(&["export", "global-agents"], project.path(), home.path()).unwrap();
@@ -3910,6 +3956,7 @@ mod tests {
 
         assert!(body.contains("cavemem pack active"));
         assert!(body.contains("rtk pack active"));
+        assert!(body.contains("Current sidecar default: gpt-5.3-codex-spark (low)"));
     }
 
     #[test]
@@ -3925,7 +3972,7 @@ mod tests {
         let _ = run_with_home(&["export", "global-agents"], project.path(), home.path()).unwrap();
 
         let mut changed = sane_config::LocalConfig::default();
-        changed.packs.caveman = true;
+        changed.models.verifier.model = "gpt-5.2".to_string();
         let _ = super::save_config(&paths, &changed).unwrap();
 
         let status = run_with_home(&["status"], project.path(), home.path()).unwrap();

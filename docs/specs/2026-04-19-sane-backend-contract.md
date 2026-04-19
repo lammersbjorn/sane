@@ -47,9 +47,9 @@ Current managed targets are:
 6. narrow explicit opt-in profile management for user-level Codex config at `~/.codex/config.toml`
 
 Current managed export behavior also depends on local config:
-- exported `sane-router` skill content can reflect enabled guidance packs
-- exported global `AGENTS.md` overlay can reflect enabled guidance packs
-- status/doctor should flag those assets as invalid when current exports drift from enabled guidance-pack config
+- exported `sane-router` skill content can reflect enabled guidance packs and current model-role defaults
+- exported global `AGENTS.md` overlay can reflect enabled guidance packs and current model-role defaults
+- status/doctor should flag those assets as invalid when current exports drift from enabled guidance-pack or model-role config
 - enabled optional packs can materialize as additional managed user skills during `export_user_skills`
 
 ## Required Operations

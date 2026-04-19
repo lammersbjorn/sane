@@ -17,6 +17,16 @@ pub struct GuidancePacks {
     pub frontend_craft: bool,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ModelRoleGuidance {
+    pub coordinator_model: String,
+    pub coordinator_reasoning: String,
+    pub sidecar_model: String,
+    pub sidecar_reasoning: String,
+    pub verifier_model: String,
+    pub verifier_reasoning: String,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OperationKind {
     InstallRuntime,
@@ -159,7 +169,7 @@ impl OperationResult {
     }
 }
 
-pub fn sane_router_skill(packs: GuidancePacks) -> String {
+pub fn sane_router_skill(packs: GuidancePacks, roles: &ModelRoleGuidance) -> String {
     let mut body = vec![
         "---".to_string(),
         "name: sane-router".to_string(),
@@ -182,6 +192,17 @@ pub fn sane_router_skill(packs: GuidancePacks) -> String {
         "- no required AGENTS.md".to_string(),
         "- no workflow lock-in".to_string(),
         "- model and subagent choice should adapt to task shape".to_string(),
+        "".to_string(),
+        "Current managed role defaults:".to_string(),
+        format!(
+            "- coordinator: {} ({})",
+            roles.coordinator_model, roles.coordinator_reasoning
+        ),
+        format!("- sidecar: {} ({})", roles.sidecar_model, roles.sidecar_reasoning),
+        format!(
+            "- verifier: {} ({})",
+            roles.verifier_model, roles.verifier_reasoning
+        ),
     ];
 
     if packs.caveman {
@@ -201,7 +222,7 @@ pub fn sane_router_skill(packs: GuidancePacks) -> String {
     body.join("\n")
 }
 
-pub fn sane_global_agents_overlay(packs: GuidancePacks) -> String {
+pub fn sane_global_agents_overlay(packs: GuidancePacks, roles: &ModelRoleGuidance) -> String {
     let mut body = vec![
         "# Sane".to_string(),
         "".to_string(),
@@ -211,6 +232,18 @@ pub fn sane_global_agents_overlay(packs: GuidancePacks) -> String {
         "- Keep repo mutation optional".to_string(),
         "- Use subagents only when the work decomposes cleanly".to_string(),
         "- Choose model and reasoning settings per task when available".to_string(),
+        format!(
+            "- Current coordinator default: {} ({})",
+            roles.coordinator_model, roles.coordinator_reasoning
+        ),
+        format!(
+            "- Current sidecar default: {} ({})",
+            roles.sidecar_model, roles.sidecar_reasoning
+        ),
+        format!(
+            "- Current verifier default: {} ({})",
+            roles.verifier_model, roles.verifier_reasoning
+        ),
     ];
 
     if packs.caveman {
