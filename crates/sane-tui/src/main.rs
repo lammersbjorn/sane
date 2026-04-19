@@ -336,6 +336,7 @@ enum TuiScreen {
     ConfigEditor(ConfigEditor),
     PrivacyEditor(PrivacyEditor),
     PackEditor(PackEditor),
+    Confirm(ConfirmScreen),
 }
 
 struct ConfigEditor {
@@ -350,6 +351,11 @@ struct PrivacyEditor {
 struct PackEditor {
     config: LocalConfig,
     selected: usize,
+}
+
+struct ConfirmScreen {
+    command: Command,
+    label: &'static str,
 }
 
 impl ConfigEditor {
@@ -600,20 +606,14 @@ impl TuiApp {
         let action = self.actions[self.selected];
         match action.kind {
             TuiActionKind::Backend(command) => {
-                match execute_backend_command(command, &self.paths, &self.codex_paths) {
-                    Ok(result) => {
-                        self.output = result.render_text();
-                        match inventory_status(&self.paths, &self.codex_paths) {
-                            Ok(status) => self.status = status,
-                            Err(error) => {
-                                self.output
-                                    .push_str(&format!("\nstatus refresh failed: {error}"));
-                            }
-                        }
-                    }
-                    Err(error) => {
-                        self.output = format!("action failed: {error}");
-                    }
+                if command_requires_confirmation(command) {
+                    self.output = format!("Confirm `{}` before applying it.", action.label);
+                    self.screen = TuiScreen::Confirm(ConfirmScreen {
+                        command,
+                        label: action.label,
+                    });
+                } else {
+                    execute_backend_action(self, command);
                 }
             }
             TuiActionKind::OpenConfigEditor => match load_or_default_config(&self.paths) {
@@ -736,6 +736,19 @@ fn run_tui_loop(
                     },
                     _ => {}
                 },
+                TuiScreen::Confirm(confirm) => match key.code {
+                    KeyCode::Char('q') | KeyCode::Esc | KeyCode::Char('n') => {
+                        let label = confirm.label;
+                        app.screen = TuiScreen::Home;
+                        app.output = format!("Cancelled `{label}`.");
+                    }
+                    KeyCode::Enter | KeyCode::Char('y') => {
+                        let command = confirm.command;
+                        app.screen = TuiScreen::Home;
+                        execute_backend_action(app, command);
+                    }
+                    _ => {}
+                },
             }
         }
     }
@@ -752,6 +765,39 @@ fn refresh_status_after_save(app: &mut TuiApp) {
                 .push_str(&format!("\nstatus refresh failed: {error}"));
         }
     }
+}
+
+fn execute_backend_action(app: &mut TuiApp, command: Command) {
+    match execute_backend_command(command, &app.paths, &app.codex_paths) {
+        Ok(result) => {
+            app.output = result.render_text();
+            match inventory_status(&app.paths, &app.codex_paths) {
+                Ok(status) => app.status = status,
+                Err(error) => {
+                    app.output
+                        .push_str(&format!("\nstatus refresh failed: {error}"));
+                }
+            }
+        }
+        Err(error) => {
+            app.output = format!("action failed: {error}");
+        }
+    }
+}
+
+fn command_requires_confirmation(command: Command) -> bool {
+    matches!(
+        command,
+        Command::ApplyCodexProfile
+            | Command::ApplyIntegrationsProfile
+            | Command::ApplyCloudflareProfile
+            | Command::RestoreCodexConfig
+            | Command::UninstallAll
+            | Command::UninstallUserSkills
+            | Command::UninstallGlobalAgents
+            | Command::UninstallHooks
+            | Command::UninstallCustomAgents
+    )
 }
 
 fn append_export_drift_warnings(output: &mut String, status: &OperationResult) {
@@ -779,6 +825,7 @@ fn render_tui(frame: &mut Frame, app: &TuiApp) {
         TuiScreen::ConfigEditor(editor) => render_config_editor(frame, app, editor),
         TuiScreen::PrivacyEditor(editor) => render_privacy_editor(frame, app, editor),
         TuiScreen::PackEditor(editor) => render_pack_editor(frame, app, editor),
+        TuiScreen::Confirm(confirm) => render_confirm(frame, app, confirm),
     }
 }
 
@@ -945,6 +992,40 @@ fn render_pack_editor(frame: &mut Frame, app: &TuiApp, editor: &PackEditor) {
         .block(Block::default().borders(Borders::ALL).title("Pack Summary"))
         .wrap(Wrap { trim: false });
     frame.render_widget(details, main[1]);
+
+    let output = Paragraph::new(app.output.as_str())
+        .block(Block::default().borders(Borders::ALL).title("Output"))
+        .wrap(Wrap { trim: false });
+    frame.render_widget(output, chunks[2]);
+}
+
+fn render_confirm(frame: &mut Frame, app: &TuiApp, confirm: &ConfirmScreen) {
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(3),
+            Constraint::Min(8),
+            Constraint::Length(5),
+        ])
+        .split(frame.area());
+
+    let header = Paragraph::new(vec![
+        Line::from("Confirm Action"),
+        Line::from("Enter/y confirms. Esc/n cancels."),
+    ])
+    .block(Block::default().borders(Borders::ALL).title(NAME))
+    .wrap(Wrap { trim: true });
+    frame.render_widget(header, chunks[0]);
+
+    let body = Paragraph::new(vec![
+        Line::from(format!("Action: {}", confirm.label)),
+        Line::from(""),
+        Line::from("This mutates managed user-level state or Codex config."),
+        Line::from("Use preview/backup first when available."),
+    ])
+    .block(Block::default().borders(Borders::ALL).title("Confirm"))
+    .wrap(Wrap { trim: false });
+    frame.render_widget(body, chunks[1]);
 
     let output = Paragraph::new(app.output.as_str())
         .block(Block::default().borders(Borders::ALL).title("Output"))
@@ -4180,6 +4261,28 @@ mod tests {
                 "Uninstall all",
             ]
         );
+    }
+
+    #[test]
+    fn risky_backend_actions_require_confirmation() {
+        assert!(super::command_requires_confirmation(
+            super::Command::ApplyCodexProfile
+        ));
+        assert!(super::command_requires_confirmation(
+            super::Command::ApplyIntegrationsProfile
+        ));
+        assert!(super::command_requires_confirmation(
+            super::Command::RestoreCodexConfig
+        ));
+        assert!(super::command_requires_confirmation(
+            super::Command::UninstallAll
+        ));
+        assert!(!super::command_requires_confirmation(
+            super::Command::PreviewCodexProfile
+        ));
+        assert!(!super::command_requires_confirmation(
+            super::Command::ExportAll
+        ));
     }
 
     #[test]

@@ -1,17 +1,61 @@
-# sane-core
+# ⚖️ sane-core
 
-Very small shared core values and identifiers for `Sane`.
+Shared foundation crate for `Sane`.
 
-Current responsibility:
-- shared product naming/constants
-- tiny built-in managed asset templates shared across installers
-- pack-aware and model-role-aware guidance template generation for managed skill and AGENTS exports
-- managed optional pack-skill templates for `caveman`, `cavemem`, `rtk`, and `frontend-craft`
-- tiny built-in managed custom-agent templates shared across installers
-- managed block markers for additive Codex-native file edits
-- typed backend result and inventory structures shared across surfaces
-- backend operation identifiers, including explicit status/inventory inspection
-- inventory scope labels for separating local runtime state from Codex-native assets
-- inventory status labels including local pack enablement/disablement
+## What It Is
 
-Keep this crate tiny. Do not move operational logic here unless it is genuinely cross-cutting.
+`sane-core` is a foundational crate containing the shared components and contracts used across the `Sane` workspace.
+
+If two parts of the product must talk about the same managed asset, status, marker, or generated content in the same way, that contract belongs here.
+
+## Why It Exists
+
+`Sane` manages a mix of:
+
+- local operational state
+- user-level Codex assets
+- TUI/backend actions
+- generated guidance content
+
+Without a common core, those components can drift quickly.
+
+`sane-core` exists to stop that drift.
+
+## Where It Fits
+
+```mermaid
+flowchart LR
+    C["sane-core"] --> T["sane-tui"]
+    C --> P["sane-policy"]
+```
+
+This crate does not run the product by itself.
+It gives the rest of the workspace a shared language.
+
+## What Lives Here
+
+- shared names and markers
+- managed block markers for additive file edits
+- generated templates for managed skills and overlays
+- typed backend operation results
+- typed inventory/status items
+- shared status enums
+
+## Real Examples
+
+This is where `Sane` keeps things like:
+
+- the canonical names of managed assets such as `sane-router`
+- begin/end markers for managed `AGENTS.md` blocks
+- shared renderable result types used by both backend operations and the TUI
+- generated guidance text for pack-aware and model-aware exports
+
+## What Does Not Belong Here
+
+- filesystem writes
+- path discovery
+- TUI screens
+- config parsing
+- adaptive-policy logic
+
+If code is not reused across multiple surfaces, it probably belongs somewhere else.

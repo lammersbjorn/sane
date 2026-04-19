@@ -66,6 +66,7 @@ Implemented:
 - internal backend policy preview for canonical adaptive scenarios
 - internal backend policy preview now shows configured coordinator / sidecar / verifier roles per scenario
 - TUI now exposes adaptive policy inspection directly instead of leaving it command-only
+- TUI now requires confirmation for risky apply/restore/uninstall actions
 
 Current gate:
 

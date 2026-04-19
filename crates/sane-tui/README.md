@@ -1,34 +1,66 @@
-# sane
+# ⚖️ sane
 
-Thin command surface for installing and managing `Sane`.
+User-facing installer and configuration crate for `Sane`.
 
-Current responsibility:
-- command parsing
-- install/config/doctor/export/uninstall shell
-- backend/dev status inventory shell
-- no-args interactive TUI home screen
-- no-args interactive TUI config editor for model defaults
-- no-args interactive TUI pack editor for built-in pack toggles
-- no-args interactive privacy / telemetry screen with reset control
-- read-only Codex config inspection for current user-level settings
-- read-only preview of recommended core Codex profile changes
-- opt-in Codex config backup flow into `.sane/backups/codex-config`
-- explicit opt-in apply / restore flow for the narrow core Codex profile
-- explicit opt-in apply flow for the separate recommended integrations profile
-- explicit opt-in Cloudflare provider profile flow
-- TUI action for inspecting adaptive policy scenarios and current role/model mapping
-- action list, status summary, output panel, and quit flow
-- grouped status inventory for local runtime vs Codex-native assets
-- built-in pack status surfaced through local runtime inventory
-- optional packs now move from config-only to installed once managed user-skill exports are present
-- current user-skill and global AGENTS exports pick up enabled guidance packs and current model-role defaults from local config
-- stale exported guidance assets are now flagged by status/doctor and repaired by rerunning export
-- TUI save flows now warn immediately when config changes make managed guidance exports stale
-- user-facing operational output
-- thin orchestration over managed Codex-native targets
-- doctor/reporting for managed local and Codex-native surfaces
-- current batch ergonomics for all managed targets
-- first managed hooks target at `~/.codex/hooks.json`
-- first managed custom agents target at `~/.codex/agents/`
+## What It Is
 
-This crate should stay thin. Push durable behavior into the lower crates when possible.
+This crate is the primary entry point and interface for the product.
+
+It owns the no-args TUI and the thin backend action layer that powers setup, inspection, export, and repair flows.
+
+## Why It Exists
+
+`Sane` is supposed to feel helpful without becoming another command ritual.
+
+That means users need a clear place to:
+
+- inspect what `Sane` is managing
+- configure defaults
+- preview changes safely
+- apply, restore, export, and uninstall managed assets
+
+This crate is that surface.
+
+## Where It Fits
+
+```mermaid
+flowchart LR
+    T["sane-tui"] --> C["sane-config"]
+    T --> P["sane-platform"]
+    T --> S["sane-state"]
+    T --> O["sane-policy"]
+    T --> R["sane-core"]
+```
+
+It integrates lower-level crates into one user-facing flow.
+
+## What Lives Here
+
+- no-args TUI entrypoint
+- config editor
+- pack editor
+- privacy/telemetry screen
+- status and doctor views
+- preview/apply/backup/restore flows
+- export/uninstall flows
+- confirmation UX for risky actions
+- backend/dev escape-hatch verbs
+
+## Real Examples
+
+This crate is responsible for actions such as:
+
+- editing model-role defaults
+- previewing Codex config profiles
+- exporting managed user skills
+- warning when exports become stale
+- showing grouped local-vs-Codex inventory
+
+## What Does Not Belong Here
+
+- config schema definitions
+- platform/path discovery
+- pure policy logic
+- cross-cutting shared types/templates
+
+This crate should be the user-facing surface, not the place where every core rule gets invented.
