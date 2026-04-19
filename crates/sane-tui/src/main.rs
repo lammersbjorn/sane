@@ -17,8 +17,9 @@ use ratatui::widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wra
 use ratatui::{Frame, Terminal};
 use sane_config::LocalConfig;
 use sane_core::{
-    InventoryItem, InventoryStatus, NAME, OperationKind, OperationResult, SANE_GLOBAL_AGENTS_BEGIN,
-    SANE_GLOBAL_AGENTS_END, SANE_ROUTER_SKILL_NAME, sane_global_agents_overlay, sane_router_skill,
+    InventoryItem, InventoryScope, InventoryStatus, NAME, OperationKind, OperationResult,
+    SANE_GLOBAL_AGENTS_BEGIN, SANE_GLOBAL_AGENTS_END, SANE_ROUTER_SKILL_NAME,
+    sane_global_agents_overlay, sane_router_skill,
 };
 use sane_platform::{CodexPaths, ProjectPaths, detect_platform};
 use sane_state::RunSnapshot;
@@ -329,11 +330,25 @@ fn render_actions(frame: &mut Frame, area: Rect, app: &TuiApp) {
 }
 
 fn status_lines(status: &OperationResult) -> Vec<Line<'static>> {
-    status
-        .inventory
-        .iter()
-        .map(|item| Line::from(inventory_detail_line(item)))
-        .collect()
+    let mut lines = Vec::new();
+
+    for scope in [InventoryScope::LocalRuntime, InventoryScope::CodexNative] {
+        let items = status
+            .inventory
+            .iter()
+            .filter(|item| item.scope == scope)
+            .collect::<Vec<_>>();
+        if items.is_empty() {
+            continue;
+        }
+
+        lines.push(Line::from(scope.display_str().to_uppercase()));
+        for item in items {
+            lines.push(Line::from(format!("  {}", inventory_detail_line(item))));
+        }
+    }
+
+    lines
 }
 
 fn inventory_detail_line(item: &InventoryItem) -> String {
@@ -402,6 +417,7 @@ fn show_config(paths: &ProjectPaths) -> Result<OperationResult, String> {
             paths_touched: vec![paths.config_path.display().to_string()],
             inventory: vec![InventoryItem {
                 name: "config".to_string(),
+                scope: InventoryScope::LocalRuntime,
                 status: InventoryStatus::Missing,
                 path: paths.config_path.display().to_string(),
                 repair_hint: Some("run `install`".to_string()),
@@ -435,6 +451,7 @@ fn show_config(paths: &ProjectPaths) -> Result<OperationResult, String> {
         paths_touched: vec![paths.config_path.display().to_string()],
         inventory: vec![InventoryItem {
             name: "config".to_string(),
+            scope: InventoryScope::LocalRuntime,
             status: InventoryStatus::Installed,
             path: paths.config_path.display().to_string(),
             repair_hint: None,
@@ -499,6 +516,7 @@ fn inspect_inventory(
     let global_agents_inventory = if !codex_paths.global_agents_md.exists() {
         InventoryItem {
             name: "global-agents".to_string(),
+            scope: InventoryScope::CodexNative,
             status: InventoryStatus::Missing,
             path: codex_paths.global_agents_md.display().to_string(),
             repair_hint: Some("run `export global-agents`".to_string()),
@@ -509,6 +527,7 @@ fn inspect_inventory(
         if body.contains(SANE_GLOBAL_AGENTS_BEGIN) && body.contains(SANE_GLOBAL_AGENTS_END) {
             InventoryItem {
                 name: "global-agents".to_string(),
+                scope: InventoryScope::CodexNative,
                 status: InventoryStatus::Installed,
                 path: codex_paths.global_agents_md.display().to_string(),
                 repair_hint: None,
@@ -516,6 +535,7 @@ fn inspect_inventory(
         } else {
             InventoryItem {
                 name: "global-agents".to_string(),
+                scope: InventoryScope::CodexNative,
                 status: InventoryStatus::PresentWithoutSaneBlock,
                 path: codex_paths.global_agents_md.display().to_string(),
                 repair_hint: Some("run `export global-agents`".to_string()),
@@ -526,6 +546,7 @@ fn inspect_inventory(
     Ok(vec![
         InventoryItem {
             name: "runtime".to_string(),
+            scope: InventoryScope::LocalRuntime,
             status: if paths.runtime_root.exists() {
                 InventoryStatus::Installed
             } else {
@@ -540,6 +561,7 @@ fn inspect_inventory(
         },
         InventoryItem {
             name: "config".to_string(),
+            scope: InventoryScope::LocalRuntime,
             status: if !paths.config_path.exists() {
                 InventoryStatus::Missing
             } else if LocalConfig::read_from_path(&paths.config_path).is_ok() {
@@ -558,6 +580,7 @@ fn inspect_inventory(
         },
         InventoryItem {
             name: "state".to_string(),
+            scope: InventoryScope::LocalRuntime,
             status: if !paths.state_dir.exists() || !snapshot_path.exists() {
                 InventoryStatus::Missing
             } else if RunSnapshot::read_from_path(&snapshot_path).is_ok() {
@@ -576,6 +599,7 @@ fn inspect_inventory(
         },
         InventoryItem {
             name: "user-skills".to_string(),
+            scope: InventoryScope::CodexNative,
             status: if user_skill_path.exists() {
                 InventoryStatus::Installed
             } else {
@@ -656,6 +680,7 @@ fn export_user_skills(codex_paths: &CodexPaths) -> Result<OperationResult, Strin
         paths_touched: vec![skill_path.display().to_string()],
         inventory: vec![InventoryItem {
             name: "user-skills".to_string(),
+            scope: InventoryScope::CodexNative,
             status: InventoryStatus::Installed,
             path: skill_path.display().to_string(),
             repair_hint: None,
@@ -700,6 +725,7 @@ fn export_global_agents(codex_paths: &CodexPaths) -> Result<OperationResult, Str
         paths_touched: vec![codex_paths.global_agents_md.display().to_string()],
         inventory: vec![InventoryItem {
             name: "global-agents".to_string(),
+            scope: InventoryScope::CodexNative,
             status: InventoryStatus::Installed,
             path: codex_paths.global_agents_md.display().to_string(),
             repair_hint: None,
@@ -722,6 +748,7 @@ fn uninstall_user_skills(codex_paths: &CodexPaths) -> Result<OperationResult, St
             paths_touched: vec![skill_path.display().to_string()],
             inventory: vec![InventoryItem {
                 name: "user-skills".to_string(),
+                scope: InventoryScope::CodexNative,
                 status: InventoryStatus::Missing,
                 path: skill_path.display().to_string(),
                 repair_hint: None,
@@ -737,6 +764,7 @@ fn uninstall_user_skills(codex_paths: &CodexPaths) -> Result<OperationResult, St
         paths_touched: vec![skill_dir.display().to_string()],
         inventory: vec![InventoryItem {
             name: "user-skills".to_string(),
+            scope: InventoryScope::CodexNative,
             status: InventoryStatus::Removed,
             path: skill_path.display().to_string(),
             repair_hint: None,
@@ -753,6 +781,7 @@ fn uninstall_global_agents(codex_paths: &CodexPaths) -> Result<OperationResult, 
             paths_touched: vec![codex_paths.global_agents_md.display().to_string()],
             inventory: vec![InventoryItem {
                 name: "global-agents".to_string(),
+                scope: InventoryScope::CodexNative,
                 status: InventoryStatus::Missing,
                 path: codex_paths.global_agents_md.display().to_string(),
                 repair_hint: None,
@@ -772,6 +801,7 @@ fn uninstall_global_agents(codex_paths: &CodexPaths) -> Result<OperationResult, 
             paths_touched: vec![codex_paths.global_agents_md.display().to_string()],
             inventory: vec![InventoryItem {
                 name: "global-agents".to_string(),
+                scope: InventoryScope::CodexNative,
                 status: InventoryStatus::PresentWithoutSaneBlock,
                 path: codex_paths.global_agents_md.display().to_string(),
                 repair_hint: None,
@@ -792,6 +822,7 @@ fn uninstall_global_agents(codex_paths: &CodexPaths) -> Result<OperationResult, 
         paths_touched: vec![codex_paths.global_agents_md.display().to_string()],
         inventory: vec![InventoryItem {
             name: "global-agents".to_string(),
+            scope: InventoryScope::CodexNative,
             status: InventoryStatus::Removed,
             path: codex_paths.global_agents_md.display().to_string(),
             repair_hint: None,

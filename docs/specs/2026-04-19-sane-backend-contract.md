@@ -122,6 +122,7 @@ Recommended typed shape:
 - `details`
 - `paths_touched`
 - `repair_hint`
+- `scope`
 
 ## Managed Target Status Model
 
@@ -145,6 +146,8 @@ Current implementation note:
 
 - `doctor` now derives its summary from the same shared inventory inspection used by `show_status`
 - touched paths are deduplicated before render
+- inventory is now explicitly scoped as either `local runtime` or `codex-native`
+- current TUI status panel renders those two groups separately
 
 ## TUI Boundary Rule
 

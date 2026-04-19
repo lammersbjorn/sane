@@ -14,6 +14,7 @@ Already implemented:
 - thin project-local `.sane` operational namespace
 - config/state persistence foundations
 - backend/dev escape hatch verbs for `install`, `config`, `status`, `doctor`, `export`, and `uninstall`
+- grouped audit view separating local runtime state from Codex-native managed assets
 - first managed Codex-native user surfaces:
   - `~/.agents/skills/sane-router`
   - optional `~/.codex/AGENTS.md` overlay block

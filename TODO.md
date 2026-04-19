@@ -92,7 +92,7 @@ cargo test
 ## Build Gates
 
 - [x] `B2` proper install TUI foundation
-- [ ] `B3` asset inventory / auditability surface
+- [x] `B3` asset inventory / auditability surface
 - [ ] `B4` next managed targets
 - [ ] `B5` model/subagent config surface
 - [ ] `B6` privacy / telemetry foundation
@@ -130,8 +130,8 @@ See:
 
 Current allowed next slice:
 
-1. start `B2`
-2. make managed assets auditable inside the TUI
-3. show installed/missing/invalid states and repair hints clearly
-4. keep local operational state distinct from Codex-native assets
-5. only then move to `B4`
+1. start `B4`
+2. add hooks as the next managed target
+3. keep merge/preserve/remove behavior additive and reversible
+4. extend inventory/doctor coverage for the new target
+5. only then move to further managed surfaces

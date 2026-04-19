@@ -45,9 +45,25 @@ impl InventoryStatus {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InventoryScope {
+    LocalRuntime,
+    CodexNative,
+}
+
+impl InventoryScope {
+    pub fn display_str(self) -> &'static str {
+        match self {
+            Self::LocalRuntime => "local runtime",
+            Self::CodexNative => "codex-native",
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InventoryItem {
     pub name: String,
+    pub scope: InventoryScope,
     pub status: InventoryStatus,
     pub path: String,
     pub repair_hint: Option<String>,
@@ -71,12 +87,35 @@ impl OperationResult {
         }
 
         if !self.inventory.is_empty() {
-            for item in &self.inventory {
-                let mut line = format!("{}: {}", item.name, item.status.display_str());
-                if let Some(repair_hint) = &item.repair_hint {
-                    line.push_str(&format!(" ({repair_hint})"));
+            let scopes = [InventoryScope::LocalRuntime, InventoryScope::CodexNative];
+            let multiple_scopes = self
+                .inventory
+                .iter()
+                .any(|item| item.scope != self.inventory[0].scope);
+
+            for scope in scopes {
+                let items = self
+                    .inventory
+                    .iter()
+                    .filter(|item| item.scope == scope)
+                    .collect::<Vec<_>>();
+                if items.is_empty() {
+                    continue;
                 }
-                lines.push(line);
+
+                if multiple_scopes {
+                    lines.push(format!("{}:", scope.display_str()));
+                }
+
+                for item in items {
+                    let prefix = if multiple_scopes { "  " } else { "" };
+                    let mut line =
+                        format!("{prefix}{}: {}", item.name, item.status.display_str());
+                    if let Some(repair_hint) = &item.repair_hint {
+                        line.push_str(&format!(" ({repair_hint})"));
+                    }
+                    lines.push(line);
+                }
             }
         }
 
