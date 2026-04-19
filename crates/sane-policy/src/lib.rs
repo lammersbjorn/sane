@@ -71,6 +71,13 @@ pub struct PolicyDecision {
     pub obligations: Vec<Obligation>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RolePlan {
+    pub coordinator: bool,
+    pub sidecar: bool,
+    pub verifier: bool,
+}
+
 impl PolicyDecision {
     pub fn has(&self, obligation: Obligation) -> bool {
         self.obligations.contains(&obligation)
@@ -158,6 +165,19 @@ pub fn evaluate(input: PolicyInput) -> PolicyDecision {
 fn push_unique(items: &mut Vec<Obligation>, item: Obligation) {
     if !items.contains(&item) {
         items.push(item);
+    }
+}
+
+pub fn recommend_roles(decision: &PolicyDecision) -> RolePlan {
+    let verifier = decision.has(Obligation::VerifyLight)
+        || decision.has(Obligation::DebugRigor)
+        || decision.has(Obligation::Tdd)
+        || decision.has(Obligation::Review);
+
+    RolePlan {
+        coordinator: true,
+        sidecar: decision.has(Obligation::SubagentEligible),
+        verifier,
     }
 }
 
@@ -263,5 +283,43 @@ mod tests {
         });
 
         assert!(decision.has(Obligation::SelfRepair));
+    }
+
+    #[test]
+    fn direct_question_stays_coordinator_only() {
+        let decision = evaluate(PolicyInput {
+            intent: Intent::Question,
+            task_shape: TaskShape::Trivial,
+            risk: Level::Low,
+            ambiguity: Level::Low,
+            parallelism: Parallelism::None,
+            context_pressure: Level::Low,
+            run_state: RunState::Exploring,
+        });
+
+        let roles = recommend_roles(&decision);
+
+        assert!(roles.coordinator);
+        assert!(!roles.sidecar);
+        assert!(!roles.verifier);
+    }
+
+    #[test]
+    fn complex_feature_gets_all_roles() {
+        let decision = evaluate(PolicyInput {
+            intent: Intent::Edit,
+            task_shape: TaskShape::Architectural,
+            risk: Level::High,
+            ambiguity: Level::Medium,
+            parallelism: Parallelism::Clear,
+            context_pressure: Level::Medium,
+            run_state: RunState::Executing,
+        });
+
+        let roles = recommend_roles(&decision);
+
+        assert!(roles.coordinator);
+        assert!(roles.sidecar);
+        assert!(roles.verifier);
     }
 }

@@ -63,6 +63,7 @@ Implemented:
 - `export all` / `uninstall all` for current managed targets
 - pure adaptive policy crate with typed obligations and tests
 - internal backend policy preview for canonical adaptive scenarios
+- internal backend policy preview now shows configured coordinator / sidecar / verifier roles per scenario
 
 Current gate:
 

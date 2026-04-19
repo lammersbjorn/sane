@@ -131,6 +131,7 @@ These are the backend actions the TUI is allowed to call in the current phase.
 - `preview_policy`
   - internal/backend inspection only for now
   - render canonical adaptive-policy scenarios into typed output
+  - include the current configured coordinator / sidecar / verifier plan for each scenario
   - exist to verify obligation rules without pretending live orchestration is complete
 
 ### Doctor / Status

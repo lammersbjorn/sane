@@ -27,6 +27,7 @@ use sane_core::{
 use sane_platform::{CodexPaths, ProjectPaths, detect_platform};
 use sane_policy::{
     Intent, Level, Obligation, Parallelism, PolicyInput, RunState, TaskShape, evaluate,
+    recommend_roles,
 };
 use sane_state::{EventRecord, RunSnapshot, RunSummary};
 use serde_json::{Map, Value, json};
@@ -243,7 +244,7 @@ fn execute_backend_command(
         Command::Config => show_config(paths),
         Command::CodexConfig => show_codex_config(codex_paths),
         Command::BackupCodexConfig => backup_codex_config(paths, codex_paths),
-        Command::DebugPolicyPreview => preview_policy(),
+        Command::DebugPolicyPreview => preview_policy(paths),
         Command::PreviewCodexProfile => preview_codex_profile(codex_paths),
         Command::PreviewIntegrationsProfile => preview_integrations_profile(codex_paths),
         Command::PreviewCloudflareProfile => preview_cloudflare_profile(codex_paths),
@@ -1179,7 +1180,8 @@ fn operation_kind_label(kind: OperationKind) -> &'static str {
     }
 }
 
-fn preview_policy() -> Result<OperationResult, String> {
+fn preview_policy(paths: &ProjectPaths) -> Result<OperationResult, String> {
+    let config = LocalConfig::read_from_path(&paths.config_path).unwrap_or_default();
     let scenarios = [
         (
             "simple-question",
@@ -1246,12 +1248,18 @@ fn preview_policy() -> Result<OperationResult, String> {
     let details = scenarios
         .into_iter()
         .map(|(label, input)| {
-            let obligations = evaluate(input)
+            let decision = evaluate(input);
+            let roles = recommend_roles(&decision);
+            let obligations = decision
                 .obligations
                 .into_iter()
                 .map(obligation_label)
                 .collect::<Vec<_>>();
-            format!("{label}: {}", obligations.join(", "))
+            format!(
+                "{label}: {} | {}",
+                obligations.join(", "),
+                render_role_plan(&config, roles)
+            )
         })
         .collect::<Vec<_>>();
 
@@ -1276,6 +1284,34 @@ fn obligation_label(obligation: Obligation) -> &'static str {
         Obligation::ContextCompaction => "context_compaction",
         Obligation::SelfRepair => "self_repair",
     }
+}
+
+fn render_role_plan(config: &LocalConfig, roles: sane_policy::RolePlan) -> String {
+    let mut parts = Vec::new();
+
+    if roles.coordinator {
+        parts.push(format!(
+            "coordinator={}/{}",
+            config.models.coordinator.model,
+            config.models.coordinator.reasoning_effort.as_str()
+        ));
+    }
+    if roles.sidecar {
+        parts.push(format!(
+            "sidecar={}/{}",
+            config.models.sidecar.model,
+            config.models.sidecar.reasoning_effort.as_str()
+        ));
+    }
+    if roles.verifier {
+        parts.push(format!(
+            "verifier={}/{}",
+            config.models.verifier.model,
+            config.models.verifier.reasoning_effort.as_str()
+        ));
+    }
+
+    parts.join(", ")
 }
 
 fn promote_operation_summary(paths: &ProjectPaths, result: &OperationResult) -> Result<(), String> {
@@ -3744,12 +3780,16 @@ mod tests {
         let output = run_with_home(&["debug", "policy-preview"], dir.path(), home.path()).unwrap();
 
         assert!(output.contains("policy preview: rendered adaptive obligation scenarios"));
-        assert!(output.contains("simple-question: direct_answer"));
-        assert!(output.contains("unknown-bug: debug_rigor, verify_light"));
-        assert!(output.contains("multi-file-feature: planning, tdd, review, subagent_eligible"));
-        assert!(
-            output.contains("blocked-long-run: planning, review, context_compaction, self_repair")
-        );
+        assert!(output.contains("simple-question: direct_answer | coordinator=gpt-5.4/high"));
+        assert!(output.contains(
+            "unknown-bug: debug_rigor, verify_light | coordinator=gpt-5.4/high, verifier=gpt-5.4/medium"
+        ));
+        assert!(output.contains(
+            "multi-file-feature: planning, tdd, review, subagent_eligible | coordinator=gpt-5.4/high, sidecar=gpt-5.4-mini/medium, verifier=gpt-5.4/medium"
+        ));
+        assert!(output.contains(
+            "blocked-long-run: planning, review, context_compaction, self_repair | coordinator=gpt-5.4/high, verifier=gpt-5.4/medium"
+        ));
     }
 
     #[test]
