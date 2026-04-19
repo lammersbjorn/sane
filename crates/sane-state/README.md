@@ -1,56 +1,61 @@
 # ⚖️ sane-state
 
-Project-local operational state for `Sane`.
+Local state and persistence helpers for `Sane`.
 
-## In Plain English
+## What This Crate Is
 
-`Sane` keeps a small amount of structured local state so it can inspect what happened, recover cleanly, and keep long sessions from turning into guesswork.
+This crate defines the small amount of project-local state `Sane` keeps so it can inspect, repair, and summarize its own behavior.
 
-This crate defines that state.
-Think of it as the black-box recorder for the current project, not a general-purpose database.
+It covers files like:
 
-## Why This Crate Exists
+- current run snapshots
+- summary state
+- event logs
+- decision logs
+- artifact logs
+- brief handoff state for resuming or understanding recent work
 
-`Sane` needs more than a one-shot installer.
+## Why It Exists
 
-It needs enough local state to answer questions like:
+`Sane` needs more than one-shot install logic.
 
-- what did `Sane` change?
-- what was the latest summary?
-- what events happened recently?
-- what can be repaired or resumed?
+It needs enough local memory to answer:
 
-The goal is a thin, inspectable layer, not a giant hidden runtime.
+- what changed recently
+- what state looks broken
+- what can be repaired
+- what happened during a longer run
+
+The goal is a thin local recorder, not a second product runtime.
 
 ## What It Owns
 
-- current run snapshots
+- typed state records
+- JSON and JSONL persistence helpers
+- summary and snapshot formats, which are intentionally different
+
+## What It Must Not Own
+
+- global user memory
+- Codex config writes
+- path discovery
+- policy decisions
+
+If this crate starts trying to own workflow logic, it has grown too far.
+
+## Contributor Note
+
+State changes need extra care because they affect:
+
+- repair flows
 - summaries
-- event, decision, and artifact records
-- JSON and JSONL read/write helpers
+- doctor output
+- backward compatibility
 
-Today that mainly means files like:
+If you change a format, document it.
 
-- `.sane/state/current-run.json`
-- `.sane/state/summary.json`
-- `.sane/state/events.jsonl`
-- `.sane/state/decisions.jsonl`
-- `.sane/state/artifacts.jsonl`
-- `.sane/BRIEF.md`
+## Read Alongside
 
-## What It Does Not Own
-
-- user preferences
-- global user state
-- platform discovery
-- Codex config application
-- long-term memory or retrieval systems
-
-## Where It Sits
-
-```mermaid
-flowchart LR
-    S["sane-state"] --> T["sane"]
-```
-
-If this crate ever starts feeling like a separate product, it has grown too far.
+- [root README](../../README.md)
+- [crates/sane-platform/README.md](../sane-platform/README.md)
+- [crates/sane-tui/README.md](../sane-tui/README.md)

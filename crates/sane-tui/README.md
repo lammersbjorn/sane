@@ -1,69 +1,82 @@
 # ⚖️ sane-tui
 
-The user-facing app surface for `Sane`.
+The installer, configurator, diagnostic, and recovery interface for `Sane`.
 
-## In Plain English
+## What This Crate Is
 
-This crate is the thing users actually open.
+If someone opens `Sane`, this crate is the primary interface.
 
-It owns the TUI and the action layer behind flows like:
+It owns the user-facing flows for:
 
-- install
-- configure
-- inspect
-- preview
-- apply
-- back up
-- restore
-- uninstall
-- doctor
+- Install
+- Status
+- Doctor
+- Preview
+- Apply
+- Export
+- Backup
+- Restore
+- Uninstall
 
-It is the orchestrator that wires stable rules and config to the real world of files, paths, state, and user actions.
+It is the bridge between local config and the Codex-native assets `Sane` manages.
 
-This is also the crate that actually installs, previews, applies, repairs, and removes:
+## Why It Exists
 
-- the `sane-router` skill
-- optional pack skills
-- managed `AGENTS.md` guidance
-- managed hooks
-- managed custom agents
-- Codex profile changes
-- local `.sane` runtime files
+`Sane` is supposed to feel easy to operate.
+That means users need one place to:
 
-## Why This Crate Exists
+- understand what an option does
+- inspect current state
+- see safe previews
+- make reversible changes
+- recover cleanly when something drifts
 
-`Sane` is supposed to feel like a helpful control surface, not another workflow tax.
+That is this crate.
 
-This crate is where that promise becomes real.
+## What It Touches
 
-It brings together the lower-level crates and turns them into a product someone can actually use.
+Depending on the action, this crate can coordinate writes to:
+
+- `.sane/`
+- `~/.agents/skills/`
+- `~/.codex/AGENTS.md`
+- `~/.codex/hooks.json`
+- `~/.codex/agents/`
+- `~/.codex/config.toml`
+
+It should do that carefully:
+
+- preview before apply where possible
+- preserve unrelated user content
+- keep uninstall scoped to Sane-managed content
 
 ## What It Owns
 
-- the no-args TUI entry point
-- settings and pack editing
-- status and system-health diagnostics
-- profile preview/apply flows
-- backup and restore flows
-- uninstall flows
-- confirmation UX for risky actions
+- the no-args `sane` TUI entry point
+- action labels and help text
+- confirmation flows for risky operations
+- command dispatch into backend operations
+- user-facing rendering of status, doctor, and output
 
 ## What It Does Not Own
 
-- the config schema itself
-- platform/path rules
-- shared core contracts
+- config schema meaning
+- path discovery rules
+- shared generated content
 - pure policy evaluation
 
-## Where It Sits
+Those belong in the lower-level crates.
 
-```mermaid
-flowchart LR
-    T["sane"] --> C["sane-config"]
-    T --> P["sane-platform"]
-    T --> S["sane-state"]
-    T --> O["sane-policy"]
-    T --> R["sane-core"]
-```
+## Main Invariants
 
-If a user says, "What does `Sane` actually do for me?", this crate should be the clearest answer.
+- user-facing actions must be explainable in plain language
+- destructive operations need confirmation
+- user-visible docs and UI copy should stay aligned
+- status and doctor should describe the same world the backend actually manages
+
+## Read Alongside
+
+- [root README](../../README.md)
+- [CONTRIBUTING.md](../../CONTRIBUTING.md)
+- [crates/sane-core/README.md](../sane-core/README.md)
+- [crates/sane-config/README.md](../sane-config/README.md)

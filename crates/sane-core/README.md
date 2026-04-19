@@ -1,63 +1,60 @@
 # ⚖️ sane-core
 
-Shared vocabulary for `Sane`.
+Shared names, contracts, and generated content for `Sane`.
 
-## In Plain English
+## What This Crate Is
 
-If two different parts of `Sane` need to talk about the same thing in the same way, that contract belongs here.
+This crate holds the pieces that need to stay stable across the workspace.
 
-It is also the zero-dependency anchor for shared symbols that should stay stable across the workspace.
-
-That includes:
+That includes things like:
 
 - managed asset names
-- status types
-- result shapes
-- block markers for additive file edits
-- generated text that must stay consistent across surfaces
+- typed operation results
+- inventory contracts
+- generated skill and overlay content
+- markers used for additive edits in user files
 
-In practice, that means this crate carries the shared vocabulary behind things like:
+## Why It Exists
 
-- `sane-router`
-- optional pack skills
-- managed `AGENTS.md` blocks
-- managed hook entries
-- managed custom agent files
+Without a shared core, the workspace drifts fast:
 
-## Why This Crate Exists
+- one layer says something is installed
+- another says it is only configured
+- generated content no longer matches what the UI claims
+- uninstall boundaries stop lining up with export boundaries
 
-Without a shared core, the TUI, policy layer, and file-management code drift fast.
-
-Users feel that drift as:
-
-- mismatched status labels
-- inconsistent previews
-- broken managed-file boundaries
-- one part of the app calling something "installed" while another calls it "configured"
-
-`sane-core` exists to stop that.
+This crate keeps the shared vocabulary in one place.
 
 ## What It Owns
 
-- shared enums and typed result structs
-- canonical managed asset identifiers
-- additive managed-block markers used to safely inject or remove `Sane`-managed sections in user files
-- reusable generated guidance snippets
+- operation and inventory types
+- canonical names for Sane-managed assets
+- managed block markers
+- reusable generated text for Sane-managed surfaces
 
-## What It Does Not Own
+## What It Must Not Own
 
-- filesystem access
-- path discovery
-- config parsing
+- path lookup
+- raw file I/O
 - TUI rendering
+- config persistence
 - policy decisions
 
-## Where It Sits
+It should remain minimal, stable, and predictable.
 
-```mermaid
-flowchart LR
-    C["sane-core"] --> T["sane"]
-    C --> P["sane-policy"]
-```
+## Contributor Note
 
-This crate should stay boring, stable, and reusable.
+Changes here often ripple everywhere.
+If you rename a managed file block, asset name, or result contract, verify:
+
+- status
+- doctor
+- export
+- uninstall
+- docs
+
+## Read Alongside
+
+- [root README](../../README.md)
+- [crates/sane-tui/README.md](../sane-tui/README.md)
+- [crates/sane-platform/README.md](../sane-platform/README.md)

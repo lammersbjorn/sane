@@ -1,63 +1,65 @@
 # ⚖️ sane-config
 
-Configuration schema and validation for `Sane`.
+The local config model for `Sane`.
 
-## In Plain English
+## What This Crate Is
 
-This crate defines what `Sane` settings mean.
+This crate defines what the saved `Sane` settings mean.
 
-When a user changes:
+When users change things like:
 
-- model roles
+- model-role defaults
 - reasoning defaults
 - built-in packs
-- telemetry/privacy settings
+- privacy choices
 
-the rules for those settings live here.
+this crate is where those settings are parsed, assigned defaults, and validated.
 
-Those settings are what drive the generated router skill, pack exports, managed overlays, custom agents, and Codex profile previews.
+## Why It Exists
 
-## Why This Crate Exists
+`Sane` cannot safely preview, apply, or export behavior if configuration semantics are scattered across the app.
 
-`Sane` has to keep configuration stable even while the UI, profiles, and install flows evolve.
+This crate gives the workspace one place to answer:
 
-If config meaning is scattered across the app, users get:
-
-- settings that save but do not behave consistently
-- profile previews that do not match applied results
-- breaking changes with no clear migration path
-- old config files that are harder to evolve safely as the schema changes
-
-`sane-config` gives the project one source of truth.
+- what a config value means
+- what the defaults are
+- what combinations are allowed
+- what should be rejected as invalid
 
 ## What It Owns
 
 - local config structs
-- default settings
+- defaults
 - model and reasoning enums
-- pack configuration
-- privacy and telemetry choices
-- serialization and validation helpers
+- pack settings
+- privacy and telemetry levels
+- serialization helpers
+- validation rules
 
-## What It Does Not Own
+## What It Must Not Own
 
-- writing Codex files
-- reading platform paths
-- rendering the TUI
-- deciding which policy should trigger at runtime
+- file writes into Codex paths
+- TUI behavior
+- path discovery
+- runtime policy decisions
 
-## Where It Sits
+Those depend on config.
+They should not define config.
 
-```mermaid
-flowchart LR
-    C["sane-config"] --> T["sane"]
-    C --> P["sane-policy"]
-```
+## Contributor Note
 
-This crate should answer:
+If you change config here, check all dependent surfaces:
 
-> What does this config mean?
+- previews
+- applies
+- exports
+- status and doctor output
+- docs that describe saved behavior
 
-It should not answer:
+Config drift is easy to create and hard for users to diagnose.
 
-> What should the app do next?
+## Read Alongside
+
+- [root README](../../README.md)
+- [crates/sane-tui/README.md](../sane-tui/README.md)
+- [crates/sane-core/README.md](../sane-core/README.md)

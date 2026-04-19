@@ -10,7 +10,7 @@ Right now, only the current `main` branch should be considered supported.
 Please do **not** open a public issue for a security vulnerability.
 
 If GitHub private vulnerability reporting is enabled for this repository, use that.
-If it is not available, contact the maintainer through the repository owner's GitHub profile contact method.
+If it is not available, contact the repository owner through the GitHub profile contact method.
 
 Please include:
 
@@ -24,7 +24,7 @@ Please include:
 
 Examples include:
 
-- unsafe config mutation
+- unauthorized or destructive configuration changes
 - accidental exposure of API keys or secrets in session summaries or `.sane` state files
 - destructive uninstall or restore behavior
 - trust-boundary failures around managed Codex assets

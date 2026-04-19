@@ -1,67 +1,58 @@
 # ⚖️ sane-platform
 
-Filesystem and platform discovery for `Sane`.
+Path discovery and platform layout rules for `Sane`.
 
-## In Plain English
+## What This Crate Is
 
-This crate tells `Sane` where things live.
+This crate answers one question:
 
-That includes:
+> where does this belong?
+
+It finds:
 
 - the project root
-- the local `.sane` directory
-- Codex user files
-- backup paths
-- telemetry paths
+- the local `.sane/` directory
+- Codex user paths
+- backup directories
+- other managed filesystem locations
 
-It is also the place for path normalization so `Sane` behaves like a good citizen on macOS, Linux, and Windows.
-
-This is the crate that lets Sane consistently find and manage paths like:
-
-- `.sane/`
-- `~/.agents/skills/`
-- `~/.codex/config.toml`
-- `~/.codex/hooks.json`
-- `~/.codex/AGENTS.md`
-- `~/.codex/agents/`
-
-## Why This Crate Exists
+## Why It Exists
 
 `Sane` is meant to work on macOS, Linux, and Windows.
+Users should not have to memorize path differences or special cases.
 
-Users should not have to care where every file belongs.
-The app should know.
-
-Keeping that logic in one place makes the rest of the codebase safer and easier to reason about.
+Keeping that logic here makes the rest of the workspace simpler and safer.
 
 ## What It Owns
 
 - platform detection
 - project-root discovery
-- local `.sane` layout helpers
-- Codex home path helpers
-- backup and telemetry directory helpers
-- path resolution and normalization
+- path normalization
+- resolution of `.sane/` sub-paths
+- helper paths for Codex user-level files
 
-## What It Does Not Own
+## What It Must Not Own
 
-- config semantics
-- TUI actions
+- config meaning
+- generated content
 - policy logic
-- generated asset contents
+- TUI copy
 
-## Where It Sits
+This crate should say where things live, not what they mean.
 
-```mermaid
-flowchart LR
-    P["sane-platform"] --> T["sane"]
-    P --> S["sane-state"]
-```
+## Contributor Note
 
-This crate should answer:
+Path changes are user-facing changes.
+If you touch this crate, check:
 
-> Where is it?
+- docs
+- backups
+- uninstall
+- status and doctor output
+- platform tests
 
-It should not answer:
+## Read Alongside
 
-> What should we do with it?
+- [root README](../../README.md)
+- [crates/sane-tui/README.md](../sane-tui/README.md)
+- [crates/sane-state/README.md](../sane-state/README.md)

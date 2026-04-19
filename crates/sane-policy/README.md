@@ -1,45 +1,57 @@
 # ⚖️ sane-policy
 
-Adaptive decision groundwork for `Sane`.
+Logic for adaptive decision-making in `Sane`.
 
-## In Plain English
+## What This Crate Is
 
-One of `Sane`'s core promises is that users should not have to memorize a rigid command ritual just to get good results.
+One of `Sane`'s core promises is that users should not need a fixed sequence of manual commands to get stronger behavior.
 
-This crate is where that promise starts turning into typed behavior.
+This crate is where that promise becomes testable logic.
 
-## Why This Crate Exists
+It models things like:
 
-`Sane` is trying to choose better defaults around:
+- task characteristics
+- risk
+- ambiguity
+- parallelism
+- run state
 
-- direct answers versus heavier workflow
-- verification pressure
-- subagent eligibility
-- model-role usage
-- long-session compaction pressure
+and turns them into recommendations or explicit requirements.
 
-That logic needs to be testable away from the UI and file system.
+## Why It Exists
+
+If adaptive behavior lives only in UI copy or scattered conditionals, it becomes impossible to reason about.
+
+This crate keeps the logic:
+
+- explicit
+- typed
+- testable
+- separate from file writes and UI state
 
 ## What It Owns
 
 - policy input types
-- actionable requirement outputs
-- pure evaluation logic for when stronger verification, a heavier workflow, or subagent use should apply
-- role-plan recommendations
+- policy output types
+- role recommendation helpers
+- pure evaluation logic
 
-## What It Does Not Own
+## What It Must Not Own
 
 - prompt parsing
-- file I/O
+- file writes
+- TUI code
 - path discovery
-- TUI state
 
-## Where It Sits
+It should stay deterministic and explainable.
 
-```mermaid
-flowchart LR
-    P["sane-policy"] --> T["sane"]
-```
+## Contributor Note
 
-This crate should stay deterministic.
-If policy behavior is hard to test or explain, this layer is failing its job.
+Policy changes are product changes.
+If you touch this crate, verify the docs and user-facing explanations still match what the system actually recommends.
+
+## Read Alongside
+
+- [root README](../../README.md)
+- [docs/decisions/2026-04-19-sane-decision-log.md](../../docs/decisions/2026-04-19-sane-decision-log.md)
+- [crates/sane-tui/README.md](../sane-tui/README.md)

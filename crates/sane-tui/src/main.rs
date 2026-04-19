@@ -551,31 +551,28 @@ impl TuiApp {
             paths: paths.clone(),
             codex_paths: codex_paths.clone(),
             actions: vec![
-                TuiAction::backend("Install / repair runtime", Command::Install),
-                TuiAction::config_editor("Edit model roles"),
-                TuiAction::pack_editor("Edit built-in packs"),
+                TuiAction::backend("Install / repair", Command::Install),
+                TuiAction::config_editor("Model roles"),
+                TuiAction::pack_editor("Built-in packs"),
                 TuiAction::privacy_editor("Privacy / telemetry"),
-                TuiAction::backend("Show local Sane config", Command::Config),
-                TuiAction::backend("Show current Codex config", Command::CodexConfig),
-                TuiAction::backend("Preview core Codex profile", Command::PreviewCodexProfile),
-                TuiAction::backend(
-                    "Preview integrations profile",
-                    Command::PreviewIntegrationsProfile,
-                ),
-                TuiAction::backend("Preview Cloudflare profile", Command::PreviewCloudflareProfile),
-                TuiAction::backend("Apply integrations profile", Command::ApplyIntegrationsProfile),
-                TuiAction::backend("Apply Cloudflare profile", Command::ApplyCloudflareProfile),
+                TuiAction::backend("Show local config", Command::Config),
+                TuiAction::backend("Show Codex config", Command::CodexConfig),
+                TuiAction::backend("Preview core profile", Command::PreviewCodexProfile),
+                TuiAction::backend("Preview integrations", Command::PreviewIntegrationsProfile),
+                TuiAction::backend("Preview Cloudflare", Command::PreviewCloudflareProfile),
+                TuiAction::backend("Apply integrations", Command::ApplyIntegrationsProfile),
+                TuiAction::backend("Apply Cloudflare", Command::ApplyCloudflareProfile),
                 TuiAction::backend("Backup Codex config", Command::BackupCodexConfig),
-                TuiAction::backend("Apply core Codex profile", Command::ApplyCodexProfile),
+                TuiAction::backend("Apply core profile", Command::ApplyCodexProfile),
                 TuiAction::backend("Restore Codex config", Command::RestoreCodexConfig),
-                TuiAction::backend("Inspect adaptive policy", Command::DebugPolicyPreview),
+                TuiAction::backend("Adaptive policy", Command::DebugPolicyPreview),
                 TuiAction::backend("Run doctor", Command::Doctor),
                 TuiAction::backend("Export router skill", Command::ExportUserSkills),
                 TuiAction::backend("Export AGENTS block", Command::ExportGlobalAgents),
                 TuiAction::backend("Export hooks", Command::ExportHooks),
                 TuiAction::backend("Export custom agents", Command::ExportCustomAgents),
-                TuiAction::backend("Export all assets", Command::ExportAll),
-                TuiAction::backend("Uninstall all assets", Command::UninstallAll),
+                TuiAction::backend("Export all", Command::ExportAll),
+                TuiAction::backend("Uninstall all", Command::UninstallAll),
             ],
             selected: 0,
             status,
@@ -827,16 +824,15 @@ fn render_home(frame: &mut Frame, app: &TuiApp) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(5),
-            Constraint::Length(8),
-            Constraint::Min(10),
+            Constraint::Length(4),
+            Constraint::Length(6),
+            Constraint::Min(12),
         ])
         .split(frame.area());
 
     let header = Paragraph::new(vec![
         Line::from(NAME),
-        Line::from("Installer and configuration TUI for Sane."),
-        Line::from("Up/down selects. Enter opens or runs. q quits. The detail panel explains the selected option."),
+        Line::from("Installer and config TUI. Up/down selects. Enter runs. q quits."),
     ])
     .block(Block::default().borders(Borders::ALL).title("Home"))
     .wrap(Wrap { trim: true });
@@ -853,13 +849,13 @@ fn render_home(frame: &mut Frame, app: &TuiApp) {
 
     let main = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Length(30), Constraint::Min(30)])
+        .constraints([Constraint::Length(38), Constraint::Min(24)])
         .split(chunks[2]);
 
     render_actions(frame, main[0], app);
     let right = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Length(10), Constraint::Min(8)])
+        .constraints([Constraint::Percentage(40), Constraint::Percentage(60)])
         .split(main[1]);
     render_action_help(frame, right[0], app);
     let output = Paragraph::new(app.output.as_str())
@@ -1030,11 +1026,7 @@ fn render_actions(frame: &mut Frame, area: Rect, app: &TuiApp) {
         .map(|action| ListItem::new(action.label))
         .collect::<Vec<_>>();
     let list = List::new(items)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .title("Actions (Enter to open or run)"),
-        )
+        .block(Block::default().borders(Borders::ALL).title("Actions"))
         .highlight_style(Style::default().add_modifier(Modifier::REVERSED))
         .highlight_symbol("> ");
     let mut state = ListState::default().with_selected(Some(app.selected));
@@ -1047,7 +1039,7 @@ fn render_action_help(frame: &mut Frame, area: Rect, app: &TuiApp) {
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title("What This Option Does"),
+                .title("Selected Option"),
         )
         .wrap(Wrap { trim: false });
     frame.render_widget(help, area);
@@ -1478,28 +1470,25 @@ fn status_lines(status: &OperationResult) -> Vec<Line<'static>> {
         .collect::<Vec<_>>();
 
     vec![
-        Line::from("Local runtime"),
         Line::from(format!(
-            "  runtime {} | config {} | state {} | brief {}",
+            "Local: runtime {} | config {} | state {} | brief {}",
             home_status_label(runtime),
             home_status_label(config),
             combined_state_label(current_run, summary),
             home_status_label(brief),
         )),
-        Line::from(format!("  enabled packs: {}", enabled_packs.join(", "))),
-        Line::from("Codex-native"),
+        Line::from(format!("Packs: {}", enabled_packs.join(", "))),
         Line::from(format!(
-            "  codex config {} | router skill {} | AGENTS block {}",
+            "Codex: config {} | skill {} | AGENTS {}",
             home_status_label(codex_config),
             home_status_label(user_skills),
             home_status_label(global_agents),
         )),
         Line::from(format!(
-            "  hooks {} | custom agents {}",
+            "Extra: hooks {} | agents {} | Doctor shows full audit",
             home_status_label(hooks),
             home_status_label(custom_agents),
         )),
-        Line::from("Use Doctor for the full file-by-file audit."),
     ]
 }
 
@@ -1509,8 +1498,8 @@ fn home_status_label(item: &InventoryItem) -> &'static str {
         InventoryStatus::Configured => "configured",
         InventoryStatus::Disabled => "disabled",
         InventoryStatus::Missing => "missing",
-        InventoryStatus::Invalid => "needs repair",
-        InventoryStatus::PresentWithoutSaneBlock => "present without Sane",
+        InventoryStatus::Invalid => "repair",
+        InventoryStatus::PresentWithoutSaneBlock => "non-Sane",
         InventoryStatus::Removed => "removed",
     }
 }
@@ -4559,28 +4548,28 @@ mod tests {
         assert_eq!(
             labels,
             vec![
-                "Install / repair runtime",
-                "Edit model roles",
-                "Edit built-in packs",
+                "Install / repair",
+                "Model roles",
+                "Built-in packs",
                 "Privacy / telemetry",
-                "Show local Sane config",
-                "Show current Codex config",
-                "Preview core Codex profile",
-                "Preview integrations profile",
-                "Preview Cloudflare profile",
-                "Apply integrations profile",
-                "Apply Cloudflare profile",
+                "Show local config",
+                "Show Codex config",
+                "Preview core profile",
+                "Preview integrations",
+                "Preview Cloudflare",
+                "Apply integrations",
+                "Apply Cloudflare",
                 "Backup Codex config",
-                "Apply core Codex profile",
+                "Apply core profile",
                 "Restore Codex config",
-                "Inspect adaptive policy",
+                "Adaptive policy",
                 "Run doctor",
                 "Export router skill",
                 "Export AGENTS block",
                 "Export hooks",
                 "Export custom agents",
-                "Export all assets",
-                "Uninstall all assets",
+                "Export all",
+                "Uninstall all",
             ]
         );
     }
