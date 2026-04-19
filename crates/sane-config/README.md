@@ -1,60 +1,61 @@
 # ⚖️ sane-config
 
-Configuration schema crate for `Sane`.
+Configuration schema and validation for `Sane`.
 
-## What It Is
+## In Plain English
 
-`sane-config` defines the configuration schema and validation rules for `Sane`.
+This crate defines what `Sane` settings mean.
 
-It is the source of truth for the structure behind the TUI config screens and other config-driven behavior.
+When a user changes:
 
-## Why It Exists
+- model roles
+- reasoning defaults
+- built-in packs
+- telemetry/privacy settings
 
-`Sane` lets users control things like:
+the rules for those settings live here.
 
-- model-role defaults
-- built-in pack toggles
-- privacy / telemetry choices
+## Why This Crate Exists
 
-Those settings need one clear, typed home.
+`Sane` has to keep configuration stable even while the UI, profiles, and install flows evolve.
 
-`sane-config` exists so config meaning stays stable even if the UI or install flows change.
+If config meaning is scattered across the app, users get:
 
-## Where It Fits
+- settings that save but do not behave consistently
+- profile previews that do not match applied results
+- breaking changes with no clear migration path
+- old config files that are harder to evolve safely as the schema changes
+
+`sane-config` gives the project one source of truth.
+
+## What It Owns
+
+- local config structs
+- default settings
+- model and reasoning enums
+- pack configuration
+- privacy and telemetry choices
+- serialization and validation helpers
+
+## What It Does Not Own
+
+- writing Codex files
+- reading platform paths
+- rendering the TUI
+- deciding which policy should trigger at runtime
+
+## Where It Sits
 
 ```mermaid
 flowchart LR
-    C["sane-config"] --> T["sane-tui"]
+    C["sane-config"] --> T["sane"]
     C --> P["sane-policy"]
 ```
 
-This crate defines the configuration schema; other crates consume it.
+This crate should answer:
 
-## What Lives Here
+> What does this config mean?
 
-- local config schema
-- model-role preset types
-- reasoning-effort enums
-- telemetry/privacy config
-- built-in pack config
-- validation rules
-- config serialization helpers
+It should not answer:
 
-## Real Examples
-
-This is where `Sane` defines:
-
-- which models are currently valid choices in the TUI
-- what `coordinator`, `sidecar`, and `verifier` mean in config
-- how `xhigh` is represented and validated
-- which packs are enabled locally by default
-
-## What Does Not Belong Here
-
-- applying config to Codex files
-- platform/path discovery
-- TUI rendering
-- orchestration behavior itself
-
-This crate should answer: “what does this config mean?”
-It should not answer: “what should we do with it right now?”
+> What should the app do next?

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security report
+    url: https://github.com/lammersbjorn/sane/security/policy
+    about: Please use the security policy for vulnerabilities and sensitive disclosures.
+  - name: Support guide
+    url: https://github.com/lammersbjorn/sane/blob/main/SUPPORT.md
+    about: Read where to file bugs, docs fixes, feature requests, and security reports.

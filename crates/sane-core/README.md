@@ -1,61 +1,55 @@
 # ⚖️ sane-core
 
-Shared foundation crate for `Sane`.
+Shared vocabulary for `Sane`.
 
-## What It Is
+## In Plain English
 
-`sane-core` is a foundational crate containing the shared components and contracts used across the `Sane` workspace.
+If two different parts of `Sane` need to talk about the same thing in the same way, that contract belongs here.
 
-If two parts of the product must talk about the same managed asset, status, marker, or generated content in the same way, that contract belongs here.
+It is also the zero-dependency anchor for shared symbols that should stay stable across the workspace.
 
-## Why It Exists
+That includes:
 
-`Sane` manages a mix of:
+- managed asset names
+- status types
+- result shapes
+- block markers for additive file edits
+- generated text that must stay consistent across surfaces
 
-- local operational state
-- user-level Codex assets
-- TUI/backend actions
-- generated guidance content
+## Why This Crate Exists
 
-Without a common core, those components can drift quickly.
+Without a shared core, the TUI, policy layer, and file-management code drift fast.
 
-`sane-core` exists to stop that drift.
+Users feel that drift as:
 
-## Where It Fits
+- mismatched status labels
+- inconsistent previews
+- broken managed-file boundaries
+- one part of the app calling something "installed" while another calls it "configured"
+
+`sane-core` exists to stop that.
+
+## What It Owns
+
+- shared enums and typed result structs
+- canonical managed asset identifiers
+- additive managed-block markers used to safely inject or remove `Sane`-managed sections in user files
+- reusable generated guidance snippets
+
+## What It Does Not Own
+
+- filesystem access
+- path discovery
+- config parsing
+- TUI rendering
+- policy decisions
+
+## Where It Sits
 
 ```mermaid
 flowchart LR
-    C["sane-core"] --> T["sane-tui"]
+    C["sane-core"] --> T["sane"]
     C --> P["sane-policy"]
 ```
 
-This crate does not run the product by itself.
-It gives the rest of the workspace a shared language.
-
-## What Lives Here
-
-- shared names and markers
-- managed block markers for additive file edits
-- generated templates for managed skills and overlays
-- typed backend operation results
-- typed inventory/status items
-- shared status enums
-
-## Real Examples
-
-This is where `Sane` keeps things like:
-
-- the canonical names of managed assets such as `sane-router`
-- begin/end markers for managed `AGENTS.md` blocks
-- shared renderable result types used by both backend operations and the TUI
-- generated guidance text for pack-aware and model-aware exports
-
-## What Does Not Belong Here
-
-- filesystem writes
-- path discovery
-- TUI screens
-- config parsing
-- adaptive-policy logic
-
-If code is not reused across multiple surfaces, it probably belongs somewhere else.
+This crate should stay boring, stable, and reusable.

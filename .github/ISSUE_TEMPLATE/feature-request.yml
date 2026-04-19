@@ -1,0 +1,44 @@
+name: Feature request
+description: Suggest a change or new capability for Sane
+title: "[feature] "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please focus on the user problem first.
+        Good requests explain why the change matters, not just what to build.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      placeholder: Managing Codex profile changes still feels too opaque for first-time users.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like Sane to do?
+      placeholder: Add a clearer before/after diff screen before apply.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What do you do today instead?
+      placeholder: I inspect config.toml manually and back it up myself.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which area does this touch?
+      options:
+        - Install / onboarding
+        - TUI / UX
+        - Codex config
+        - Managed assets
+        - Local state
+        - Adaptive policy
+        - Documentation
+        - Packaging / distribution
+        - Other

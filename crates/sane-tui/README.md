@@ -1,66 +1,59 @@
-# ⚖️ sane
+# ⚖️ sane-tui
 
-User-facing installer and configuration crate for `Sane`.
+The user-facing app surface for `Sane`.
 
-## What It Is
+## In Plain English
 
-This crate is the primary entry point and interface for the product.
+This crate is the thing users actually open.
 
-It owns the no-args TUI and the thin backend action layer that powers setup, inspection, export, and repair flows.
+It owns the TUI and the action layer behind flows like:
 
-## Why It Exists
+- install
+- configure
+- inspect
+- preview
+- apply
+- back up
+- restore
+- uninstall
+- doctor
 
-`Sane` is supposed to feel helpful without becoming another command ritual.
+It is the orchestrator that wires stable rules and config to the real world of files, paths, state, and user actions.
 
-That means users need a clear place to:
+## Why This Crate Exists
 
-- inspect what `Sane` is managing
-- configure defaults
-- preview changes safely
-- apply, restore, export, and uninstall managed assets
+`Sane` is supposed to feel like a helpful control surface, not another workflow tax.
 
-This crate is that surface.
+This crate is where that promise becomes real.
 
-## Where It Fits
+It brings together the lower-level crates and turns them into a product someone can actually use.
+
+## What It Owns
+
+- the no-args TUI entry point
+- settings and pack editing
+- status and system-health diagnostics
+- profile preview/apply flows
+- backup and restore flows
+- uninstall flows
+- confirmation UX for risky actions
+
+## What It Does Not Own
+
+- the config schema itself
+- platform/path rules
+- shared core contracts
+- pure policy evaluation
+
+## Where It Sits
 
 ```mermaid
 flowchart LR
-    T["sane-tui"] --> C["sane-config"]
+    T["sane"] --> C["sane-config"]
     T --> P["sane-platform"]
     T --> S["sane-state"]
     T --> O["sane-policy"]
     T --> R["sane-core"]
 ```
 
-It integrates lower-level crates into one user-facing flow.
-
-## What Lives Here
-
-- no-args TUI entrypoint
-- config editor
-- pack editor
-- privacy/telemetry screen
-- status and doctor views
-- preview/apply/backup/restore flows
-- export/uninstall flows
-- confirmation UX for risky actions
-- backend/dev escape-hatch verbs
-
-## Real Examples
-
-This crate is responsible for actions such as:
-
-- editing model-role defaults
-- previewing Codex config profiles
-- exporting managed user skills
-- warning when exports become stale
-- showing grouped local-vs-Codex inventory
-
-## What Does Not Belong Here
-
-- config schema definitions
-- platform/path discovery
-- pure policy logic
-- cross-cutting shared types/templates
-
-This crate should be the user-facing surface, not the place where every core rule gets invented.
+If a user says, "What does `Sane` actually do for me?", this crate should be the clearest answer.

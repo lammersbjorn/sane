@@ -1,0 +1,55 @@
+name: Bug report
+description: Report a reproducible problem in Sane
+title: "[bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this.
+        Please make the report specific enough that someone else can reproduce it.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the bug in plain language.
+      placeholder: Sane wrote an invalid Codex config after applying the core profile.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      placeholder: I expected the profile preview and applied config to match.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: List exact steps, commands, or TUI actions.
+      placeholder: |
+        1. Run `cargo run -p sane`
+        2. Open Codex profile preview
+        3. Apply profile
+        4. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS
+        - Linux
+        - Windows
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Extra context
+      description: Add logs, screenshots, config snippets, or anything else useful.
+      render: markdown

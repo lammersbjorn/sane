@@ -1,64 +1,58 @@
 # ⚖️ sane-platform
 
-Platform and path discovery crate for `Sane`.
+Filesystem and platform discovery for `Sane`.
 
-## What It Is
+## In Plain English
 
-`sane-platform` is the crate that tells `Sane` where everything lives on disk.
+This crate tells `Sane` where things live.
 
-It abstracts platform-specific details into a unified path model for the workspace.
+That includes:
 
-## Why It Exists
+- the project root
+- the local `.sane` directory
+- Codex user files
+- backup paths
+- telemetry paths
 
-`Sane` is cross-platform and local-first.
+It is also the place for path normalization so `Sane` behaves like a good citizen on macOS, Linux, and Windows.
 
-That means it needs to consistently find and manage things like:
+## Why This Crate Exists
 
-- project roots
-- `.sane` runtime directories
-- `~/.codex` user files
-- `~/.agents/skills`
-- backup and telemetry directories
+`Sane` is meant to work on macOS, Linux, and Windows.
 
-Scattered path logic makes the system fragile and harder to maintain.
+Users should not have to care where every file belongs.
+The app should know.
 
-## Where It Fits
+Keeping that logic in one place makes the rest of the codebase safer and easier to reason about.
 
-```mermaid
-flowchart LR
-    P["sane-platform"] --> T["sane-tui"]
-    P --> S["sane-state"]
-```
+## What It Owns
 
-This crate gives the rest of the system a shared filesystem map.
+- platform detection
+- project-root discovery
+- local `.sane` layout helpers
+- Codex home path helpers
+- backup and telemetry directory helpers
+- path resolution and normalization
 
-## What Lives Here
-
-- project root discovery
-- host platform detection
-- `.sane` layout helpers
-- Codex user path discovery
-- backup directory helpers
-- telemetry directory helpers
-
-## Real Examples
-
-This crate determines paths such as:
-
-- `.sane/config.local.toml`
-- `.sane/state/current-run.json`
-- `.sane/backups/codex-config/`
-- `~/.codex/config.toml`
-- `~/.codex/hooks.json`
-- `~/.codex/agents/`
-- `~/.agents/skills/`
-
-## What Does Not Belong Here
+## What It Does Not Own
 
 - config semantics
 - TUI actions
-- adaptive-policy logic
-- managed asset templates
+- policy logic
+- generated asset contents
 
-This crate should answer: “where is it?”
-It should not answer: “what does it mean?” or “how should we render it?”
+## Where It Sits
+
+```mermaid
+flowchart LR
+    P["sane-platform"] --> T["sane"]
+    P --> S["sane-state"]
+```
+
+This crate should answer:
+
+> Where is it?
+
+It should not answer:
+
+> What should we do with it?

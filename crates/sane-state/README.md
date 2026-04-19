@@ -1,54 +1,47 @@
 # ⚖️ sane-state
 
-Operational state crate for `Sane`.
+Project-local operational state for `Sane`.
 
-## What It Is
+## In Plain English
 
-`sane-state` defines the thin local records `Sane` maintains for a project so it can inspect, repair, and continue work cleanly.
+`Sane` keeps a small amount of structured local state so it can inspect what happened, recover cleanly, and keep long sessions from turning into guesswork.
 
-This is operational state, not a full persistent runtime environment.
+This crate defines that state.
+Think of it as the black-box recorder for the current project, not a general-purpose database.
 
-## Why It Exists
+## Why This Crate Exists
 
-`Sane` needs persistent local state to stay useful across longer runs:
+`Sane` needs more than a one-shot installer.
 
-- what happened
-- what was touched
-- what the latest summary is
-- what can be resumed or repaired
+It needs enough local state to answer questions like:
 
-That state should be structured, compact, and easy to inspect.
+- what did `Sane` change?
+- what was the latest summary?
+- what events happened recently?
+- what can be repaired or resumed?
 
-## Where It Fits
+The goal is a thin, inspectable layer, not a giant hidden runtime.
+
+## What It Owns
+
+- current run snapshots
+- summaries
+- event records
+- JSON and JSONL read/write helpers
+
+## What It Does Not Own
+
+- user preferences
+- global user state
+- platform discovery
+- Codex config application
+- long-term memory or retrieval systems
+
+## Where It Sits
 
 ```mermaid
 flowchart LR
-    S["sane-state"] --> T["sane-tui"]
+    S["sane-state"] --> T["sane"]
 ```
 
-The TUI and backend flows use this crate to read and write thin local state files.
-
-## What Lives Here
-
-- run snapshots
-- summaries
-- event records
-- append-only log helpers
-- state file read/write helpers
-
-## Real Examples
-
-This crate owns the types behind files such as:
-
-- `current-run.json`
-- `summary.json`
-- `events.jsonl`
-
-## What Does Not Belong Here
-
-- product config
-- path discovery
-- Codex asset installation
-- rich long-term memory systems
-
-If the state stops being thin and operational, it is probably growing in the wrong direction.
+If this crate ever starts feeling like a separate product, it has grown too far.
