@@ -2,274 +2,288 @@
 
 Last updated: 2026-04-19
 
-This plan exists to stop implementation drift. It is intentionally strict. If work does not fit this sequence or violates a locked decision in the decision log, do not do it.
+This plan is intentionally strict.
 
-## Source Of Truth
+It exists to stop three failure modes:
 
-Locked decisions come from:
+- losing already-made decisions
+- mixing research work with implementation work
+- letting backend experiments become product direction by accident
 
+Source of truth:
 - `/Users/bjorn/Code/labs/betteragents/docs/decisions/2026-04-19-sane-decision-log.md`
 
-This plan is downstream from that file. If they conflict, the decision log wins.
+If this plan conflicts with the decision log, the decision log wins.
 
-## Hard Product Constraints
+## Hard Guardrails
 
-- `Sane` is a full QoL framework for Codex
+Never violate these:
+
 - plain-language first
-- no workflow lock-in
-- no required command language
-- no required `AGENTS.md`
+- commands/skills optional, not required
+- must work without `AGENTS.md`
 - no required repo mutation
+- no command-first UX
+- no wrapper-first runtime
 - Rust is the thin installer / configurator / updater / doctor / asset manager
 - Codex-native installation targets are the main product surface
-- local `.sane` state must stay thin and operational
+- `.sane` stays thin and operational
 - proper install TUI from day one
-- TUI is for setup / config / update / export / doctor flows
+- TUI is for setup / config / update / export / doctor
 - TUI is not the daily prompting interface
-- single-agent default
-- subagents only when clearly useful
-- model selection must be dynamic per task and subscription
-- cross-platform: macOS / Linux / Windows
-- telemetry only if opt-in and only for improving Sane
+- cross-platform first
+- pack/plugin-ready architecture, but no public plugin API in `v1`
+- do not lock builtin packs before the capability audit
 
-## Explicit Anti-Goals
+## Plan Shape
 
-Do not do these:
+This plan has two tracks.
 
-- do not turn Sane into a daily wrapper around Codex
-- do not ship command-first UX as the main product surface
-- do not grow `.sane` into a parallel runtime
-- do not add repo-level mutation by default
-- do not add heavy surfaces before the TUI flow is defined
-- do not lock behavior around one model
-- do not let implementation outrun the decision log
+1. Research gates
+2. Build gates
 
-## Current Reality Check
+Research gates answer open questions.
+Build gates implement only already-supported direction.
 
-Current repo truth:
+Do not mix them.
 
-- backend asset-management primitives exist
-- command shell exists
-- user-skill install/uninstall exists
-- optional global `~/.codex/AGENTS.md` overlay exists
-- `doctor` covers `.sane` plus current managed assets
+## Research Gates
 
-Current mismatch against locked decisions:
+These must be handled as research / design work, not assumed in code.
 
-- the user-facing surface is still too command-shaped
-- a proper interactive install TUI is not yet the primary surface
-
-## Execution Rule
-
-From this point:
-
-1. finish only the current plan step
-2. verify it fully
-3. update docs/TODO/READMEs
-4. commit
-5. only then move to the next plan step
-
-No skipping ahead.
-
-## Phase Order
-
-## Phase 0: Re-Baseline
+### R1. Builtin Pack Capability Audit
 
 Goal:
-- align repo planning files with one strict sequence
+- decide what builtin packs belong in `v1`
 
-Deliverables:
-- this plan file
-- TODO updated to point at this plan
-- no new feature work beyond planning until this exists
+Must answer:
+- what packs are core enough for `v1`
+- what each pack owns
+- what each pack installs/exports
+- what should be deferred
+
+Must not assume:
+- final builtin list
+- public plugin API
+
+Outputs:
+- builtin pack shortlist
+- pack ownership matrix
+- defer list
+
+### R2. Model / Subagent Preset Matrix
+
+Goal:
+- decide coordinator / sidecar / verifier default strategy
+
+Must answer:
+- capability classes
+- fallback order by subscription
+- reasoning defaults
+- sidecar eligibility rules
+
+### R3. State / Compaction Design
+
+Goal:
+- decide exact machine-readable state model
+
+Must answer:
+- config format
+- operational state format
+- compaction/handoff format
+- migration strategy
+
+### R4. Codex-Native Surface Map
+
+Goal:
+- decide exact managed surfaces beyond current ones
+
+Must answer:
+- user-level targets
+- global targets
+- repo-level optional exports
+- order of rollout
+
+### R5. Privacy / Telemetry Schema
+
+Goal:
+- define only product-improvement-safe data model
+
+Must answer:
+- what can exist locally
+- what can ever leave machine
+- what must never be collected
+- inspect/reset UX
+
+## Build Gates
+
+Only build these in order.
+
+## B0. Decision Hygiene
+
+Goal:
+- keep source-of-truth docs correct
+
+Done when:
+- decision log up to date
+- strict plan up to date
+- TODO points to them
+
+## B1. Thin Backend Contract
+
+Goal:
+- stabilize the backend operations the TUI will wrap
+
+Allowed:
+- typed operation results
+- typed inventory/status
+- stable backend action list
+- stable touched-path reporting
+
+Not allowed:
+- new UI stack decisions
+- new Codex-native targets beyond already accepted ones
 
 Exit criteria:
-- one clear ordered plan exists in repo
+- backend contract explicit
+- tests cover it
 
-## Phase 1: Stabilize Backend Contract
-
-Goal:
-- freeze the thin backend operations the TUI will call
-
-Allowed work:
-- define the backend action list
-- define operation result format
-- define managed target inventory format
-- define what `install`, `doctor`, `export`, `uninstall`, `config` mean internally
-
-Must not do:
-- add more Codex-native targets yet
-- add more UI experimentation yet
-
-Required backend contract:
-
-- `install_runtime`
-- `show_config`
-- `doctor`
-- `export_all`
-- `export_user_skills`
-- `export_global_agents`
-- `uninstall_all`
-- `uninstall_user_skills`
-- `uninstall_global_agents`
-- asset inventory/status read
-
-Exit criteria:
-- backend actions are explicit and stable enough for a TUI to wrap
-- tests cover them
-
-## Phase 2: Proper TUI Foundation
+## B2. Proper TUI Foundation
 
 Goal:
-- make default launch open an actual interactive installer/config TUI
+- make no-args launch open the actual installer/config TUI
 
 Rules:
-- no-args launch must open the TUI
-- command verbs may remain only as backend/dev escape hatch
-- docs must present the TUI first, not commands first
+- TUI-first user path
+- current command verbs may remain only as backend/dev escape hatch
+- docs present TUI first
 
-Minimum TUI surface:
-
+Minimum TUI:
 - home screen
+- status summary
 - action list
-- current status panel
 - output/result panel
-- keyboard navigation
 - quit path
 
-Required first actions in TUI:
-
+First TUI actions:
 - install local runtime
-- run doctor
-- export all
-- uninstall all
+- doctor
+- export all current managed assets
+- uninstall all current managed assets
 - inspect config
 
-Nice-to-have later in same phase:
+Not allowed:
+- pack browser yet
+- routing engine UI yet
 
-- dedicated assets screen
-- dedicated config screen
-
-Exit criteria:
-- default user path is interactive
-- command shell is no longer the primary documented interface
-
-## Phase 3: Asset Inventory + Safer Asset Management
+## B3. Asset Inventory / Auditability
 
 Goal:
-- make managed assets visible and auditable
+- make managed assets visible before more targets are added
 
 Deliverables:
+- installed/missing/invalid view
+- repair hints
+- touched paths
+- clear distinction between local operational state and Codex-native managed assets
 
-- inventory/status view in TUI
-- per-target installed/missing/broken state
-- repair suggestions
-- explicit display of touched paths
+Gate:
+- no more managed targets until this exists
 
-Only after this phase may new managed targets be added.
-
-Exit criteria:
-- user can see what Sane manages before and after applying actions
-
-## Phase 4: Next Codex-Native Targets
+## B4. Next Managed Targets
 
 Goal:
-- expand beyond current two managed surfaces in a controlled order
+- expand Codex-native targets in strict order
 
-Strict order:
-
+Order:
 1. hooks
 2. optional custom agents
 3. optional further overlays
-4. repo-level exports only later
+4. repo-level exports later
 
 Rules:
 - additive only
 - removable
-- preserve existing user content
-- tests for merge/preserve/remove required
+- preserve unrelated user content
+- merge/preserve/remove tests required
 
-Exit criteria:
-- next target is implemented with add/remove/preserve coverage
-
-## Phase 5: Model/Subagent Config Surface
+## B5. Model/Subagent Config Surface
 
 Goal:
-- expose model-role defaults and capability constraints in config/TUI
+- expose model-role defaults and capability constraints
 
-Deliverables:
+Allowed:
+- config schema
+- TUI config inspection/editing
+- fallback rules
 
-- explicit config schema for coordinator / sidecar / verifier
-- subscription/capability-aware constraints
-- TUI config editing/view flow
+Not allowed:
+- full adaptive routing engine yet
 
-Must not do:
-- implement full adaptive routing engine yet
-
-Exit criteria:
-- TUI can inspect and edit model-role defaults safely
-
-## Phase 6: Privacy / Telemetry / Issue Relay Foundation
+## B6. Privacy / Telemetry Foundation
 
 Goal:
-- implement only the safe local-first config and transparency layer
+- local-first privacy model before any remote behavior
 
-Deliverables:
+Allowed:
+- opt-in config
+- transparency view
+- reset/delete controls
 
-- opt-in telemetry config model
-- transparency UI for what would be stored/sent
-- issue relay draft policy structures
+Not allowed:
+- remote telemetry by default
+- any data outside product-improvement scope
 
-Must not do:
-- send remote telemetry by default
-- collect prompts/code/content
-
-Exit criteria:
-- privacy model exists before any remote behavior exists
-
-## Phase 7: Adaptive Orchestration Layer
+## B7. Adaptive Orchestration Engine
 
 Goal:
-- add the actual adaptive policy engine later, after install/config surfaces are stable
+- implement actual routing / obligation policy later
 
 Why late:
-- this is core product logic, but not the first installer/TUI milestone
-- building it too early causes drift and fake completeness
+- core product logic
+- easy place to drift
+- must sit on stable install/config/state/model foundations first
 
-Deliverables:
+## Current Known Repo Mismatch
 
-- task-shape inputs
-- obligation outputs
-- model/subagent selection policy
-- verification authority rules
+Current repo already has:
+- backend asset management
+- command shell
+- current managed surfaces
+- doctor coverage
 
-## Working Rules For Agents
+Current mismatch with locked product direction:
+- user-facing surface still too command-shaped
+- proper install TUI not yet primary path
+- pack/plugin-ready architecture not yet reflected clearly enough in plan/docs
+- builtin pack work not clearly separated into research gate
 
-- read the decision log first
-- read this plan second
-- if a task is not in the current phase, do not start it
-- if a task introduces a new product decision, stop and log the decision first
-- update README plus any touched crate README when responsibilities change
-- keep public README short
-- keep planning detail in docs
+## Working Rule For Any Agent
 
-## Immediate Next Step
+Before touching code:
 
-Next coding step is only:
+1. read decision log
+2. read this plan
+3. identify current gate
+4. if task belongs to later gate, do not start it
 
-- define and stabilize typed backend result/inventory structures
-- verify current backend operations against that contract
-- keep the UI surface unchanged until Phase 1 exit criteria are met
+Before touching docs:
 
-Not next:
+1. keep `Locked`, `Recommended`, `Open` separate
+2. do not silently convert research questions into implementation facts
 
-- adding more targets
-- shipping a new TUI dependency stack
-- experimenting with UI flows before the backend contract is stable
-- Phase 1: stabilize backend contract and write it down clearly
+## Immediate Next Allowed Work
 
-Not next:
+Allowed now:
+- finish `B1` only
+- explicit inventory/status read
+- touched-path reporting cleanup
+- backend contract docs/tests
 
-- adding more targets
-- shipping a new TUI dependency stack
-- inventing new workflow behavior
+Not allowed now:
+- rewriting the product around command UX
+- adding new managed targets
+- inventing final builtin packs
+- public plugin API work
+- routing-engine work
+- large TUI experimentation before `B1` exit criteria are complete

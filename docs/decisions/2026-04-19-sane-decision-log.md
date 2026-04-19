@@ -2,20 +2,24 @@
 
 Last updated: 2026-04-19
 
-This file is the durable source of truth for decisions already made in the April 19, 2026 planning session. It exists specifically to stop drift between chat memory and the actual agreed philosophy.
+This file is the durable source of truth for decisions already made in the April 19, 2026 session.
 
-## Source
-
-Primary source session:
+Primary source:
 - `/Users/bjorn/.codex/sessions/2026/04/19/rollout-2026-04-19T14-42-32-019da5c3-973f-7a62-9339-823069e71ac6.jsonl`
 
-## Locked Decisions
+## How To Use This File
+
+- `Locked`: already decided. Do not reopen in plans unless user changes them.
+- `Recommended`: strong direction already reached, but still implementation-detail flexible.
+- `Open`: not decided yet. Research or design still needed.
+
+## Locked
 
 ### Product
 
 - Name: `Sane`
-- Audience: general Codex users, not just one personal setup
-- Positioning: full QoL framework/pack for Codex
+- Audience: for anyone, not just one personal setup
+- Positioning: full QoL framework / pack for Codex
 - Open source at `v1`
 - License: `MIT OR Apache-2.0`
 
@@ -23,18 +27,19 @@ Primary source session:
 
 - Plain-language first
 - No workflow lock-in
-- Commands and skills remain callable, but optional
+- Commands and skills should still be callable, but optional
 - Framework should auto-determine when to use skills, hooks, process, and subagents
 - Speed and token optimization are first-class concerns
 - Avoid useless feature bloat
 - Built for long adaptive sessions, including multi-hour one-shot runs
-- Behavior should adapt over the session instead of forcing one fixed mode
+- Behavior should adapt over time instead of forcing one fixed mode
 
 ### Codex / Runtime
 
 - Codex-native
 - Must work without `AGENTS.md`
-- `AGENTS.md` is optional export only, not a dependency
+- Must work everywhere, not only in repos prepared for it
+- `AGENTS.md` is optional enhancement / export path only
 - No required repo mutation
 - No daily wrapper required for prompting
 - No command-first UX
@@ -85,6 +90,16 @@ Primary source session:
 - Rust for implementation
 - Architecture should be ready for plugin / pack expansion later
 - `v1` does not need a public plugin API yet
+- `v1` should be pack-system ready, not pack-system complete
+- Built-in packs in `v1`
+- No third-party extension contract in `v1`
+- No compatibility promises for a plugin API in `v1`
+
+### Built-in Packs
+
+- Do not lock final `v1` builtin packs yet
+- Builtin pack shortlist needs dedicated research
+- That research should be a `v1 capability audit`, not vibes
 
 ### Self-Hosting / Self-Improvement
 
@@ -105,17 +120,24 @@ Primary source session:
 - No telemetry repurposing
 - No creepy analytics, prompt harvesting, or product-growth misuse
 
-## Strong Recommendations Already Reached
+## Recommended
 
-These are not final implementation details, but they are already the preferred direction:
+These are strong direction, but not frozen down to exact implementation shape.
 
 - Thin Rust control plane first, Codex-native asset management as the core product
-- Adaptive policy engine over rigid modes
+- Adaptive policy engine over rigid visible modes
 - No numeric scoring engine as the core UX
 - Structured machine-readable state plus compact human summaries
 - Self-hosting should be milestone-gated, not vibe-gated
+- Internal architecture should treat builtin packs as if they were plugins:
+  - manifest/config boundary
+  - isolated assets/templates
+  - clear capabilities
+  - explicit install/export hooks
 
-## Explicitly Not Yet Decided
+## Open
+
+These are still undecided and should stay out of `Locked`.
 
 - Exact local runtime directory layout and names
 - Exact state file formats and compaction strategy
@@ -131,4 +153,9 @@ These are not final implementation details, but they are already the preferred d
 
 ## Planning Rule
 
-Future spec and plan docs in this repo should treat this file as authoritative unless a later decision log explicitly supersedes it.
+Future plan/spec docs must:
+
+- treat `Locked` as authoritative
+- keep `Recommended` separate from `Locked`
+- keep `Open` separate from both
+- not silently promote `Open` items into implementation facts

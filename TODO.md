@@ -48,6 +48,10 @@ Implemented:
 - first optional managed global Codex overlay block (`~/.codex/AGENTS.md`)
 - `export all` / `uninstall all` for current managed targets
 
+Current gate:
+
+- `B1` thin backend contract
+
 Current command examples:
 
 ```bash
@@ -71,38 +75,39 @@ cargo test
 - [x] Expand `LocalConfig` into a real runtime config schema
 - [x] Add model preset structures for coordinator, sidecar, and verifier roles
 - [x] Add typed backend operation / inventory structures for the future TUI to wrap
-- [ ] Add first-class subagent/model selection config that respects subscription/capability constraints
 - [x] Improve `doctor` with real checks and actionable repair suggestions
 - [x] Replace placeholder `export` with the first real Codex-native asset management boundary
 - [x] Add symmetric uninstall flow for managed user-skill assets
+- [ ] Finish `B1`: explicit inventory/status read on top of current typed backend layer
+- [ ] Finish `B1`: tighten touched-path reporting and backend contract docs/tests
 
-## Next
+## Research Gates
 
-- [ ] Add state/event log design using compact machine-readable files
-- [ ] Add context compaction / handoff primitives
-- [ ] Add next Codex-native asset targets and layout (`hooks`, optional custom agents, future repo overlays)
-- [ ] Add better install flow UX in the TUI
-- [ ] Add codex-native asset status listing / inventory view
-- [ ] Add update and rollback flow design
-- [ ] Add explicit privacy/telemetry config structures
-- [ ] Add issue-relay draft flow design
+- [ ] `R1` builtin pack capability audit
+- [ ] `R2` model / subagent preset matrix
+- [ ] `R3` state / compaction design
+- [ ] `R4` Codex-native surface map
+- [ ] `R5` privacy / telemetry schema
+
+## Build Gates
+
+- [ ] `B2` proper install TUI foundation
+- [ ] `B3` asset inventory / auditability surface
+- [ ] `B4` next managed targets
+- [ ] `B5` model/subagent config surface
+- [ ] `B6` privacy / telemetry foundation
+- [ ] `B7` adaptive orchestration engine
 
 ## Later
 
-- [ ] Optional Codex-native export surfaces
-- [ ] Adaptive routing policy engine
-- [ ] Built-in pack shortlist and implementation
 - [ ] Self-hosting shadow mode
 - [ ] Eval harness for routing, compaction, and self-improvement
 - [ ] Windows/macOS/Linux path and install hardening passes
 
 ## Open Research / Decisions
 
-- [ ] Exact model preset matrix
-- [ ] Exact TUI library direction if current shell grows into a richer UI
+- [ ] Exact TUI library choice
 - [ ] Exact `v1` built-in packs
-- [ ] Exact Codex-native asset surfaces to manage at user level vs repo level
-- [ ] Exact telemetry schema
 - [ ] Exact self-hosting milestone checklist
 
 ## Agent Working Rules
@@ -125,7 +130,8 @@ See:
 
 Current allowed next slice:
 
-1. stabilize backend contract for TUI wrapping
-2. verify it
-3. document it
-4. only then move to the proper interactive TUI phase
+1. finish `B1`
+2. explicit inventory/status read
+3. verify it
+4. document it
+5. only then move to `B2`
