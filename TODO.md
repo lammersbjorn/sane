@@ -62,6 +62,7 @@ Implemented:
 - status/doctor now catch drift when exported guidance assets no longer match enabled packs
 - `export all` / `uninstall all` for current managed targets
 - pure adaptive policy crate with typed obligations and tests
+- internal backend policy preview for canonical adaptive scenarios
 
 Current gate:
 

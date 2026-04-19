@@ -12,6 +12,7 @@ toml.workspace = true
 sane-core = { path = "../sane-core" }
 sane-config = { path = "../sane-config" }
 sane-platform = { path = "../sane-platform" }
+sane-policy = { path = "../sane-policy" }
 sane-state = { path = "../sane-state" }
 
 [dev-dependencies]

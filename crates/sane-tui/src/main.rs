@@ -25,6 +25,9 @@ use sane_core::{
     sane_reviewer_agent, sane_router_skill,
 };
 use sane_platform::{CodexPaths, ProjectPaths, detect_platform};
+use sane_policy::{
+    Intent, Level, Obligation, Parallelism, PolicyInput, RunState, TaskShape, evaluate,
+};
 use sane_state::{EventRecord, RunSnapshot, RunSummary};
 use serde_json::{Map, Value, json};
 use toml::Value as TomlValue;
@@ -107,6 +110,9 @@ fn run_with_home(args: &[&str], cwd: &Path, home: &Path) -> Result<String, Strin
     match command {
         Command::Summary => Ok(render_summary()),
         Command::HookSessionStart => Ok(render_session_start_hook()),
+        Command::DebugPolicyPreview => execute_backend_command(command, &paths, &codex_paths)
+            .map(|result| result.render_text()),
+        Command::Debug => Ok("debug: available targets: policy-preview".to_string()),
         Command::Install
         | Command::Config
         | Command::CodexConfig
@@ -158,6 +164,8 @@ enum Command {
     Config,
     CodexConfig,
     BackupCodexConfig,
+    Debug,
+    DebugPolicyPreview,
     Preview,
     PreviewCodexProfile,
     PreviewIntegrationsProfile,
@@ -193,6 +201,8 @@ impl Command {
             (Some("config"), _) => Ok(Self::Config),
             (Some("codex-config"), _) => Ok(Self::CodexConfig),
             (Some("backup"), Some("codex-config")) => Ok(Self::BackupCodexConfig),
+            (Some("debug"), Some("policy-preview")) => Ok(Self::DebugPolicyPreview),
+            (Some("debug"), None) => Ok(Self::Debug),
             (Some("preview"), Some("codex-profile")) => Ok(Self::PreviewCodexProfile),
             (Some("preview"), Some("integrations-profile")) => Ok(Self::PreviewIntegrationsProfile),
             (Some("preview"), Some("cloudflare-profile")) => Ok(Self::PreviewCloudflareProfile),
@@ -233,6 +243,7 @@ fn execute_backend_command(
         Command::Config => show_config(paths),
         Command::CodexConfig => show_codex_config(codex_paths),
         Command::BackupCodexConfig => backup_codex_config(paths, codex_paths),
+        Command::DebugPolicyPreview => preview_policy(),
         Command::PreviewCodexProfile => preview_codex_profile(codex_paths),
         Command::PreviewIntegrationsProfile => preview_integrations_profile(codex_paths),
         Command::PreviewCloudflareProfile => preview_cloudflare_profile(codex_paths),
@@ -254,6 +265,7 @@ fn execute_backend_command(
         Command::UninstallHooks => uninstall_hooks(codex_paths),
         Command::UninstallCustomAgents => uninstall_custom_agents(codex_paths),
         Command::Summary
+        | Command::Debug
         | Command::Preview
         | Command::Apply
         | Command::Restore
@@ -1104,7 +1116,7 @@ fn inventory_status_label(item: &InventoryItem) -> &'static str {
 
 fn render_summary() -> String {
     format!(
-        "{NAME}\nplatform: {:?}\ncommands: install, config, codex-config, preview, backup, apply, restore, status, export, uninstall, doctor, hook",
+        "{NAME}\nplatform: {:?}\ncommands: install, config, codex-config, preview, backup, apply, restore, status, export, uninstall, doctor, hook, debug",
         detect_platform()
     )
 }
@@ -1142,6 +1154,7 @@ fn operation_kind_label(kind: OperationKind) -> &'static str {
         OperationKind::InstallRuntime => "install_runtime",
         OperationKind::ShowConfig => "show_config",
         OperationKind::ShowCodexConfig => "show_codex_config",
+        OperationKind::PreviewPolicy => "preview_policy",
         OperationKind::BackupCodexConfig => "backup_codex_config",
         OperationKind::PreviewCodexProfile => "preview_codex_profile",
         OperationKind::PreviewIntegrationsProfile => "preview_integrations_profile",
@@ -1163,6 +1176,105 @@ fn operation_kind_label(kind: OperationKind) -> &'static str {
         OperationKind::UninstallHooks => "uninstall_hooks",
         OperationKind::UninstallCustomAgents => "uninstall_custom_agents",
         OperationKind::UninstallAll => "uninstall_all",
+    }
+}
+
+fn preview_policy() -> Result<OperationResult, String> {
+    let scenarios = [
+        (
+            "simple-question",
+            PolicyInput {
+                intent: Intent::Question,
+                task_shape: TaskShape::Trivial,
+                risk: Level::Low,
+                ambiguity: Level::Low,
+                parallelism: Parallelism::None,
+                context_pressure: Level::Low,
+                run_state: RunState::Exploring,
+            },
+        ),
+        (
+            "local-edit",
+            PolicyInput {
+                intent: Intent::Edit,
+                task_shape: TaskShape::Local,
+                risk: Level::Low,
+                ambiguity: Level::Low,
+                parallelism: Parallelism::None,
+                context_pressure: Level::Low,
+                run_state: RunState::Executing,
+            },
+        ),
+        (
+            "unknown-bug",
+            PolicyInput {
+                intent: Intent::Debug,
+                task_shape: TaskShape::Local,
+                risk: Level::Medium,
+                ambiguity: Level::Medium,
+                parallelism: Parallelism::None,
+                context_pressure: Level::Low,
+                run_state: RunState::Executing,
+            },
+        ),
+        (
+            "multi-file-feature",
+            PolicyInput {
+                intent: Intent::Edit,
+                task_shape: TaskShape::Architectural,
+                risk: Level::High,
+                ambiguity: Level::Medium,
+                parallelism: Parallelism::Clear,
+                context_pressure: Level::Medium,
+                run_state: RunState::Executing,
+            },
+        ),
+        (
+            "blocked-long-run",
+            PolicyInput {
+                intent: Intent::Orchestrate,
+                task_shape: TaskShape::LongRunning,
+                risk: Level::Medium,
+                ambiguity: Level::High,
+                parallelism: Parallelism::Possible,
+                context_pressure: Level::High,
+                run_state: RunState::Blocked,
+            },
+        ),
+    ];
+
+    let details = scenarios
+        .into_iter()
+        .map(|(label, input)| {
+            let obligations = evaluate(input)
+                .obligations
+                .into_iter()
+                .map(obligation_label)
+                .collect::<Vec<_>>();
+            format!("{label}: {}", obligations.join(", "))
+        })
+        .collect::<Vec<_>>();
+
+    Ok(OperationResult {
+        kind: OperationKind::PreviewPolicy,
+        summary: "policy preview: rendered adaptive obligation scenarios".to_string(),
+        details,
+        paths_touched: Vec::new(),
+        inventory: Vec::new(),
+    })
+}
+
+fn obligation_label(obligation: Obligation) -> &'static str {
+    match obligation {
+        Obligation::DirectAnswer => "direct_answer",
+        Obligation::VerifyLight => "verify_light",
+        Obligation::Planning => "planning",
+        Obligation::DebugRigor => "debug_rigor",
+        Obligation::Tdd => "tdd",
+        Obligation::Review => "review",
+        Obligation::SubagentEligible => "subagent_eligible",
+        Obligation::ContextCompaction => "context_compaction",
+        Obligation::SelfRepair => "self_repair",
     }
 }
 
@@ -3621,6 +3733,23 @@ mod tests {
         assert!(output.contains("uninstall"));
         assert!(output.contains("doctor"));
         assert!(output.contains("hook"));
+        assert!(output.contains("debug"));
+    }
+
+    #[test]
+    fn debug_policy_preview_renders_adaptive_scenarios() {
+        let dir = tempdir().unwrap();
+        let home = tempdir().unwrap();
+
+        let output = run_with_home(&["debug", "policy-preview"], dir.path(), home.path()).unwrap();
+
+        assert!(output.contains("policy preview: rendered adaptive obligation scenarios"));
+        assert!(output.contains("simple-question: direct_answer"));
+        assert!(output.contains("unknown-bug: debug_rigor, verify_light"));
+        assert!(output.contains("multi-file-feature: planning, tdd, review, subagent_eligible"));
+        assert!(
+            output.contains("blocked-long-run: planning, review, context_compaction, self_repair")
+        );
     }
 
     #[test]

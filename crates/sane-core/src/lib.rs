@@ -22,6 +22,7 @@ pub enum OperationKind {
     InstallRuntime,
     ShowConfig,
     ShowCodexConfig,
+    PreviewPolicy,
     BackupCodexConfig,
     PreviewCodexProfile,
     PreviewIntegrationsProfile,

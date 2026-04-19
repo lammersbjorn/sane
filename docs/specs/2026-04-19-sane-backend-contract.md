@@ -25,11 +25,15 @@ This contract covers only:
 
 It does not yet cover:
 
-- adaptive routing
+- adaptive routing as a live user-facing engine
 - subagent orchestration
 - long-session compaction
 - telemetry sending
 - issue relay
+
+Current internal exception:
+
+- backend/dev policy inspection is allowed for adaptive-engine groundwork as long as it stays secondary to the TUI and does not become command-first UX
 
 ## Current Managed Targets
 
@@ -123,6 +127,11 @@ These are the backend actions the TUI is allowed to call in the current phase.
   - read structured inventory for all current managed targets
   - keep touched paths explicit for auditability
   - may remain a backend/dev escape hatch under the later TUI
+
+- `preview_policy`
+  - internal/backend inspection only for now
+  - render canonical adaptive-policy scenarios into typed output
+  - exist to verify obligation rules without pretending live orchestration is complete
 
 ### Doctor / Status
 

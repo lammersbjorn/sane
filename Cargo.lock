@@ -1067,6 +1067,7 @@ dependencies = [
  "sane-config",
  "sane-core",
  "sane-platform",
+ "sane-policy",
  "sane-state",
  "serde_json",
  "tempfile",
