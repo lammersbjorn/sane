@@ -111,6 +111,7 @@ fn run_with_home(args: &[&str], cwd: &Path, home: &Path) -> Result<String, Strin
         | Command::CodexConfig
         | Command::BackupCodexConfig
         | Command::PreviewCodexProfile
+        | Command::PreviewIntegrationsProfile
         | Command::ApplyCodexProfile
         | Command::RestoreCodexConfig
         | Command::Status
@@ -130,7 +131,9 @@ fn run_with_home(args: &[&str], cwd: &Path, home: &Path) -> Result<String, Strin
             "export: available targets: all, user-skills, global-agents, hooks, custom-agents"
                 .to_string(),
         ),
-        Command::Preview => Ok("preview: available targets: codex-profile".to_string()),
+        Command::Preview => {
+            Ok("preview: available targets: codex-profile, integrations-profile".to_string())
+        }
         Command::Apply => Ok("apply: available targets: codex-profile".to_string()),
         Command::Restore => Ok("restore: available targets: codex-config".to_string()),
         Command::Uninstall => Ok(
@@ -149,6 +152,7 @@ enum Command {
     BackupCodexConfig,
     Preview,
     PreviewCodexProfile,
+    PreviewIntegrationsProfile,
     Apply,
     ApplyCodexProfile,
     Restore,
@@ -179,6 +183,7 @@ impl Command {
             (Some("codex-config"), _) => Ok(Self::CodexConfig),
             (Some("backup"), Some("codex-config")) => Ok(Self::BackupCodexConfig),
             (Some("preview"), Some("codex-profile")) => Ok(Self::PreviewCodexProfile),
+            (Some("preview"), Some("integrations-profile")) => Ok(Self::PreviewIntegrationsProfile),
             (Some("preview"), None) => Ok(Self::Preview),
             (Some("apply"), Some("codex-profile")) => Ok(Self::ApplyCodexProfile),
             (Some("apply"), None) => Ok(Self::Apply),
@@ -215,6 +220,7 @@ fn execute_backend_command(
         Command::CodexConfig => show_codex_config(codex_paths),
         Command::BackupCodexConfig => backup_codex_config(paths, codex_paths),
         Command::PreviewCodexProfile => preview_codex_profile(codex_paths),
+        Command::PreviewIntegrationsProfile => preview_integrations_profile(codex_paths),
         Command::ApplyCodexProfile => apply_codex_profile(paths, codex_paths),
         Command::RestoreCodexConfig => restore_codex_config(paths, codex_paths),
         Command::Status => inventory_status(paths, codex_paths),
@@ -433,6 +439,10 @@ impl TuiApp {
                 TuiAction::backend("Inspect config", Command::Config),
                 TuiAction::backend("Inspect Codex config", Command::CodexConfig),
                 TuiAction::backend("Preview Codex profile", Command::PreviewCodexProfile),
+                TuiAction::backend(
+                    "Preview integrations profile",
+                    Command::PreviewIntegrationsProfile,
+                ),
                 TuiAction::backend("Backup Codex config", Command::BackupCodexConfig),
                 TuiAction::backend("Apply Codex profile", Command::ApplyCodexProfile),
                 TuiAction::backend("Restore Codex config", Command::RestoreCodexConfig),
@@ -919,6 +929,7 @@ fn operation_kind_label(kind: OperationKind) -> &'static str {
         OperationKind::ShowCodexConfig => "show_codex_config",
         OperationKind::BackupCodexConfig => "backup_codex_config",
         OperationKind::PreviewCodexProfile => "preview_codex_profile",
+        OperationKind::PreviewIntegrationsProfile => "preview_integrations_profile",
         OperationKind::ApplyCodexProfile => "apply_codex_profile",
         OperationKind::RestoreCodexConfig => "restore_codex_config",
         OperationKind::ResetTelemetryData => "reset_telemetry_data",
@@ -1229,6 +1240,32 @@ fn preview_codex_profile(codex_paths: &CodexPaths) -> Result<OperationResult, St
     Ok(OperationResult {
         kind: OperationKind::PreviewCodexProfile,
         summary: format!("codex-profile preview: {change_count} recommended change(s)"),
+        details,
+        paths_touched: vec![codex_paths.config_toml.display().to_string()],
+        inventory: vec![inventory],
+    })
+}
+
+fn preview_integrations_profile(codex_paths: &CodexPaths) -> Result<OperationResult, String> {
+    let inventory = inspect_codex_config_inventory(codex_paths)?;
+    let details = match inventory.status {
+        InventoryStatus::Missing => vec![
+            "context7: missing -> recommended".to_string(),
+            "playwright: missing -> recommended".to_string(),
+            "opensrc: optional, not in default recommended profile".to_string(),
+        ],
+        InventoryStatus::Invalid => vec![
+            "cannot preview integrations profile until ~/.codex/config.toml parses cleanly"
+                .to_string(),
+            "repair current config first".to_string(),
+        ],
+        _ => integration_profile_preview_details(&read_codex_config(&codex_paths.config_toml)?),
+    };
+    let change_count = details.iter().filter(|line| line.contains("->")).count();
+
+    Ok(OperationResult {
+        kind: OperationKind::PreviewIntegrationsProfile,
+        summary: format!("integrations-profile preview: {change_count} recommended change(s)"),
         details,
         paths_touched: vec![codex_paths.config_toml.display().to_string()],
         inventory: vec![inventory],
@@ -2455,6 +2492,38 @@ fn codex_profile_preview_details(config: &TomlValue) -> Vec<String> {
     details
 }
 
+fn integration_profile_preview_details(config: &TomlValue) -> Vec<String> {
+    let mcp_servers = config.get("mcp_servers").and_then(TomlValue::as_table);
+    let has_context7 = mcp_servers
+        .map(|table| table.contains_key("context7"))
+        .unwrap_or(false);
+    let has_playwright = mcp_servers
+        .map(|table| table.contains_key("playwright"))
+        .unwrap_or(false);
+    let has_opensrc = mcp_servers
+        .map(|table| table.contains_key("opensrc"))
+        .unwrap_or(false);
+
+    let mut details = Vec::new();
+    if has_context7 {
+        details.push("context7: keep installed".to_string());
+    } else {
+        details.push("context7: missing -> recommended".to_string());
+    }
+    if has_playwright {
+        details.push("playwright: keep installed".to_string());
+    } else {
+        details.push("playwright: missing -> recommended".to_string());
+    }
+    if has_opensrc {
+        details
+            .push("opensrc: installed but stays outside default recommended profile".to_string());
+    } else {
+        details.push("opensrc: optional, not in default recommended profile".to_string());
+    }
+    details
+}
+
 fn push_profile_change(details: &mut Vec<String>, label: &str, current: &str, recommended: &str) {
     if current == recommended {
         details.push(format!("{label}: keep {recommended}"));
@@ -2982,6 +3051,7 @@ mod tests {
                 "Inspect config",
                 "Inspect Codex config",
                 "Preview Codex profile",
+                "Preview integrations profile",
                 "Backup Codex config",
                 "Apply Codex profile",
                 "Restore Codex config",
@@ -3202,6 +3272,37 @@ codex_hooks = false
         assert!(output.contains("reasoning: medium -> high"));
         assert!(output.contains("codex hooks: disabled -> enabled"));
         assert!(output.contains("integrations stay outside bare core profile"));
+    }
+
+    #[test]
+    fn preview_integrations_profile_reports_recommended_integrations_only() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        let codex_dir = home.path().join(".codex");
+        std::fs::create_dir_all(&codex_dir).unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        std::fs::write(
+            codex_dir.join("config.toml"),
+            r#"[mcp_servers.opensrc]
+command = "bunx"
+args = ["opensrc-mcp"]
+"#,
+        )
+        .unwrap();
+
+        let output = run_with_home(
+            &["preview", "integrations-profile"],
+            project.path(),
+            home.path(),
+        )
+        .unwrap();
+
+        assert!(output.contains("integrations-profile preview: 2 recommended change(s)"));
+        assert!(output.contains("context7: missing -> recommended"));
+        assert!(output.contains("playwright: missing -> recommended"));
+        assert!(
+            output.contains("opensrc: installed but stays outside default recommended profile")
+        );
     }
 
     #[test]

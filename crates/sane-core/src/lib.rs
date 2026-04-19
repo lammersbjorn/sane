@@ -12,6 +12,7 @@ pub enum OperationKind {
     ShowCodexConfig,
     BackupCodexConfig,
     PreviewCodexProfile,
+    PreviewIntegrationsProfile,
     ApplyCodexProfile,
     RestoreCodexConfig,
     ResetTelemetryData,

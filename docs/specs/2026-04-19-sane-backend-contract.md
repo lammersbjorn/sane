@@ -75,6 +75,13 @@ These are the backend actions the TUI is allowed to call in the current phase.
   - keep recommendations narrow: core model, reasoning, and hook support only
   - keep integrations out of the bare core profile preview
 
+- `preview_integrations_profile`
+  - compute read-only recommended integrations changes separately from the core profile
+  - current recommended set:
+    - `context7`
+    - `playwright`
+  - do not treat `opensrc` as default recommended profile
+
 - `apply_codex_profile`
   - backup current `~/.codex/config.toml` first when it exists
   - write only:

@@ -52,6 +52,7 @@ Implemented:
 - opt-in local backup flow for `~/.codex/config.toml`
 - read-only preview of recommended core Codex profile changes
 - explicit opt-in apply / restore flow for narrow core Codex profile
+- read-only preview for separate recommended integrations profile
 - `export all` / `uninstall all` for current managed targets
 
 Current gate:
