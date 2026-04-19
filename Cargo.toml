@@ -4,6 +4,7 @@ members = [
   "crates/sane-config",
   "crates/sane-state",
   "crates/sane-platform",
+  "crates/sane-policy",
   "crates/sane-tui",
 ]
 resolver = "2"

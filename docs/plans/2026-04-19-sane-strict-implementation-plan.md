@@ -259,6 +259,42 @@ Why late:
 - easy place to drift
 - must sit on stable install/config/state/model foundations first
 
+Current accepted shape:
+- start with a pure typed policy engine
+- keep it internal first
+- do not turn it into visible user-facing modes
+- do not force command usage to access it
+
+First allowed work:
+- typed policy inputs
+- typed obligation outputs
+- pure evaluation rules
+- tests for the locked philosophy
+- backend/internal inspection only
+
+Not allowed yet:
+- pretend policy is complete
+- wire daily prompting through a command ritual
+- claim autonomous end-to-end execution before verification/state foundations are ready
+
+## B8. Later End-To-End Outcome Runner
+
+Goal:
+- support a later idea-to-done flow that can keep going until the requested result is reached
+
+Rules:
+- plain-language first
+- may ask only targeted questions when needed
+- may do research, planning, implementation, verification, and review in one long run
+- should persist toward the requested outcome instead of stopping at partial progress unless blocked
+- optional shortcut command/entrypoint may exist later, but must remain secondary to plain-language invocation
+
+Prerequisites:
+- `B7` adaptive policy stable enough
+- compaction/handoff state proven
+- verification/eval harness in place
+- bounded self-repair and issue-relay policy in place
+
 ## Current Known Repo Mismatch
 
 Current repo already has:

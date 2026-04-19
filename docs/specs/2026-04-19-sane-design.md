@@ -152,6 +152,26 @@ The state model should separate stable policy, thin operational state, and human
 - respect subscription / capability availability
 - keep one central verifier / coordinator
 
+## Later End-To-End Flow
+
+Later `Sane` should support an end-to-end idea-to-done flow.
+
+Design intent:
+
+- user can start from plain language
+- `Sane` may ask only the targeted questions needed to reduce ambiguity
+- `Sane` may do research, planning, implementation, verification, and review across a long run
+- `Sane` should keep going until the requested result is actually reached, not stop at a partial plan unless blocked
+- this is not a rigid visible mode and should not require a command to exist
+- a shortcut entrypoint may exist later, but plain-language invocation remains the primary UX
+
+This capability depends on:
+
+- stable adaptive policy
+- stable compaction/handoff state
+- stable verification/eval discipline
+- bounded self-repair and issue relay behavior
+
 ## Model Strategy
 
 `Sane` should not hardcode a single model policy. Instead it should maintain a model-selection layer that can map work types to:

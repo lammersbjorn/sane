@@ -60,6 +60,9 @@ Primary source:
 - Subagents only when clearly useful
 - One central verifier / reviewer authority
 - No agent democracy or chatter loops
+- Later state should include an end-to-end outcome runner that can take an idea, ask targeted follow-up questions, do research, verify itself, and keep going until the requested result is reached
+- That later end-to-end flow should remain plain-language first
+- A shortcut command may exist later, but the feature must not depend on command ritual
 
 ### Model Policy
 
@@ -147,6 +150,7 @@ These are still undecided and should stay out of `Locked`.
 - Exact `v1` built-in packs
 - Exact export surfaces beyond optional `AGENTS.md`
 - Exact model preset matrix and routing rules
+- Final product name for the later end-to-end outcome-runner flow
 - Exact self-hosting milestone checklist
 - Exact telemetry schema
 - Exact GitHub issue relay policy levels

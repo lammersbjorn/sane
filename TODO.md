@@ -61,10 +61,12 @@ Implemented:
 - exported `sane-router` skill and global AGENTS overlay now reflect enabled guidance packs
 - status/doctor now catch drift when exported guidance assets no longer match enabled packs
 - `export all` / `uninstall all` for current managed targets
+- pure adaptive policy crate with typed obligations and tests
 
 Current gate:
 
-- `B4` safe Codex settings groundwork only
+- `B4` managed Codex surfaces remain additive/reversible only
+- `B7` may proceed only as internal adaptive policy groundwork, not user-facing workflow ritual
 
 Current command examples:
 
@@ -117,6 +119,12 @@ cargo test
 
 - [ ] Self-hosting shadow mode
 - [ ] Eval harness for routing, compaction, and self-improvement
+- [ ] Later end-to-end outcome runner:
+  - plain-language first
+  - may ask targeted follow-up questions
+  - may research / plan / implement / verify across a long run
+  - should keep going until requested result is reached unless blocked
+  - optional shortcut name/command still open
 - [ ] Windows/macOS/Linux path and install hardening passes
 - [ ] Packaging/distribution rollout after `v1`:
   - GitHub Releases
@@ -159,3 +167,4 @@ Current allowed next slice:
 5. keep Codex config writes narrow, explicit opt-in, and backup/restore guarded
 6. fold the MCP/default-tool audit into the integrations-profile implementation
 7. do not start adaptive orchestration before the `R3` state shape is real in code
+8. keep the later end-to-end outcome runner plain-language first, not command-ritual-first
