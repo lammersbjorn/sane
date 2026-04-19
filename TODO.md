@@ -63,10 +63,10 @@ Current gate:
 Current command examples:
 
 ```bash
-cargo run -p sane-tui
-cargo run -p sane-tui -- install
-cargo run -p sane-tui -- config
-cargo run -p sane-tui -- doctor
+cargo run -p sane
+cargo run -p sane -- install
+cargo run -p sane -- config
+cargo run -p sane -- doctor
 ```
 
 Current verification baseline:

@@ -271,7 +271,7 @@ docs/
   plans/
 crates/
   sane-core/
-  sane-tui/
+  sane-tui/  # crate path; package/binary name is `sane`
   sane-platform/
   sane-state/
   sane-config/

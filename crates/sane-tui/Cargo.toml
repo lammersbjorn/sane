@@ -1,5 +1,5 @@
 [package]
-name = "sane-tui"
+name = "sane"
 edition.workspace = true
 license.workspace = true
 version.workspace = true

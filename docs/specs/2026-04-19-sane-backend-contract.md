@@ -212,7 +212,7 @@ Current implementation note:
 - touched paths are deduplicated before render
 - inventory is now explicitly scoped as either `local runtime` or `codex-native`
 - current TUI status panel renders those two groups separately
-- current hooks target is user-level only and uses the `sane-tui` binary itself as the managed `SessionStart` command
+- current hooks target is user-level only and uses the `sane` binary itself as the managed `SessionStart` command
 - current custom-agents target installs two read-only managed agents: `sane-reviewer` and `sane-explorer`
 - current Codex config work supports narrow explicit opt-in writes for the core profile
 - current integrations profile work supports narrow explicit opt-in writes for recommended MCP servers only

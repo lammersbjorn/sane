@@ -35,7 +35,7 @@ Already implemented:
 ## Quick Start
 
 ```bash
-cargo run -p sane-tui
+cargo run -p sane
 ```
 
 No-args now opens the actual TUI.
@@ -70,25 +70,25 @@ Current privacy foundation:
 Backend/dev escape hatches still exist:
 
 ```bash
-cargo run -p sane-tui -- status
-cargo run -p sane-tui -- install
-cargo run -p sane-tui -- config
-cargo run -p sane-tui -- codex-config
-cargo run -p sane-tui -- preview codex-profile
-cargo run -p sane-tui -- preview integrations-profile
-cargo run -p sane-tui -- preview cloudflare-profile
-cargo run -p sane-tui -- backup codex-config
-cargo run -p sane-tui -- apply codex-profile
-cargo run -p sane-tui -- apply integrations-profile
-cargo run -p sane-tui -- apply cloudflare-profile
-cargo run -p sane-tui -- restore codex-config
-cargo run -p sane-tui -- doctor
-cargo run -p sane-tui -- export all
-cargo run -p sane-tui -- export hooks
-cargo run -p sane-tui -- export custom-agents
-cargo run -p sane-tui -- uninstall all
-cargo run -p sane-tui -- uninstall hooks
-cargo run -p sane-tui -- uninstall custom-agents
+cargo run -p sane -- status
+cargo run -p sane -- install
+cargo run -p sane -- config
+cargo run -p sane -- codex-config
+cargo run -p sane -- preview codex-profile
+cargo run -p sane -- preview integrations-profile
+cargo run -p sane -- preview cloudflare-profile
+cargo run -p sane -- backup codex-config
+cargo run -p sane -- apply codex-profile
+cargo run -p sane -- apply integrations-profile
+cargo run -p sane -- apply cloudflare-profile
+cargo run -p sane -- restore codex-config
+cargo run -p sane -- doctor
+cargo run -p sane -- export all
+cargo run -p sane -- export hooks
+cargo run -p sane -- export custom-agents
+cargo run -p sane -- uninstall all
+cargo run -p sane -- uninstall hooks
+cargo run -p sane -- uninstall custom-agents
 ```
 
 Current hook note:

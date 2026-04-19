@@ -1059,6 +1059,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9774ba4a74de5f7b1c1451ed6cd5285a32eddb5cccb8cc655a4e50009e06477f"
 
 [[package]]
+name = "sane"
+version = "0.1.0"
+dependencies = [
+ "crossterm",
+ "ratatui",
+ "sane-config",
+ "sane-core",
+ "sane-platform",
+ "sane-state",
+ "serde_json",
+ "tempfile",
+ "toml",
+]
+
+[[package]]
 name = "sane-config"
 version = "0.1.0"
 dependencies = [
@@ -1088,21 +1103,6 @@ dependencies = [
  "serde_json",
  "tempfile",
  "thiserror 2.0.18",
- "toml",
-]
-
-[[package]]
-name = "sane-tui"
-version = "0.1.0"
-dependencies = [
- "crossterm",
- "ratatui",
- "sane-config",
- "sane-core",
- "sane-platform",
- "sane-state",
- "serde_json",
- "tempfile",
  "toml",
 ]
 

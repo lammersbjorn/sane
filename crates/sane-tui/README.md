@@ -1,4 +1,4 @@
-# sane-tui
+# sane
 
 Thin command surface for installing and managing `Sane`.
 
