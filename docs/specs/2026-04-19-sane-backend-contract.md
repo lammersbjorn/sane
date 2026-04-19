@@ -54,6 +54,11 @@ These are the backend actions the TUI is allowed to call in the current phase.
   - read config from `.sane/config.local.toml`
   - display current model-role defaults
 
+- `show_status`
+  - read structured inventory for all current managed targets
+  - keep touched paths explicit for auditability
+  - may remain a backend/dev escape hatch under the later TUI
+
 ### Doctor / Status
 
 - `doctor`
@@ -106,6 +111,7 @@ Current state:
 
 - typed shared backend result/inventory structures now exist
 - current command shell renders those typed results back into text
+- explicit `show_status` inventory read now exists on top of the typed layer
 - proper TUI still needs to wrap the typed layer instead of strings directly
 
 Recommended typed shape:
@@ -135,6 +141,11 @@ Current mappings:
 - missing `sane-router` skill -> `missing`
 - AGENTS file exists but no Sane block -> `present_without_sane_block`
 
+Current implementation note:
+
+- `doctor` now derives its summary from the same shared inventory inspection used by `show_status`
+- touched paths are deduplicated before render
+
 ## TUI Boundary Rule
 
 The future TUI should not invent logic separate from this backend contract.
@@ -159,3 +170,4 @@ The proper interactive TUI phase may proceed only after:
 - this backend contract is accepted as the current boundary
 - inventory/status expectations are clear
 - touched paths remain explicit and auditable
+- backend/dev escape hatches stay subordinate to the later TUI, not the product UX

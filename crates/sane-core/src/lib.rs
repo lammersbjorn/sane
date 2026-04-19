@@ -7,6 +7,7 @@ pub const SANE_GLOBAL_AGENTS_END: &str = "<!-- sane:global-agents:end -->";
 pub enum OperationKind {
     InstallRuntime,
     ShowConfig,
+    ShowStatus,
     Doctor,
     ExportUserSkills,
     ExportGlobalAgents,
@@ -33,6 +34,13 @@ impl InventoryStatus {
             Self::Invalid => "invalid",
             Self::PresentWithoutSaneBlock => "present_without_sane_block",
             Self::Removed => "removed",
+        }
+    }
+
+    pub fn display_str(self) -> &'static str {
+        match self {
+            Self::PresentWithoutSaneBlock => "present without Sane block",
+            _ => self.as_str(),
         }
     }
 }
@@ -64,7 +72,7 @@ impl OperationResult {
 
         if !self.inventory.is_empty() {
             for item in &self.inventory {
-                let mut line = format!("{}: {}", item.name, item.status.as_str());
+                let mut line = format!("{}: {}", item.name, item.status.display_str());
                 if let Some(repair_hint) = &item.repair_hint {
                     line.push_str(&format!(" ({repair_hint})"));
                 }

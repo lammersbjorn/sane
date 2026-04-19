@@ -5,6 +5,9 @@ Thin command surface for installing and managing `Sane`.
 Current responsibility:
 - command parsing
 - install/config/doctor/export/uninstall shell
+- backend/dev status inventory shell
+- no-args interactive TUI home screen
+- action list, status summary, output panel, and quit flow
 - user-facing operational output
 - thin orchestration over managed Codex-native targets
 - doctor/reporting for managed local and Codex-native surfaces

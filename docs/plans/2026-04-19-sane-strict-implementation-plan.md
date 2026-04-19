@@ -253,8 +253,6 @@ Current repo already has:
 - doctor coverage
 
 Current mismatch with locked product direction:
-- user-facing surface still too command-shaped
-- proper install TUI not yet primary path
 - pack/plugin-ready architecture not yet reflected clearly enough in plan/docs
 - builtin pack work not clearly separated into research gate
 

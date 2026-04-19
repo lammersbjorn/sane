@@ -78,8 +78,8 @@ cargo test
 - [x] Improve `doctor` with real checks and actionable repair suggestions
 - [x] Replace placeholder `export` with the first real Codex-native asset management boundary
 - [x] Add symmetric uninstall flow for managed user-skill assets
-- [ ] Finish `B1`: explicit inventory/status read on top of current typed backend layer
-- [ ] Finish `B1`: tighten touched-path reporting and backend contract docs/tests
+- [x] Finish `B1`: explicit inventory/status read on top of current typed backend layer
+- [x] Finish `B1`: tighten touched-path reporting and backend contract docs/tests
 
 ## Research Gates
 
@@ -91,7 +91,7 @@ cargo test
 
 ## Build Gates
 
-- [ ] `B2` proper install TUI foundation
+- [x] `B2` proper install TUI foundation
 - [ ] `B3` asset inventory / auditability surface
 - [ ] `B4` next managed targets
 - [ ] `B5` model/subagent config surface
@@ -130,8 +130,8 @@ See:
 
 Current allowed next slice:
 
-1. finish `B1`
-2. explicit inventory/status read
-3. verify it
-4. document it
-5. only then move to `B2`
+1. start `B2`
+2. make managed assets auditable inside the TUI
+3. show installed/missing/invalid states and repair hints clearly
+4. keep local operational state distinct from Codex-native assets
+5. only then move to `B4`

@@ -2,7 +2,19 @@ use std::env;
 use std::fs;
 use std::path::Path;
 use std::process::ExitCode;
+use std::time::Duration;
 
+use crossterm::event::{self, Event, KeyCode, KeyEventKind};
+use crossterm::execute;
+use crossterm::terminal::{
+    EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
+};
+use ratatui::backend::CrosstermBackend;
+use ratatui::layout::{Constraint, Direction, Layout, Rect};
+use ratatui::style::{Modifier, Style};
+use ratatui::text::Line;
+use ratatui::widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap};
+use ratatui::{Frame, Terminal};
 use sane_config::LocalConfig;
 use sane_core::{
     InventoryItem, InventoryStatus, NAME, OperationKind, OperationResult, SANE_GLOBAL_AGENTS_BEGIN,
@@ -29,6 +41,16 @@ fn main() -> ExitCode {
         }
     };
 
+    if args.is_empty() {
+        return match run_tui(&cwd, &codex_paths.home_dir) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(error) => {
+                eprintln!("{error}");
+                ExitCode::FAILURE
+            }
+        };
+    }
+
     match run_with_home(
         &args.iter().map(String::as_str).collect::<Vec<_>>(),
         &cwd,
@@ -45,6 +67,26 @@ fn main() -> ExitCode {
     }
 }
 
+fn run_tui(cwd: &Path, home: &Path) -> Result<(), String> {
+    let paths = ProjectPaths::discover(cwd).map_err(|error| error.to_string())?;
+    let codex_paths = CodexPaths::new(home);
+    let mut app = TuiApp::new(&paths, &codex_paths)?;
+
+    enable_raw_mode().map_err(|error| error.to_string())?;
+    let mut stdout = std::io::stdout();
+    execute!(stdout, EnterAlternateScreen).map_err(|error| error.to_string())?;
+    let backend = CrosstermBackend::new(stdout);
+    let mut terminal = Terminal::new(backend).map_err(|error| error.to_string())?;
+
+    let loop_result = run_tui_loop(&mut terminal, &mut app);
+
+    disable_raw_mode().map_err(|error| error.to_string())?;
+    execute!(terminal.backend_mut(), LeaveAlternateScreen).map_err(|error| error.to_string())?;
+    terminal.show_cursor().map_err(|error| error.to_string())?;
+
+    loop_result
+}
+
 #[cfg(test)]
 fn run(args: &[&str], cwd: &Path) -> Result<String, String> {
     let codex_paths = CodexPaths::discover().map_err(|error| error.to_string())?;
@@ -58,28 +100,22 @@ fn run_with_home(args: &[&str], cwd: &Path, home: &Path) -> Result<String, Strin
 
     match command {
         Command::Summary => Ok(render_summary()),
-        Command::Install => install_runtime(&paths).map(|result| result.render_text()),
-        Command::Config => show_config(&paths).map(|result| result.render_text()),
-        Command::Doctor => doctor_runtime(&paths, &codex_paths).map(|result| result.render_text()),
+        Command::Install
+        | Command::Config
+        | Command::Status
+        | Command::Doctor
+        | Command::ExportAll
+        | Command::ExportUserSkills
+        | Command::ExportGlobalAgents
+        | Command::UninstallAll
+        | Command::UninstallUserSkills
+        | Command::UninstallGlobalAgents => execute_backend_command(command, &paths, &codex_paths)
+            .map(|result| result.render_text()),
         Command::Export => {
             Ok("export: available targets: all, user-skills, global-agents".to_string())
         }
-        Command::ExportAll => export_all(&codex_paths).map(|result| result.render_text()),
-        Command::ExportUserSkills => {
-            export_user_skills(&codex_paths).map(|result| result.render_text())
-        }
-        Command::ExportGlobalAgents => {
-            export_global_agents(&codex_paths).map(|result| result.render_text())
-        }
         Command::Uninstall => {
             Ok("uninstall: available targets: all, user-skills, global-agents".to_string())
-        }
-        Command::UninstallAll => uninstall_all(&codex_paths).map(|result| result.render_text()),
-        Command::UninstallUserSkills => {
-            uninstall_user_skills(&codex_paths).map(|result| result.render_text())
-        }
-        Command::UninstallGlobalAgents => {
-            uninstall_global_agents(&codex_paths).map(|result| result.render_text())
         }
     }
 }
@@ -89,6 +125,7 @@ enum Command {
     Summary,
     Install,
     Config,
+    Status,
     Doctor,
     Export,
     ExportAll,
@@ -106,6 +143,7 @@ impl Command {
             (None, _) => Ok(Self::Summary),
             (Some("install"), _) => Ok(Self::Install),
             (Some("config"), _) => Ok(Self::Config),
+            (Some("status"), _) => Ok(Self::Status),
             (Some("doctor"), _) => Ok(Self::Doctor),
             (Some("export"), Some("all")) => Ok(Self::ExportAll),
             (Some("export"), Some("user-skills")) => Ok(Self::ExportUserSkills),
@@ -120,9 +158,199 @@ impl Command {
     }
 }
 
+fn execute_backend_command(
+    command: Command,
+    paths: &ProjectPaths,
+    codex_paths: &CodexPaths,
+) -> Result<OperationResult, String> {
+    match command {
+        Command::Install => install_runtime(paths),
+        Command::Config => show_config(paths),
+        Command::Status => inventory_status(paths, codex_paths),
+        Command::Doctor => doctor_runtime(paths, codex_paths),
+        Command::ExportAll => export_all(codex_paths),
+        Command::ExportUserSkills => export_user_skills(codex_paths),
+        Command::ExportGlobalAgents => export_global_agents(codex_paths),
+        Command::UninstallAll => uninstall_all(codex_paths),
+        Command::UninstallUserSkills => uninstall_user_skills(codex_paths),
+        Command::UninstallGlobalAgents => uninstall_global_agents(codex_paths),
+        Command::Summary | Command::Export | Command::Uninstall => {
+            Err("backend command not executable".to_string())
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+struct TuiAction {
+    label: &'static str,
+    command: Command,
+}
+
+impl TuiAction {
+    const fn new(label: &'static str, command: Command) -> Self {
+        Self { label, command }
+    }
+}
+
+struct TuiApp {
+    paths: ProjectPaths,
+    codex_paths: CodexPaths,
+    actions: Vec<TuiAction>,
+    selected: usize,
+    status: OperationResult,
+    output: String,
+}
+
+impl TuiApp {
+    fn new(paths: &ProjectPaths, codex_paths: &CodexPaths) -> Result<Self, String> {
+        let status = inventory_status(paths, codex_paths)?;
+        Ok(Self {
+            paths: paths.clone(),
+            codex_paths: codex_paths.clone(),
+            actions: vec![
+                TuiAction::new("Install runtime", Command::Install),
+                TuiAction::new("Inspect config", Command::Config),
+                TuiAction::new("Doctor", Command::Doctor),
+                TuiAction::new("Export all", Command::ExportAll),
+                TuiAction::new("Uninstall all", Command::UninstallAll),
+            ],
+            selected: 0,
+            status,
+            output: "Ready. Use arrows or j/k. Enter runs action. q quits.".to_string(),
+        })
+    }
+
+    fn next(&mut self) {
+        self.selected = (self.selected + 1) % self.actions.len();
+    }
+
+    fn previous(&mut self) {
+        self.selected = if self.selected == 0 {
+            self.actions.len() - 1
+        } else {
+            self.selected - 1
+        };
+    }
+
+    fn run_selected(&mut self) {
+        let action = self.actions[self.selected];
+        match execute_backend_command(action.command, &self.paths, &self.codex_paths) {
+            Ok(result) => {
+                self.output = result.render_text();
+                match inventory_status(&self.paths, &self.codex_paths) {
+                    Ok(status) => self.status = status,
+                    Err(error) => {
+                        self.output
+                            .push_str(&format!("\nstatus refresh failed: {error}"));
+                    }
+                }
+            }
+            Err(error) => {
+                self.output = format!("action failed: {error}");
+            }
+        }
+    }
+}
+
+fn run_tui_loop(
+    terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
+    app: &mut TuiApp,
+) -> Result<(), String> {
+    loop {
+        terminal
+            .draw(|frame| render_tui(frame, app))
+            .map_err(|error| error.to_string())?;
+
+        if event::poll(Duration::from_millis(250)).map_err(|error| error.to_string())?
+            && let Event::Key(key) = event::read().map_err(|error| error.to_string())?
+        {
+            if key.kind != KeyEventKind::Press {
+                continue;
+            }
+
+            match key.code {
+                KeyCode::Char('q') | KeyCode::Esc => return Ok(()),
+                KeyCode::Down | KeyCode::Char('j') => app.next(),
+                KeyCode::Up | KeyCode::Char('k') => app.previous(),
+                KeyCode::Enter | KeyCode::Char(' ') => app.run_selected(),
+                _ => {}
+            }
+        }
+    }
+}
+
+fn render_tui(frame: &mut Frame, app: &TuiApp) {
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(3),
+            Constraint::Length(9),
+            Constraint::Min(10),
+        ])
+        .split(frame.area());
+
+    let header = Paragraph::new(vec![
+        Line::from(NAME),
+        Line::from("Installer/config TUI. Backend verbs stay escape hatch only."),
+    ])
+    .block(Block::default().borders(Borders::ALL).title("Home"))
+    .wrap(Wrap { trim: true });
+    frame.render_widget(header, chunks[0]);
+
+    let status = Paragraph::new(status_lines(&app.status))
+        .block(Block::default().borders(Borders::ALL).title("Status"))
+        .wrap(Wrap { trim: false });
+    frame.render_widget(status, chunks[1]);
+
+    let main = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Length(28), Constraint::Min(20)])
+        .split(chunks[2]);
+
+    render_actions(frame, main[0], app);
+    let output = Paragraph::new(app.output.as_str())
+        .block(Block::default().borders(Borders::ALL).title("Output"))
+        .wrap(Wrap { trim: false });
+    frame.render_widget(output, main[1]);
+}
+
+fn render_actions(frame: &mut Frame, area: Rect, app: &TuiApp) {
+    let items = app
+        .actions
+        .iter()
+        .map(|action| ListItem::new(action.label))
+        .collect::<Vec<_>>();
+    let list = List::new(items)
+        .block(Block::default().borders(Borders::ALL).title("Actions"))
+        .highlight_style(Style::default().add_modifier(Modifier::REVERSED))
+        .highlight_symbol("> ");
+    let mut state = ListState::default().with_selected(Some(app.selected));
+    frame.render_stateful_widget(list, area, &mut state);
+}
+
+fn status_lines(status: &OperationResult) -> Vec<Line<'static>> {
+    status
+        .inventory
+        .iter()
+        .map(|item| Line::from(inventory_detail_line(item)))
+        .collect()
+}
+
+fn inventory_detail_line(item: &InventoryItem) -> String {
+    let mut line = format!("{}: {}", item.name, inventory_status_label(item));
+    if let Some(repair_hint) = &item.repair_hint {
+        line.push_str(&format!(" ({repair_hint})"));
+    }
+    line
+}
+
+fn inventory_status_label(item: &InventoryItem) -> &'static str {
+    item.status.display_str()
+}
+
 fn render_summary() -> String {
     format!(
-        "{NAME}\nplatform: {:?}\ncommands: install, config, export, uninstall, doctor",
+        "{NAME}\nplatform: {:?}\ncommands: install, config, status, export, uninstall, doctor",
         detect_platform()
     )
 }
@@ -214,186 +442,205 @@ fn show_config(paths: &ProjectPaths) -> Result<OperationResult, String> {
     })
 }
 
+fn inventory_status(
+    paths: &ProjectPaths,
+    codex_paths: &CodexPaths,
+) -> Result<OperationResult, String> {
+    let inventory = inspect_inventory(paths, codex_paths)?;
+
+    Ok(OperationResult {
+        kind: OperationKind::ShowStatus,
+        summary: format!("status: {} managed targets inspected", inventory.len()),
+        details: vec![],
+        paths_touched: collect_paths_touched(&inventory),
+        inventory,
+    })
+}
+
 fn doctor_runtime(
     paths: &ProjectPaths,
     codex_paths: &CodexPaths,
 ) -> Result<OperationResult, String> {
-    let runtime_ok = paths.runtime_root.exists();
-    let (config_status, config_inventory) = if !paths.config_path.exists() {
-        (
-            "missing".to_string(),
-            InventoryItem {
-                name: "config".to_string(),
-                status: InventoryStatus::Missing,
-                path: paths.config_path.display().to_string(),
-                repair_hint: Some("run `install`".to_string()),
-            },
-        )
-    } else if LocalConfig::read_from_path(&paths.config_path).is_ok() {
-        (
-            "ok".to_string(),
-            InventoryItem {
-                name: "config".to_string(),
-                status: InventoryStatus::Installed,
-                path: paths.config_path.display().to_string(),
-                repair_hint: None,
-            },
-        )
-    } else {
-        (
-            "invalid (rerun install)".to_string(),
-            InventoryItem {
-                name: "config".to_string(),
-                status: InventoryStatus::Invalid,
-                path: paths.config_path.display().to_string(),
-                repair_hint: Some("rerun `install`".to_string()),
-            },
-        )
-    };
-
-    let snapshot_path = paths.state_dir.join("current-run.json");
-    let (state_status, state_inventory) = if !paths.state_dir.exists() {
-        (
-            "missing".to_string(),
-            InventoryItem {
-                name: "state".to_string(),
-                status: InventoryStatus::Missing,
-                path: snapshot_path.display().to_string(),
-                repair_hint: Some("run `install`".to_string()),
-            },
-        )
-    } else if !snapshot_path.exists() {
-        (
-            "missing current-run.json (rerun install)".to_string(),
-            InventoryItem {
-                name: "state".to_string(),
-                status: InventoryStatus::Missing,
-                path: snapshot_path.display().to_string(),
-                repair_hint: Some("rerun `install`".to_string()),
-            },
-        )
-    } else if RunSnapshot::read_from_path(&snapshot_path).is_ok() {
-        (
-            "ok".to_string(),
-            InventoryItem {
-                name: "state".to_string(),
-                status: InventoryStatus::Installed,
-                path: snapshot_path.display().to_string(),
-                repair_hint: None,
-            },
-        )
-    } else {
-        (
-            "invalid current-run.json (rerun install)".to_string(),
-            InventoryItem {
-                name: "state".to_string(),
-                status: InventoryStatus::Invalid,
-                path: snapshot_path.display().to_string(),
-                repair_hint: Some("rerun `install`".to_string()),
-            },
-        )
-    };
-    let user_skill_dir = codex_paths.user_skills_dir.join(SANE_ROUTER_SKILL_NAME);
-    let user_skill_path = user_skill_dir.join("SKILL.md");
-    let (user_skill_status, user_skill_inventory) = if user_skill_path.exists() {
-        (
-            "installed".to_string(),
-            InventoryItem {
-                name: "user-skills".to_string(),
-                status: InventoryStatus::Installed,
-                path: user_skill_path.display().to_string(),
-                repair_hint: None,
-            },
-        )
-    } else {
-        (
-            "missing (run `export user-skills`)".to_string(),
-            InventoryItem {
-                name: "user-skills".to_string(),
-                status: InventoryStatus::Missing,
-                path: user_skill_path.display().to_string(),
-                repair_hint: Some("run `export user-skills`".to_string()),
-            },
-        )
-    };
-    let (global_agents_status, global_agents_inventory) = if !codex_paths.global_agents_md.exists()
-    {
-        (
-            "missing (run `export global-agents`)".to_string(),
-            InventoryItem {
-                name: "global-agents".to_string(),
-                status: InventoryStatus::Missing,
-                path: codex_paths.global_agents_md.display().to_string(),
-                repair_hint: Some("run `export global-agents`".to_string()),
-            },
-        )
-    } else {
-        let body =
-            fs::read_to_string(&codex_paths.global_agents_md).map_err(|error| error.to_string())?;
-        if body.contains(SANE_GLOBAL_AGENTS_BEGIN) && body.contains(SANE_GLOBAL_AGENTS_END) {
-            (
-                "installed".to_string(),
-                InventoryItem {
-                    name: "global-agents".to_string(),
-                    status: InventoryStatus::Installed,
-                    path: codex_paths.global_agents_md.display().to_string(),
-                    repair_hint: None,
-                },
-            )
-        } else {
-            (
-                "present without Sane block".to_string(),
-                InventoryItem {
-                    name: "global-agents".to_string(),
-                    status: InventoryStatus::PresentWithoutSaneBlock,
-                    path: codex_paths.global_agents_md.display().to_string(),
-                    repair_hint: Some("run `export global-agents`".to_string()),
-                },
-            )
-        }
-    };
+    let inventory = inspect_inventory(paths, codex_paths)?;
+    let runtime = find_inventory(&inventory, "runtime");
+    let config = find_inventory(&inventory, "config");
+    let state = find_inventory(&inventory, "state");
+    let user_skills = find_inventory(&inventory, "user-skills");
+    let global_agents = find_inventory(&inventory, "global-agents");
 
     Ok(OperationResult {
         kind: OperationKind::Doctor,
         summary: format!(
             "runtime: {}\nconfig: {}\nstate: {}\nuser-skills: {}\nglobal-agents: {}\nroot: {}\ncodex-home: {}",
-            if runtime_ok { "ok" } else { "missing" },
-            config_status,
-            state_status,
-            user_skill_status,
-            global_agents_status,
+            doctor_status(runtime),
+            doctor_status(config),
+            doctor_status(state),
+            doctor_status(user_skills),
+            doctor_status(global_agents),
             paths.runtime_root.display(),
             codex_paths.codex_home.display()
         ),
         details: vec![],
-        paths_touched: vec![
-            paths.runtime_root.display().to_string(),
-            paths.config_path.display().to_string(),
-            snapshot_path.display().to_string(),
-            user_skill_path.display().to_string(),
-            codex_paths.global_agents_md.display().to_string(),
-        ],
-        inventory: vec![
-            InventoryItem {
-                name: "runtime".to_string(),
-                status: if runtime_ok {
-                    InventoryStatus::Installed
-                } else {
-                    InventoryStatus::Missing
-                },
-                path: paths.runtime_root.display().to_string(),
-                repair_hint: if runtime_ok {
-                    None
-                } else {
-                    Some("run `install`".to_string())
-                },
-            },
-            config_inventory,
-            state_inventory,
-            user_skill_inventory,
-            global_agents_inventory,
-        ],
+        paths_touched: collect_paths_touched(&inventory),
+        inventory,
     })
+}
+
+fn inspect_inventory(
+    paths: &ProjectPaths,
+    codex_paths: &CodexPaths,
+) -> Result<Vec<InventoryItem>, String> {
+    let snapshot_path = paths.state_dir.join("current-run.json");
+    let user_skill_path = codex_paths
+        .user_skills_dir
+        .join(SANE_ROUTER_SKILL_NAME)
+        .join("SKILL.md");
+
+    let global_agents_inventory = if !codex_paths.global_agents_md.exists() {
+        InventoryItem {
+            name: "global-agents".to_string(),
+            status: InventoryStatus::Missing,
+            path: codex_paths.global_agents_md.display().to_string(),
+            repair_hint: Some("run `export global-agents`".to_string()),
+        }
+    } else {
+        let body =
+            fs::read_to_string(&codex_paths.global_agents_md).map_err(|error| error.to_string())?;
+        if body.contains(SANE_GLOBAL_AGENTS_BEGIN) && body.contains(SANE_GLOBAL_AGENTS_END) {
+            InventoryItem {
+                name: "global-agents".to_string(),
+                status: InventoryStatus::Installed,
+                path: codex_paths.global_agents_md.display().to_string(),
+                repair_hint: None,
+            }
+        } else {
+            InventoryItem {
+                name: "global-agents".to_string(),
+                status: InventoryStatus::PresentWithoutSaneBlock,
+                path: codex_paths.global_agents_md.display().to_string(),
+                repair_hint: Some("run `export global-agents`".to_string()),
+            }
+        }
+    };
+
+    Ok(vec![
+        InventoryItem {
+            name: "runtime".to_string(),
+            status: if paths.runtime_root.exists() {
+                InventoryStatus::Installed
+            } else {
+                InventoryStatus::Missing
+            },
+            path: paths.runtime_root.display().to_string(),
+            repair_hint: if paths.runtime_root.exists() {
+                None
+            } else {
+                Some("run `install`".to_string())
+            },
+        },
+        InventoryItem {
+            name: "config".to_string(),
+            status: if !paths.config_path.exists() {
+                InventoryStatus::Missing
+            } else if LocalConfig::read_from_path(&paths.config_path).is_ok() {
+                InventoryStatus::Installed
+            } else {
+                InventoryStatus::Invalid
+            },
+            path: paths.config_path.display().to_string(),
+            repair_hint: if !paths.config_path.exists() {
+                Some("run `install`".to_string())
+            } else if LocalConfig::read_from_path(&paths.config_path).is_ok() {
+                None
+            } else {
+                Some("rerun `install`".to_string())
+            },
+        },
+        InventoryItem {
+            name: "state".to_string(),
+            status: if !paths.state_dir.exists() || !snapshot_path.exists() {
+                InventoryStatus::Missing
+            } else if RunSnapshot::read_from_path(&snapshot_path).is_ok() {
+                InventoryStatus::Installed
+            } else {
+                InventoryStatus::Invalid
+            },
+            path: snapshot_path.display().to_string(),
+            repair_hint: if !paths.state_dir.exists() || !snapshot_path.exists() {
+                Some("rerun `install`".to_string())
+            } else if RunSnapshot::read_from_path(&snapshot_path).is_ok() {
+                None
+            } else {
+                Some("rerun `install`".to_string())
+            },
+        },
+        InventoryItem {
+            name: "user-skills".to_string(),
+            status: if user_skill_path.exists() {
+                InventoryStatus::Installed
+            } else {
+                InventoryStatus::Missing
+            },
+            path: user_skill_path.display().to_string(),
+            repair_hint: if user_skill_path.exists() {
+                None
+            } else {
+                Some("run `export user-skills`".to_string())
+            },
+        },
+        global_agents_inventory,
+    ])
+}
+
+fn find_inventory<'a>(inventory: &'a [InventoryItem], name: &str) -> &'a InventoryItem {
+    inventory
+        .iter()
+        .find(|item| item.name == name)
+        .expect("inventory item missing")
+}
+
+fn doctor_status(item: &InventoryItem) -> String {
+    match item.name.as_str() {
+        "config" => match item.status {
+            InventoryStatus::Installed => "ok".to_string(),
+            InventoryStatus::Missing => "missing".to_string(),
+            InventoryStatus::Invalid => "invalid (rerun install)".to_string(),
+            _ => item.status.as_str().to_string(),
+        },
+        "state" => match item.status {
+            InventoryStatus::Installed => "ok".to_string(),
+            InventoryStatus::Missing => "missing current-run.json (rerun install)".to_string(),
+            InventoryStatus::Invalid => "invalid current-run.json (rerun install)".to_string(),
+            _ => item.status.as_str().to_string(),
+        },
+        "runtime" => match item.status {
+            InventoryStatus::Installed => "ok".to_string(),
+            InventoryStatus::Missing => "missing".to_string(),
+            _ => item.status.as_str().to_string(),
+        },
+        "user-skills" => match item.status {
+            InventoryStatus::Installed => "installed".to_string(),
+            InventoryStatus::Missing => "missing (run `export user-skills`)".to_string(),
+            _ => item.status.as_str().to_string(),
+        },
+        "global-agents" => match item.status {
+            InventoryStatus::Installed => "installed".to_string(),
+            InventoryStatus::Missing => "missing (run `export global-agents`)".to_string(),
+            InventoryStatus::PresentWithoutSaneBlock => "present without Sane block".to_string(),
+            _ => item.status.as_str().to_string(),
+        },
+        _ => item.status.as_str().to_string(),
+    }
+}
+
+fn collect_paths_touched(inventory: &[InventoryItem]) -> Vec<String> {
+    let mut paths = inventory
+        .iter()
+        .map(|item| item.path.clone())
+        .collect::<Vec<_>>();
+    paths.sort();
+    paths.dedup();
+    paths
 }
 
 fn export_user_skills(codex_paths: &CodexPaths) -> Result<OperationResult, String> {
@@ -579,6 +826,9 @@ fn merge_results(
         inventory.extend(result.inventory);
     }
 
+    paths_touched.sort();
+    paths_touched.dedup();
+
     OperationResult {
         kind,
         summary: summary.to_string(),
@@ -701,6 +951,7 @@ mod tests {
 
         assert!(output.contains("install"));
         assert!(output.contains("config"));
+        assert!(output.contains("status"));
         assert!(output.contains("export"));
         assert!(output.contains("uninstall"));
         assert!(output.contains("doctor"));
@@ -870,5 +1121,68 @@ mod tests {
 
         assert!(output.contains("user-skills: installed"));
         assert!(output.contains("global-agents: installed"));
+    }
+
+    #[test]
+    fn tui_app_exposes_required_foundation_actions() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        let paths = sane_platform::ProjectPaths::discover(project.path()).unwrap();
+        let codex_paths = sane_platform::CodexPaths::new(home.path());
+
+        let app = super::TuiApp::new(&paths, &codex_paths).unwrap();
+        let labels = app
+            .actions
+            .iter()
+            .map(|action| action.label)
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            labels,
+            vec![
+                "Install runtime",
+                "Inspect config",
+                "Doctor",
+                "Export all",
+                "Uninstall all",
+            ]
+        );
+    }
+
+    #[test]
+    fn status_reports_all_managed_targets() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+
+        let _ = run_with_home(&["install"], project.path(), home.path()).unwrap();
+        let output = run_with_home(&["status"], project.path(), home.path()).unwrap();
+
+        assert!(output.contains("status: 5 managed targets inspected"));
+        assert!(output.contains("runtime: installed"));
+        assert!(output.contains("config: installed"));
+        assert!(output.contains("state: installed"));
+        assert!(output.contains("user-skills: missing (run `export user-skills`)"));
+        assert!(output.contains("global-agents: missing (run `export global-agents`)"));
+    }
+
+    #[test]
+    fn export_all_reports_deduplicated_paths() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+
+        let output = run_with_home(&["export", "all"], project.path(), home.path()).unwrap();
+        let paths_line = output
+            .lines()
+            .find(|line| line.starts_with("paths: "))
+            .unwrap();
+        let paths = paths_line
+            .trim_start_matches("paths: ")
+            .split(", ")
+            .collect::<Vec<_>>();
+
+        assert_eq!(paths.len(), 2);
     }
 }
