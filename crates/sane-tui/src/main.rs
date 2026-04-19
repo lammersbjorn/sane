@@ -1113,9 +1113,7 @@ fn save_config(paths: &ProjectPaths, config: &LocalConfig) -> Result<OperationRe
     paths
         .ensure_runtime_dirs()
         .map_err(|error| error.to_string())?;
-    if config.privacy.telemetry != TelemetryLevel::Off {
-        fs::create_dir_all(&paths.telemetry_dir).map_err(|error| error.to_string())?;
-    }
+    ensure_telemetry_files(paths, config.privacy.telemetry)?;
     config
         .write_to_path(&paths.config_path)
         .map_err(|error| error.to_string())?;
@@ -1133,6 +1131,25 @@ fn save_config(paths: &ProjectPaths, config: &LocalConfig) -> Result<OperationRe
             repair_hint: None,
         }],
     })
+}
+
+fn ensure_telemetry_files(paths: &ProjectPaths, level: TelemetryLevel) -> Result<(), String> {
+    if level == TelemetryLevel::Off {
+        return Ok(());
+    }
+
+    fs::create_dir_all(&paths.telemetry_dir).map_err(|error| error.to_string())?;
+    ensure_file_with_default(
+        &paths.telemetry_dir.join("summary.json"),
+        "{\n  \"version\": 1\n}\n",
+    )?;
+    ensure_file_with_default(&paths.telemetry_dir.join("events.jsonl"), "")?;
+
+    if level == TelemetryLevel::ProductImprovement {
+        ensure_file_with_default(&paths.telemetry_dir.join("queue.jsonl"), "")?;
+    }
+
+    Ok(())
 }
 
 fn load_or_default_config(paths: &ProjectPaths) -> Result<LocalConfig, String> {
@@ -2509,6 +2526,22 @@ mod tests {
         let _ = super::save_config(&paths, &config).unwrap();
 
         assert!(paths.telemetry_dir.exists());
+        assert!(paths.telemetry_dir.join("summary.json").exists());
+        assert!(paths.telemetry_dir.join("events.jsonl").exists());
+        assert!(!paths.telemetry_dir.join("queue.jsonl").exists());
+    }
+
+    #[test]
+    fn save_config_creates_queue_when_product_improvement_enabled() {
+        let project = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        let paths = sane_platform::ProjectPaths::discover(project.path()).unwrap();
+        let mut config = sane_config::LocalConfig::default();
+        config.privacy.telemetry = sane_config::TelemetryLevel::ProductImprovement;
+
+        let _ = super::save_config(&paths, &config).unwrap();
+
+        assert!(paths.telemetry_dir.join("queue.jsonl").exists());
     }
 
     #[test]
