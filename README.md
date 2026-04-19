@@ -14,6 +14,7 @@ Already implemented:
 - thin project-local `.sane` operational namespace
 - config/state persistence foundations
 - layered local state skeleton: `current-run.json`, `summary.json`, JSONL logs, and `BRIEF.md`
+- append-only operational event log under `.sane/state/events.jsonl`
 - validated model-role config using the actual Codex model/reasoning choices available in-app
 - TUI model defaults editor for coordinator, sidecar, and verifier roles
 - opt-in privacy / telemetry screen with local-only consent levels and reset controls

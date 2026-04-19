@@ -1,4 +1,4 @@
-use sane_state::{RunSnapshot, RunSummary};
+use sane_state::{EventRecord, RunSnapshot, RunSummary};
 use tempfile::tempdir;
 
 #[test]
@@ -34,4 +34,28 @@ fn run_summary_persists_to_disk() {
     let decoded = RunSummary::read_from_path(&path).unwrap();
 
     assert_eq!(decoded, summary);
+}
+
+#[test]
+fn event_record_appends_jsonl() {
+    let dir = tempdir().unwrap();
+    let path = dir.path().join("events.jsonl");
+
+    let event = EventRecord::new(
+        "operation",
+        "install_runtime",
+        "ok",
+        "installed runtime",
+        vec![".sane/config.local.toml".to_string()],
+    );
+
+    event.append_jsonl(&path).unwrap();
+
+    let body = std::fs::read_to_string(&path).unwrap();
+    let line = body.lines().next().unwrap();
+    let decoded: EventRecord = serde_json::from_str(line).unwrap();
+
+    assert_eq!(decoded.category, "operation");
+    assert_eq!(decoded.action, "install_runtime");
+    assert_eq!(decoded.result, "ok");
 }

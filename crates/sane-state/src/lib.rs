@@ -1,5 +1,7 @@
 use std::fs;
+use std::io::Write;
 use std::path::Path;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -17,6 +19,16 @@ pub struct RunSummary {
     pub completed_milestones: Vec<String>,
     pub constraints: Vec<String>,
     pub files_touched: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct EventRecord {
+    pub ts_unix: u64,
+    pub category: String,
+    pub action: String,
+    pub result: String,
+    pub summary: String,
+    pub paths: Vec<String>,
 }
 
 #[derive(Debug, Error)]
@@ -99,6 +111,52 @@ impl RunSummary {
 
         let encoded = serde_json::to_string_pretty(self)?;
         fs::write(path, encoded).map_err(|source| RunSnapshotError::Write {
+            path: path.display().to_string(),
+            source,
+        })
+    }
+}
+
+impl EventRecord {
+    pub fn new(
+        category: impl Into<String>,
+        action: impl Into<String>,
+        result: impl Into<String>,
+        summary: impl Into<String>,
+        paths: Vec<String>,
+    ) -> Self {
+        Self {
+            ts_unix: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs(),
+            category: category.into(),
+            action: action.into(),
+            result: result.into(),
+            summary: summary.into(),
+            paths,
+        }
+    }
+
+    pub fn append_jsonl(&self, path: impl AsRef<Path>) -> Result<(), RunSnapshotError> {
+        let path = path.as_ref();
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).map_err(|source| RunSnapshotError::Write {
+                path: parent.display().to_string(),
+                source,
+            })?;
+        }
+
+        let encoded = serde_json::to_string(self)?;
+        let mut file = fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(path)
+            .map_err(|source| RunSnapshotError::Write {
+                path: path.display().to_string(),
+                source,
+            })?;
+        writeln!(file, "{encoded}").map_err(|source| RunSnapshotError::Write {
             path: path.display().to_string(),
             source,
         })

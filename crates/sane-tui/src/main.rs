@@ -23,7 +23,7 @@ use sane_core::{
     sane_global_agents_overlay, sane_reviewer_agent, sane_router_skill,
 };
 use sane_platform::{CodexPaths, ProjectPaths, detect_platform};
-use sane_state::{RunSnapshot, RunSummary};
+use sane_state::{EventRecord, RunSnapshot, RunSummary};
 use serde_json::{Map, Value, json};
 
 fn main() -> ExitCode {
@@ -183,7 +183,7 @@ fn execute_backend_command(
     paths: &ProjectPaths,
     codex_paths: &CodexPaths,
 ) -> Result<OperationResult, String> {
-    match command {
+    let result = match command {
         Command::Install => install_runtime(paths),
         Command::Config => show_config(paths),
         Command::Status => inventory_status(paths, codex_paths),
@@ -202,7 +202,9 @@ fn execute_backend_command(
         Command::Summary | Command::Export | Command::Uninstall => {
             Err("backend command not executable".to_string())
         }
-    }
+    }?;
+    append_operation_event(paths, &result)?;
+    Ok(result)
 }
 
 #[derive(Clone, Copy)]
@@ -853,6 +855,39 @@ fn ensure_file_with_default(path: &Path, default_contents: &str) -> Result<(), S
     }
 
     fs::write(path, default_contents).map_err(|error| error.to_string())
+}
+
+fn append_operation_event(paths: &ProjectPaths, result: &OperationResult) -> Result<(), String> {
+    let event = EventRecord::new(
+        "operation",
+        operation_kind_label(result.kind),
+        "ok",
+        result.summary.clone(),
+        result.paths_touched.clone(),
+    );
+    event
+        .append_jsonl(&paths.events_path)
+        .map_err(|error| error.to_string())
+}
+
+fn operation_kind_label(kind: OperationKind) -> &'static str {
+    match kind {
+        OperationKind::InstallRuntime => "install_runtime",
+        OperationKind::ShowConfig => "show_config",
+        OperationKind::ResetTelemetryData => "reset_telemetry_data",
+        OperationKind::ShowStatus => "show_status",
+        OperationKind::Doctor => "doctor",
+        OperationKind::ExportUserSkills => "export_user_skills",
+        OperationKind::ExportGlobalAgents => "export_global_agents",
+        OperationKind::ExportHooks => "export_hooks",
+        OperationKind::ExportCustomAgents => "export_custom_agents",
+        OperationKind::ExportAll => "export_all",
+        OperationKind::UninstallUserSkills => "uninstall_user_skills",
+        OperationKind::UninstallGlobalAgents => "uninstall_global_agents",
+        OperationKind::UninstallHooks => "uninstall_hooks",
+        OperationKind::UninstallCustomAgents => "uninstall_custom_agents",
+        OperationKind::UninstallAll => "uninstall_all",
+    }
 }
 
 fn install_runtime(paths: &ProjectPaths) -> Result<OperationResult, String> {
@@ -1944,6 +1979,13 @@ mod tests {
                 .join("summary.json")
                 .exists()
         );
+        assert!(
+            dir.path()
+                .join(".sane")
+                .join("state")
+                .join("events.jsonl")
+                .exists()
+        );
         assert!(dir.path().join(".sane").join("BRIEF.md").exists());
     }
 
@@ -2021,6 +2063,21 @@ mod tests {
 
         assert!(output.contains("summary: missing summary.json"));
         assert!(output.contains("rerun install"));
+    }
+
+    #[test]
+    fn backend_operations_append_event_records() {
+        let dir = tempdir().unwrap();
+        let home = tempdir().unwrap();
+
+        let _ = run_with_home(&["install"], dir.path(), home.path()).unwrap();
+        let _ = run_with_home(&["doctor"], dir.path(), home.path()).unwrap();
+
+        let events_path = dir.path().join(".sane").join("state").join("events.jsonl");
+        let body = std::fs::read_to_string(events_path).unwrap();
+
+        assert!(body.contains("\"action\":\"install_runtime\""));
+        assert!(body.contains("\"action\":\"doctor\""));
     }
 
     #[test]
