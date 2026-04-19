@@ -1,5 +1,9 @@
 pub const NAME: &str = "Sane";
 pub const SANE_ROUTER_SKILL_NAME: &str = "sane-router";
+pub const SANE_CAVEMAN_PACK_SKILL_NAME: &str = "sane-caveman";
+pub const SANE_CAVEMEM_PACK_SKILL_NAME: &str = "sane-cavemem";
+pub const SANE_RTK_PACK_SKILL_NAME: &str = "sane-rtk";
+pub const SANE_FRONTEND_CRAFT_PACK_SKILL_NAME: &str = "sane-frontend-craft";
 pub const SANE_REVIEWER_AGENT_NAME: &str = "sane-reviewer";
 pub const SANE_EXPLORER_AGENT_NAME: &str = "sane-explorer";
 pub const SANE_GLOBAL_AGENTS_BEGIN: &str = "<!-- sane:global-agents:start -->";
@@ -229,6 +233,74 @@ pub fn sane_global_agents_overlay(packs: GuidancePacks) -> String {
 
     body.push(String::new());
     body.join("\n")
+}
+
+pub fn sane_optional_pack_skill_name(pack: &str) -> Option<&'static str> {
+    match pack {
+        "caveman" => Some(SANE_CAVEMAN_PACK_SKILL_NAME),
+        "cavemem" => Some(SANE_CAVEMEM_PACK_SKILL_NAME),
+        "rtk" => Some(SANE_RTK_PACK_SKILL_NAME),
+        "frontend-craft" => Some(SANE_FRONTEND_CRAFT_PACK_SKILL_NAME),
+        _ => None,
+    }
+}
+
+pub fn sane_optional_pack_skill(pack: &str) -> Option<String> {
+    let (name, description, bullets) = match pack {
+        "caveman" => (
+            SANE_CAVEMAN_PACK_SKILL_NAME,
+            "Token-efficiency guidance pack for Sane. Keep prose terse and high-signal without losing technical correctness.",
+            vec![
+                "- prefer terse, token-efficient prose when clarity survives",
+                "- cut filler, hedging, and repeated framing",
+                "- keep commands, paths, code, and errors exact",
+            ],
+        ),
+        "cavemem" => (
+            SANE_CAVEMEM_PACK_SKILL_NAME,
+            "Durable memory guidance pack for Sane. Keep long-session summaries compact, high-signal, and handoff-friendly.",
+            vec![
+                "- prefer compact durable summaries over long narrative logs",
+                "- preserve decisions, risks, and next actions",
+                "- keep memory files short enough to stay token-efficient",
+            ],
+        ),
+        "rtk" => (
+            SANE_RTK_PACK_SKILL_NAME,
+            "Shell-discipline guidance pack for Sane. Prefer RTK-routed command execution when RTK policy is available.",
+            vec![
+                "- if RTK policy is present, route shell work through RTK",
+                "- avoid raw shell when RTK policy expects mediation",
+                "- keep command execution auditable and policy-aware",
+            ],
+        ),
+        "frontend-craft" => (
+            SANE_FRONTEND_CRAFT_PACK_SKILL_NAME,
+            "Frontend quality guidance pack for Sane. Push for stronger craft and avoid generic AI frontend output.",
+            vec![
+                "- avoid generic AI frontend aesthetics",
+                "- prefer distinctive, production-grade interface craft",
+                "- keep frontend output intentional, polished, and high-signal",
+            ],
+        ),
+        _ => return None,
+    };
+
+    let mut body = vec![
+        "---".to_string(),
+        format!("name: {name}"),
+        format!("description: {description}"),
+        "---".to_string(),
+        "".to_string(),
+        format!("# {}", name.replace("sane-", "Sane ").replace('-', " ")),
+        "".to_string(),
+        "This managed skill is installed by Sane when the matching built-in pack is enabled."
+            .to_string(),
+        "".to_string(),
+    ];
+    body.extend(bullets.into_iter().map(str::to_string));
+    body.push(String::new());
+    Some(body.join("\n"))
 }
 
 pub fn sane_reviewer_agent() -> &'static str {

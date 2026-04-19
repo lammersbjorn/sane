@@ -27,7 +27,8 @@ Already implemented:
 - backend/dev escape hatch verbs for `install`, `config`, `status`, `doctor`, `export`, and `uninstall`
 - grouped audit view separating local runtime state from Codex-native managed assets
 - status/doctor now expose built-in pack state as managed local runtime inventory
-- optional packs are currently tracked as local configuration first; managed install/export stays deferred
+- optional packs now materialize through managed user-skill exports first
+- packs still start as local configuration before those exports happen
 - current user-skill and global AGENTS exports now reflect enabled guidance packs from local config
 - status/doctor now flag exported guidance assets as invalid when config changes make them stale
 - first managed user-level hooks target at `~/.codex/hooks.json`

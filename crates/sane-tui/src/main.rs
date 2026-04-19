@@ -21,7 +21,8 @@ use sane_core::{
     GuidancePacks, InventoryItem, InventoryScope, InventoryStatus, NAME, OperationKind,
     OperationResult, SANE_EXPLORER_AGENT_NAME, SANE_GLOBAL_AGENTS_BEGIN, SANE_GLOBAL_AGENTS_END,
     SANE_REVIEWER_AGENT_NAME, SANE_ROUTER_SKILL_NAME, sane_explorer_agent,
-    sane_global_agents_overlay, sane_reviewer_agent, sane_router_skill,
+    sane_global_agents_overlay, sane_optional_pack_skill, sane_optional_pack_skill_name,
+    sane_reviewer_agent, sane_router_skill,
 };
 use sane_platform::{CodexPaths, ProjectPaths, detect_platform};
 use sane_state::{EventRecord, RunSnapshot, RunSummary};
@@ -1859,6 +1860,33 @@ fn format_guidance_packs(packs: GuidancePacks) -> String {
     enabled.join(", ")
 }
 
+fn enabled_optional_pack_skills(packs: GuidancePacks) -> Vec<(&'static str, String)> {
+    ["caveman", "cavemem", "rtk", "frontend-craft"]
+        .into_iter()
+        .filter(|name| match *name {
+            "caveman" => packs.caveman,
+            "cavemem" => packs.cavemem,
+            "rtk" => packs.rtk,
+            "frontend-craft" => packs.frontend_craft,
+            _ => false,
+        })
+        .filter_map(|name| sane_optional_pack_skill(name).map(|body| (name, body)))
+        .collect()
+}
+
+fn disabled_optional_pack_names(packs: GuidancePacks) -> Vec<&'static str> {
+    ["caveman", "cavemem", "rtk", "frontend-craft"]
+        .into_iter()
+        .filter(|name| match *name {
+            "caveman" => !packs.caveman,
+            "cavemem" => !packs.cavemem,
+            "rtk" => !packs.rtk,
+            "frontend-craft" => !packs.frontend_craft,
+            _ => false,
+        })
+        .collect()
+}
+
 fn save_config(paths: &ProjectPaths, config: &LocalConfig) -> Result<OperationResult, String> {
     paths
         .ensure_runtime_dirs()
@@ -2016,7 +2044,7 @@ fn inspect_inventory(
     let codex_config_inventory = inspect_codex_config_inventory(codex_paths)?;
     let hooks_inventory = inspect_hooks_inventory(codex_paths)?;
     let custom_agents_inventory = inspect_custom_agents_inventory(codex_paths);
-    let pack_inventory = inspect_pack_inventory(paths);
+    let pack_inventory = inspect_pack_inventory(paths, codex_paths);
     let expected_packs = active_guidance_packs(paths).ok();
     let expected_user_skill = expected_packs.map(sane_router_skill);
     let expected_global_agents = expected_packs.map(sane_global_agents_overlay);
@@ -2210,7 +2238,7 @@ fn inspect_inventory(
     Ok(inventory)
 }
 
-fn inspect_pack_inventory(paths: &ProjectPaths) -> Vec<InventoryItem> {
+fn inspect_pack_inventory(paths: &ProjectPaths, codex_paths: &CodexPaths) -> Vec<InventoryItem> {
     enum ConfigState {
         Missing,
         Invalid,
@@ -2243,10 +2271,12 @@ fn inspect_pack_inventory(paths: &ProjectPaths) -> Vec<InventoryItem> {
                 ConfigState::Invalid => InventoryStatus::Invalid,
                 ConfigState::Loaded(config) => match pack_name {
                     "core" if config.packs.core => InventoryStatus::Installed,
-                    "caveman" if config.packs.caveman => InventoryStatus::Configured,
-                    "cavemem" if config.packs.cavemem => InventoryStatus::Configured,
-                    "rtk" if config.packs.rtk => InventoryStatus::Configured,
-                    "frontend-craft" if config.packs.frontend_craft => InventoryStatus::Configured,
+                    "caveman" if config.packs.caveman => pack_skill_status(codex_paths, "caveman"),
+                    "cavemem" if config.packs.cavemem => pack_skill_status(codex_paths, "cavemem"),
+                    "rtk" if config.packs.rtk => pack_skill_status(codex_paths, "rtk"),
+                    "frontend-craft" if config.packs.frontend_craft => {
+                        pack_skill_status(codex_paths, "frontend-craft")
+                    }
                     _ => InventoryStatus::Disabled,
                 },
             },
@@ -2256,11 +2286,39 @@ fn inspect_pack_inventory(paths: &ProjectPaths) -> Vec<InventoryItem> {
                 ConfigState::Invalid => Some("repair config first".to_string()),
                 ConfigState::Loaded(_) => match pack_name {
                     "core" => None,
-                    _ => Some("managed install/export still deferred".to_string()),
+                    _ => match pack_skill_status(codex_paths, pack_name) {
+                        InventoryStatus::Installed => None,
+                        InventoryStatus::Configured => {
+                            Some("rerun `export user-skills`".to_string())
+                        }
+                        _ => None,
+                    },
                 },
             },
         })
         .collect()
+}
+
+fn pack_skill_status(codex_paths: &CodexPaths, pack_name: &str) -> InventoryStatus {
+    let Some(skill_name) = sane_optional_pack_skill_name(pack_name) else {
+        return InventoryStatus::Configured;
+    };
+    let Some(expected) = sane_optional_pack_skill(pack_name) else {
+        return InventoryStatus::Configured;
+    };
+    let skill_path = codex_paths
+        .user_skills_dir
+        .join(skill_name)
+        .join("SKILL.md");
+
+    if !skill_path.exists() {
+        return InventoryStatus::Configured;
+    }
+
+    match fs::read_to_string(skill_path) {
+        Ok(body) if body == expected => InventoryStatus::Installed,
+        Ok(_) | Err(_) => InventoryStatus::Configured,
+    }
 }
 
 fn find_inventory<'a>(inventory: &'a [InventoryItem], name: &str) -> &'a InventoryItem {
@@ -2364,6 +2422,25 @@ fn export_user_skills(
     let skill_path = skill_dir.join("SKILL.md");
     let packs = active_guidance_packs(paths)?;
     fs::write(&skill_path, sane_router_skill(packs)).map_err(|error| error.to_string())?;
+    let mut paths_touched = vec![skill_path.display().to_string()];
+
+    for (pack_name, content) in enabled_optional_pack_skills(packs) {
+        let skill_name = sane_optional_pack_skill_name(pack_name).expect("pack skill name");
+        let pack_dir = codex_paths.user_skills_dir.join(skill_name);
+        fs::create_dir_all(&pack_dir).map_err(|error| error.to_string())?;
+        let pack_path = pack_dir.join("SKILL.md");
+        fs::write(&pack_path, content).map_err(|error| error.to_string())?;
+        paths_touched.push(pack_path.display().to_string());
+    }
+
+    for pack_name in disabled_optional_pack_names(packs) {
+        let skill_name = sane_optional_pack_skill_name(pack_name).expect("pack skill name");
+        let pack_dir = codex_paths.user_skills_dir.join(skill_name);
+        if pack_dir.exists() {
+            fs::remove_dir_all(&pack_dir).map_err(|error| error.to_string())?;
+            paths_touched.push(pack_dir.display().to_string());
+        }
+    }
 
     Ok(OperationResult {
         kind: OperationKind::ExportUserSkills,
@@ -2372,7 +2449,7 @@ fn export_user_skills(
             format!("path: {}", skill_path.display()),
             format!("packs: {}", format_guidance_packs(packs)),
         ],
-        paths_touched: vec![skill_path.display().to_string()],
+        paths_touched,
         inventory: vec![InventoryItem {
             name: "user-skills".to_string(),
             scope: InventoryScope::CodexNative,
@@ -2440,8 +2517,13 @@ fn export_global_agents(
 fn uninstall_user_skills(codex_paths: &CodexPaths) -> Result<OperationResult, String> {
     let skill_dir = codex_paths.user_skills_dir.join(SANE_ROUTER_SKILL_NAME);
     let skill_path = skill_dir.join("SKILL.md");
+    let optional_dirs = ["caveman", "cavemem", "rtk", "frontend-craft"]
+        .into_iter()
+        .filter_map(sane_optional_pack_skill_name)
+        .map(|name| codex_paths.user_skills_dir.join(name))
+        .collect::<Vec<_>>();
 
-    if !skill_dir.exists() {
+    if !skill_dir.exists() && optional_dirs.iter().all(|dir| !dir.exists()) {
         return Ok(OperationResult {
             kind: OperationKind::UninstallUserSkills,
             summary: format!(
@@ -2460,12 +2542,23 @@ fn uninstall_user_skills(codex_paths: &CodexPaths) -> Result<OperationResult, St
         });
     }
 
-    fs::remove_dir_all(&skill_dir).map_err(|error| error.to_string())?;
+    let mut paths_touched = vec![];
+    if skill_dir.exists() {
+        fs::remove_dir_all(&skill_dir).map_err(|error| error.to_string())?;
+        paths_touched.push(skill_dir.display().to_string());
+    }
+    for dir in optional_dirs {
+        if dir.exists() {
+            fs::remove_dir_all(&dir).map_err(|error| error.to_string())?;
+            paths_touched.push(dir.display().to_string());
+        }
+    }
+
     Ok(OperationResult {
         kind: OperationKind::UninstallUserSkills,
         summary: format!("uninstall user-skills: removed {}", SANE_ROUTER_SKILL_NAME),
         details: vec![],
-        paths_touched: vec![skill_dir.display().to_string()],
+        paths_touched,
         inventory: vec![InventoryItem {
             name: "user-skills".to_string(),
             scope: InventoryScope::CodexNative,
@@ -3587,11 +3680,32 @@ mod tests {
             .join("skills")
             .join("sane-router")
             .join("SKILL.md");
+        let caveman_path = home
+            .path()
+            .join(".agents")
+            .join("skills")
+            .join("sane-caveman")
+            .join("SKILL.md");
+        let rtk_path = home
+            .path()
+            .join(".agents")
+            .join("skills")
+            .join("sane-rtk")
+            .join("SKILL.md");
+        let frontend_craft_path = home
+            .path()
+            .join(".agents")
+            .join("skills")
+            .join("sane-frontend-craft")
+            .join("SKILL.md");
         let body = std::fs::read_to_string(skill_path).unwrap();
 
         assert!(body.contains("caveman pack active"));
         assert!(body.contains("rtk pack active"));
         assert!(body.contains("frontend-craft pack active"));
+        assert!(caveman_path.exists());
+        assert!(rtk_path.exists());
+        assert!(frontend_craft_path.exists());
     }
 
     #[test]
@@ -3706,6 +3820,10 @@ mod tests {
         let project = tempdir().unwrap();
         let home = tempdir().unwrap();
         std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        let paths = sane_platform::ProjectPaths::discover(project.path()).unwrap();
+        let mut config = sane_config::LocalConfig::default();
+        config.packs.caveman = true;
+        let _ = super::save_config(&paths, &config).unwrap();
 
         let _ = run_with_home(&["export", "user-skills"], project.path(), home.path()).unwrap();
         let output =
@@ -3716,9 +3834,15 @@ mod tests {
             .join(".agents")
             .join("skills")
             .join("sane-router");
+        let caveman_path = home
+            .path()
+            .join(".agents")
+            .join("skills")
+            .join("sane-caveman");
 
         assert!(output.contains("uninstall user-skills"));
         assert!(!skill_path.exists());
+        assert!(!caveman_path.exists());
     }
 
     #[test]
@@ -3890,6 +4014,25 @@ mod tests {
         assert!(output.contains("pack-rtk: configured"));
         assert!(doctor.contains("pack-caveman: enabled (config only)"));
         assert!(doctor.contains("pack-rtk: enabled (config only)"));
+    }
+
+    #[test]
+    fn status_reports_enabled_optional_packs_as_installed_after_export() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+
+        let paths = sane_platform::ProjectPaths::discover(project.path()).unwrap();
+        let mut config = sane_config::LocalConfig::default();
+        config.packs.caveman = true;
+        let _ = super::save_config(&paths, &config).unwrap();
+        let _ = run_with_home(&["export", "user-skills"], project.path(), home.path()).unwrap();
+
+        let output = run_with_home(&["status"], project.path(), home.path()).unwrap();
+        let doctor = run_with_home(&["doctor"], project.path(), home.path()).unwrap();
+
+        assert!(output.contains("pack-caveman: installed"));
+        assert!(doctor.contains("pack-caveman: enabled"));
     }
 
     #[test]

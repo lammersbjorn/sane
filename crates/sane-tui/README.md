@@ -19,7 +19,7 @@ Current responsibility:
 - action list, status summary, output panel, and quit flow
 - grouped status inventory for local runtime vs Codex-native assets
 - built-in pack status surfaced through local runtime inventory
-- optional packs currently report config state separately from real managed install state
+- optional packs now move from config-only to installed once managed user-skill exports are present
 - current user-skill and global AGENTS exports pick up enabled guidance packs from local config
 - stale exported guidance assets are now flagged by status/doctor and repaired by rerunning export
 - user-facing operational output
