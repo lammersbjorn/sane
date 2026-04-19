@@ -28,6 +28,9 @@ pub struct ProjectPaths {
     pub logs_dir: PathBuf,
     pub sessions_dir: PathBuf,
     pub telemetry_dir: PathBuf,
+    pub telemetry_summary_path: PathBuf,
+    pub telemetry_events_path: PathBuf,
+    pub telemetry_queue_path: PathBuf,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -64,6 +67,9 @@ impl ProjectPaths {
         let logs_dir = runtime_root.join("logs");
         let sessions_dir = runtime_root.join("sessions");
         let telemetry_dir = runtime_root.join("telemetry");
+        let telemetry_summary_path = telemetry_dir.join("summary.json");
+        let telemetry_events_path = telemetry_dir.join("events.jsonl");
+        let telemetry_queue_path = telemetry_dir.join("queue.jsonl");
         let current_run_path = state_dir.join("current-run.json");
         let summary_path = state_dir.join("summary.json");
         let events_path = state_dir.join("events.jsonl");
@@ -91,6 +97,9 @@ impl ProjectPaths {
             logs_dir,
             sessions_dir,
             telemetry_dir,
+            telemetry_summary_path,
+            telemetry_events_path,
+            telemetry_queue_path,
         }
     }
 
@@ -118,11 +127,14 @@ impl ProjectPaths {
     }
 
     pub fn ensure_runtime_dirs(&self) -> std::io::Result<()> {
+        std::fs::create_dir_all(&self.runtime_root)?;
         std::fs::create_dir_all(&self.state_dir)?;
         std::fs::create_dir_all(&self.cache_dir)?;
+        std::fs::create_dir_all(&self.backups_dir)?;
         std::fs::create_dir_all(&self.codex_config_backups_dir)?;
         std::fs::create_dir_all(&self.logs_dir)?;
         std::fs::create_dir_all(&self.sessions_dir)?;
+        std::fs::create_dir_all(&self.telemetry_dir)?;
         Ok(())
     }
 }

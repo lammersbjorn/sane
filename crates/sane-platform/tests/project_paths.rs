@@ -62,6 +62,27 @@ fn project_paths_use_dot_sane_namespace() {
         paths.telemetry_dir,
         dir.path().join(".sane").join("telemetry")
     );
+    assert_eq!(
+        paths.telemetry_summary_path,
+        dir.path()
+            .join(".sane")
+            .join("telemetry")
+            .join("summary.json")
+    );
+    assert_eq!(
+        paths.telemetry_events_path,
+        dir.path()
+            .join(".sane")
+            .join("telemetry")
+            .join("events.jsonl")
+    );
+    assert_eq!(
+        paths.telemetry_queue_path,
+        dir.path()
+            .join(".sane")
+            .join("telemetry")
+            .join("queue.jsonl")
+    );
 }
 
 #[test]
@@ -100,4 +121,21 @@ fn codex_paths_use_user_skill_location_from_docs() {
         paths.hooks_json,
         home.path().join(".codex").join("hooks.json")
     );
+}
+
+#[test]
+fn ensure_runtime_dirs_creates_state_and_telemetry_layout() {
+    let dir = tempdir().unwrap();
+    let paths = ProjectPaths::new(dir.path());
+
+    paths.ensure_runtime_dirs().unwrap();
+
+    assert!(paths.runtime_root.is_dir());
+    assert!(paths.state_dir.is_dir());
+    assert!(paths.cache_dir.is_dir());
+    assert!(paths.backups_dir.is_dir());
+    assert!(paths.codex_config_backups_dir.is_dir());
+    assert!(paths.logs_dir.is_dir());
+    assert!(paths.sessions_dir.is_dir());
+    assert!(paths.telemetry_dir.is_dir());
 }

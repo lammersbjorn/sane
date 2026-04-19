@@ -1,6 +1,6 @@
 # Sane Decision Log
 
-Last updated: 2026-04-19
+Last updated: 2026-04-20
 
 This file is the durable source of truth for decisions already made in the April 19, 2026 session.
 
@@ -46,6 +46,7 @@ Primary source:
 - No wrapper-first runtime
 - Rust should primarily be the installer / configurator / updater / doctor / asset manager
 - Codex-native installation targets are the main product surface
+- Current managed Codex surfaces include the user skill, optional repo skills, optional repo `AGENTS.md` block, global `AGENTS.md` block, hooks, and custom agents
 - Optional user-level Codex settings management is allowed later, but only as an explicit opt-in surface with preserve / backup / restore behavior
 - Local state may exist, but it must stay thin and operational rather than becoming a separate day-to-day runtime
 
@@ -86,6 +87,13 @@ Primary source:
 - TUI is for setup / config / update / export / doctor flows
 - TUI is not the normal prompting interface
 - Onboarding can borrow from the strongest parts of `openagentsbtw`, without becoming command-first
+- The current no-args TUI should open into an onboarding-first tabbed layout
+- Current section tabs are `Get started`, `Preferences`, `Install`, `Inspect`, and `Repair`
+- Narrow layouts take priority over forcing a cramped wide split
+- Risky writes require confirmation, and successful writes may use explicit notice popups plus compact result feedback
+- User-facing copy should name concrete installs/files instead of vague "assets"
+- Onboarding may offer an explicit opt-in attribution option for the user's repo or project
+- Attribution must be off by default, previewed clearly, easy to remove, and never hidden
 
 ### Platform / Implementation
 
@@ -129,13 +137,14 @@ Primary source:
 These are strong direction, but not frozen down to exact implementation shape.
 
 - Thin Rust control plane first, Codex-native asset management as the core product
+- Keep `ratatui` for the current TUI path unless product needs prove otherwise
 - Adaptive policy engine over rigid visible modes
 - No numeric scoring engine as the core UX
 - Structured machine-readable state plus compact human summaries
 - Self-hosting should be milestone-gated, not vibe-gated
 - Internal architecture should treat builtin packs as if they were plugins:
   - manifest/config boundary
-  - isolated assets/templates
+  - isolated templates/export content
   - clear capabilities
   - explicit install/export hooks
 
@@ -146,10 +155,10 @@ These are still undecided and should stay out of `Locked`.
 - Exact local runtime directory layout and names
 - Exact state file formats and compaction strategy
 - Exact Rust crate boundaries
-- Exact TUI library choice
 - Exact `v1` built-in packs
-- Exact export surfaces beyond optional `AGENTS.md`
+- Any additional export surfaces beyond the current user skill, repo skills, repo `AGENTS.md` block, global `AGENTS.md` block, hooks, and custom agents
 - Exact model preset matrix and routing rules
+- Whether the TUI needs more than the current `ratatui` path after polish work is exhausted
 - Final product name for the later end-to-end outcome-runner flow
 - Exact self-hosting milestone checklist
 - Exact telemetry schema

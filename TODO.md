@@ -10,6 +10,8 @@ Before changing architecture or product direction, read:
 - `docs/plans/2026-04-19-sane-strict-implementation-plan.md`
 - `docs/specs/2026-04-19-sane-backend-contract.md`
 - `docs/specs/2026-04-19-sane-design.md`
+- `docs/specs/2026-04-20-sane-tui-redesign.md`
+- `docs/research/2026-04-20-tui-tooling-and-ux-audit.md`
 
 Do not re-litigate already-locked philosophy unless a new decision log explicitly changes it.
 Do not skip ahead of the strict implementation plan.
@@ -25,6 +27,7 @@ Do not skip ahead of the strict implementation plan.
 - Local operational state may exist under `.sane`, but it must stay thin
 - TUI is for setup/ops, not normal prompting
 - no-args TUI should feel like onboarding first, settings second
+- onboarding may include optional repo attribution, but only as explicit opt-in with preview and easy removal
 - Adaptive workflow policy, not rigid user-facing modes
 - Single-agent default
 - Subagents only when clearly useful
@@ -147,10 +150,13 @@ cargo test
 
 ## Open Research / Decisions
 
-- [ ] Exact TUI library choice
 - [ ] Exact `v1` built-in packs
 - [ ] Exact self-hosting milestone checklist
 - [ ] Exact post-`v1` packaging automation sequence
+- [ ] Exact default attribution surface if onboarding opt-in ships:
+  - README badge
+  - README credits line
+  - both
 
 ## Agent Working Rules
 

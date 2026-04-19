@@ -1,6 +1,6 @@
 # Sane Strict Implementation Plan
 
-Last updated: 2026-04-19
+Last updated: 2026-04-20
 
 This plan is intentionally strict.
 
@@ -171,6 +171,7 @@ Rules:
 - onboarding first, settings second
 - current command verbs may remain only as backend/dev escape hatch
 - docs present TUI first
+- optional attribution prompts are allowed only if they are explicit opt-in, previewed, and removable
 
 Minimum TUI:
 - onboarding home screen
@@ -180,45 +181,68 @@ Minimum TUI:
 - output/result panel
 - quit path
 
-First TUI sections:
-- Start here
-- Configure
-- Exports
+Current visual/interaction direction for the TUI lives in:
+- `/Users/bjorn/Code/labs/betteragents/docs/specs/2026-04-20-sane-tui-redesign.md`
+- `/Users/bjorn/Code/labs/betteragents/docs/research/2026-04-20-tui-tooling-and-ux-audit.md`
+
+Current TUI sections:
+- Get started
+- Preferences
+- Install
 - Inspect
 - Repair
 
+Current accepted shape:
+- no-args launch lands in `Get started`
+- section tabs are the main navigation model
+- `sane settings` lands directly in `Preferences`
+- narrow layouts stack action/help/result before using a wide split
+- risky writes require confirmation
+- successful writes can use notice popups and compact result feedback
+
 Required shortcut:
 - `sane settings` should jump directly into the configure/settings section
+
+Allowed onboarding choice:
+- optional "Built with Sane" style attribution prompt for users who want to support the project
+- must never be preselected
+- must show exact target file(s) and exact text before apply
 
 Not allowed:
 - pack browser yet
 - routing engine UI yet
 
-## B3. Asset Inventory / Auditability
+## B3. Managed Surface Inventory / Auditability
 
 Goal:
-- make managed assets visible before more targets are added
+- make managed surfaces visible before more targets are added
 
 Deliverables:
 - installed/missing/invalid view
 - repair hints
 - touched paths
-- clear distinction between local operational state and Codex-native managed assets
+- clear distinction between local operational state and Codex-native managed installs
 
 Gate:
 - no more managed targets until this exists
 
-## B4. Next Managed Targets
+## B4. Remaining Managed Targets
 
 Goal:
-- expand Codex-native targets in strict order
+- expand Codex-native targets in strict order without reopening already-landed surfaces
 
-Order:
-1. hooks
-2. optional custom agents
-3. optional further overlays
-4. optional user-level Codex settings profile
-5. repo-level exports later
+Already landed:
+- user skill
+- repo skills
+- repo `AGENTS.md` block
+- global `AGENTS.md` block
+- hooks
+- custom agents: `sane-agent`, `sane-reviewer`, `sane-explorer`
+
+Remaining order:
+1. optional further overlays
+2. optional user-level Codex settings profile widening
+3. any new repo-level exports beyond the current set, only if clearly justified
 
 Rules:
 - additive only
@@ -300,10 +324,15 @@ Prerequisites:
 - verification/eval harness in place
 - bounded self-repair and issue-relay policy in place
 
+Later phase follow-on:
+- add a conflict checker for pre-existing user setup that could interfere with Sane-managed behavior
+- cover MCPs, plugins, config drift, and related Codex-adjacent setup before making assumptions about a clean environment
+- treat this as detect-and-warn first, not auto-fix
+
 ## Current Known Repo Mismatch
 
 Current repo already has:
-- backend asset management
+- backend managed-surface handling
 - command shell
 - current managed surfaces
 - doctor coverage

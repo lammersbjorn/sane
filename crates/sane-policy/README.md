@@ -33,6 +33,8 @@ This crate keeps the logic:
 
 - policy input types
 - policy output types
+- typed rule/trace output for obligation explanations
+- canonical scenario fixtures for backend inspection
 - role recommendation helpers
 - pure evaluation logic
 
@@ -44,6 +46,12 @@ This crate keeps the logic:
 - path discovery
 
 It should stay deterministic and explainable.
+
+## Key Entry Points
+
+- `evaluate`: compute obligations only
+- `explain`: compute obligations, role plan, and typed rule trace
+- `canonical_scenarios`: stable fixtures for backend/dev policy previews
 
 ## Contributor Note
 

@@ -1,4 +1,7 @@
-use sane_state::{EventRecord, RunSnapshot, RunSummary};
+use sane_state::{
+    ArtifactRecord, CurrentRunState, DecisionRecord, EventRecord, RunSnapshot, RunSummary,
+    SummaryPromotion,
+};
 use tempfile::tempdir;
 
 #[test]
@@ -23,11 +26,13 @@ fn run_summary_persists_to_disk() {
     let path = dir.path().join("summary.json");
 
     let summary = RunSummary {
-        version: 1,
+        version: 2,
         accepted_decisions: vec!["plain-language first".to_string()],
         completed_milestones: vec!["bootstrap".to_string()],
         constraints: vec!["no required AGENTS.md".to_string()],
+        last_verified_outputs: vec!["cargo test -p sane-state".to_string()],
         files_touched: vec!["README.md".to_string()],
+        extra: Default::default(),
     };
 
     summary.write_to_path(&path).unwrap();
@@ -58,4 +63,140 @@ fn event_record_appends_jsonl() {
     assert_eq!(decoded.category, "operation");
     assert_eq!(decoded.action, "install_runtime");
     assert_eq!(decoded.result, "ok");
+}
+
+#[test]
+fn current_run_state_persists_to_disk() {
+    let dir = tempdir().unwrap();
+    let path = dir.path().join("current-run.json");
+
+    let state = CurrentRunState {
+        version: 2,
+        objective: "finish R3".to_string(),
+        phase: "verifying".to_string(),
+        active_tasks: vec!["cargo test -p sane-state".to_string()],
+        blocking_questions: vec!["confirm telemetry wording".to_string()],
+        verification: sane_state::VerificationStatus {
+            status: "in_progress".to_string(),
+            summary: Some("running crate tests".to_string()),
+        },
+        last_compaction_ts_unix: Some(1_713_560_000),
+        extra: Default::default(),
+    };
+
+    state.write_to_path(&path).unwrap();
+    let decoded = CurrentRunState::read_from_path(&path).unwrap();
+
+    assert_eq!(decoded, state);
+}
+
+#[test]
+fn legacy_run_summary_reads_with_defaults() {
+    let dir = tempdir().unwrap();
+    let path = dir.path().join("summary.json");
+
+    std::fs::write(
+        &path,
+        r#"{
+  "version": 1,
+  "accepted_decisions": ["plain-language first"],
+  "completed_milestones": ["bootstrap"],
+  "constraints": ["no required AGENTS.md"],
+  "files_touched": ["README.md"],
+  "carry_forward": "keep me"
+}"#,
+    )
+    .unwrap();
+
+    let decoded = RunSummary::read_from_path(&path).unwrap();
+
+    assert_eq!(decoded.version, 2);
+    assert!(decoded.last_verified_outputs.is_empty());
+    assert_eq!(
+        decoded.extra.get("carry_forward"),
+        Some(&serde_json::Value::String("keep me".to_string()))
+    );
+}
+
+#[test]
+fn summary_promotion_dedupes_and_brief_render_uses_current_state() {
+    let mut summary = RunSummary::default();
+    summary.apply_promotion(SummaryPromotion {
+        accepted_decisions: vec!["keep .sane thin".to_string(), "keep .sane thin".to_string()],
+        completed_milestones: vec!["runtime installed".to_string()],
+        constraints: vec!["local-only state".to_string()],
+        last_verified_outputs: vec!["cargo test -p sane-state".to_string()],
+        files_touched: vec!["crates/sane-state/src/lib.rs".to_string()],
+    });
+
+    let current = CurrentRunState {
+        version: 2,
+        objective: "Finish R3".to_string(),
+        phase: "implementing".to_string(),
+        active_tasks: vec!["wire typed records".to_string()],
+        blocking_questions: vec!["none".to_string()],
+        verification: sane_state::VerificationStatus {
+            status: "pending".to_string(),
+            summary: Some("tests not run yet".to_string()),
+        },
+        last_compaction_ts_unix: Some(1_713_560_000),
+        extra: Default::default(),
+    };
+
+    assert_eq!(summary.accepted_decisions, vec!["keep .sane thin"]);
+    assert_eq!(
+        summary.last_verified_outputs,
+        vec!["cargo test -p sane-state"]
+    );
+
+    let brief = summary.render_brief(&current);
+    assert!(brief.contains("# Sane Brief"));
+    assert!(brief.contains("Finish R3"));
+    assert!(brief.contains("implementing"));
+    assert!(brief.contains("keep .sane thin"));
+    assert!(brief.contains("cargo test -p sane-state"));
+}
+
+#[test]
+fn decision_record_appends_jsonl() {
+    let dir = tempdir().unwrap();
+    let path = dir.path().join("decisions.jsonl");
+
+    let decision = DecisionRecord::new(
+        "runtime installed",
+        "keep repair paths reversible",
+        vec![".sane/config.local.toml".to_string()],
+    );
+
+    decision.append_jsonl(&path).unwrap();
+
+    let body = std::fs::read_to_string(&path).unwrap();
+    let decoded: DecisionRecord = serde_json::from_str(body.lines().next().unwrap()).unwrap();
+
+    assert_eq!(decoded.version, 1);
+    assert_eq!(decoded.summary, "runtime installed");
+    assert_eq!(decoded.rationale, "keep repair paths reversible");
+}
+
+#[test]
+fn artifact_record_appends_jsonl() {
+    let dir = tempdir().unwrap();
+    let path = dir.path().join("artifacts.jsonl");
+
+    let artifact = ArtifactRecord::new(
+        "report",
+        "docs/report.md",
+        "state audit report",
+        vec!["docs/report.md".to_string()],
+    );
+
+    artifact.append_jsonl(&path).unwrap();
+
+    let body = std::fs::read_to_string(&path).unwrap();
+    let decoded: ArtifactRecord = serde_json::from_str(body.lines().next().unwrap()).unwrap();
+
+    assert_eq!(decoded.version, 1);
+    assert_eq!(decoded.kind, "report");
+    assert_eq!(decoded.path, "docs/report.md");
+    assert_eq!(decoded.summary, "state audit report");
 }

@@ -4,6 +4,7 @@ pub const SANE_CAVEMAN_PACK_SKILL_NAME: &str = "sane-caveman";
 pub const SANE_CAVEMEM_PACK_SKILL_NAME: &str = "sane-cavemem";
 pub const SANE_RTK_PACK_SKILL_NAME: &str = "sane-rtk";
 pub const SANE_FRONTEND_CRAFT_PACK_SKILL_NAME: &str = "sane-frontend-craft";
+pub const SANE_AGENT_NAME: &str = "sane-agent";
 pub const SANE_REVIEWER_AGENT_NAME: &str = "sane-reviewer";
 pub const SANE_EXPLORER_AGENT_NAME: &str = "sane-explorer";
 pub const SANE_GLOBAL_AGENTS_BEGIN: &str = "<!-- sane:global-agents:start -->";
@@ -179,15 +180,15 @@ pub fn sane_router_skill(packs: GuidancePacks, roles: &ModelRoleGuidance) -> Str
     let mut body = vec![
         "---".to_string(),
         "name: sane-router".to_string(),
-        "description: Install and manage Sane's Codex-native plain-language workflow assets, model routing defaults, subagent selection policy, and optional hooks without forcing repo mutation.".to_string(),
+        "description: Install and manage Sane's Codex-native guidance, model routing defaults, subagent selection policy, and optional hooks without forcing repo mutation.".to_string(),
         "---".to_string(),
         "".to_string(),
         "# Sane Router".to_string(),
         "".to_string(),
-        "Use this managed skill when work touches Sane itself, its Codex-native asset installation, or its plain-language adaptive workflow rules.".to_string(),
+        "Use this managed skill when work touches Sane itself, its Codex-native install surfaces, or its plain-language adaptive workflow rules.".to_string(),
         "".to_string(),
         "Prefer this skill for:".to_string(),
-        "- installing or uninstalling Sane-managed Codex assets".to_string(),
+        "- installing or uninstalling Sane-managed Codex changes".to_string(),
         "- adjusting plain-language routing and model-role defaults".to_string(),
         "- maintaining user-level skills, hooks, and optional AGENTS overlays".to_string(),
         "- keeping Sane thin, Codex-native, and low-ceremony".to_string(),
@@ -355,6 +356,23 @@ Review with Sane philosophy:
 - be terse and specific
 - cite concrete files and behavior
 - do not propose speculative churn
+"""
+"#
+}
+
+pub fn sane_agent() -> &'static str {
+    r#"name = "sane_agent"
+description = "Main Sane agent for Codex. Plain-language first, adaptive, low-ceremony, and focused on getting the requested result all the way done."
+sandbox_mode = "workspace-write"
+
+developer_instructions = """
+Work with Sane philosophy:
+- plain-language first
+- commands and rituals optional
+- prefer the lightest process that still gets the result done
+- adapt model/subagent use to the task
+- keep repo mutation explicit
+- verify meaningful changes before claiming success
 """
 "#
 }

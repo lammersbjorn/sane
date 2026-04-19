@@ -1,0 +1,200 @@
+# Sane TUI Redesign
+
+Last updated: 2026-04-20
+
+Purpose:
+- replace the current cluttered terminal UI with a cleaner onboarding-first structure
+- keep `ratatui`
+- make `Sane` feel intentionally designed instead of debug-panel driven
+
+Related:
+- `docs/research/2026-04-20-tui-tooling-and-ux-audit.md`
+
+## Product Goal
+
+The TUI should feel like:
+
+- a guided setup experience for first-time users
+- a clean management surface for later users
+- not a raw command dispatcher
+- not a wall of boxes
+- not an internal backend demo
+
+## Current Screen Model
+
+### 1. Welcome Shell
+
+Purpose:
+- orient the user
+- explain what `Sane` is in one glance
+- offer the clearest next step
+
+Should show:
+
+- title and one-line value prop
+- current project label and recommended next step
+- one section-tab row
+- one ordered action list for the active section
+- one recommended primary action
+- compact current state summary / warnings
+
+Should not show:
+
+- full inventory
+- giant output log
+- every install target at once
+- every rollback action
+
+### 2. Get Started
+
+Purpose:
+- drive first-run setup in one obvious ordered sequence
+
+Steps:
+
+1. local runtime
+2. inspect current Codex config
+3. preview core profile
+4. optional backup
+5. apply core profile
+6. install `Sane` into Codex
+
+Current install bundle:
+
+- user skill
+- global `AGENTS.md` block
+- hooks
+- custom agents: `sane-agent`, `sane-reviewer`, `sane-explorer`
+
+Not part of the main onboarding button:
+
+- repo skills
+- repo `AGENTS.md` block
+- optional provider/integration installs
+
+Rules:
+
+- each step must explain impact
+- each step must say what files change
+- the list should read top-to-bottom without extra routing ceremony
+
+### 3. Preferences
+
+Purpose:
+- let the user change local defaults without feeling like they are in a debug console
+
+Content:
+
+- model roles
+- built-in packs
+- privacy / telemetry
+- optional provider profiles
+
+### 4. Inspect
+
+Purpose:
+- give clear read-only truth
+
+Content:
+
+- status summary
+- doctor result
+- local config view
+- Codex config view
+- export drift view
+
+### 5. Install
+
+Purpose:
+- manage Codex-native installs directly
+
+Content:
+
+- user skills
+- repo skills
+- repo `AGENTS.md`
+- global `AGENTS.md` block
+- hooks
+- custom agents (`sane-agent`, `sane-reviewer`, `sane-explorer`)
+- install all supported user-level items together
+
+### 6. Repair
+
+Purpose:
+- recovery and rollback
+
+Content:
+
+- reinstall / repair runtime
+- backup Codex config
+- restore Codex config
+- uninstall selected managed installs
+- uninstall all
+
+## Visual Rules
+
+- one dominant pane per screen
+- one secondary explanation pane
+- compact footer for keys
+- favor narrow layouts first; stack action/help/result vertically before forcing a cramped wide split
+- avoid triple-stack box layouts by default
+- no permanent "output dump" pane on every screen
+- keep a compact `Last Result` area in the dashboard
+- use confirm popups for risky writes
+- use notice/result popups for successful writes that deserve explicit feedback
+
+## Content Rules
+
+- always explain impact in user language
+- explain files touched before apply/export
+- label optional repo mutation explicitly
+- say "Codex-native" when relevant
+- prefer "what this does for you" before "technical implementation"
+- avoid vague "assets" wording in user-facing copy when the real thing is a skill, hook, `AGENTS.md` block, config change, or custom agent file
+
+## Attribution Step
+
+Not in the current TUI.
+
+If added later:
+
+- label: `Support Sane in this repo`
+- default: off
+- behavior: preview exact attribution text and exact files first
+- removal: reversible from repair/settings later
+
+Allowed shapes:
+
+- README badge
+- short README credit line
+- both
+
+Not allowed:
+
+- hidden insertion
+- default-on
+- writing attribution without showing the patch preview
+
+## Landed Direction
+
+1. section-tab navigation replaced the flat action wall
+2. onboarding is now the default no-args entrypoint
+3. the main onboarding flow is an ordered `Get started` list
+4. wide two-pane layout is used only when there is room
+5. compact result feedback and popup notices replaced the old always-open dump feel
+6. risky writes require confirmation
+
+## Remaining Polish
+
+1. compact status chips / cards can still improve
+2. attribution preview flow remains future work only
+3. theme polish can continue
+4. motion polish is still a later concern
+
+## Success Criteria
+
+- first-time user can understand `Sane` within 10 seconds
+- first-time user can finish basic setup without knowing Codex internals
+- advanced user can still reach preferences fast
+- inspect and repair feel separate from onboarding
+- the TUI no longer feels like a backend demo

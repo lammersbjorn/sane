@@ -11,19 +11,19 @@ use crossterm::terminal::{
     EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
 };
 use ratatui::backend::CrosstermBackend;
-use ratatui::layout::{Constraint, Direction, Layout, Rect};
-use ratatui::style::{Modifier, Style};
+use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
+use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::Line;
-use ratatui::widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap};
+use ratatui::widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph, Tabs, Wrap};
 use ratatui::{Frame, Terminal};
 use sane_config::{AVAILABLE_MODELS, LocalConfig, ModelPreset, ReasoningEffort, TelemetryLevel};
 use sane_core::{
     GuidancePacks, InventoryItem, InventoryScope, InventoryStatus, ModelRoleGuidance, NAME,
-    OperationKind, OperationResult, SANE_EXPLORER_AGENT_NAME, SANE_GLOBAL_AGENTS_BEGIN,
-    SANE_GLOBAL_AGENTS_END, SANE_REPO_AGENTS_BEGIN, SANE_REPO_AGENTS_END, SANE_REVIEWER_AGENT_NAME,
-    SANE_ROUTER_SKILL_NAME, sane_explorer_agent, sane_global_agents_overlay,
-    sane_optional_pack_skill, sane_optional_pack_skill_name, sane_reviewer_agent,
-    sane_router_skill,
+    OperationKind, OperationResult, SANE_AGENT_NAME, SANE_EXPLORER_AGENT_NAME,
+    SANE_GLOBAL_AGENTS_BEGIN, SANE_GLOBAL_AGENTS_END, SANE_REPO_AGENTS_BEGIN, SANE_REPO_AGENTS_END,
+    SANE_REVIEWER_AGENT_NAME, SANE_ROUTER_SKILL_NAME, sane_agent, sane_explorer_agent,
+    sane_global_agents_overlay, sane_optional_pack_skill, sane_optional_pack_skill_name,
+    sane_reviewer_agent, sane_router_skill,
 };
 use sane_platform::{CodexPaths, ProjectPaths, detect_platform};
 use sane_policy::{
@@ -339,12 +339,6 @@ enum TuiSection {
     Repair,
 }
 
-struct SectionMenu {
-    section: TuiSection,
-    actions: Vec<TuiAction>,
-    selected: usize,
-}
-
 impl TuiAction {
     const fn backend(label: &'static str, command: Command) -> Self {
         Self {
@@ -381,100 +375,70 @@ impl HomeOption {
     }
 }
 
-impl TuiSection {
-    fn label(self) -> &'static str {
-        match self {
-            Self::StartHere => "Start here",
-            Self::Configure => "Configure Sane",
-            Self::Exports => "Manage Codex exports",
-            Self::Inspect => "Inspect current setup",
-            Self::Repair => "Repair or roll back",
-        }
-    }
-}
-
-impl SectionMenu {
-    fn new(section: TuiSection) -> Self {
-        Self {
-            section,
-            actions: section_actions(section),
-            selected: 0,
-        }
-    }
-
-    fn next(&mut self) {
-        self.selected = (self.selected + 1) % self.actions.len();
-    }
-
-    fn previous(&mut self) {
-        self.selected = if self.selected == 0 {
-            self.actions.len() - 1
-        } else {
-            self.selected - 1
-        };
-    }
-
-    fn selected_action(&self) -> TuiAction {
-        self.actions[self.selected]
-    }
-}
-
 fn section_actions(section: TuiSection) -> Vec<TuiAction> {
     match section {
         TuiSection::StartHere => vec![
-            TuiAction::backend("Install local runtime", Command::Install),
-            TuiAction::backend("Preview core Codex profile", Command::PreviewCodexProfile),
-            TuiAction::backend("Backup Codex config", Command::BackupCodexConfig),
-            TuiAction::backend("Apply core Codex profile", Command::ApplyCodexProfile),
+            TuiAction::backend("1. Create the .sane project folder", Command::Install),
+            TuiAction::backend("2. View your current Codex settings", Command::CodexConfig),
             TuiAction::backend(
-                "Preview integrations profile",
-                Command::PreviewIntegrationsProfile,
+                "3. Preview Sane's recommended Codex settings",
+                Command::PreviewCodexProfile,
             ),
+            TuiAction::backend("4. Back up your Codex settings", Command::BackupCodexConfig),
             TuiAction::backend(
-                "Apply integrations profile",
-                Command::ApplyIntegrationsProfile,
+                "5. Apply Sane's recommended Codex settings",
+                Command::ApplyCodexProfile,
             ),
-            TuiAction::backend("Export all managed assets", Command::ExportAll),
+            TuiAction::backend("6. Install Sane into Codex", Command::ExportAll),
         ],
         TuiSection::Configure => vec![
-            TuiAction::config_editor("Model roles"),
-            TuiAction::pack_editor("Built-in packs"),
-            TuiAction::privacy_editor("Privacy / telemetry"),
-            TuiAction::backend("Show local config", Command::Config),
-            TuiAction::backend("Show Codex config", Command::CodexConfig),
+            TuiAction::config_editor("Edit model defaults"),
+            TuiAction::pack_editor("Manage built-in packs"),
+            TuiAction::privacy_editor("Set telemetry level"),
+            TuiAction::backend("View Sane config", Command::Config),
+            TuiAction::backend("View Codex settings", Command::CodexConfig),
             TuiAction::backend(
-                "Preview Cloudflare profile",
+                "Preview Cloudflare tools",
                 Command::PreviewCloudflareProfile,
             ),
-            TuiAction::backend("Apply Cloudflare profile", Command::ApplyCloudflareProfile),
+            TuiAction::backend("Install Cloudflare tools", Command::ApplyCloudflareProfile),
         ],
         TuiSection::Exports => vec![
-            TuiAction::backend("Export router skill", Command::ExportUserSkills),
-            TuiAction::backend("Export repo skills", Command::ExportRepoSkills),
-            TuiAction::backend("Export repo AGENTS", Command::ExportRepoAgents),
-            TuiAction::backend("Export AGENTS block", Command::ExportGlobalAgents),
-            TuiAction::backend("Export hooks", Command::ExportHooks),
-            TuiAction::backend("Export custom agents", Command::ExportCustomAgents),
-            TuiAction::backend("Export all managed assets", Command::ExportAll),
+            TuiAction::backend("Install Sane user skill", Command::ExportUserSkills),
+            TuiAction::backend("Install Sane repo skills", Command::ExportRepoSkills),
+            TuiAction::backend("Install repo AGENTS.md block", Command::ExportRepoAgents),
+            TuiAction::backend(
+                "Install global AGENTS.md block",
+                Command::ExportGlobalAgents,
+            ),
+            TuiAction::backend("Install Sane hooks", Command::ExportHooks),
+            TuiAction::backend("Install Sane custom agents", Command::ExportCustomAgents),
+            TuiAction::backend("Install all Sane items", Command::ExportAll),
         ],
         TuiSection::Inspect => vec![
-            TuiAction::backend("Show status", Command::Status),
-            TuiAction::backend("Run doctor", Command::Doctor),
-            TuiAction::backend("Show local config", Command::Config),
-            TuiAction::backend("Show Codex config", Command::CodexConfig),
+            TuiAction::backend("See installed Sane items", Command::Status),
+            TuiAction::backend("Check for Sane problems", Command::Doctor),
+            TuiAction::backend("View Sane config", Command::Config),
+            TuiAction::backend("View your current Codex settings", Command::CodexConfig),
             TuiAction::backend(
-                "Preview integrations profile",
+                "Preview recommended Codex tools",
                 Command::PreviewIntegrationsProfile,
             ),
-            TuiAction::backend("Inspect adaptive policy", Command::DebugPolicyPreview),
+            TuiAction::backend("Explain routing policy", Command::DebugPolicyPreview),
         ],
         TuiSection::Repair => vec![
-            TuiAction::backend("Install / repair local runtime", Command::Install),
-            TuiAction::backend("Backup Codex config", Command::BackupCodexConfig),
-            TuiAction::backend("Restore Codex config", Command::RestoreCodexConfig),
-            TuiAction::backend("Uninstall repo skills", Command::UninstallRepoSkills),
-            TuiAction::backend("Uninstall repo AGENTS", Command::UninstallRepoAgents),
-            TuiAction::backend("Uninstall all managed assets", Command::UninstallAll),
+            TuiAction::backend("Repair the .sane project folder", Command::Install),
+            TuiAction::backend("Back up your Codex settings", Command::BackupCodexConfig),
+            TuiAction::backend(
+                "Restore your last Codex backup",
+                Command::RestoreCodexConfig,
+            ),
+            TuiAction::backend("Uninstall Sane repo skills", Command::UninstallRepoSkills),
+            TuiAction::backend(
+                "Uninstall repo AGENTS.md block",
+                Command::UninstallRepoAgents,
+            ),
+            TuiAction::backend("Uninstall all Sane items", Command::UninstallAll),
         ],
     }
 }
@@ -482,20 +446,21 @@ fn section_actions(section: TuiSection) -> Vec<TuiAction> {
 struct TuiApp {
     paths: ProjectPaths,
     codex_paths: CodexPaths,
-    home_options: Vec<HomeOption>,
-    home_selected: usize,
+    sections: Vec<HomeOption>,
+    section_selected: usize,
+    action_selected: usize,
     status: OperationResult,
     output: String,
     screen: TuiScreen,
 }
 
 enum TuiScreen {
-    Home,
-    SectionMenu(SectionMenu),
+    Dashboard,
     ConfigEditor(ConfigEditor),
     PrivacyEditor(PrivacyEditor),
     PackEditor(PackEditor),
     Confirm(ConfirmScreen),
+    Notice(NoticeScreen),
 }
 
 struct ConfigEditor {
@@ -515,6 +480,12 @@ struct PackEditor {
 struct ConfirmScreen {
     command: Command,
     label: &'static str,
+    section: TuiSection,
+}
+
+struct NoticeScreen {
+    title: &'static str,
+    body: String,
     section: TuiSection,
 }
 
@@ -714,50 +685,76 @@ impl TuiApp {
         let mut app = Self {
             paths: paths.clone(),
             codex_paths: codex_paths.clone(),
-            home_options: vec![
-                HomeOption::new("Start here", TuiSection::StartHere),
-                HomeOption::new("Configure Sane", TuiSection::Configure),
-                HomeOption::new("Manage Codex exports", TuiSection::Exports),
-                HomeOption::new("Inspect current setup", TuiSection::Inspect),
-                HomeOption::new("Repair or roll back", TuiSection::Repair),
+            sections: vec![
+                HomeOption::new("Get started", TuiSection::StartHere),
+                HomeOption::new("Preferences", TuiSection::Configure),
+                HomeOption::new("Install", TuiSection::Exports),
+                HomeOption::new("Inspect", TuiSection::Inspect),
+                HomeOption::new("Repair", TuiSection::Repair),
             ],
-            home_selected: 0,
+            section_selected: 0,
+            action_selected: 0,
             status,
-            output: "Ready. Start with `Start here` for guided setup, or jump straight into configure, inspect, exports, or repair."
+            output: "Ready. Start in `Get started`. Left/right changes section. Up/down changes option. Enter runs the selected step."
                 .to_string(),
-            screen: TuiScreen::Home,
+            screen: TuiScreen::Dashboard,
         };
 
         if matches!(launch_mode, TuiLaunchMode::Configure) {
-            app.open_section(TuiSection::Configure);
+            app.select_section(TuiSection::Configure);
         }
 
         Ok(app)
     }
 
-    fn next_home(&mut self) {
-        self.home_selected = (self.home_selected + 1) % self.home_options.len();
+    fn next_section(&mut self) {
+        self.section_selected = (self.section_selected + 1) % self.sections.len();
+        self.action_selected = 0;
     }
 
-    fn previous_home(&mut self) {
-        self.home_selected = if self.home_selected == 0 {
-            self.home_options.len() - 1
+    fn previous_section(&mut self) {
+        self.section_selected = if self.section_selected == 0 {
+            self.sections.len() - 1
         } else {
-            self.home_selected - 1
+            self.section_selected - 1
         };
+        self.action_selected = 0;
     }
 
-    fn open_section(&mut self, section: TuiSection) {
-        self.output = format!(
-            "{} open. Pick an action on the left. Esc returns home.",
-            section.label()
-        );
-        self.screen = TuiScreen::SectionMenu(SectionMenu::new(section));
+    fn select_section(&mut self, section: TuiSection) {
+        if let Some(index) = self
+            .sections
+            .iter()
+            .position(|candidate| candidate.section == section)
+        {
+            self.section_selected = index;
+            self.action_selected = 0;
+        }
+    }
+    fn current_section(&self) -> TuiSection {
+        self.sections[self.section_selected].section
     }
 
-    fn open_selected_home(&mut self) {
-        let option = self.home_options[self.home_selected];
-        self.open_section(option.section);
+    fn current_actions(&self) -> Vec<TuiAction> {
+        section_actions(self.current_section())
+    }
+
+    fn current_action(&self) -> TuiAction {
+        self.current_actions()[self.action_selected]
+    }
+
+    fn next_action(&mut self) {
+        let actions = self.current_actions();
+        self.action_selected = (self.action_selected + 1) % actions.len();
+    }
+
+    fn previous_action(&mut self) {
+        let actions = self.current_actions();
+        self.action_selected = if self.action_selected == 0 {
+            actions.len() - 1
+        } else {
+            self.action_selected - 1
+        };
     }
 
     fn run_action(&mut self, action: TuiAction) {
@@ -826,30 +823,22 @@ fn run_tui_loop(
             }
 
             match &mut app.screen {
-                TuiScreen::Home => match key.code {
+                TuiScreen::Dashboard => match key.code {
                     KeyCode::Char('q') | KeyCode::Esc => return Ok(()),
-                    KeyCode::Down | KeyCode::Char('j') => app.next_home(),
-                    KeyCode::Up | KeyCode::Char('k') => app.previous_home(),
-                    KeyCode::Enter | KeyCode::Char(' ') => app.open_selected_home(),
-                    _ => {}
-                },
-                TuiScreen::SectionMenu(menu) => match key.code {
-                    KeyCode::Char('q') => return Ok(()),
-                    KeyCode::Esc | KeyCode::Char('b') => {
-                        app.screen = TuiScreen::Home;
-                        app.output = "Back on home. Pick a section to keep going.".to_string();
-                    }
-                    KeyCode::Down | KeyCode::Char('j') => menu.next(),
-                    KeyCode::Up | KeyCode::Char('k') => menu.previous(),
+                    KeyCode::Tab | KeyCode::Right | KeyCode::Char('l') => app.next_section(),
+                    KeyCode::BackTab | KeyCode::Left | KeyCode::Char('h') => app.previous_section(),
+                    KeyCode::Down | KeyCode::Char('j') => app.next_action(),
+                    KeyCode::Up | KeyCode::Char('k') => app.previous_action(),
                     KeyCode::Enter | KeyCode::Char(' ') => {
-                        let action = menu.selected_action();
+                        let action = app.current_action();
                         app.run_action(action);
                     }
                     _ => {}
                 },
                 TuiScreen::ConfigEditor(editor) => match key.code {
                     KeyCode::Char('q') | KeyCode::Esc => {
-                        app.open_section(TuiSection::Configure);
+                        app.screen = TuiScreen::Dashboard;
+                        app.select_section(TuiSection::Configure);
                         app.output = "Config editor closed without saving.".to_string();
                     }
                     KeyCode::Down | KeyCode::Char('j') => editor.next(),
@@ -860,8 +849,12 @@ fn run_tui_loop(
                     KeyCode::Enter => match save_config(&app.paths, &editor.config) {
                         Ok(result) => {
                             app.output = result.render_text();
-                            app.open_section(TuiSection::Configure);
                             refresh_status_after_save(app);
+                            app.screen = TuiScreen::Notice(NoticeScreen {
+                                title: "Saved",
+                                body: app.output.clone(),
+                                section: TuiSection::Configure,
+                            });
                         }
                         Err(error) => app.output = format!("save failed: {error}"),
                     },
@@ -869,7 +862,8 @@ fn run_tui_loop(
                 },
                 TuiScreen::PrivacyEditor(editor) => match key.code {
                     KeyCode::Char('q') | KeyCode::Esc => {
-                        app.open_section(TuiSection::Configure);
+                        app.screen = TuiScreen::Dashboard;
+                        app.select_section(TuiSection::Configure);
                         app.output = "Privacy screen closed without saving.".to_string();
                     }
                     KeyCode::Left | KeyCode::Char('h') => editor.cycle(-1),
@@ -882,8 +876,12 @@ fn run_tui_loop(
                     KeyCode::Enter => match save_config(&app.paths, &editor.config) {
                         Ok(result) => {
                             app.output = result.render_text();
-                            app.open_section(TuiSection::Configure);
                             refresh_status_after_save(app);
+                            app.screen = TuiScreen::Notice(NoticeScreen {
+                                title: "Saved",
+                                body: app.output.clone(),
+                                section: TuiSection::Configure,
+                            });
                         }
                         Err(error) => app.output = format!("save failed: {error}"),
                     },
@@ -891,7 +889,8 @@ fn run_tui_loop(
                 },
                 TuiScreen::PackEditor(editor) => match key.code {
                     KeyCode::Char('q') | KeyCode::Esc => {
-                        app.open_section(TuiSection::Configure);
+                        app.screen = TuiScreen::Dashboard;
+                        app.select_section(TuiSection::Configure);
                         app.output = "Pack screen closed without saving.".to_string();
                     }
                     KeyCode::Down | KeyCode::Char('j') => editor.next(),
@@ -901,8 +900,12 @@ fn run_tui_loop(
                     KeyCode::Enter => match save_config(&app.paths, &editor.config) {
                         Ok(result) => {
                             app.output = result.render_text();
-                            app.open_section(TuiSection::Configure);
                             refresh_status_after_save(app);
+                            app.screen = TuiScreen::Notice(NoticeScreen {
+                                title: "Saved",
+                                body: app.output.clone(),
+                                section: TuiSection::Configure,
+                            });
                         }
                         Err(error) => app.output = format!("save failed: {error}"),
                     },
@@ -911,13 +914,25 @@ fn run_tui_loop(
                 TuiScreen::Confirm(confirm) => match key.code {
                     KeyCode::Char('q') | KeyCode::Esc | KeyCode::Char('n') => {
                         let label = confirm.label;
-                        app.screen = TuiScreen::SectionMenu(SectionMenu::new(confirm.section));
+                        let section = confirm.section;
+                        app.screen = TuiScreen::Dashboard;
+                        app.select_section(section);
                         app.output = format!("Cancelled `{label}`.");
                     }
                     KeyCode::Enter | KeyCode::Char('y') => {
                         let command = confirm.command;
-                        app.screen = TuiScreen::SectionMenu(SectionMenu::new(confirm.section));
+                        let section = confirm.section;
+                        app.screen = TuiScreen::Dashboard;
+                        app.select_section(section);
                         execute_backend_action(app, command);
+                    }
+                    _ => {}
+                },
+                TuiScreen::Notice(notice) => match key.code {
+                    KeyCode::Char('q') | KeyCode::Esc | KeyCode::Enter | KeyCode::Char(' ') => {
+                        let section = notice.section;
+                        app.screen = TuiScreen::Dashboard;
+                        app.select_section(section);
                     }
                     _ => {}
                 },
@@ -950,6 +965,14 @@ fn execute_backend_action(app: &mut TuiApp, command: Command) {
                         .push_str(&format!("\nstatus refresh failed: {error}"));
                 }
             }
+
+            if command_shows_success_notice(command) {
+                app.screen = TuiScreen::Notice(NoticeScreen {
+                    title: success_notice_title(command),
+                    body: app.output.clone(),
+                    section: app.current_section(),
+                });
+            }
         }
         Err(error) => {
             app.output = format!("action failed: {error}");
@@ -959,12 +982,12 @@ fn execute_backend_action(app: &mut TuiApp, command: Command) {
 
 fn active_section(app: &TuiApp) -> TuiSection {
     match &app.screen {
-        TuiScreen::SectionMenu(menu) => menu.section,
+        TuiScreen::Dashboard => app.current_section(),
         TuiScreen::ConfigEditor(_) | TuiScreen::PrivacyEditor(_) | TuiScreen::PackEditor(_) => {
             TuiSection::Configure
         }
         TuiScreen::Confirm(confirm) => confirm.section,
-        TuiScreen::Home => app.home_options[app.home_selected].section,
+        TuiScreen::Notice(notice) => notice.section,
     }
 }
 
@@ -983,6 +1006,58 @@ fn command_requires_confirmation(command: Command) -> bool {
             | Command::UninstallHooks
             | Command::UninstallCustomAgents
     )
+}
+
+fn command_shows_success_notice(command: Command) -> bool {
+    matches!(
+        command,
+        Command::Install
+            | Command::BackupCodexConfig
+            | Command::ApplyCodexProfile
+            | Command::ApplyIntegrationsProfile
+            | Command::ApplyCloudflareProfile
+            | Command::RestoreCodexConfig
+            | Command::ExportAll
+            | Command::ExportUserSkills
+            | Command::ExportRepoSkills
+            | Command::ExportRepoAgents
+            | Command::ExportGlobalAgents
+            | Command::ExportHooks
+            | Command::ExportCustomAgents
+            | Command::UninstallAll
+            | Command::UninstallUserSkills
+            | Command::UninstallRepoSkills
+            | Command::UninstallRepoAgents
+            | Command::UninstallGlobalAgents
+            | Command::UninstallHooks
+            | Command::UninstallCustomAgents
+    )
+}
+
+fn success_notice_title(command: Command) -> &'static str {
+    match command {
+        Command::Install => "Installed",
+        Command::BackupCodexConfig => "Backed Up",
+        Command::ApplyCodexProfile
+        | Command::ApplyIntegrationsProfile
+        | Command::ApplyCloudflareProfile => "Applied",
+        Command::RestoreCodexConfig => "Restored",
+        Command::ExportAll
+        | Command::ExportUserSkills
+        | Command::ExportRepoSkills
+        | Command::ExportRepoAgents
+        | Command::ExportGlobalAgents
+        | Command::ExportHooks
+        | Command::ExportCustomAgents => "Installed",
+        Command::UninstallAll
+        | Command::UninstallUserSkills
+        | Command::UninstallRepoSkills
+        | Command::UninstallRepoAgents
+        | Command::UninstallGlobalAgents
+        | Command::UninstallHooks
+        | Command::UninstallCustomAgents => "Uninstalled",
+        _ => "Done",
+    }
 }
 
 fn append_export_drift_warnings(output: &mut String, status: &OperationResult) {
@@ -1008,107 +1083,145 @@ fn append_export_drift_warnings(output: &mut String, status: &OperationResult) {
 }
 
 fn render_tui(frame: &mut Frame, app: &TuiApp) {
+    render_dashboard(frame, app);
+
     match &app.screen {
-        TuiScreen::Home => render_home(frame, app),
-        TuiScreen::SectionMenu(menu) => render_section_menu(frame, app, menu),
+        TuiScreen::Dashboard => {}
         TuiScreen::ConfigEditor(editor) => render_config_editor(frame, app, editor),
         TuiScreen::PrivacyEditor(editor) => render_privacy_editor(frame, app, editor),
         TuiScreen::PackEditor(editor) => render_pack_editor(frame, app, editor),
         TuiScreen::Confirm(confirm) => render_confirm(frame, app, confirm),
+        TuiScreen::Notice(notice) => render_notice(frame, app, notice),
     }
 }
 
-fn render_home(frame: &mut Frame, app: &TuiApp) {
+fn render_dashboard(frame: &mut Frame, app: &TuiApp) {
+    let current_section = app.current_section();
+    let current_actions = app.current_actions();
+    let current_action = current_actions[app.action_selected];
+
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(5),
             Constraint::Length(6),
+            Constraint::Length(3),
             Constraint::Min(14),
+            Constraint::Length(3),
         ])
         .split(frame.area());
 
     let header = Paragraph::new(vec![
-        Line::from(NAME),
-        Line::from("Codex-native onboarding and setup. Up/down selects a section. Enter opens it. q quits."),
-        Line::from("Use `sane settings` if you want to jump straight into configure mode."),
+        Line::from("Sane"),
+        Line::from("Codex-native onboarding and setup"),
+        Line::from(format!(
+            "Project: {}  |  Recommended: {}",
+            project_label(&app.paths),
+            recommended_next_step(&app.status)
+        )),
+        Line::from("Left/right changes section. Up/down changes option. Enter runs."),
     ])
-    .block(Block::default().borders(Borders::ALL).title("Welcome"))
+    .alignment(Alignment::Center)
+    .style(Style::default().fg(Color::Yellow))
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::DarkGray))
+            .title("Welcome"),
+    )
     .wrap(Wrap { trim: true });
     frame.render_widget(header, chunks[0]);
 
-    let status = Paragraph::new(status_lines(&app.status))
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .title("Status Summary"),
-        )
-        .wrap(Wrap { trim: false });
-    frame.render_widget(status, chunks[1]);
+    render_section_tabs(frame, chunks[1], app);
 
-    let main = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Length(44), Constraint::Min(28)])
-        .split(chunks[2]);
+    if chunks[2].width < 120 {
+        if chunks[2].height < 18 {
+            let main = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Min(9), Constraint::Length(8)])
+                .split(chunks[2]);
 
-    render_home_options(frame, main[0], app);
-    let right = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Percentage(45), Constraint::Percentage(55)])
-        .split(main[1]);
-    render_home_help(frame, right[0], app);
-    let output = Paragraph::new(app.output.as_str())
-        .block(Block::default().borders(Borders::ALL).title("Output"))
-        .wrap(Wrap { trim: false });
-    frame.render_widget(output, right[1]);
+            render_dashboard_actions(
+                frame,
+                main[0],
+                &current_actions,
+                app.action_selected,
+                current_section,
+            );
+            render_compact_dashboard_help(frame, main[1], current_section, &current_action, app);
+        } else {
+            let main = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Percentage(58), Constraint::Percentage(42)])
+                .split(chunks[2]);
+
+            render_dashboard_actions(
+                frame,
+                main[0],
+                &current_actions,
+                app.action_selected,
+                current_section,
+            );
+            render_compact_dashboard_help(frame, main[1], current_section, &current_action, app);
+        }
+    } else {
+        let main = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([Constraint::Length(48), Constraint::Min(36)])
+            .split(chunks[2]);
+
+        render_dashboard_actions(
+            frame,
+            main[0],
+            &current_actions,
+            app.action_selected,
+            current_section,
+        );
+        render_dashboard_help(frame, main[1], current_section, &current_action, app);
+    }
+
+    let footer = Paragraph::new(home_footer_lines(app))
+        .block(Block::default().borders(Borders::ALL).title("Now"))
+        .wrap(Wrap { trim: true });
+    frame.render_widget(footer, chunks[3]);
 }
 
-fn render_section_menu(frame: &mut Frame, app: &TuiApp, menu: &SectionMenu) {
+fn render_compact_dashboard_help(
+    frame: &mut Frame,
+    area: Rect,
+    section: TuiSection,
+    action: &TuiAction,
+    app: &TuiApp,
+) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(5),
-            Constraint::Length(6),
-            Constraint::Min(14),
-        ])
-        .split(frame.area());
+        .constraints([Constraint::Min(5), Constraint::Length(3)])
+        .split(area);
 
-    let header = Paragraph::new(vec![
-        Line::from(menu.section.label()),
-        Line::from(section_header_copy(menu.section)),
-        Line::from("Up/down selects. Enter runs or opens. Esc goes back. q quits."),
-    ])
-    .block(Block::default().borders(Borders::ALL).title(NAME))
-    .wrap(Wrap { trim: true });
-    frame.render_widget(header, chunks[0]);
+    let mut lines = vec![Line::from("Section"), Line::from("")];
+    lines.extend(home_option_lines(section, &app.status));
+    lines.push(Line::from(""));
+    lines.push(Line::from("Selected step"));
+    lines.push(Line::from(""));
+    lines.extend(action_help_lines(action));
 
-    let status = Paragraph::new(status_lines(&app.status))
+    let help = Paragraph::new(lines)
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title("Current Sane Status"),
+                .title("About This Step"),
         )
         .wrap(Wrap { trim: false });
-    frame.render_widget(status, chunks[1]);
+    frame.render_widget(help, chunks[0]);
 
-    let main = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Length(44), Constraint::Min(28)])
-        .split(chunks[2]);
-
-    render_section_actions(frame, main[0], menu);
-    let right = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Percentage(45), Constraint::Percentage(55)])
-        .split(main[1]);
-    render_section_action_help(frame, right[0], menu);
-    let output = Paragraph::new(app.output.as_str())
-        .block(Block::default().borders(Borders::ALL).title("Output"))
+    let result = Paragraph::new(tui_output_lines(&app.output))
+        .block(Block::default().borders(Borders::ALL).title("Last Result"))
         .wrap(Wrap { trim: false });
-    frame.render_widget(output, right[1]);
+    frame.render_widget(result, chunks[1]);
 }
 
 fn render_config_editor(frame: &mut Frame, app: &TuiApp, editor: &ConfigEditor) {
+    let area = centered_rect(frame.area(), 68, 70);
+    let area = render_modal_shell(frame, area, "Model Defaults", Color::Yellow);
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -1116,13 +1229,17 @@ fn render_config_editor(frame: &mut Frame, app: &TuiApp, editor: &ConfigEditor) 
             Constraint::Min(10),
             Constraint::Length(5),
         ])
-        .split(frame.area());
+        .split(area);
 
     let header = Paragraph::new(vec![
         Line::from("Model Defaults"),
         Line::from("Up/down picks field. Left/right cycles. Enter saves. r resets. Esc backs out."),
     ])
-    .block(Block::default().borders(Borders::ALL).title(NAME))
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .title("How this works"),
+    )
     .wrap(Wrap { trim: true });
     frame.render_widget(header, chunks[0]);
 
@@ -1137,13 +1254,15 @@ fn render_config_editor(frame: &mut Frame, app: &TuiApp, editor: &ConfigEditor) 
         .wrap(Wrap { trim: false });
     frame.render_widget(side, main[1]);
 
-    let output = Paragraph::new(app.output.as_str())
+    let output = Paragraph::new(tui_output_lines(&app.output))
         .block(Block::default().borders(Borders::ALL).title("Output"))
         .wrap(Wrap { trim: false });
     frame.render_widget(output, chunks[2]);
 }
 
 fn render_privacy_editor(frame: &mut Frame, app: &TuiApp, editor: &PrivacyEditor) {
+    let area = centered_rect(frame.area(), 68, 68);
+    let area = render_modal_shell(frame, area, "Privacy", Color::Yellow);
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -1151,7 +1270,7 @@ fn render_privacy_editor(frame: &mut Frame, app: &TuiApp, editor: &PrivacyEditor
             Constraint::Min(10),
             Constraint::Length(5),
         ])
-        .split(frame.area());
+        .split(area);
 
     let header = Paragraph::new(vec![
         Line::from("Privacy / Telemetry"),
@@ -1160,7 +1279,7 @@ fn render_privacy_editor(frame: &mut Frame, app: &TuiApp, editor: &PrivacyEditor
         ),
         Line::from("Telemetry stays optional and product-improvement-only."),
     ])
-    .block(Block::default().borders(Borders::ALL).title(NAME))
+    .block(Block::default().borders(Borders::ALL).title("How this works"))
     .wrap(Wrap { trim: true });
     frame.render_widget(header, chunks[0]);
 
@@ -1187,13 +1306,15 @@ fn render_privacy_editor(frame: &mut Frame, app: &TuiApp, editor: &PrivacyEditor
         .wrap(Wrap { trim: false });
     frame.render_widget(details, main[1]);
 
-    let output = Paragraph::new(app.output.as_str())
+    let output = Paragraph::new(tui_output_lines(&app.output))
         .block(Block::default().borders(Borders::ALL).title("Output"))
         .wrap(Wrap { trim: false });
     frame.render_widget(output, chunks[2]);
 }
 
 fn render_pack_editor(frame: &mut Frame, app: &TuiApp, editor: &PackEditor) {
+    let area = centered_rect(frame.area(), 68, 68);
+    let area = render_modal_shell(frame, area, "Built-in Packs", Color::Yellow);
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -1201,14 +1322,14 @@ fn render_pack_editor(frame: &mut Frame, app: &TuiApp, editor: &PackEditor) {
             Constraint::Min(10),
             Constraint::Length(5),
         ])
-        .split(frame.area());
+        .split(area);
 
     let header = Paragraph::new(vec![
         Line::from("Built-in Packs"),
         Line::from("core stays on. Up/down selects. Space toggles optional packs. Enter saves. Esc backs out."),
         Line::from("Packs change local guidance and may make exports stale until you re-export."),
     ])
-    .block(Block::default().borders(Borders::ALL).title(NAME))
+    .block(Block::default().borders(Borders::ALL).title("How this works"))
     .wrap(Wrap { trim: true });
     frame.render_widget(header, chunks[0]);
 
@@ -1223,13 +1344,15 @@ fn render_pack_editor(frame: &mut Frame, app: &TuiApp, editor: &PackEditor) {
         .wrap(Wrap { trim: false });
     frame.render_widget(details, main[1]);
 
-    let output = Paragraph::new(app.output.as_str())
+    let output = Paragraph::new(tui_output_lines(&app.output))
         .block(Block::default().borders(Borders::ALL).title("Output"))
         .wrap(Wrap { trim: false });
     frame.render_widget(output, chunks[2]);
 }
 
 fn render_confirm(frame: &mut Frame, app: &TuiApp, confirm: &ConfirmScreen) {
+    let area = centered_rect(frame.area(), 66, 42);
+    let area = render_modal_shell(frame, area, "Confirm", Color::LightRed);
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -1237,13 +1360,17 @@ fn render_confirm(frame: &mut Frame, app: &TuiApp, confirm: &ConfirmScreen) {
             Constraint::Min(8),
             Constraint::Length(5),
         ])
-        .split(frame.area());
+        .split(area);
 
     let header = Paragraph::new(vec![
         Line::from("Confirm Action"),
         Line::from("Enter/y confirms. Esc/n cancels."),
     ])
-    .block(Block::default().borders(Borders::ALL).title(NAME))
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .title("Before this runs"),
+    )
     .wrap(Wrap { trim: true });
     frame.render_widget(header, chunks[0]);
 
@@ -1257,62 +1384,120 @@ fn render_confirm(frame: &mut Frame, app: &TuiApp, confirm: &ConfirmScreen) {
     .wrap(Wrap { trim: false });
     frame.render_widget(body, chunks[1]);
 
-    let output = Paragraph::new(app.output.as_str())
+    let output = Paragraph::new(tui_output_lines(&app.output))
         .block(Block::default().borders(Borders::ALL).title("Output"))
         .wrap(Wrap { trim: false });
     frame.render_widget(output, chunks[2]);
 }
 
-fn render_home_options(frame: &mut Frame, area: Rect, app: &TuiApp) {
-    let items = app
-        .home_options
-        .iter()
-        .map(|option| ListItem::new(option.label))
-        .collect::<Vec<_>>();
-    let list = List::new(items)
-        .block(Block::default().borders(Borders::ALL).title("Sections"))
-        .highlight_style(Style::default().add_modifier(Modifier::REVERSED))
-        .highlight_symbol("> ");
-    let mut state = ListState::default().with_selected(Some(app.home_selected));
-    frame.render_stateful_widget(list, area, &mut state);
+fn render_notice(frame: &mut Frame, _app: &TuiApp, notice: &NoticeScreen) {
+    let area = centered_rect(frame.area(), 78, 46);
+    let area = render_modal_shell(frame, area, notice.title, Color::LightGreen);
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Min(6), Constraint::Length(3)])
+        .split(area);
+
+    let body = Paragraph::new(tui_output_lines(&notice.body))
+        .block(Block::default().borders(Borders::ALL).title("Result"))
+        .wrap(Wrap { trim: false });
+    frame.render_widget(body, chunks[0]);
+
+    let footer = Paragraph::new("Enter, Space, or Esc closes this message.")
+        .block(Block::default().borders(Borders::ALL).title("Continue"))
+        .alignment(Alignment::Center)
+        .wrap(Wrap { trim: true });
+    frame.render_widget(footer, chunks[1]);
 }
 
-fn render_home_help(frame: &mut Frame, area: Rect, app: &TuiApp) {
-    let option = app.home_options[app.home_selected];
-    let help = Paragraph::new(home_option_lines(option.section))
+fn render_section_tabs(frame: &mut Frame, area: Rect, app: &TuiApp) {
+    let titles = app
+        .sections
+        .iter()
+        .map(|option| Line::from(option.label))
+        .collect::<Vec<_>>();
+    let tabs = Tabs::new(titles)
+        .select(app.section_selected)
+        .style(Style::default().fg(Color::Gray))
+        .highlight_style(
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        )
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title("What This Section Does"),
-        )
-        .wrap(Wrap { trim: false });
-    frame.render_widget(help, area);
+                .border_style(Style::default().fg(Color::DarkGray))
+                .title("Sections"),
+        );
+    frame.render_widget(tabs, area);
 }
 
-fn render_section_actions(frame: &mut Frame, area: Rect, menu: &SectionMenu) {
-    let items = menu
-        .actions
+fn render_dashboard_actions(
+    frame: &mut Frame,
+    area: Rect,
+    actions: &[TuiAction],
+    selected: usize,
+    section: TuiSection,
+) {
+    let items = actions
         .iter()
         .map(|action| ListItem::new(action.label))
         .collect::<Vec<_>>();
     let list = List::new(items)
-        .block(Block::default().borders(Borders::ALL).title("Actions"))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::Green))
+                .title(match section {
+                    TuiSection::StartHere => "Steps",
+                    _ => "Options",
+                }),
+        )
         .highlight_style(Style::default().add_modifier(Modifier::REVERSED))
         .highlight_symbol("> ");
-    let mut state = ListState::default().with_selected(Some(menu.selected));
+    let mut state = ListState::default().with_selected(Some(selected));
     frame.render_stateful_widget(list, area, &mut state);
 }
 
-fn render_section_action_help(frame: &mut Frame, area: Rect, menu: &SectionMenu) {
-    let action = &menu.actions[menu.selected];
+fn render_dashboard_help(
+    frame: &mut Frame,
+    area: Rect,
+    section: TuiSection,
+    action: &TuiAction,
+    app: &TuiApp,
+) {
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(8),
+            Constraint::Min(12),
+            Constraint::Length(4),
+        ])
+        .split(area);
+
+    let section_help = Paragraph::new(home_option_lines(section, &app.status))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("About This Section"),
+        )
+        .wrap(Wrap { trim: false });
+    frame.render_widget(section_help, chunks[0]);
+
     let help = Paragraph::new(action_help_lines(action))
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title("What This Option Does"),
+                .title("What This Does"),
         )
         .wrap(Wrap { trim: false });
-    frame.render_widget(help, area);
+    frame.render_widget(help, chunks[1]);
+
+    let snapshot = Paragraph::new(tui_output_lines(&app.output))
+        .block(Block::default().borders(Borders::ALL).title("Last Result"))
+        .wrap(Wrap { trim: false });
+    frame.render_widget(snapshot, chunks[2]);
 }
 
 fn render_config_fields(frame: &mut Frame, area: Rect, editor: &ConfigEditor) {
@@ -1421,68 +1606,100 @@ fn pack_lines(editor: &PackEditor) -> Vec<Line<'static>> {
     ]
 }
 
-fn section_header_copy(section: TuiSection) -> &'static str {
+fn home_option_lines(section: TuiSection, status: &OperationResult) -> Vec<Line<'static>> {
     match section {
         TuiSection::StartHere => {
-            "Best first run path. Gets Sane installed, previews Codex changes, and applies only what you accept."
-        }
-        TuiSection::Configure => {
-            "Change local Sane defaults: model roles, built-in packs, privacy, and provider-specific config."
-        }
-        TuiSection::Exports => {
-            "Install or refresh the Codex-native skills, overlays, hooks, and custom agents Sane manages."
-        }
-        TuiSection::Inspect => {
-            "Read current state before changing anything: status, doctor, local config, Codex config, and policy preview."
-        }
-        TuiSection::Repair => {
-            "Use backups, restore, reinstall, and uninstall when something drifted or needs a clean rollback."
-        }
-    }
-}
+            let mut lines = vec![
+                Line::from(format!(
+                    "Recommended now: {}",
+                    recommended_next_step(status)
+                )),
+                Line::from(""),
+                Line::from("Suggested flow"),
+                Line::from("1. Create the .sane project folder"),
+                Line::from("2. Review and back up Codex settings"),
+                Line::from("3. Apply Sane's recommended settings"),
+                Line::from("4. Install Sane into Codex"),
+                Line::from("Optional tools live in Preferences and Install."),
+            ];
 
-fn home_option_lines(section: TuiSection) -> Vec<Line<'static>> {
-    match section {
-        TuiSection::StartHere => vec![
-            Line::from("Recommended first run"),
-            Line::from("1. Install local runtime"),
-            Line::from("2. Preview core Codex profile"),
-            Line::from("3. Backup Codex config"),
-            Line::from("4. Apply only what you want"),
-            Line::from("5. Export managed assets"),
-            Line::from(""),
-            Line::from("This is the front door for new users."),
-        ],
+            if has_attention_items(status) {
+                lines.push(Line::from("Attention items found in current setup."));
+            }
+
+            lines
+        }
         TuiSection::Configure => vec![
-            Line::from("Tune how Sane behaves before exporting anything."),
+            Line::from("Change how Sane behaves before installing it into Codex."),
             Line::from(""),
-            Line::from("Change model-role defaults."),
+            Line::from("Change model and reasoning defaults."),
             Line::from("Turn built-in packs on or off."),
-            Line::from("Pick privacy / telemetry level."),
-            Line::from("Open with `sane settings` if this is where you always want to land."),
+            Line::from("Choose telemetry and privacy level."),
+            Line::from("Open with `sane settings` if you want to land here directly."),
         ],
         TuiSection::Exports => vec![
-            Line::from("Write Codex-native assets on purpose."),
+            Line::from("Install Sane into Codex on purpose."),
             Line::from(""),
-            Line::from("User-level exports affect your own Codex setup."),
-            Line::from("Repo-level exports are explicit and optional."),
+            Line::from("User-level install changes your own Codex setup."),
+            Line::from("Repo-level install is explicit and optional."),
             Line::from("Nothing here should silently take over a repo."),
         ],
         TuiSection::Inspect => vec![
-            Line::from("Read before mutate."),
+            Line::from("Inspect before you change anything."),
             Line::from(""),
             Line::from(
                 "Use status and doctor to see what is installed, stale, disabled, or broken.",
             ),
-            Line::from("Inspect local config and Codex config before applies."),
+            Line::from("View Sane config and Codex settings before applying changes."),
         ],
         TuiSection::Repair => vec![
-            Line::from("Rollback and cleanup tools."),
+            Line::from("Repair, restore, and uninstall tools."),
             Line::from(""),
-            Line::from("Use backup/restore when a profile write went wrong."),
-            Line::from("Use uninstall when you want Sane-managed assets gone cleanly."),
+            Line::from("Use backup and restore when settings changes went wrong."),
+            Line::from("Use uninstall when you want Sane removed cleanly."),
         ],
     }
+}
+
+fn recommended_next_step(status: &OperationResult) -> &'static str {
+    let runtime = find_inventory(&status.inventory, "runtime");
+    let config = find_inventory(&status.inventory, "config");
+    let codex_config = find_inventory(&status.inventory, "codex-config");
+    let user_skills = find_inventory(&status.inventory, "user-skills");
+
+    if matches!(
+        runtime.status,
+        InventoryStatus::Missing | InventoryStatus::Invalid
+    ) || matches!(
+        config.status,
+        InventoryStatus::Missing | InventoryStatus::Invalid
+    ) {
+        "Create the .sane project folder first."
+    } else if matches!(
+        codex_config.status,
+        InventoryStatus::Missing | InventoryStatus::Invalid
+    ) {
+        "Inspect Codex config, then preview the core Codex profile."
+    } else if matches!(
+        user_skills.status,
+        InventoryStatus::Missing | InventoryStatus::Invalid
+    ) {
+        "Install Sane into Codex so Codex can use Sane's guidance."
+    } else {
+        "Review configure or inspect sections and change only what you actually want."
+    }
+}
+
+fn has_attention_items(status: &OperationResult) -> bool {
+    status.inventory.iter().any(|item| {
+        matches!(
+            item.status,
+            InventoryStatus::Missing | InventoryStatus::Invalid
+        ) && matches!(
+            item.scope,
+            InventoryScope::CodexNative | InventoryScope::LocalRuntime
+        )
+    })
 }
 
 fn action_help_lines(action: &TuiAction) -> Vec<Line<'static>> {
@@ -1529,12 +1746,10 @@ fn action_help_lines(action: &TuiAction) -> Vec<Line<'static>> {
 fn command_help_lines(command: Command) -> Vec<Line<'static>> {
     match command {
         Command::Install => vec![
-            Line::from("Create or repair the local `.sane` runtime in this project."),
+            Line::from("Create or repair the `.sane` project folder in this repo."),
             Line::from(""),
-            Line::from(
-                "This sets up config, state files, and the baseline local layout Sane expects.",
-            ),
-            Line::from("Use this first in a new repo or if local runtime files are missing."),
+            Line::from("This creates Sane's project config and state files in `.sane/`."),
+            Line::from("Use this first in a new repo or if the `.sane/` folder is missing."),
         ],
         Command::Config => vec![
             Line::from("Show the current local Sane config."),
@@ -1558,11 +1773,11 @@ fn command_help_lines(command: Command) -> Vec<Line<'static>> {
             ),
         ],
         Command::PreviewCodexProfile => vec![
-            Line::from("Show the core Codex settings Sane recommends by default."),
+            Line::from("Show the Codex settings Sane recommends by default."),
             Line::from(""),
             Line::from("Preview only. No files are changed."),
             Line::from(
-                "This is the safest way to see what Sane wants to set for model, reasoning, and hooks.",
+                "This is the safest way to see the model, reasoning, and hook settings Sane recommends.",
             ),
         ],
         Command::PreviewIntegrationsProfile => vec![
@@ -1588,14 +1803,10 @@ fn command_help_lines(command: Command) -> Vec<Line<'static>> {
             Line::from("Use preview and backup first if you want to compare before writing."),
         ],
         Command::ApplyIntegrationsProfile => vec![
-            Line::from("Write the recommended integrations profile into `~/.codex/config.toml`."),
+            Line::from("Write Sane's recommended extra Codex tools into `~/.codex/config.toml`."),
             Line::from(""),
-            Line::from(
-                "This adds optional integrations while preserving unrelated config where possible.",
-            ),
-            Line::from(
-                "Use preview first if you want to inspect exactly what will be recommended.",
-            ),
+            Line::from("Today this adds Context7, Playwright, and grep.app."),
+            Line::from("Use preview first if you want to inspect exactly what will be added."),
         ],
         Command::ApplyCloudflareProfile => vec![
             Line::from(
@@ -1618,68 +1829,73 @@ fn command_help_lines(command: Command) -> Vec<Line<'static>> {
             ),
         ],
         Command::Doctor => vec![
-            Line::from("Audit local runtime files and managed Codex assets."),
+            Line::from("Check the `.sane` project folder and Sane's Codex installs."),
             Line::from(""),
-            Line::from("Use this when something feels broken, stale, or partially installed."),
-            Line::from("Doctor points at missing, invalid, or drifted managed targets."),
+            Line::from("Use this when something feels broken, stale, or only partly installed."),
+            Line::from("Doctor points at missing, invalid, or drifted Sane-managed pieces."),
         ],
         Command::ExportUserSkills => vec![
-            Line::from("Install Sane's user skill into your user skills directory."),
+            Line::from("Install the Sane user skill into your personal Codex skills folder."),
             Line::from(""),
-            Line::from("This makes Sane guidance available as a Codex-native skill."),
+            Line::from("This lets Codex load Sane guidance as a user-level skill."),
         ],
         Command::ExportRepoSkills => vec![
-            Line::from("Install Sane's managed skills into this repo's `.agents/skills` folder."),
+            Line::from("Install Sane repo skills into this repo's `.agents/skills` folder."),
             Line::from(""),
             Line::from(
                 "Use this when you want repo-local shared skills instead of user-only install.",
             ),
-            Line::from("This is explicit repo mutation and is not part of `export all`."),
-        ],
-        Command::ExportRepoAgents => vec![
-            Line::from("Install Sane's managed block into this repo's root `AGENTS.md`."),
-            Line::from(""),
-            Line::from("Use this only when you want repo-local shared AGENTS guidance."),
-            Line::from("This is explicit repo mutation and is not part of `export all`."),
-        ],
-        Command::ExportGlobalAgents => vec![
-            Line::from("Install or refresh Sane's managed global `AGENTS.md` guidance block."),
-            Line::from(""),
-            Line::from("This is additive: Sane manages only its own marked block."),
-        ],
-        Command::ExportHooks => vec![
-            Line::from("Install or refresh Sane's managed hook entries in `~/.codex/hooks.json`."),
-            Line::from(""),
-            Line::from("Use this if you want Sane's optional hook behavior enabled."),
-        ],
-        Command::ExportCustomAgents => vec![
-            Line::from("Install or refresh Sane-managed custom agent files."),
-            Line::from(""),
             Line::from(
-                "These agent files support Sane's coordinator, sidecar, and verifier model-role setup.",
+                "This changes the repo on purpose and is not part of `Install Sane into Codex`.",
             ),
         ],
+        Command::ExportRepoAgents => vec![
+            Line::from("Install a Sane block into this repo's root `AGENTS.md`."),
+            Line::from(""),
+            Line::from("Use this only when you want repo-local shared AGENTS guidance."),
+            Line::from(
+                "This changes the repo on purpose and is not part of `Install Sane into Codex`.",
+            ),
+        ],
+        Command::ExportGlobalAgents => vec![
+            Line::from("Install or refresh the Sane block in global `AGENTS.md`."),
+            Line::from(""),
+            Line::from("This is additive: Sane touches only its own marked block."),
+        ],
+        Command::ExportHooks => vec![
+            Line::from("Install or refresh Sane's entries in `~/.codex/hooks.json`."),
+            Line::from(""),
+            Line::from("Use this if you want Sane's optional Codex hook behavior enabled."),
+        ],
+        Command::ExportCustomAgents => vec![
+            Line::from("Install or refresh Sane's custom agent files."),
+            Line::from(""),
+            Line::from("These files support Sane's coordinator, sidecar, and verifier roles."),
+        ],
         Command::ExportAll => vec![
-            Line::from("Install or refresh all currently managed Codex-native assets."),
+            Line::from("Install or refresh everything Sane manages in Codex."),
             Line::from(""),
             Line::from(
-                "Use this after changing packs or model-role defaults so exports match current config.",
+                "This installs the Sane user skill, global AGENTS block, hooks, and custom agents.",
+            ),
+            Line::from(
+                "Use this after changing packs or defaults so Codex matches current Sane config.",
             ),
         ],
         Command::UninstallAll => vec![
-            Line::from("Remove all Sane-managed Codex-native assets."),
+            Line::from("Remove everything Sane manages in Codex."),
             Line::from(""),
             Line::from(
-                "Only Sane-managed content should be removed; unrelated user content should be preserved.",
+                "Only Sane-managed content should be removed; unrelated user content should stay.",
             ),
         ],
         Command::UninstallRepoSkills => vec![
-            Line::from("Remove Sane-managed repo skills from this repo's `.agents/skills` folder."),
+            Line::from("Remove Sane repo skills from this repo's `.agents/skills` folder."),
             Line::from(""),
             Line::from("Only Sane-managed repo skill directories should be removed."),
         ],
         Command::UninstallRepoAgents => vec![
-            Line::from("Remove Sane's managed block from this repo's root `AGENTS.md`."),
+            Line::from("Remove the Sane block from this repo's root `AGENTS.md`."),
             Line::from(""),
             Line::from("Only the Sane-managed block should be removed."),
         ],
@@ -1802,54 +2018,135 @@ fn wrap_index(current: usize, len: usize, step: isize) -> usize {
     ((current as isize + step).rem_euclid(len as isize)) as usize
 }
 
-fn status_lines(status: &OperationResult) -> Vec<Line<'static>> {
+fn home_footer_lines(app: &TuiApp) -> Vec<Line<'static>> {
+    vec![Line::from(format!(
+        "left/right change section  |  up/down change option  |  enter runs  |  {}",
+        compact_status_line(&app.status)
+    ))]
+}
+
+fn compact_status_line(status: &OperationResult) -> String {
     let runtime = find_inventory(&status.inventory, "runtime");
-    let config = find_inventory(&status.inventory, "config");
-    let current_run = find_inventory(&status.inventory, "current-run");
-    let summary = find_inventory(&status.inventory, "summary");
-    let brief = find_inventory(&status.inventory, "brief");
     let codex_config = find_inventory(&status.inventory, "codex-config");
     let user_skills = find_inventory(&status.inventory, "user-skills");
-    let repo_skills = find_inventory(&status.inventory, "repo-skills");
-    let repo_agents = find_inventory(&status.inventory, "repo-agents");
-    let global_agents = find_inventory(&status.inventory, "global-agents");
     let hooks = find_inventory(&status.inventory, "hooks");
 
-    let enabled_packs = status
-        .inventory
-        .iter()
-        .filter(|item| item.name.starts_with("pack-"))
-        .filter(|item| {
-            matches!(
-                item.status,
-                InventoryStatus::Installed | InventoryStatus::Configured
-            )
-        })
-        .map(|item| item.name.trim_start_matches("pack-").to_string())
-        .collect::<Vec<_>>();
+    format!(
+        "runtime {}  codex {}  user {}  hooks {}",
+        home_status_label(runtime),
+        home_status_label(codex_config),
+        home_status_label(user_skills),
+        home_status_label(hooks),
+    )
+}
 
-    vec![
-        Line::from(format!(
-            "Local: runtime {} | config {} | state {} | brief {}",
-            home_status_label(runtime),
-            home_status_label(config),
-            combined_state_label(current_run, summary),
-            home_status_label(brief),
-        )),
-        Line::from(format!("Packs: {}", enabled_packs.join(", "))),
-        Line::from(format!(
-            "Codex: config {} | user {} | repo {}",
-            home_status_label(codex_config),
-            home_status_label(user_skills),
-            home_status_label(repo_skills),
-        )),
-        Line::from(format!(
-            "Extra: repo AGENTS {} | user AGENTS {} | hooks {}",
-            home_status_label(repo_agents),
-            home_status_label(global_agents),
-            home_status_label(hooks),
-        )),
-    ]
+fn tui_output_lines(text: &str) -> Vec<Line<'static>> {
+    reflow_tui_text(text, 56)
+        .into_iter()
+        .map(Line::from)
+        .collect()
+}
+
+fn reflow_tui_text(text: &str, width: usize) -> Vec<String> {
+    let mut lines = Vec::new();
+
+    for raw_line in text.lines() {
+        if raw_line.is_empty() {
+            lines.push(String::new());
+            continue;
+        }
+
+        let mut remaining = raw_line.trim_end();
+        while remaining.len() > width {
+            let split_at = [' ', '/', '\\', ',', ':']
+                .into_iter()
+                .find_map(|delimiter| {
+                    remaining[..width].rfind(delimiter).map(|index| {
+                        if matches!(delimiter, '/' | '\\') {
+                            index + 1
+                        } else {
+                            index
+                        }
+                    })
+                })
+                .unwrap_or(width);
+
+            let head = remaining[..split_at].trim_end();
+            if head.is_empty() {
+                lines.push(remaining[..width].to_string());
+                remaining = remaining[width..].trim_start();
+            } else {
+                lines.push(head.to_string());
+                remaining = remaining[split_at..].trim_start();
+            }
+        }
+
+        lines.push(remaining.to_string());
+    }
+
+    if lines.is_empty() {
+        lines.push(String::new());
+    }
+
+    lines
+}
+
+fn project_label(paths: &ProjectPaths) -> String {
+    paths
+        .project_root
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("current project")
+        .to_string()
+}
+
+fn centered_rect(area: Rect, width_percent: u16, height_percent: u16) -> Rect {
+    let vertical = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage((100 - height_percent) / 2),
+            Constraint::Percentage(height_percent),
+            Constraint::Percentage((100 - height_percent) / 2),
+        ])
+        .split(area);
+
+    Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage((100 - width_percent) / 2),
+            Constraint::Percentage(width_percent),
+            Constraint::Percentage((100 - width_percent) / 2),
+        ])
+        .split(vertical[1])[1]
+}
+
+fn render_modal_shell(frame: &mut Frame, area: Rect, title: &'static str, accent: Color) -> Rect {
+    let shadow_x = area.x.saturating_add(1);
+    let shadow_y = area.y.saturating_add(1);
+    let frame_area = frame.area();
+    if shadow_x < frame_area.width && shadow_y < frame_area.height {
+        let shadow = Rect {
+            x: shadow_x,
+            y: shadow_y,
+            width: area.width.min(frame_area.width.saturating_sub(shadow_x)),
+            height: area.height.min(frame_area.height.saturating_sub(shadow_y)),
+        };
+        frame.render_widget(
+            Block::default().style(Style::default().bg(Color::Rgb(8, 8, 10))),
+            shadow,
+        );
+    }
+
+    frame.render_widget(Clear, area);
+
+    let shell = Block::default()
+        .borders(Borders::ALL)
+        .title(title)
+        .border_style(Style::default().fg(accent))
+        .style(Style::default().bg(Color::Rgb(18, 18, 22)));
+    let inner = shell.inner(area);
+    frame.render_widget(shell, area);
+    inner
 }
 
 fn home_status_label(item: &InventoryItem) -> &'static str {
@@ -1861,24 +2158,6 @@ fn home_status_label(item: &InventoryItem) -> &'static str {
         InventoryStatus::Invalid => "repair",
         InventoryStatus::PresentWithoutSaneBlock => "non-Sane",
         InventoryStatus::Removed => "removed",
-    }
-}
-
-fn combined_state_label(current_run: &InventoryItem, summary: &InventoryItem) -> &'static str {
-    if matches!(current_run.status, InventoryStatus::Installed)
-        && matches!(summary.status, InventoryStatus::Installed)
-    {
-        "ok"
-    } else if matches!(
-        current_run.status,
-        InventoryStatus::Invalid | InventoryStatus::Missing
-    ) || matches!(
-        summary.status,
-        InventoryStatus::Invalid | InventoryStatus::Missing
-    ) {
-        "needs attention"
-    } else {
-        "partial"
     }
 }
 
@@ -2123,10 +2402,10 @@ fn operation_milestone(kind: OperationKind) -> Option<&'static str> {
         OperationKind::ExportGlobalAgents => Some("global agents exported"),
         OperationKind::ExportHooks => Some("hooks exported"),
         OperationKind::ExportCustomAgents => Some("custom agents exported"),
-        OperationKind::ExportAll => Some("managed assets exported"),
+        OperationKind::ExportAll => Some("Sane installed into Codex"),
         OperationKind::UninstallRepoSkills => Some("repo skills removed"),
         OperationKind::UninstallRepoAgents => Some("repo AGENTS removed"),
-        OperationKind::UninstallAll => Some("managed assets uninstalled"),
+        OperationKind::UninstallAll => Some("Sane removed from Codex"),
         _ => None,
     }
 }
@@ -3828,7 +4107,7 @@ fn uninstall_all(codex_paths: &CodexPaths) -> Result<OperationResult, String> {
 
     Ok(merge_results(
         OperationKind::UninstallAll,
-        "uninstall all: removed managed targets",
+        "uninstall all: removed Sane's Codex changes",
         vec![user_skills, global_agents, hooks, custom_agents],
     ))
 }
@@ -3858,20 +4137,26 @@ fn export_custom_agents_target(
     summary_prefix: &str,
 ) -> Result<OperationResult, String> {
     fs::create_dir_all(agents_dir).map_err(|error| error.to_string())?;
+    let agent_path = agents_dir.join(format!("{SANE_AGENT_NAME}.toml"));
     let reviewer_path = agents_dir.join(format!("{SANE_REVIEWER_AGENT_NAME}.toml"));
     let explorer_path = agents_dir.join(format!("{SANE_EXPLORER_AGENT_NAME}.toml"));
 
+    fs::write(&agent_path, sane_agent()).map_err(|error| error.to_string())?;
     fs::write(&reviewer_path, sane_reviewer_agent()).map_err(|error| error.to_string())?;
     fs::write(&explorer_path, sane_explorer_agent()).map_err(|error| error.to_string())?;
 
     Ok(OperationResult {
         kind,
-        summary: format!("{summary_prefix}: installed managed agent files"),
+        summary: format!(
+            "{summary_prefix}: installed {SANE_AGENT_NAME}, {SANE_REVIEWER_AGENT_NAME}, and {SANE_EXPLORER_AGENT_NAME}"
+        ),
         details: vec![
+            format!("path: {}", agent_path.display()),
             format!("path: {}", reviewer_path.display()),
             format!("path: {}", explorer_path.display()),
         ],
         paths_touched: vec![
+            agent_path.display().to_string(),
             reviewer_path.display().to_string(),
             explorer_path.display().to_string(),
         ],
@@ -3891,9 +4176,10 @@ fn uninstall_custom_agents_target(
     inventory_name: &str,
     summary_prefix: &str,
 ) -> Result<OperationResult, String> {
+    let agent_path = agents_dir.join(format!("{SANE_AGENT_NAME}.toml"));
     let reviewer_path = agents_dir.join(format!("{SANE_REVIEWER_AGENT_NAME}.toml"));
     let explorer_path = agents_dir.join(format!("{SANE_EXPLORER_AGENT_NAME}.toml"));
-    let managed_paths = [&reviewer_path, &explorer_path];
+    let managed_paths = [&agent_path, &reviewer_path, &explorer_path];
 
     let had_any = managed_paths.iter().any(|path| path.exists());
     if !had_any {
@@ -3929,9 +4215,12 @@ fn uninstall_custom_agents_target(
 
     Ok(OperationResult {
         kind,
-        summary: format!("{summary_prefix}: removed managed agent files"),
+        summary: format!(
+            "{summary_prefix}: removed {SANE_AGENT_NAME}, {SANE_REVIEWER_AGENT_NAME}, and {SANE_EXPLORER_AGENT_NAME}"
+        ),
         details: vec![],
         paths_touched: vec![
+            agent_path.display().to_string(),
             reviewer_path.display().to_string(),
             explorer_path.display().to_string(),
         ],
@@ -5240,20 +5529,14 @@ mod tests {
         let app =
             super::TuiApp::new(&paths, &codex_paths, super::TuiLaunchMode::Onboarding).unwrap();
         let home_labels = app
-            .home_options
+            .sections
             .iter()
             .map(|option| option.label)
             .collect::<Vec<_>>();
 
         assert_eq!(
             home_labels,
-            vec![
-                "Start here",
-                "Configure Sane",
-                "Manage Codex exports",
-                "Inspect current setup",
-                "Repair or roll back",
-            ]
+            vec!["Get started", "Preferences", "Install", "Inspect", "Repair",]
         );
 
         let start_here = super::section_actions(super::TuiSection::StartHere)
@@ -5263,13 +5546,12 @@ mod tests {
         assert_eq!(
             start_here,
             vec![
-                "Install local runtime",
-                "Preview core Codex profile",
-                "Backup Codex config",
-                "Apply core Codex profile",
-                "Preview integrations profile",
-                "Apply integrations profile",
-                "Export all managed assets",
+                "1. Create the .sane project folder",
+                "2. View your current Codex settings",
+                "3. Preview Sane's recommended Codex settings",
+                "4. Back up your Codex settings",
+                "5. Apply Sane's recommended Codex settings",
+                "6. Install Sane into Codex",
             ]
         );
     }
@@ -5283,7 +5565,38 @@ mod tests {
             .join("\n");
 
         assert!(body.contains("Preview only. No files are changed."));
-        assert!(body.contains("model, reasoning, and hooks"));
+        assert!(body.contains("model, reasoning, and hook settings"));
+    }
+
+    #[test]
+    fn onboarding_recommends_export_when_user_skill_missing() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        std::fs::create_dir_all(home.path().join(".codex")).unwrap();
+        std::fs::write(
+            home.path().join(".codex").join("config.toml"),
+            "model = \"gpt-5.4\"\nmodel_reasoning_effort = \"high\"\n",
+        )
+        .unwrap();
+
+        let _ = run_with_home(&["install"], project.path(), home.path()).unwrap();
+
+        let status = run_with_home(&["status"], project.path(), home.path()).unwrap();
+
+        assert!(status.contains("user-skills: missing"));
+
+        let paths = sane_platform::ProjectPaths::discover(project.path()).unwrap();
+        let codex_paths = sane_platform::CodexPaths::new(home.path());
+        let app =
+            super::TuiApp::new(&paths, &codex_paths, super::TuiLaunchMode::Onboarding).unwrap();
+        let body = super::home_option_lines(super::TuiSection::StartHere, &app.status)
+            .into_iter()
+            .map(|line| line.to_string())
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        assert!(body.contains("Recommended now: Install Sane into Codex"));
     }
 
     #[test]
@@ -5497,6 +5810,27 @@ mod tests {
 
         assert!(result.summary.contains("removed local telemetry data"));
         assert!(!paths.telemetry_dir.exists());
+    }
+
+    #[test]
+    fn tui_output_reflows_long_paths_for_small_panels() {
+        let lines = super::reflow_tui_text(
+            "installed runtime at /Users/bjorn/Code/labs/betteragents/.sane/config.local.toml",
+            28,
+        );
+
+        assert!(lines.len() > 2);
+        assert!(lines.iter().all(|line| line.len() <= 28));
+        assert!(lines.join("\n").contains("/Users/bjorn/"));
+    }
+
+    #[test]
+    fn milestone_summary_uses_codex_install_wording() {
+        let export = super::operation_milestone(sane_core::OperationKind::ExportAll);
+        let uninstall = super::operation_milestone(sane_core::OperationKind::UninstallAll);
+
+        assert_eq!(export, Some("Sane installed into Codex"));
+        assert_eq!(uninstall, Some("Sane removed from Codex"));
     }
 
     #[test]
@@ -5885,7 +6219,7 @@ url = "https://mcp.context7.com/mcp"
             .split(", ")
             .collect::<Vec<_>>();
 
-        assert_eq!(paths.len(), 5);
+        assert_eq!(paths.len(), 6);
     }
 
     #[test]
@@ -5913,10 +6247,13 @@ url = "https://mcp.context7.com/mcp"
         let output =
             run_with_home(&["export", "custom-agents"], project.path(), home.path()).unwrap();
         let agents_dir = home.path().join(".codex").join("agents");
+        let agent = std::fs::read_to_string(agents_dir.join("sane-agent.toml")).unwrap();
         let reviewer = std::fs::read_to_string(agents_dir.join("sane-reviewer.toml")).unwrap();
         let explorer = std::fs::read_to_string(agents_dir.join("sane-explorer.toml")).unwrap();
 
         assert!(output.contains("export custom-agents"));
+        assert!(agent.contains("name = \"sane_agent\""));
+        assert!(agent.contains("sandbox_mode = \"workspace-write\""));
         assert!(reviewer.contains("name = \"sane_reviewer\""));
         assert!(reviewer.contains("sandbox_mode = \"read-only\""));
         assert!(explorer.contains("name = \"sane_explorer\""));
@@ -5937,6 +6274,7 @@ url = "https://mcp.context7.com/mcp"
 
         assert!(output.contains("uninstall custom-agents"));
         assert!(agents_dir.join("other-agent.toml").exists());
+        assert!(!agents_dir.join("sane-agent.toml").exists());
         assert!(!agents_dir.join("sane-reviewer.toml").exists());
         assert!(!agents_dir.join("sane-explorer.toml").exists());
     }
