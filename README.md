@@ -13,7 +13,9 @@ Already implemented:
 - thin project-local `.sane` operational namespace
 - config/state persistence foundations
 - initial `install`, `config`, `doctor`, `export`, and `uninstall` commands
-- first managed Codex-native user-skill surface
+- first managed Codex-native user surfaces:
+  - `~/.agents/skills/sane-router`
+  - optional `~/.codex/AGENTS.md` overlay block
 
 ## Quick Start
 
@@ -23,7 +25,9 @@ cargo run -p sane-tui -- install
 cargo run -p sane-tui -- config
 cargo run -p sane-tui -- doctor
 cargo run -p sane-tui -- export user-skills
+cargo run -p sane-tui -- export global-agents
 cargo run -p sane-tui -- uninstall user-skills
+cargo run -p sane-tui -- uninstall global-agents
 ```
 
 ## Commit Hook

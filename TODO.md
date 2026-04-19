@@ -41,6 +41,7 @@ Implemented:
 - typed run snapshot persistence
 - initial `install`, `config`, `doctor`, `export`, and `uninstall` command shell
 - first managed Codex-native user-skill target (`~/.agents/skills/sane-router`)
+- first optional managed global Codex overlay block (`~/.codex/AGENTS.md`)
 
 Current command examples:
 
@@ -73,7 +74,7 @@ cargo test
 
 - [ ] Add state/event log design using compact machine-readable files
 - [ ] Add context compaction / handoff primitives
-- [ ] Add next Codex-native asset targets and layout (`hooks`, optional user/global overlays)
+- [ ] Add next Codex-native asset targets and layout (`hooks`, optional custom agents, future repo overlays)
 - [ ] Add better install flow UX in the TUI
 - [ ] Add update and rollback flow design
 - [ ] Add explicit privacy/telemetry config structures
@@ -117,4 +118,5 @@ Recommended next implementation slice:
 2. define the first Codex-native installation targets
 3. implement managed asset generation/install for one thin target surface
 4. add uninstall + repair flows for each managed target
-5. keep the TUI shell thin while the Codex-facing asset manager gets smarter
+5. expand to the next safe additive Codex-native target without turning Sane into a wrapper
+6. keep the TUI shell thin while the Codex-facing asset manager gets smarter

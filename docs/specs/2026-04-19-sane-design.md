@@ -70,7 +70,9 @@ Prompt bloat, giant always-loaded methodology, and excessive orchestration are p
 - user-level Codex assets
 - optional repo-level assets
 - skills, hooks, custom agents, model/subagent presets, and related managed files
-- first thin implemented surface: user-level skills under `~/.agents/skills`
+- first thin implemented surfaces:
+  - user-level skills under `~/.agents/skills`
+  - optional additive global overlay in `~/.codex/AGENTS.md`
 
 3. Thin local operational state
 - local-only by default

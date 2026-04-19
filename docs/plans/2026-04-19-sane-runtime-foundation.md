@@ -30,4 +30,4 @@
 
 - Local operational namespace is `.sane`, not `.betteragents`
 - Commit steps remain blocked until the repo is initialized with git
-- Follow-on slices should keep `.sane` thin and move toward managed Codex-native targets like user skills, hooks, and optional overlays
+- Follow-on slices should keep `.sane` thin and move toward managed Codex-native targets like user skills, optional global overlays, hooks, and custom agents
