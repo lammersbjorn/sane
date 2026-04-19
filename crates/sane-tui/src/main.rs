@@ -868,6 +868,8 @@ fn append_operation_event(paths: &ProjectPaths, result: &OperationResult) -> Res
     event
         .append_jsonl(&paths.events_path)
         .map_err(|error| error.to_string())?;
+    append_decision_record(paths, result)?;
+    append_artifact_records(paths, result)?;
     promote_operation_summary(paths, result)
 }
 
@@ -931,6 +933,38 @@ fn operation_milestone(kind: OperationKind) -> Option<&'static str> {
         OperationKind::UninstallAll => Some("managed assets uninstalled"),
         _ => None,
     }
+}
+
+fn append_decision_record(paths: &ProjectPaths, result: &OperationResult) -> Result<(), String> {
+    let Some(milestone) = operation_milestone(result.kind) else {
+        return Ok(());
+    };
+
+    EventRecord::new(
+        "decision",
+        operation_kind_label(result.kind),
+        "accepted",
+        milestone,
+        result.paths_touched.clone(),
+    )
+    .append_jsonl(&paths.decisions_path)
+    .map_err(|error| error.to_string())
+}
+
+fn append_artifact_records(paths: &ProjectPaths, result: &OperationResult) -> Result<(), String> {
+    for artifact_path in &result.paths_touched {
+        EventRecord::new(
+            "artifact",
+            operation_kind_label(result.kind),
+            "touched",
+            artifact_path.clone(),
+            vec![artifact_path.clone()],
+        )
+        .append_jsonl(&paths.artifacts_path)
+        .map_err(|error| error.to_string())?;
+    }
+
+    Ok(())
 }
 
 fn refresh_brief(paths: &ProjectPaths, summary: &RunSummary) -> Result<(), String> {
@@ -2172,6 +2206,35 @@ mod tests {
 
         assert!(brief.contains("Current goal: initialize sane runtime"));
         assert!(brief.contains("Last milestone: user skills exported"));
+    }
+
+    #[test]
+    fn backend_operations_append_decisions_and_artifacts() {
+        let dir = tempdir().unwrap();
+        let home = tempdir().unwrap();
+
+        let _ = run_with_home(&["install"], dir.path(), home.path()).unwrap();
+        let _ = run_with_home(&["export", "user-skills"], dir.path(), home.path()).unwrap();
+
+        let decisions = std::fs::read_to_string(
+            dir.path()
+                .join(".sane")
+                .join("state")
+                .join("decisions.jsonl"),
+        )
+        .unwrap();
+        let artifacts = std::fs::read_to_string(
+            dir.path()
+                .join(".sane")
+                .join("state")
+                .join("artifacts.jsonl"),
+        )
+        .unwrap();
+
+        assert!(decisions.contains("\"category\":\"decision\""));
+        assert!(decisions.contains("user skills exported"));
+        assert!(artifacts.contains("\"category\":\"artifact\""));
+        assert!(artifacts.contains("config.local.toml"));
     }
 
     #[test]
