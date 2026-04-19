@@ -101,9 +101,36 @@ Defer from `v1` builtin pack status:
 - issue-relay pack
 - repo-export pack
 - pack marketplace / third-party registry
+- external MCP integrations as mandatory default behavior
 
 Reason:
 - these are platform concerns or later extensibility, not early broad bundles
+
+## Recommended Optional Integrations
+
+These should not be forced into the bare default pack.
+
+Best shape:
+- installer checkbox or preset profile
+- explicit opt-in
+- written through managed user-level Codex config only after diff preview and backup
+
+Recommended first optional integrations:
+- `Context7`
+- `Playwright`
+
+Why:
+- both have broad utility
+- both materially improve coding/research/testing workflows
+- both make sense for many users, but not every user
+
+Experimental / not default:
+- `OpenSRC`
+
+Why not default:
+- less proven in this product plan so far
+- unclear whether it belongs in the broad “recommended for almost everyone” bucket
+- better as later optional/experimental preset
 
 ## Ownership Matrix
 
@@ -124,6 +151,11 @@ Reason:
 `frontend-craft`
 - high-quality UI generation / anti-generic frontend output
 
+`recommended-integrations`
+- optional `Context7`
+- optional `Playwright`
+- later maybe `OpenSRC`
+
 ## `v1` Recommendation
 
 Ship `v1` with this builtin pack set:
@@ -134,6 +166,12 @@ Ship `v1` with this builtin pack set:
 - `frontend-craft`
 
 Expose them as curated install choices in the TUI later.
+
+Also offer one optional integration preset:
+- `recommended-integrations`
+  - includes `Context7`
+  - includes `Playwright`
+  - does not include `OpenSRC` by default
 
 Do not expose a public pack API yet.
 

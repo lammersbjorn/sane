@@ -76,6 +76,7 @@ Sane implication:
 - user-level Codex settings can become an opt-in managed surface later
 - never treat config takeover as baseline install behavior
 - require preserve / diff preview / backup / restore before touching it
+- MCP/plugin presets like `Context7` or `Playwright` belong here if Sane manages them later
 
 ## Sane Rollout Order
 
@@ -112,6 +113,7 @@ Why later:
 - highest chance of clobbering unrelated user settings
 - “best” values are opinionated and may vary by subscription and platform
 - needs diff preview, backup, and restore before it is safe enough
+- this is also the right place for optional recommended MCP/plugin presets rather than core default install
 
 ## Sane v1 Recommendation
 
