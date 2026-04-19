@@ -46,6 +46,7 @@ Primary source:
 - No wrapper-first runtime
 - Rust should primarily be the installer / configurator / updater / doctor / asset manager
 - Codex-native installation targets are the main product surface
+- Optional user-level Codex settings management is allowed later, but only as an explicit opt-in surface with preserve / backup / restore behavior
 - Local state may exist, but it must stay thin and operational rather than becoming a separate day-to-day runtime
 
 ### Workflow / Orchestration

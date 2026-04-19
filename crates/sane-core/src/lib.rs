@@ -9,6 +9,7 @@ pub const SANE_GLOBAL_AGENTS_END: &str = "<!-- sane:global-agents:end -->";
 pub enum OperationKind {
     InstallRuntime,
     ShowConfig,
+    ResetTelemetryData,
     ShowStatus,
     Doctor,
     ExportUserSkills,

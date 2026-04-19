@@ -4,11 +4,24 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+pub const AVAILABLE_MODELS: &[&str] = &[
+    "gpt-5.4",
+    "gpt-5.2-codex",
+    "gpt-5.1-codex-max",
+    "gpt-5.4-mini",
+    "gpt-5.3-codex",
+    "gpt-5.3-codex-spark",
+    "gpt-5.2",
+    "gpt-5.1-codex-mini",
+];
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct LocalConfig {
     pub version: u32,
     #[serde(default)]
     pub models: ModelRolePresets,
+    #[serde(default)]
+    pub privacy: PrivacyConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -16,6 +29,11 @@ pub struct ModelRolePresets {
     pub coordinator: ModelPreset,
     pub sidecar: ModelPreset,
     pub verifier: ModelPreset,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct PrivacyConfig {
+    pub telemetry: TelemetryLevel,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -27,20 +45,64 @@ pub struct ModelPreset {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum ReasoningEffort {
-    Minimal,
     Low,
     Medium,
     High,
+    #[serde(rename = "xhigh")]
+    XHigh,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum TelemetryLevel {
+    Off,
+    LocalOnly,
+    ProductImprovement,
 }
 
 impl ReasoningEffort {
     pub fn as_str(self) -> &'static str {
         match self {
-            Self::Minimal => "minimal",
             Self::Low => "low",
             Self::Medium => "medium",
             Self::High => "high",
+            Self::XHigh => "xhigh",
         }
+    }
+
+    pub fn display_str(self) -> &'static str {
+        match self {
+            Self::Low => "Low",
+            Self::Medium => "Medium",
+            Self::High => "High",
+            Self::XHigh => "xhigh",
+        }
+    }
+
+    pub const fn all() -> &'static [Self] {
+        &[Self::Low, Self::Medium, Self::High, Self::XHigh]
+    }
+}
+
+impl TelemetryLevel {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Off => "off",
+            Self::LocalOnly => "local-only",
+            Self::ProductImprovement => "product-improvement",
+        }
+    }
+
+    pub fn display_str(self) -> &'static str {
+        match self {
+            Self::Off => "Off",
+            Self::LocalOnly => "Local Only",
+            Self::ProductImprovement => "Product Improvement",
+        }
+    }
+
+    pub const fn all() -> &'static [Self] {
+        &[Self::Off, Self::LocalOnly, Self::ProductImprovement]
     }
 }
 
@@ -68,6 +130,15 @@ impl Default for LocalConfig {
         Self {
             version: 1,
             models: ModelRolePresets::default(),
+            privacy: PrivacyConfig::default(),
+        }
+    }
+}
+
+impl Default for PrivacyConfig {
+    fn default() -> Self {
+        Self {
+            telemetry: TelemetryLevel::Off,
         }
     }
 }
@@ -92,6 +163,8 @@ pub enum LocalConfigError {
         #[source]
         source: toml::de::Error,
     },
+    #[error("invalid config at {path}: {message}")]
+    Validate { path: String, message: String },
     #[error("failed to encode config to toml: {0}")]
     Encode(#[from] toml::ser::Error),
 }
@@ -104,14 +177,26 @@ impl LocalConfig {
             source,
         })?;
 
-        toml::from_str(&raw).map_err(|source| LocalConfigError::Parse {
+        let config: Self = toml::from_str(&raw).map_err(|source| LocalConfigError::Parse {
             path: path.display().to_string(),
             source,
-        })
+        })?;
+        config
+            .validate()
+            .map_err(|message| LocalConfigError::Validate {
+                path: path.display().to_string(),
+                message,
+            })?;
+        Ok(config)
     }
 
     pub fn write_to_path(&self, path: impl AsRef<Path>) -> Result<(), LocalConfigError> {
         let path = path.as_ref();
+        self.validate()
+            .map_err(|message| LocalConfigError::Validate {
+                path: path.display().to_string(),
+                message,
+            })?;
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent).map_err(|source| LocalConfigError::Write {
                 path: parent.display().to_string(),
@@ -124,5 +209,36 @@ impl LocalConfig {
             path: path.display().to_string(),
             source,
         })
+    }
+
+    pub fn validate(&self) -> Result<(), String> {
+        self.models.coordinator.validate("coordinator")?;
+        self.models.sidecar.validate("sidecar")?;
+        self.models.verifier.validate("verifier")?;
+        self.privacy.validate()?;
+        Ok(())
+    }
+}
+
+impl ModelPreset {
+    pub fn validate(&self, role: &str) -> Result<(), String> {
+        if AVAILABLE_MODELS.contains(&self.model.as_str()) {
+            Ok(())
+        } else {
+            Err(format!(
+                "{role} model `{}` is not in the supported Codex model set",
+                self.model
+            ))
+        }
+    }
+}
+
+impl PrivacyConfig {
+    pub fn validate(&self) -> Result<(), String> {
+        match self.telemetry {
+            TelemetryLevel::Off
+            | TelemetryLevel::LocalOnly
+            | TelemetryLevel::ProductImprovement => Ok(()),
+        }
     }
 }

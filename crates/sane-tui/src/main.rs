@@ -15,7 +15,7 @@ use ratatui::style::{Modifier, Style};
 use ratatui::text::Line;
 use ratatui::widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wrap};
 use ratatui::{Frame, Terminal};
-use sane_config::LocalConfig;
+use sane_config::{AVAILABLE_MODELS, LocalConfig, ModelPreset, ReasoningEffort, TelemetryLevel};
 use sane_core::{
     InventoryItem, InventoryScope, InventoryStatus, NAME, OperationKind, OperationResult,
     SANE_EXPLORER_AGENT_NAME, SANE_GLOBAL_AGENTS_BEGIN, SANE_GLOBAL_AGENTS_END,
@@ -23,7 +23,7 @@ use sane_core::{
     sane_global_agents_overlay, sane_reviewer_agent, sane_router_skill,
 };
 use sane_platform::{CodexPaths, ProjectPaths, detect_platform};
-use sane_state::RunSnapshot;
+use sane_state::{RunSnapshot, RunSummary};
 use serde_json::{Map, Value, json};
 
 fn main() -> ExitCode {
@@ -208,12 +208,36 @@ fn execute_backend_command(
 #[derive(Clone, Copy)]
 struct TuiAction {
     label: &'static str,
-    command: Command,
+    kind: TuiActionKind,
+}
+
+#[derive(Clone, Copy)]
+enum TuiActionKind {
+    Backend(Command),
+    OpenConfigEditor,
+    OpenPrivacyEditor,
 }
 
 impl TuiAction {
-    const fn new(label: &'static str, command: Command) -> Self {
-        Self { label, command }
+    const fn backend(label: &'static str, command: Command) -> Self {
+        Self {
+            label,
+            kind: TuiActionKind::Backend(command),
+        }
+    }
+
+    const fn config_editor(label: &'static str) -> Self {
+        Self {
+            label,
+            kind: TuiActionKind::OpenConfigEditor,
+        }
+    }
+
+    const fn privacy_editor(label: &'static str) -> Self {
+        Self {
+            label,
+            kind: TuiActionKind::OpenPrivacyEditor,
+        }
     }
 }
 
@@ -224,6 +248,140 @@ struct TuiApp {
     selected: usize,
     status: OperationResult,
     output: String,
+    screen: TuiScreen,
+}
+
+enum TuiScreen {
+    Home,
+    ConfigEditor(ConfigEditor),
+    PrivacyEditor(PrivacyEditor),
+}
+
+struct ConfigEditor {
+    config: LocalConfig,
+    selected: usize,
+}
+
+struct PrivacyEditor {
+    config: LocalConfig,
+}
+
+impl ConfigEditor {
+    fn new(config: LocalConfig) -> Self {
+        Self {
+            config,
+            selected: 0,
+        }
+    }
+
+    fn next(&mut self) {
+        self.selected = (self.selected + 1) % ConfigField::ALL.len();
+    }
+
+    fn previous(&mut self) {
+        self.selected = if self.selected == 0 {
+            ConfigField::ALL.len() - 1
+        } else {
+            self.selected - 1
+        };
+    }
+
+    fn cycle_current(&mut self, step: isize) {
+        ConfigField::ALL[self.selected].cycle(&mut self.config, step);
+    }
+
+    fn reset_defaults(&mut self) {
+        self.config = LocalConfig::default();
+    }
+}
+
+impl PrivacyEditor {
+    fn new(config: LocalConfig) -> Self {
+        Self { config }
+    }
+
+    fn cycle(&mut self, step: isize) {
+        let values = TelemetryLevel::all();
+        let current = values
+            .iter()
+            .position(|candidate| *candidate == self.config.privacy.telemetry)
+            .unwrap_or(0);
+        let next = wrap_index(current, values.len(), step);
+        self.config.privacy.telemetry = values[next];
+    }
+
+    fn reset(&mut self) {
+        self.config.privacy.telemetry = TelemetryLevel::Off;
+    }
+}
+
+#[derive(Clone, Copy)]
+enum ConfigField {
+    CoordinatorModel,
+    CoordinatorReasoning,
+    SidecarModel,
+    SidecarReasoning,
+    VerifierModel,
+    VerifierReasoning,
+}
+
+impl ConfigField {
+    const ALL: [Self; 6] = [
+        Self::CoordinatorModel,
+        Self::CoordinatorReasoning,
+        Self::SidecarModel,
+        Self::SidecarReasoning,
+        Self::VerifierModel,
+        Self::VerifierReasoning,
+    ];
+
+    fn label(self) -> &'static str {
+        match self {
+            Self::CoordinatorModel => "Coordinator model",
+            Self::CoordinatorReasoning => "Coordinator reasoning",
+            Self::SidecarModel => "Sidecar model",
+            Self::SidecarReasoning => "Sidecar reasoning",
+            Self::VerifierModel => "Verifier model",
+            Self::VerifierReasoning => "Verifier reasoning",
+        }
+    }
+
+    fn value(self, config: &LocalConfig) -> String {
+        match self {
+            Self::CoordinatorModel => config.models.coordinator.model.clone(),
+            Self::CoordinatorReasoning => config
+                .models
+                .coordinator
+                .reasoning_effort
+                .display_str()
+                .to_string(),
+            Self::SidecarModel => config.models.sidecar.model.clone(),
+            Self::SidecarReasoning => config
+                .models
+                .sidecar
+                .reasoning_effort
+                .display_str()
+                .to_string(),
+            Self::VerifierModel => config.models.verifier.model.clone(),
+            Self::VerifierReasoning => config
+                .models
+                .verifier
+                .reasoning_effort
+                .display_str()
+                .to_string(),
+        }
+    }
+
+    fn cycle(self, config: &mut LocalConfig, step: isize) {
+        match self {
+            Self::CoordinatorModel => cycle_model(&mut config.models.coordinator, step),
+            Self::CoordinatorReasoning => cycle_reasoning(&mut config.models.coordinator, step),
+            Self::SidecarModel => cycle_model(&mut config.models.sidecar, step),
+            Self::SidecarReasoning => cycle_reasoning(&mut config.models.sidecar, step),
+            Self::VerifierModel => cycle_model(&mut config.models.verifier, step),
+            Self::VerifierReasoning => cycle_reasoning(&mut config.models.verifier, step),
+        }
+    }
 }
 
 impl TuiApp {
@@ -233,19 +391,22 @@ impl TuiApp {
             paths: paths.clone(),
             codex_paths: codex_paths.clone(),
             actions: vec![
-                TuiAction::new("Install runtime", Command::Install),
-                TuiAction::new("Inspect config", Command::Config),
-                TuiAction::new("Doctor", Command::Doctor),
-                TuiAction::new("Export user skill", Command::ExportUserSkills),
-                TuiAction::new("Export global agents", Command::ExportGlobalAgents),
-                TuiAction::new("Export hooks", Command::ExportHooks),
-                TuiAction::new("Export custom agents", Command::ExportCustomAgents),
-                TuiAction::new("Export all", Command::ExportAll),
-                TuiAction::new("Uninstall all", Command::UninstallAll),
+                TuiAction::backend("Install runtime", Command::Install),
+                TuiAction::config_editor("Edit model defaults"),
+                TuiAction::privacy_editor("Privacy / telemetry"),
+                TuiAction::backend("Inspect config", Command::Config),
+                TuiAction::backend("Doctor", Command::Doctor),
+                TuiAction::backend("Export user skill", Command::ExportUserSkills),
+                TuiAction::backend("Export global agents", Command::ExportGlobalAgents),
+                TuiAction::backend("Export hooks", Command::ExportHooks),
+                TuiAction::backend("Export custom agents", Command::ExportCustomAgents),
+                TuiAction::backend("Export all", Command::ExportAll),
+                TuiAction::backend("Uninstall all", Command::UninstallAll),
             ],
             selected: 0,
             status,
             output: "Ready. Use arrows or j/k. Enter runs action. q quits.".to_string(),
+            screen: TuiScreen::Home,
         })
     }
 
@@ -263,20 +424,45 @@ impl TuiApp {
 
     fn run_selected(&mut self) {
         let action = self.actions[self.selected];
-        match execute_backend_command(action.command, &self.paths, &self.codex_paths) {
-            Ok(result) => {
-                self.output = result.render_text();
-                match inventory_status(&self.paths, &self.codex_paths) {
-                    Ok(status) => self.status = status,
+        match action.kind {
+            TuiActionKind::Backend(command) => {
+                match execute_backend_command(command, &self.paths, &self.codex_paths) {
+                    Ok(result) => {
+                        self.output = result.render_text();
+                        match inventory_status(&self.paths, &self.codex_paths) {
+                            Ok(status) => self.status = status,
+                            Err(error) => {
+                                self.output
+                                    .push_str(&format!("\nstatus refresh failed: {error}"));
+                            }
+                        }
+                    }
                     Err(error) => {
-                        self.output
-                            .push_str(&format!("\nstatus refresh failed: {error}"));
+                        self.output = format!("action failed: {error}");
                     }
                 }
             }
-            Err(error) => {
-                self.output = format!("action failed: {error}");
-            }
+            TuiActionKind::OpenConfigEditor => match load_or_default_config(&self.paths) {
+                Ok(config) => {
+                    self.output =
+                        "Config editor open. Left/right cycles values. Enter saves. r resets."
+                            .to_string();
+                    self.screen = TuiScreen::ConfigEditor(ConfigEditor::new(config));
+                }
+                Err(error) => {
+                    self.output = format!("action failed: {error}");
+                }
+            },
+            TuiActionKind::OpenPrivacyEditor => match load_or_default_config(&self.paths) {
+                Ok(config) => {
+                    self.output = "Privacy screen open. Left/right cycles telemetry level. Enter saves. d deletes local telemetry data."
+                        .to_string();
+                    self.screen = TuiScreen::PrivacyEditor(PrivacyEditor::new(config));
+                }
+                Err(error) => {
+                    self.output = format!("action failed: {error}");
+                }
+            },
         }
     }
 }
@@ -297,18 +483,82 @@ fn run_tui_loop(
                 continue;
             }
 
-            match key.code {
-                KeyCode::Char('q') | KeyCode::Esc => return Ok(()),
-                KeyCode::Down | KeyCode::Char('j') => app.next(),
-                KeyCode::Up | KeyCode::Char('k') => app.previous(),
-                KeyCode::Enter | KeyCode::Char(' ') => app.run_selected(),
-                _ => {}
+            match &mut app.screen {
+                TuiScreen::Home => match key.code {
+                    KeyCode::Char('q') | KeyCode::Esc => return Ok(()),
+                    KeyCode::Down | KeyCode::Char('j') => app.next(),
+                    KeyCode::Up | KeyCode::Char('k') => app.previous(),
+                    KeyCode::Enter | KeyCode::Char(' ') => app.run_selected(),
+                    _ => {}
+                },
+                TuiScreen::ConfigEditor(editor) => match key.code {
+                    KeyCode::Char('q') | KeyCode::Esc => {
+                        app.screen = TuiScreen::Home;
+                        app.output = "Config editor closed without saving.".to_string();
+                    }
+                    KeyCode::Down | KeyCode::Char('j') => editor.next(),
+                    KeyCode::Up | KeyCode::Char('k') => editor.previous(),
+                    KeyCode::Left | KeyCode::Char('h') => editor.cycle_current(-1),
+                    KeyCode::Right | KeyCode::Char('l') => editor.cycle_current(1),
+                    KeyCode::Char('r') => editor.reset_defaults(),
+                    KeyCode::Enter => match save_config(&app.paths, &editor.config) {
+                        Ok(result) => {
+                            app.output = result.render_text();
+                            app.screen = TuiScreen::Home;
+                            match inventory_status(&app.paths, &app.codex_paths) {
+                                Ok(status) => app.status = status,
+                                Err(error) => {
+                                    app.output
+                                        .push_str(&format!("\nstatus refresh failed: {error}"));
+                                }
+                            }
+                        }
+                        Err(error) => app.output = format!("save failed: {error}"),
+                    },
+                    _ => {}
+                },
+                TuiScreen::PrivacyEditor(editor) => match key.code {
+                    KeyCode::Char('q') | KeyCode::Esc => {
+                        app.screen = TuiScreen::Home;
+                        app.output = "Privacy screen closed without saving.".to_string();
+                    }
+                    KeyCode::Left | KeyCode::Char('h') => editor.cycle(-1),
+                    KeyCode::Right | KeyCode::Char('l') => editor.cycle(1),
+                    KeyCode::Char('r') => editor.reset(),
+                    KeyCode::Char('d') => match reset_telemetry_data(&app.paths) {
+                        Ok(result) => app.output = result.render_text(),
+                        Err(error) => app.output = format!("reset failed: {error}"),
+                    },
+                    KeyCode::Enter => match save_config(&app.paths, &editor.config) {
+                        Ok(result) => {
+                            app.output = result.render_text();
+                            app.screen = TuiScreen::Home;
+                            match inventory_status(&app.paths, &app.codex_paths) {
+                                Ok(status) => app.status = status,
+                                Err(error) => {
+                                    app.output
+                                        .push_str(&format!("\nstatus refresh failed: {error}"));
+                                }
+                            }
+                        }
+                        Err(error) => app.output = format!("save failed: {error}"),
+                    },
+                    _ => {}
+                },
             }
         }
     }
 }
 
 fn render_tui(frame: &mut Frame, app: &TuiApp) {
+    match &app.screen {
+        TuiScreen::Home => render_home(frame, app),
+        TuiScreen::ConfigEditor(editor) => render_config_editor(frame, app, editor),
+        TuiScreen::PrivacyEditor(editor) => render_privacy_editor(frame, app, editor),
+    }
+}
+
+fn render_home(frame: &mut Frame, app: &TuiApp) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -343,6 +593,106 @@ fn render_tui(frame: &mut Frame, app: &TuiApp) {
     frame.render_widget(output, main[1]);
 }
 
+fn render_config_editor(frame: &mut Frame, app: &TuiApp, editor: &ConfigEditor) {
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(3),
+            Constraint::Min(10),
+            Constraint::Length(5),
+        ])
+        .split(frame.area());
+
+    let header = Paragraph::new(vec![
+        Line::from("Model Defaults"),
+        Line::from("Up/down picks field. Left/right cycles. Enter saves. r resets. Esc backs out."),
+    ])
+    .block(Block::default().borders(Borders::ALL).title(NAME))
+    .wrap(Wrap { trim: true });
+    frame.render_widget(header, chunks[0]);
+
+    let main = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Length(46), Constraint::Min(24)])
+        .split(chunks[1]);
+
+    render_config_fields(frame, main[0], editor);
+    let side = Paragraph::new(vec![
+        Line::from("Models"),
+        Line::from(AVAILABLE_MODELS.join(", ")),
+        Line::from(""),
+        Line::from("Reasoning"),
+        Line::from(
+            ReasoningEffort::all()
+                .iter()
+                .map(|value| value.display_str())
+                .collect::<Vec<_>>()
+                .join(", "),
+        ),
+    ])
+    .block(Block::default().borders(Borders::ALL).title("Choices"))
+    .wrap(Wrap { trim: false });
+    frame.render_widget(side, main[1]);
+
+    let output = Paragraph::new(app.output.as_str())
+        .block(Block::default().borders(Borders::ALL).title("Output"))
+        .wrap(Wrap { trim: false });
+    frame.render_widget(output, chunks[2]);
+}
+
+fn render_privacy_editor(frame: &mut Frame, app: &TuiApp, editor: &PrivacyEditor) {
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(3),
+            Constraint::Min(10),
+            Constraint::Length(5),
+        ])
+        .split(frame.area());
+
+    let header = Paragraph::new(vec![
+        Line::from("Privacy / Telemetry"),
+        Line::from("Left/right changes consent. Enter saves. d deletes local telemetry data. Esc backs out."),
+    ])
+    .block(Block::default().borders(Borders::ALL).title(NAME))
+    .wrap(Wrap { trim: true });
+    frame.render_widget(header, chunks[0]);
+
+    let main = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Length(42), Constraint::Min(24)])
+        .split(chunks[1]);
+
+    let current = Paragraph::new(vec![
+        Line::from(format!(
+            "Telemetry consent: {}",
+            editor.config.privacy.telemetry.display_str()
+        )),
+        Line::from(""),
+        Line::from("Allowed levels:"),
+        Line::from(
+            TelemetryLevel::all()
+                .iter()
+                .map(|value| value.as_str())
+                .collect::<Vec<_>>()
+                .join(", "),
+        ),
+    ])
+    .block(Block::default().borders(Borders::ALL).title("Setting"))
+    .wrap(Wrap { trim: false });
+    frame.render_widget(current, main[0]);
+
+    let details = Paragraph::new(privacy_lines(&app.paths, &editor.config))
+        .block(Block::default().borders(Borders::ALL).title("Transparency"))
+        .wrap(Wrap { trim: false });
+    frame.render_widget(details, main[1]);
+
+    let output = Paragraph::new(app.output.as_str())
+        .block(Block::default().borders(Borders::ALL).title("Output"))
+        .wrap(Wrap { trim: false });
+    frame.render_widget(output, chunks[2]);
+}
+
 fn render_actions(frame: &mut Frame, area: Rect, app: &TuiApp) {
     let items = app
         .actions
@@ -355,6 +705,101 @@ fn render_actions(frame: &mut Frame, area: Rect, app: &TuiApp) {
         .highlight_symbol("> ");
     let mut state = ListState::default().with_selected(Some(app.selected));
     frame.render_stateful_widget(list, area, &mut state);
+}
+
+fn render_config_fields(frame: &mut Frame, area: Rect, editor: &ConfigEditor) {
+    let items = ConfigField::ALL
+        .iter()
+        .enumerate()
+        .map(|(index, field)| {
+            ListItem::new(format!(
+                "{}: {}",
+                field.label(),
+                field.value(&editor.config)
+            ))
+            .style(if index == editor.selected {
+                Style::default().add_modifier(Modifier::REVERSED)
+            } else {
+                Style::default()
+            })
+        })
+        .collect::<Vec<_>>();
+
+    let list = List::new(items).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .title("Role Defaults"),
+    );
+    frame.render_widget(list, area);
+}
+
+fn privacy_lines(paths: &ProjectPaths, config: &LocalConfig) -> Vec<Line<'static>> {
+    let telemetry_dir = paths.telemetry_dir.display().to_string();
+    let summary = paths
+        .telemetry_dir
+        .join("summary.json")
+        .display()
+        .to_string();
+    let events = paths
+        .telemetry_dir
+        .join("events.jsonl")
+        .display()
+        .to_string();
+    let queue = paths
+        .telemetry_dir
+        .join("queue.jsonl")
+        .display()
+        .to_string();
+
+    vec![
+        Line::from(format!("consent: {}", config.privacy.telemetry.as_str())),
+        Line::from(format!("dir: {}", telemetry_dir)),
+        Line::from(format!(
+            "summary.json: {}",
+            path_state(&paths.telemetry_dir.join("summary.json"))
+        )),
+        Line::from(format!(
+            "events.jsonl: {}",
+            path_state(&paths.telemetry_dir.join("events.jsonl"))
+        )),
+        Line::from(format!(
+            "queue.jsonl: {}",
+            path_state(&paths.telemetry_dir.join("queue.jsonl"))
+        )),
+        Line::from(""),
+        Line::from("No remote upload logic yet."),
+        Line::from("Issue reporting stays separate."),
+        Line::from(format!("summary path: {summary}")),
+        Line::from(format!("events path: {events}")),
+        Line::from(format!("queue path: {queue}")),
+    ]
+}
+
+fn path_state(path: &Path) -> &'static str {
+    if path.exists() { "present" } else { "missing" }
+}
+
+fn cycle_model(preset: &mut ModelPreset, step: isize) {
+    let current = AVAILABLE_MODELS
+        .iter()
+        .position(|candidate| *candidate == preset.model)
+        .unwrap_or(0);
+    let next = wrap_index(current, AVAILABLE_MODELS.len(), step);
+    preset.model = AVAILABLE_MODELS[next].to_string();
+}
+
+fn cycle_reasoning(preset: &mut ModelPreset, step: isize) {
+    let values = ReasoningEffort::all();
+    let current = values
+        .iter()
+        .position(|candidate| *candidate == preset.reasoning_effort)
+        .unwrap_or(0);
+    let next = wrap_index(current, values.len(), step);
+    preset.reasoning_effort = values[next];
+}
+
+fn wrap_index(current: usize, len: usize, step: isize) -> usize {
+    ((current as isize + step).rem_euclid(len as isize)) as usize
 }
 
 fn status_lines(status: &OperationResult) -> Vec<Line<'static>> {
@@ -398,6 +843,18 @@ fn render_summary() -> String {
     )
 }
 
+fn ensure_file_with_default(path: &Path, default_contents: &str) -> Result<(), String> {
+    if path.exists() {
+        return Ok(());
+    }
+
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+    }
+
+    fs::write(path, default_contents).map_err(|error| error.to_string())
+}
+
 fn install_runtime(paths: &ProjectPaths) -> Result<OperationResult, String> {
     paths
         .ensure_runtime_dirs()
@@ -409,28 +866,55 @@ fn install_runtime(paths: &ProjectPaths) -> Result<OperationResult, String> {
             .map_err(|error| error.to_string())?;
     }
 
-    let snapshot_path = paths.state_dir.join("current-run.json");
-    if !snapshot_path.exists() {
+    if !paths.current_run_path.exists() {
         let snapshot = RunSnapshot {
             version: 1,
             objective: "initialize sane runtime".to_string(),
         };
         snapshot
-            .write_to_path(&snapshot_path)
+            .write_to_path(&paths.current_run_path)
             .map_err(|error| error.to_string())?;
     }
+
+    if !paths.summary_path.exists() {
+        let summary = RunSummary {
+            version: 1,
+            accepted_decisions: vec![],
+            completed_milestones: vec!["runtime installed".to_string()],
+            constraints: vec![],
+            files_touched: vec![],
+        };
+        summary
+            .write_to_path(&paths.summary_path)
+            .map_err(|error| error.to_string())?;
+    }
+
+    ensure_file_with_default(&paths.events_path, "")?;
+    ensure_file_with_default(&paths.decisions_path, "")?;
+    ensure_file_with_default(&paths.artifacts_path, "")?;
+    ensure_file_with_default(
+        &paths.brief_path,
+        "# Sane Brief\n\n- Current goal: initialize sane runtime\n- Continue from: TUI home\n",
+    )?;
 
     Ok(OperationResult {
         kind: OperationKind::InstallRuntime,
         summary: format!("installed runtime at {}", paths.runtime_root.display()),
         details: vec![
             format!("config: {}", paths.config_path.display()),
-            format!("state: {}", snapshot_path.display()),
+            format!("current-run: {}", paths.current_run_path.display()),
+            format!("summary: {}", paths.summary_path.display()),
+            format!("brief: {}", paths.brief_path.display()),
         ],
         paths_touched: vec![
             paths.runtime_root.display().to_string(),
             paths.config_path.display().to_string(),
-            snapshot_path.display().to_string(),
+            paths.current_run_path.display().to_string(),
+            paths.summary_path.display().to_string(),
+            paths.events_path.display().to_string(),
+            paths.decisions_path.display().to_string(),
+            paths.artifacts_path.display().to_string(),
+            paths.brief_path.display().to_string(),
         ],
         inventory: vec![],
     })
@@ -458,24 +942,7 @@ fn show_config(paths: &ProjectPaths) -> Result<OperationResult, String> {
     Ok(OperationResult {
         kind: OperationKind::ShowConfig,
         summary: format!("config: ok at {}", paths.config_path.display()),
-        details: vec![
-            format!("version: {}", config.version),
-            format!(
-                "coordinator: {} ({})",
-                config.models.coordinator.model,
-                config.models.coordinator.reasoning_effort.as_str()
-            ),
-            format!(
-                "sidecar: {} ({})",
-                config.models.sidecar.model,
-                config.models.sidecar.reasoning_effort.as_str()
-            ),
-            format!(
-                "verifier: {} ({})",
-                config.models.verifier.model,
-                config.models.verifier.reasoning_effort.as_str()
-            ),
-        ],
+        details: config_details(&config),
         paths_touched: vec![paths.config_path.display().to_string()],
         inventory: vec![InventoryItem {
             name: "config".to_string(),
@@ -484,6 +951,83 @@ fn show_config(paths: &ProjectPaths) -> Result<OperationResult, String> {
             path: paths.config_path.display().to_string(),
             repair_hint: None,
         }],
+    })
+}
+
+fn config_details(config: &LocalConfig) -> Vec<String> {
+    vec![
+        format!("version: {}", config.version),
+        format!(
+            "coordinator: {} ({})",
+            config.models.coordinator.model,
+            config.models.coordinator.reasoning_effort.as_str()
+        ),
+        format!(
+            "sidecar: {} ({})",
+            config.models.sidecar.model,
+            config.models.sidecar.reasoning_effort.as_str()
+        ),
+        format!(
+            "verifier: {} ({})",
+            config.models.verifier.model,
+            config.models.verifier.reasoning_effort.as_str()
+        ),
+        format!("telemetry: {}", config.privacy.telemetry.as_str()),
+    ]
+}
+
+fn save_config(paths: &ProjectPaths, config: &LocalConfig) -> Result<OperationResult, String> {
+    paths
+        .ensure_runtime_dirs()
+        .map_err(|error| error.to_string())?;
+    if config.privacy.telemetry != TelemetryLevel::Off {
+        fs::create_dir_all(&paths.telemetry_dir).map_err(|error| error.to_string())?;
+    }
+    config
+        .write_to_path(&paths.config_path)
+        .map_err(|error| error.to_string())?;
+
+    Ok(OperationResult {
+        kind: OperationKind::ShowConfig,
+        summary: format!("config: saved at {}", paths.config_path.display()),
+        details: config_details(config),
+        paths_touched: vec![paths.config_path.display().to_string()],
+        inventory: vec![InventoryItem {
+            name: "config".to_string(),
+            scope: InventoryScope::LocalRuntime,
+            status: InventoryStatus::Installed,
+            path: paths.config_path.display().to_string(),
+            repair_hint: None,
+        }],
+    })
+}
+
+fn load_or_default_config(paths: &ProjectPaths) -> Result<LocalConfig, String> {
+    if paths.config_path.exists() {
+        LocalConfig::read_from_path(&paths.config_path).map_err(|error| error.to_string())
+    } else {
+        Ok(LocalConfig::default())
+    }
+}
+
+fn reset_telemetry_data(paths: &ProjectPaths) -> Result<OperationResult, String> {
+    if !paths.telemetry_dir.exists() {
+        return Ok(OperationResult {
+            kind: OperationKind::ResetTelemetryData,
+            summary: "telemetry reset: no local telemetry data present".to_string(),
+            details: vec![],
+            paths_touched: vec![paths.telemetry_dir.display().to_string()],
+            inventory: vec![],
+        });
+    }
+
+    fs::remove_dir_all(&paths.telemetry_dir).map_err(|error| error.to_string())?;
+    Ok(OperationResult {
+        kind: OperationKind::ResetTelemetryData,
+        summary: "telemetry reset: removed local telemetry data".to_string(),
+        details: vec![],
+        paths_touched: vec![paths.telemetry_dir.display().to_string()],
+        inventory: vec![],
     })
 }
 
@@ -549,7 +1093,6 @@ fn inspect_inventory(
     paths: &ProjectPaths,
     codex_paths: &CodexPaths,
 ) -> Result<Vec<InventoryItem>, String> {
-    let snapshot_path = paths.state_dir.join("current-run.json");
     let user_skill_path = codex_paths
         .user_skills_dir
         .join(SANE_ROUTER_SKILL_NAME)
@@ -625,17 +1168,17 @@ fn inspect_inventory(
         InventoryItem {
             name: "state".to_string(),
             scope: InventoryScope::LocalRuntime,
-            status: if !paths.state_dir.exists() || !snapshot_path.exists() {
+            status: if !paths.state_dir.exists() || !paths.current_run_path.exists() {
                 InventoryStatus::Missing
-            } else if RunSnapshot::read_from_path(&snapshot_path).is_ok() {
+            } else if RunSnapshot::read_from_path(&paths.current_run_path).is_ok() {
                 InventoryStatus::Installed
             } else {
                 InventoryStatus::Invalid
             },
-            path: snapshot_path.display().to_string(),
-            repair_hint: if !paths.state_dir.exists() || !snapshot_path.exists() {
+            path: paths.current_run_path.display().to_string(),
+            repair_hint: if !paths.state_dir.exists() || !paths.current_run_path.exists() {
                 Some("rerun `install`".to_string())
-            } else if RunSnapshot::read_from_path(&snapshot_path).is_ok() {
+            } else if RunSnapshot::read_from_path(&paths.current_run_path).is_ok() {
                 None
             } else {
                 Some("rerun `install`".to_string())
@@ -1338,6 +1881,21 @@ mod tests {
         assert!(dir.path().join(".sane").exists());
         assert!(dir.path().join(".sane").join("config.local.toml").exists());
         assert!(dir.path().join(".sane").join("state").exists());
+        assert!(
+            dir.path()
+                .join(".sane")
+                .join("state")
+                .join("current-run.json")
+                .exists()
+        );
+        assert!(
+            dir.path()
+                .join(".sane")
+                .join("state")
+                .join("summary.json")
+                .exists()
+        );
+        assert!(dir.path().join(".sane").join("BRIEF.md").exists());
     }
 
     #[test]
@@ -1425,6 +1983,7 @@ mod tests {
 
         assert!(output.contains(dir.path().join(".sane").to_string_lossy().as_ref()));
         assert!(dir.path().join(".sane").join("config.local.toml").exists());
+        assert!(dir.path().join(".sane").join("BRIEF.md").exists());
     }
 
     #[test]
@@ -1615,6 +2174,8 @@ mod tests {
             labels,
             vec![
                 "Install runtime",
+                "Edit model defaults",
+                "Privacy / telemetry",
                 "Inspect config",
                 "Doctor",
                 "Export user skill",
@@ -1625,6 +2186,65 @@ mod tests {
                 "Uninstall all",
             ]
         );
+    }
+
+    #[test]
+    fn save_config_persists_supported_model_defaults() {
+        let project = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        let paths = sane_platform::ProjectPaths::discover(project.path()).unwrap();
+        let config = sane_config::LocalConfig {
+            version: 1,
+            models: sane_config::ModelRolePresets {
+                coordinator: sane_config::ModelPreset {
+                    model: "gpt-5.3-codex".to_string(),
+                    reasoning_effort: sane_config::ReasoningEffort::XHigh,
+                },
+                sidecar: sane_config::ModelPreset {
+                    model: "gpt-5.1-codex-mini".to_string(),
+                    reasoning_effort: sane_config::ReasoningEffort::Low,
+                },
+                verifier: sane_config::ModelPreset {
+                    model: "gpt-5.4".to_string(),
+                    reasoning_effort: sane_config::ReasoningEffort::High,
+                },
+            },
+            privacy: sane_config::PrivacyConfig::default(),
+        };
+
+        let result = super::save_config(&paths, &config).unwrap();
+        let saved = sane_config::LocalConfig::read_from_path(&paths.config_path).unwrap();
+
+        assert!(result.summary.contains("config: saved"));
+        assert_eq!(saved, config);
+        assert!(result.details.iter().any(|line| line == "telemetry: off"));
+    }
+
+    #[test]
+    fn save_config_creates_local_telemetry_dir_when_enabled() {
+        let project = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        let paths = sane_platform::ProjectPaths::discover(project.path()).unwrap();
+        let mut config = sane_config::LocalConfig::default();
+        config.privacy.telemetry = sane_config::TelemetryLevel::LocalOnly;
+
+        let _ = super::save_config(&paths, &config).unwrap();
+
+        assert!(paths.telemetry_dir.exists());
+    }
+
+    #[test]
+    fn reset_telemetry_data_removes_local_telemetry_dir() {
+        let project = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        let paths = sane_platform::ProjectPaths::discover(project.path()).unwrap();
+        std::fs::create_dir_all(&paths.telemetry_dir).unwrap();
+        std::fs::write(paths.telemetry_dir.join("summary.json"), "{}").unwrap();
+
+        let result = super::reset_telemetry_data(&paths).unwrap();
+
+        assert!(result.summary.contains("removed local telemetry data"));
+        assert!(!paths.telemetry_dir.exists());
     }
 
     #[test]

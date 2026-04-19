@@ -13,6 +13,10 @@ Already implemented:
 - no-args terminal installer/config TUI
 - thin project-local `.sane` operational namespace
 - config/state persistence foundations
+- layered local state skeleton: `current-run.json`, `summary.json`, JSONL logs, and `BRIEF.md`
+- validated model-role config using the actual Codex model/reasoning choices available in-app
+- TUI model defaults editor for coordinator, sidecar, and verifier roles
+- opt-in privacy / telemetry screen with local-only consent levels and reset controls
 - backend/dev escape hatch verbs for `install`, `config`, `status`, `doctor`, `export`, and `uninstall`
 - grouped audit view separating local runtime state from Codex-native managed assets
 - first managed user-level hooks target at `~/.codex/hooks.json`
@@ -29,6 +33,33 @@ cargo run -p sane-tui
 ```
 
 No-args now opens the actual TUI.
+
+Current config editor:
+- opens inside the TUI
+- edits `coordinator`, `sidecar`, and `verifier` defaults
+- validates against the current Codex model set:
+  - `gpt-5.4`
+  - `gpt-5.2-codex`
+  - `gpt-5.1-codex-max`
+  - `gpt-5.4-mini`
+  - `gpt-5.3-codex`
+  - `gpt-5.3-codex-spark`
+  - `gpt-5.2`
+  - `gpt-5.1-codex-mini`
+- supports reasoning:
+  - `low`
+  - `medium`
+  - `high`
+  - `xhigh`
+
+Current privacy foundation:
+- telemetry defaults to `off`
+- local consent levels:
+  - `off`
+  - `local-only`
+  - `product-improvement`
+- no remote upload logic yet
+- local telemetry data can be deleted from the TUI
 
 Backend/dev escape hatches still exist:
 

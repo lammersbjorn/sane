@@ -13,9 +13,16 @@ pub struct ProjectPaths {
     pub runtime_root: PathBuf,
     pub config_path: PathBuf,
     pub state_dir: PathBuf,
+    pub current_run_path: PathBuf,
+    pub summary_path: PathBuf,
+    pub events_path: PathBuf,
+    pub decisions_path: PathBuf,
+    pub artifacts_path: PathBuf,
+    pub brief_path: PathBuf,
     pub cache_dir: PathBuf,
     pub logs_dir: PathBuf,
     pub sessions_dir: PathBuf,
+    pub telemetry_dir: PathBuf,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -45,15 +52,29 @@ impl ProjectPaths {
         let cache_dir = runtime_root.join("cache");
         let logs_dir = runtime_root.join("logs");
         let sessions_dir = runtime_root.join("sessions");
+        let telemetry_dir = runtime_root.join("telemetry");
+        let current_run_path = state_dir.join("current-run.json");
+        let summary_path = state_dir.join("summary.json");
+        let events_path = state_dir.join("events.jsonl");
+        let decisions_path = state_dir.join("decisions.jsonl");
+        let artifacts_path = state_dir.join("artifacts.jsonl");
+        let brief_path = runtime_root.join("BRIEF.md");
 
         Self {
             project_root,
             runtime_root: runtime_root.clone(),
             config_path: runtime_root.join("config.local.toml"),
             state_dir,
+            current_run_path,
+            summary_path,
+            events_path,
+            decisions_path,
+            artifacts_path,
+            brief_path,
             cache_dir,
             logs_dir,
             sessions_dir,
+            telemetry_dir,
         }
     }
 

@@ -12,8 +12,42 @@ fn project_paths_use_dot_sane_namespace() {
         dir.path().join(".sane").join("config.local.toml")
     );
     assert_eq!(paths.state_dir, dir.path().join(".sane").join("state"));
+    assert_eq!(
+        paths.current_run_path,
+        dir.path()
+            .join(".sane")
+            .join("state")
+            .join("current-run.json")
+    );
+    assert_eq!(
+        paths.summary_path,
+        dir.path().join(".sane").join("state").join("summary.json")
+    );
+    assert_eq!(
+        paths.events_path,
+        dir.path().join(".sane").join("state").join("events.jsonl")
+    );
+    assert_eq!(
+        paths.decisions_path,
+        dir.path()
+            .join(".sane")
+            .join("state")
+            .join("decisions.jsonl")
+    );
+    assert_eq!(
+        paths.artifacts_path,
+        dir.path()
+            .join(".sane")
+            .join("state")
+            .join("artifacts.jsonl")
+    );
+    assert_eq!(paths.brief_path, dir.path().join(".sane").join("BRIEF.md"));
     assert_eq!(paths.logs_dir, dir.path().join(".sane").join("logs"));
     assert_eq!(paths.cache_dir, dir.path().join(".sane").join("cache"));
+    assert_eq!(
+        paths.telemetry_dir,
+        dir.path().join(".sane").join("telemetry")
+    );
 }
 
 #[test]

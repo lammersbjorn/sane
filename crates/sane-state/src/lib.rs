@@ -10,6 +10,15 @@ pub struct RunSnapshot {
     pub objective: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct RunSummary {
+    pub version: u32,
+    pub accepted_decisions: Vec<String>,
+    pub completed_milestones: Vec<String>,
+    pub constraints: Vec<String>,
+    pub files_touched: Vec<String>,
+}
+
 #[derive(Debug, Error)]
 pub enum RunSnapshotError {
     #[error("failed to read snapshot from {path}: {source}")]
@@ -35,6 +44,37 @@ pub enum RunSnapshotError {
 }
 
 impl RunSnapshot {
+    pub fn read_from_path(path: impl AsRef<Path>) -> Result<Self, RunSnapshotError> {
+        let path = path.as_ref();
+        let raw = fs::read_to_string(path).map_err(|source| RunSnapshotError::Read {
+            path: path.display().to_string(),
+            source,
+        })?;
+
+        serde_json::from_str(&raw).map_err(|source| RunSnapshotError::Parse {
+            path: path.display().to_string(),
+            source,
+        })
+    }
+
+    pub fn write_to_path(&self, path: impl AsRef<Path>) -> Result<(), RunSnapshotError> {
+        let path = path.as_ref();
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).map_err(|source| RunSnapshotError::Write {
+                path: parent.display().to_string(),
+                source,
+            })?;
+        }
+
+        let encoded = serde_json::to_string_pretty(self)?;
+        fs::write(path, encoded).map_err(|source| RunSnapshotError::Write {
+            path: path.display().to_string(),
+            source,
+        })
+    }
+}
+
+impl RunSummary {
     pub fn read_from_path(path: impl AsRef<Path>) -> Result<Self, RunSnapshotError> {
         let path = path.as_ref();
         let raw = fs::read_to_string(path).map_err(|source| RunSnapshotError::Read {

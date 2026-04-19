@@ -101,6 +101,7 @@ Goal:
 Must answer:
 - user-level targets
 - global targets
+- optional user-level Codex settings profile target
 - repo-level optional exports
 - order of rollout
 
@@ -199,13 +200,15 @@ Order:
 1. hooks
 2. optional custom agents
 3. optional further overlays
-4. repo-level exports later
+4. optional user-level Codex settings profile
+5. repo-level exports later
 
 Rules:
 - additive only
 - removable
 - preserve unrelated user content
 - merge/preserve/remove tests required
+- Codex settings management, if added, must be explicit opt-in with diff preview and backup / restore path
 
 ## B5. Model/Subagent Config Surface
 
@@ -273,15 +276,15 @@ Before touching docs:
 ## Immediate Next Allowed Work
 
 Allowed now:
-- finish `B1` only
-- explicit inventory/status read
-- touched-path reporting cleanup
-- backend contract docs/tests
+- finish `B4` only if another managed Codex surface is clearly justified
+- otherwise keep aligning real state files with the `R3` design
+- keep privacy / telemetry local-first
+- keep TUI first and backend verbs secondary
 
 Not allowed now:
 - rewriting the product around command UX
-- adding new managed targets
+- clobbering `~/.codex/config.toml`
 - inventing final builtin packs
 - public plugin API work
 - routing-engine work
-- large TUI experimentation before `B1` exit criteria are complete
+- remote telemetry transport before privacy controls exist

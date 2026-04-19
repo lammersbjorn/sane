@@ -7,6 +7,8 @@ Current responsibility:
 - install/config/doctor/export/uninstall shell
 - backend/dev status inventory shell
 - no-args interactive TUI home screen
+- no-args interactive TUI config editor for model defaults
+- no-args interactive privacy / telemetry screen with reset control
 - action list, status summary, output panel, and quit flow
 - grouped status inventory for local runtime vs Codex-native assets
 - user-facing operational output
