@@ -102,8 +102,9 @@ That opens the TUI.
 ### I want different behavior from Codex, not more commands
 
 1. Turn packs on or off in `Sane`
-2. Export the managed assets
-3. Keep prompting in plain language
+2. Export the managed assets you actually want
+3. Choose user-level install or optional repo-local shared skills
+4. Keep prompting in plain language
 
 ### Something feels broken
 
@@ -162,6 +163,7 @@ These are current built-in packs, not a frozen long-term public API:
 ### Current Codex-facing surfaces
 
 - router skill export
+- optional repo-local skill export into `.agents/skills/`
 - managed `AGENTS.md` block export
 - managed hook export
 - managed custom-agent export
@@ -186,6 +188,10 @@ Provider-specific profiles stay separate.
 ### Project-local
 
 `Sane` creates and manages `.sane/` in the project for local config, state, and backups.
+
+It can also optionally write shared repo skills into:
+
+- `.agents/skills/`
 
 ### User-level Codex surfaces
 
@@ -214,6 +220,7 @@ By design:
 - `.sane/state/artifacts.jsonl`
 - `.sane/BRIEF.md`
 - `.sane/backups/`
+- `.agents/skills/sane-router/`
 - `~/.agents/skills/sane-router/`
 - optional pack skill directories exported by `Sane`
 - a Sane-managed block inside `~/.codex/AGENTS.md`

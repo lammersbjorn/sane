@@ -41,16 +41,18 @@ Current managed targets are:
 
 1. local operational runtime under project `.sane`
 2. user skill pack at `~/.agents/skills/sane-router`
-3. optional additive global overlay block in `~/.codex/AGENTS.md`
-4. additive user-level hooks entry in `~/.codex/hooks.json`
-5. additive user-level custom agents in `~/.codex/agents/`
-6. narrow explicit opt-in profile management for user-level Codex config at `~/.codex/config.toml`
+3. optional repo-local shared skill pack at `<repo>/.agents/skills/sane-router`
+4. optional additive global overlay block in `~/.codex/AGENTS.md`
+5. additive user-level hooks entry in `~/.codex/hooks.json`
+6. additive user-level custom agents in `~/.codex/agents/`
+7. narrow explicit opt-in profile management for user-level Codex config at `~/.codex/config.toml`
 
 Current managed export behavior also depends on local config:
 - exported `sane-router` skill content can reflect enabled guidance packs and current model-role defaults
 - exported global `AGENTS.md` overlay can reflect enabled guidance packs and current model-role defaults
 - status/doctor should flag those assets as invalid when current exports drift from enabled guidance-pack or model-role config
 - enabled optional packs can materialize as additional managed user skills during `export_user_skills`
+- enabled optional packs can materialize as additional managed repo skills during `export_repo_skills`
 
 ## Required Operations
 
@@ -141,6 +143,7 @@ These are the backend actions the TUI is allowed to call in the current phase.
   - inspect config validity
   - inspect run snapshot validity
 - inspect managed user skill presence
+- inspect optional repo-local shared skill presence
 - inspect managed global AGENTS block presence
 - inspect user-level Codex config presence / parse validity
 - emit repair hints
@@ -152,11 +155,13 @@ These are the backend actions the TUI is allowed to call in the current phase.
 ## Asset Management
 
 - `export_user_skills`
+- `export_repo_skills`
 - `export_global_agents`
 - `export_hooks`
 - `export_custom_agents`
 - `export_all`
 - `uninstall_user_skills`
+- `uninstall_repo_skills`
 - `uninstall_global_agents`
 - `uninstall_hooks`
 - `uninstall_custom_agents`

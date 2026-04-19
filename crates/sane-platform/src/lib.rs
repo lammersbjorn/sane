@@ -10,6 +10,8 @@ pub enum HostPlatform {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProjectPaths {
     pub project_root: PathBuf,
+    pub repo_agents_dir: PathBuf,
+    pub repo_skills_dir: PathBuf,
     pub runtime_root: PathBuf,
     pub config_path: PathBuf,
     pub state_dir: PathBuf,
@@ -50,6 +52,8 @@ pub fn detect_platform() -> HostPlatform {
 impl ProjectPaths {
     pub fn new(project_root: impl AsRef<Path>) -> Self {
         let project_root = project_root.as_ref().to_path_buf();
+        let repo_agents_dir = project_root.join(".agents");
+        let repo_skills_dir = repo_agents_dir.join("skills");
         let runtime_root = project_root.join(".sane");
         let state_dir = runtime_root.join("state");
         let cache_dir = runtime_root.join("cache");
@@ -67,6 +71,8 @@ impl ProjectPaths {
 
         Self {
             project_root,
+            repo_agents_dir,
+            repo_skills_dir,
             runtime_root: runtime_root.clone(),
             config_path: runtime_root.join("config.local.toml"),
             state_dir,

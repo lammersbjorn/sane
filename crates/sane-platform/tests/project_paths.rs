@@ -6,6 +6,11 @@ fn project_paths_use_dot_sane_namespace() {
     let dir = tempdir().unwrap();
     let paths = ProjectPaths::new(dir.path());
 
+    assert_eq!(paths.repo_agents_dir, dir.path().join(".agents"));
+    assert_eq!(
+        paths.repo_skills_dir,
+        dir.path().join(".agents").join("skills")
+    );
     assert_eq!(paths.runtime_root, dir.path().join(".sane"));
     assert_eq!(
         paths.config_path,

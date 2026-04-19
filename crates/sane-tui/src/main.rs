@@ -129,17 +129,19 @@ fn run_with_home(args: &[&str], cwd: &Path, home: &Path) -> Result<String, Strin
         | Command::Doctor
         | Command::ExportAll
         | Command::ExportUserSkills
+        | Command::ExportRepoSkills
         | Command::ExportGlobalAgents
         | Command::ExportHooks
         | Command::ExportCustomAgents
         | Command::UninstallAll
         | Command::UninstallUserSkills
+        | Command::UninstallRepoSkills
         | Command::UninstallGlobalAgents
         | Command::UninstallHooks
         | Command::UninstallCustomAgents => execute_backend_command(command, &paths, &codex_paths)
             .map(|result| result.render_text()),
         Command::Export => Ok(
-            "export: available targets: all, user-skills, global-agents, hooks, custom-agents"
+            "export: available targets: all, user-skills, repo-skills, global-agents, hooks, custom-agents"
                 .to_string(),
         ),
         Command::Preview => Ok(
@@ -152,7 +154,7 @@ fn run_with_home(args: &[&str], cwd: &Path, home: &Path) -> Result<String, Strin
         ),
         Command::Restore => Ok("restore: available targets: codex-config".to_string()),
         Command::Uninstall => Ok(
-            "uninstall: available targets: all, user-skills, global-agents, hooks, custom-agents"
+            "uninstall: available targets: all, user-skills, repo-skills, global-agents, hooks, custom-agents"
                 .to_string(),
         ),
     }
@@ -183,12 +185,14 @@ enum Command {
     Export,
     ExportAll,
     ExportUserSkills,
+    ExportRepoSkills,
     ExportGlobalAgents,
     ExportHooks,
     ExportCustomAgents,
     Uninstall,
     UninstallAll,
     UninstallUserSkills,
+    UninstallRepoSkills,
     UninstallGlobalAgents,
     UninstallHooks,
     UninstallCustomAgents,
@@ -219,12 +223,14 @@ impl Command {
             (Some("hook"), Some("session-start")) => Ok(Self::HookSessionStart),
             (Some("export"), Some("all")) => Ok(Self::ExportAll),
             (Some("export"), Some("user-skills")) => Ok(Self::ExportUserSkills),
+            (Some("export"), Some("repo-skills")) => Ok(Self::ExportRepoSkills),
             (Some("export"), Some("global-agents")) => Ok(Self::ExportGlobalAgents),
             (Some("export"), Some("hooks")) => Ok(Self::ExportHooks),
             (Some("export"), Some("custom-agents")) => Ok(Self::ExportCustomAgents),
             (Some("export"), None) => Ok(Self::Export),
             (Some("uninstall"), Some("all")) => Ok(Self::UninstallAll),
             (Some("uninstall"), Some("user-skills")) => Ok(Self::UninstallUserSkills),
+            (Some("uninstall"), Some("repo-skills")) => Ok(Self::UninstallRepoSkills),
             (Some("uninstall"), Some("global-agents")) => Ok(Self::UninstallGlobalAgents),
             (Some("uninstall"), Some("hooks")) => Ok(Self::UninstallHooks),
             (Some("uninstall"), Some("custom-agents")) => Ok(Self::UninstallCustomAgents),
@@ -257,11 +263,13 @@ fn execute_backend_command(
         Command::HookSessionStart => Err("hook event is not a backend operation".to_string()),
         Command::ExportAll => export_all(paths, codex_paths),
         Command::ExportUserSkills => export_user_skills(paths, codex_paths),
+        Command::ExportRepoSkills => export_repo_skills(paths),
         Command::ExportGlobalAgents => export_global_agents(paths, codex_paths),
         Command::ExportHooks => export_hooks(codex_paths),
         Command::ExportCustomAgents => export_custom_agents(codex_paths),
         Command::UninstallAll => uninstall_all(codex_paths),
         Command::UninstallUserSkills => uninstall_user_skills(codex_paths),
+        Command::UninstallRepoSkills => uninstall_repo_skills(paths),
         Command::UninstallGlobalAgents => uninstall_global_agents(codex_paths),
         Command::UninstallHooks => uninstall_hooks(codex_paths),
         Command::UninstallCustomAgents => uninstall_custom_agents(codex_paths),
@@ -568,10 +576,12 @@ impl TuiApp {
                 TuiAction::backend("Adaptive policy", Command::DebugPolicyPreview),
                 TuiAction::backend("Run doctor", Command::Doctor),
                 TuiAction::backend("Export router skill", Command::ExportUserSkills),
+                TuiAction::backend("Export repo skills", Command::ExportRepoSkills),
                 TuiAction::backend("Export AGENTS block", Command::ExportGlobalAgents),
                 TuiAction::backend("Export hooks", Command::ExportHooks),
                 TuiAction::backend("Export custom agents", Command::ExportCustomAgents),
                 TuiAction::backend("Export all", Command::ExportAll),
+                TuiAction::backend("Uninstall repo skills", Command::UninstallRepoSkills),
                 TuiAction::backend("Uninstall all", Command::UninstallAll),
             ],
             selected: 0,
@@ -785,6 +795,7 @@ fn command_requires_confirmation(command: Command) -> bool {
             | Command::RestoreCodexConfig
             | Command::UninstallAll
             | Command::UninstallUserSkills
+            | Command::UninstallRepoSkills
             | Command::UninstallGlobalAgents
             | Command::UninstallHooks
             | Command::UninstallCustomAgents
@@ -796,6 +807,9 @@ fn append_export_drift_warnings(output: &mut String, status: &OperationResult) {
         let warning = match (item.name.as_str(), item.status) {
             ("user-skills", InventoryStatus::Invalid) => {
                 Some("warning: exported user-skills stale; rerun `export user-skills`")
+            }
+            ("repo-skills", InventoryStatus::Invalid) => {
+                Some("warning: exported repo-skills stale; rerun `export repo-skills`")
             }
             ("global-agents", InventoryStatus::Invalid) => {
                 Some("warning: exported global-agents stale; rerun `export global-agents`")
@@ -1294,6 +1308,14 @@ fn command_help_lines(command: Command) -> Vec<Line<'static>> {
             Line::from(""),
             Line::from("This makes Sane guidance available as a Codex-native skill."),
         ],
+        Command::ExportRepoSkills => vec![
+            Line::from("Install Sane's managed skills into this repo's `.agents/skills` folder."),
+            Line::from(""),
+            Line::from(
+                "Use this when you want repo-local shared skills instead of user-only install.",
+            ),
+            Line::from("This is explicit repo mutation and is not part of `export all`."),
+        ],
         Command::ExportGlobalAgents => vec![
             Line::from("Install or refresh Sane's managed global `AGENTS.md` guidance block."),
             Line::from(""),
@@ -1324,6 +1346,11 @@ fn command_help_lines(command: Command) -> Vec<Line<'static>> {
             Line::from(
                 "Only Sane-managed content should be removed; unrelated user content should be preserved.",
             ),
+        ],
+        Command::UninstallRepoSkills => vec![
+            Line::from("Remove Sane-managed repo skills from this repo's `.agents/skills` folder."),
+            Line::from(""),
+            Line::from("Only Sane-managed repo skill directories should be removed."),
         ],
         _ => vec![Line::from("No help available for this option yet.")],
     }
@@ -1452,6 +1479,7 @@ fn status_lines(status: &OperationResult) -> Vec<Line<'static>> {
     let brief = find_inventory(&status.inventory, "brief");
     let codex_config = find_inventory(&status.inventory, "codex-config");
     let user_skills = find_inventory(&status.inventory, "user-skills");
+    let repo_skills = find_inventory(&status.inventory, "repo-skills");
     let global_agents = find_inventory(&status.inventory, "global-agents");
     let hooks = find_inventory(&status.inventory, "hooks");
     let custom_agents = find_inventory(&status.inventory, "custom-agents");
@@ -1479,13 +1507,14 @@ fn status_lines(status: &OperationResult) -> Vec<Line<'static>> {
         )),
         Line::from(format!("Packs: {}", enabled_packs.join(", "))),
         Line::from(format!(
-            "Codex: config {} | skill {} | AGENTS {}",
+            "Codex: config {} | user {} | repo {}",
             home_status_label(codex_config),
             home_status_label(user_skills),
-            home_status_label(global_agents),
+            home_status_label(repo_skills),
         )),
         Line::from(format!(
-            "Extra: hooks {} | agents {} | Doctor shows full audit",
+            "Extra: AGENTS {} | hooks {} | agents {}",
+            home_status_label(global_agents),
             home_status_label(hooks),
             home_status_label(custom_agents),
         )),
@@ -1575,11 +1604,13 @@ fn operation_kind_label(kind: OperationKind) -> &'static str {
         OperationKind::ShowStatus => "show_status",
         OperationKind::Doctor => "doctor",
         OperationKind::ExportUserSkills => "export_user_skills",
+        OperationKind::ExportRepoSkills => "export_repo_skills",
         OperationKind::ExportGlobalAgents => "export_global_agents",
         OperationKind::ExportHooks => "export_hooks",
         OperationKind::ExportCustomAgents => "export_custom_agents",
         OperationKind::ExportAll => "export_all",
         OperationKind::UninstallUserSkills => "uninstall_user_skills",
+        OperationKind::UninstallRepoSkills => "uninstall_repo_skills",
         OperationKind::UninstallGlobalAgents => "uninstall_global_agents",
         OperationKind::UninstallHooks => "uninstall_hooks",
         OperationKind::UninstallCustomAgents => "uninstall_custom_agents",
@@ -1754,10 +1785,12 @@ fn operation_milestone(kind: OperationKind) -> Option<&'static str> {
     match kind {
         OperationKind::InstallRuntime => Some("runtime installed"),
         OperationKind::ExportUserSkills => Some("user skills exported"),
+        OperationKind::ExportRepoSkills => Some("repo skills exported"),
         OperationKind::ExportGlobalAgents => Some("global agents exported"),
         OperationKind::ExportHooks => Some("hooks exported"),
         OperationKind::ExportCustomAgents => Some("custom agents exported"),
         OperationKind::ExportAll => Some("managed assets exported"),
+        OperationKind::UninstallRepoSkills => Some("repo skills removed"),
         OperationKind::UninstallAll => Some("managed assets uninstalled"),
         _ => None,
     }
@@ -2577,6 +2610,7 @@ fn doctor_runtime(
     let pack_frontend_craft = find_inventory(&inventory, "pack-frontend-craft");
     let codex_config = find_inventory(&inventory, "codex-config");
     let user_skills = find_inventory(&inventory, "user-skills");
+    let repo_skills = find_inventory(&inventory, "repo-skills");
     let global_agents = find_inventory(&inventory, "global-agents");
     let hooks = find_inventory(&inventory, "hooks");
     let custom_agents = find_inventory(&inventory, "custom-agents");
@@ -2584,7 +2618,7 @@ fn doctor_runtime(
     Ok(OperationResult {
         kind: OperationKind::Doctor,
         summary: format!(
-            "runtime: {}\nconfig: {}\ncurrent-run: {}\nsummary: {}\nbrief: {}\npack-core: {}\npack-caveman: {}\npack-cavemem: {}\npack-rtk: {}\npack-frontend-craft: {}\ncodex-config: {}\nuser-skills: {}\nglobal-agents: {}\nhooks: {}\ncustom-agents: {}\nroot: {}\ncodex-home: {}",
+            "runtime: {}\nconfig: {}\ncurrent-run: {}\nsummary: {}\nbrief: {}\npack-core: {}\npack-caveman: {}\npack-cavemem: {}\npack-rtk: {}\npack-frontend-craft: {}\ncodex-config: {}\nuser-skills: {}\nrepo-skills: {}\nglobal-agents: {}\nhooks: {}\ncustom-agents: {}\nroot: {}\ncodex-home: {}",
             doctor_status(runtime),
             doctor_status(config),
             doctor_status(current_run),
@@ -2597,6 +2631,7 @@ fn doctor_runtime(
             doctor_status(pack_frontend_craft),
             doctor_status(codex_config),
             doctor_status(user_skills),
+            doctor_status(repo_skills),
             doctor_status(global_agents),
             doctor_status(hooks),
             doctor_status(custom_agents),
@@ -2615,6 +2650,10 @@ fn inspect_inventory(
 ) -> Result<Vec<InventoryItem>, String> {
     let user_skill_path = codex_paths
         .user_skills_dir
+        .join(SANE_ROUTER_SKILL_NAME)
+        .join("SKILL.md");
+    let repo_skill_path = paths
+        .repo_skills_dir
         .join(SANE_ROUTER_SKILL_NAME)
         .join("SKILL.md");
     let codex_config_inventory = inspect_codex_config_inventory(codex_paths)?;
@@ -2789,37 +2828,30 @@ fn inspect_inventory(
         InventoryItem {
             name: "user-skills".to_string(),
             scope: InventoryScope::CodexNative,
-            status: if user_skill_path.exists() {
-                if let Some(expected) = &expected_user_skill {
-                    let body =
-                        fs::read_to_string(&user_skill_path).map_err(|error| error.to_string())?;
-                    if body == *expected {
-                        InventoryStatus::Installed
-                    } else {
-                        InventoryStatus::Invalid
-                    }
-                } else {
-                    InventoryStatus::Installed
-                }
-            } else {
-                InventoryStatus::Missing
-            },
+            status: skill_target_status(&user_skill_path, expected_user_skill.as_ref(), false)
+                .map_err(|error| error.to_string())?,
             path: user_skill_path.display().to_string(),
-            repair_hint: if user_skill_path.exists() {
-                if expected_user_skill.is_some() {
-                    let body =
-                        fs::read_to_string(&user_skill_path).map_err(|error| error.to_string())?;
-                    if body == *expected_user_skill.as_ref().unwrap() {
-                        None
-                    } else {
-                        Some("rerun `export user-skills`".to_string())
-                    }
-                } else {
-                    None
-                }
-            } else {
-                Some("run `export user-skills`".to_string())
-            },
+            repair_hint: skill_target_hint(
+                &user_skill_path,
+                expected_user_skill.as_ref(),
+                false,
+                "export user-skills",
+            )
+            .map_err(|error| error.to_string())?,
+        },
+        InventoryItem {
+            name: "repo-skills".to_string(),
+            scope: InventoryScope::CodexNative,
+            status: skill_target_status(&repo_skill_path, expected_user_skill.as_ref(), true)
+                .map_err(|error| error.to_string())?,
+            path: repo_skill_path.display().to_string(),
+            repair_hint: skill_target_hint(
+                &repo_skill_path,
+                expected_user_skill.as_ref(),
+                true,
+                "export repo-skills",
+            )
+            .map_err(|error| error.to_string())?,
         },
         global_agents_inventory,
         hooks_inventory,
@@ -2861,11 +2893,15 @@ fn inspect_pack_inventory(paths: &ProjectPaths, codex_paths: &CodexPaths) -> Vec
                 ConfigState::Invalid => InventoryStatus::Invalid,
                 ConfigState::Loaded(config) => match pack_name {
                     "core" if config.packs.core => InventoryStatus::Installed,
-                    "caveman" if config.packs.caveman => pack_skill_status(codex_paths, "caveman"),
-                    "cavemem" if config.packs.cavemem => pack_skill_status(codex_paths, "cavemem"),
-                    "rtk" if config.packs.rtk => pack_skill_status(codex_paths, "rtk"),
+                    "caveman" if config.packs.caveman => {
+                        pack_skill_status(paths, codex_paths, "caveman")
+                    }
+                    "cavemem" if config.packs.cavemem => {
+                        pack_skill_status(paths, codex_paths, "cavemem")
+                    }
+                    "rtk" if config.packs.rtk => pack_skill_status(paths, codex_paths, "rtk"),
                     "frontend-craft" if config.packs.frontend_craft => {
-                        pack_skill_status(codex_paths, "frontend-craft")
+                        pack_skill_status(paths, codex_paths, "frontend-craft")
                     }
                     _ => InventoryStatus::Disabled,
                 },
@@ -2876,10 +2912,10 @@ fn inspect_pack_inventory(paths: &ProjectPaths, codex_paths: &CodexPaths) -> Vec
                 ConfigState::Invalid => Some("repair config first".to_string()),
                 ConfigState::Loaded(_) => match pack_name {
                     "core" => None,
-                    _ => match pack_skill_status(codex_paths, pack_name) {
+                    _ => match pack_skill_status(paths, codex_paths, pack_name) {
                         InventoryStatus::Installed => None,
                         InventoryStatus::Configured => {
-                            Some("rerun `export user-skills`".to_string())
+                            Some("run `export user-skills` or `export repo-skills`".to_string())
                         }
                         _ => None,
                     },
@@ -2889,25 +2925,85 @@ fn inspect_pack_inventory(paths: &ProjectPaths, codex_paths: &CodexPaths) -> Vec
         .collect()
 }
 
-fn pack_skill_status(codex_paths: &CodexPaths, pack_name: &str) -> InventoryStatus {
+fn pack_skill_status(
+    paths: &ProjectPaths,
+    codex_paths: &CodexPaths,
+    pack_name: &str,
+) -> InventoryStatus {
     let Some(skill_name) = sane_optional_pack_skill_name(pack_name) else {
         return InventoryStatus::Configured;
     };
     let Some(expected) = sane_optional_pack_skill(pack_name) else {
         return InventoryStatus::Configured;
     };
-    let skill_path = codex_paths
+    let user_skill_path = codex_paths
         .user_skills_dir
         .join(skill_name)
         .join("SKILL.md");
+    let repo_skill_path = paths.repo_skills_dir.join(skill_name).join("SKILL.md");
 
-    if !skill_path.exists() {
-        return InventoryStatus::Configured;
+    for skill_path in [&user_skill_path, &repo_skill_path] {
+        if !skill_path.exists() {
+            continue;
+        }
+
+        match fs::read_to_string(skill_path) {
+            Ok(body) if body == expected => return InventoryStatus::Installed,
+            Ok(_) | Err(_) => return InventoryStatus::Configured,
+        }
     }
 
-    match fs::read_to_string(skill_path) {
-        Ok(body) if body == expected => InventoryStatus::Installed,
-        Ok(_) | Err(_) => InventoryStatus::Configured,
+    InventoryStatus::Configured
+}
+
+fn skill_target_status(
+    skill_path: &Path,
+    expected: Option<&String>,
+    optional_when_missing: bool,
+) -> std::io::Result<InventoryStatus> {
+    if !skill_path.exists() {
+        return Ok(if optional_when_missing {
+            InventoryStatus::Disabled
+        } else {
+            InventoryStatus::Missing
+        });
+    }
+
+    if let Some(expected) = expected {
+        let body = fs::read_to_string(skill_path)?;
+        if body == *expected {
+            Ok(InventoryStatus::Installed)
+        } else {
+            Ok(InventoryStatus::Invalid)
+        }
+    } else {
+        Ok(InventoryStatus::Installed)
+    }
+}
+
+fn skill_target_hint(
+    skill_path: &Path,
+    expected: Option<&String>,
+    optional_when_missing: bool,
+    export_command: &str,
+) -> std::io::Result<Option<String>> {
+    if !skill_path.exists() {
+        return Ok(if optional_when_missing {
+            Some("optional repo export".to_string())
+        } else {
+            Some(format!("run `{export_command}`"))
+        });
+    }
+
+    if let Some(expected) = expected {
+        let body = fs::read_to_string(skill_path)?;
+        if body == *expected {
+            Ok(None)
+        } else {
+            Ok(Some(format!("rerun `{export_command}`")))
+        }
+    } else {
+        Ok(None)
     }
 }
 
@@ -2964,6 +3060,12 @@ fn doctor_status(item: &InventoryItem) -> String {
             InventoryStatus::Invalid => "invalid (rerun `export user-skills`)".to_string(),
             _ => item.status.as_str().to_string(),
         },
+        "repo-skills" => match item.status {
+            InventoryStatus::Installed => "installed".to_string(),
+            InventoryStatus::Disabled => "disabled (optional repo export)".to_string(),
+            InventoryStatus::Invalid => "invalid (rerun `export repo-skills`)".to_string(),
+            _ => item.status.as_str().to_string(),
+        },
         "codex-config" => match item.status {
             InventoryStatus::Installed => "installed".to_string(),
             InventoryStatus::Missing => "missing (run `apply codex-profile`)".to_string(),
@@ -3007,7 +3109,33 @@ fn export_user_skills(
     paths: &ProjectPaths,
     codex_paths: &CodexPaths,
 ) -> Result<OperationResult, String> {
-    let skill_dir = codex_paths.user_skills_dir.join(SANE_ROUTER_SKILL_NAME);
+    export_skills_target(
+        paths,
+        &codex_paths.user_skills_dir,
+        OperationKind::ExportUserSkills,
+        "user-skills",
+        "export user-skills",
+    )
+}
+
+fn export_repo_skills(paths: &ProjectPaths) -> Result<OperationResult, String> {
+    export_skills_target(
+        paths,
+        &paths.repo_skills_dir,
+        OperationKind::ExportRepoSkills,
+        "repo-skills",
+        "export repo-skills",
+    )
+}
+
+fn export_skills_target(
+    paths: &ProjectPaths,
+    skills_root: &Path,
+    kind: OperationKind,
+    inventory_name: &str,
+    summary_prefix: &str,
+) -> Result<OperationResult, String> {
+    let skill_dir = skills_root.join(SANE_ROUTER_SKILL_NAME);
     fs::create_dir_all(&skill_dir).map_err(|error| error.to_string())?;
     let skill_path = skill_dir.join("SKILL.md");
     let packs = active_guidance_packs(paths)?;
@@ -3017,7 +3145,7 @@ fn export_user_skills(
 
     for (pack_name, content) in enabled_optional_pack_skills(packs) {
         let skill_name = sane_optional_pack_skill_name(pack_name).expect("pack skill name");
-        let pack_dir = codex_paths.user_skills_dir.join(skill_name);
+        let pack_dir = skills_root.join(skill_name);
         fs::create_dir_all(&pack_dir).map_err(|error| error.to_string())?;
         let pack_path = pack_dir.join("SKILL.md");
         fs::write(&pack_path, content).map_err(|error| error.to_string())?;
@@ -3026,7 +3154,7 @@ fn export_user_skills(
 
     for pack_name in disabled_optional_pack_names(packs) {
         let skill_name = sane_optional_pack_skill_name(pack_name).expect("pack skill name");
-        let pack_dir = codex_paths.user_skills_dir.join(skill_name);
+        let pack_dir = skills_root.join(skill_name);
         if pack_dir.exists() {
             fs::remove_dir_all(&pack_dir).map_err(|error| error.to_string())?;
             paths_touched.push(pack_dir.display().to_string());
@@ -3034,15 +3162,15 @@ fn export_user_skills(
     }
 
     Ok(OperationResult {
-        kind: OperationKind::ExportUserSkills,
-        summary: format!("export user-skills: installed {}", SANE_ROUTER_SKILL_NAME),
+        kind,
+        summary: format!("{summary_prefix}: installed {}", SANE_ROUTER_SKILL_NAME),
         details: vec![
             format!("path: {}", skill_path.display()),
             format!("packs: {}", format_guidance_packs(packs)),
         ],
         paths_touched,
         inventory: vec![InventoryItem {
-            name: "user-skills".to_string(),
+            name: inventory_name.to_string(),
             scope: InventoryScope::CodexNative,
             status: InventoryStatus::Installed,
             path: skill_path.display().to_string(),
@@ -3107,27 +3235,54 @@ fn export_global_agents(
 }
 
 fn uninstall_user_skills(codex_paths: &CodexPaths) -> Result<OperationResult, String> {
-    let skill_dir = codex_paths.user_skills_dir.join(SANE_ROUTER_SKILL_NAME);
+    uninstall_skills_target(
+        &codex_paths.user_skills_dir,
+        OperationKind::UninstallUserSkills,
+        "user-skills",
+        false,
+        "uninstall user-skills",
+    )
+}
+
+fn uninstall_repo_skills(paths: &ProjectPaths) -> Result<OperationResult, String> {
+    uninstall_skills_target(
+        &paths.repo_skills_dir,
+        OperationKind::UninstallRepoSkills,
+        "repo-skills",
+        true,
+        "uninstall repo-skills",
+    )
+}
+
+fn uninstall_skills_target(
+    skills_root: &Path,
+    kind: OperationKind,
+    inventory_name: &str,
+    optional_when_missing: bool,
+    summary_prefix: &str,
+) -> Result<OperationResult, String> {
+    let skill_dir = skills_root.join(SANE_ROUTER_SKILL_NAME);
     let skill_path = skill_dir.join("SKILL.md");
     let optional_dirs = ["caveman", "cavemem", "rtk", "frontend-craft"]
         .into_iter()
         .filter_map(sane_optional_pack_skill_name)
-        .map(|name| codex_paths.user_skills_dir.join(name))
+        .map(|name| skills_root.join(name))
         .collect::<Vec<_>>();
 
     if !skill_dir.exists() && optional_dirs.iter().all(|dir| !dir.exists()) {
         return Ok(OperationResult {
-            kind: OperationKind::UninstallUserSkills,
-            summary: format!(
-                "uninstall user-skills: {} not installed",
-                SANE_ROUTER_SKILL_NAME
-            ),
+            kind,
+            summary: format!("{summary_prefix}: {} not installed", SANE_ROUTER_SKILL_NAME),
             details: vec![],
             paths_touched: vec![skill_path.display().to_string()],
             inventory: vec![InventoryItem {
-                name: "user-skills".to_string(),
+                name: inventory_name.to_string(),
                 scope: InventoryScope::CodexNative,
-                status: InventoryStatus::Missing,
+                status: if optional_when_missing {
+                    InventoryStatus::Disabled
+                } else {
+                    InventoryStatus::Missing
+                },
                 path: skill_path.display().to_string(),
                 repair_hint: None,
             }],
@@ -3147,12 +3302,12 @@ fn uninstall_user_skills(codex_paths: &CodexPaths) -> Result<OperationResult, St
     }
 
     Ok(OperationResult {
-        kind: OperationKind::UninstallUserSkills,
-        summary: format!("uninstall user-skills: removed {}", SANE_ROUTER_SKILL_NAME),
+        kind,
+        summary: format!("{summary_prefix}: removed {}", SANE_ROUTER_SKILL_NAME),
         details: vec![],
         paths_touched,
         inventory: vec![InventoryItem {
-            name: "user-skills".to_string(),
+            name: inventory_name.to_string(),
             scope: InventoryScope::CodexNative,
             status: InventoryStatus::Removed,
             path: skill_path.display().to_string(),
@@ -4069,6 +4224,7 @@ mod tests {
         assert!(output.contains("pack-frontend-craft: disabled"));
         assert!(output.contains("codex-config: missing (run `apply codex-profile`)"));
         assert!(output.contains("user-skills: missing"));
+        assert!(output.contains("repo-skills: disabled"));
         assert!(output.contains("global-agents: missing"));
         assert!(output.contains("hooks: missing"));
         assert!(output.contains("custom-agents: missing"));
@@ -4328,6 +4484,29 @@ mod tests {
     }
 
     #[test]
+    fn export_repo_skills_installs_managed_repo_skill_pack() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+
+        let output =
+            run_with_home(&["export", "repo-skills"], project.path(), home.path()).unwrap();
+
+        let skill_path = project
+            .path()
+            .join(".agents")
+            .join("skills")
+            .join("sane-router")
+            .join("SKILL.md");
+
+        assert!(output.contains("repo-skills"));
+        assert!(skill_path.exists());
+        let body = std::fs::read_to_string(skill_path).unwrap();
+        assert!(body.contains("name: sane-router"));
+        assert!(body.contains("plain-language"));
+    }
+
+    #[test]
     fn export_global_agents_installs_managed_overlay() {
         let project = tempdir().unwrap();
         let home = tempdir().unwrap();
@@ -4469,6 +4648,26 @@ mod tests {
     }
 
     #[test]
+    fn uninstall_repo_skills_removes_managed_repo_skill_pack() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+
+        let _ = run_with_home(&["export", "repo-skills"], project.path(), home.path()).unwrap();
+        let output =
+            run_with_home(&["uninstall", "repo-skills"], project.path(), home.path()).unwrap();
+
+        let skill_path = project
+            .path()
+            .join(".agents")
+            .join("skills")
+            .join("sane-router");
+
+        assert!(output.contains("uninstall repo-skills"));
+        assert!(!skill_path.exists());
+    }
+
+    #[test]
     fn uninstall_global_agents_removes_only_managed_block() {
         let project = tempdir().unwrap();
         let home = tempdir().unwrap();
@@ -4565,10 +4764,12 @@ mod tests {
                 "Adaptive policy",
                 "Run doctor",
                 "Export router skill",
+                "Export repo skills",
                 "Export AGENTS block",
                 "Export hooks",
                 "Export custom agents",
                 "Export all",
+                "Uninstall repo skills",
                 "Uninstall all",
             ]
         );
@@ -4808,7 +5009,7 @@ mod tests {
         let _ = run_with_home(&["install"], project.path(), home.path()).unwrap();
         let output = run_with_home(&["status"], project.path(), home.path()).unwrap();
 
-        assert!(output.contains("status: 15 managed targets inspected"));
+        assert!(output.contains("status: 16 managed targets inspected"));
         assert!(output.contains("local runtime:"));
         assert!(output.contains("codex-native:"));
         assert!(output.contains("runtime: installed"));
@@ -4823,6 +5024,7 @@ mod tests {
         assert!(output.contains("pack-frontend-craft: disabled"));
         assert!(output.contains("codex-config: missing (use `apply codex-profile` or `apply integrations-profile` to create it)"));
         assert!(output.contains("user-skills: missing (run `export user-skills`)"));
+        assert!(output.contains("repo-skills: disabled (optional repo export)"));
         assert!(output.contains("global-agents: missing (run `export global-agents`)"));
         assert!(output.contains("hooks: missing (run `export hooks`)"));
         assert!(output.contains("custom-agents: missing (run `export custom-agents`)"));
