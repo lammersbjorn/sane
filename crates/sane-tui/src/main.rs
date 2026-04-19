@@ -126,14 +126,30 @@ fn show_config(paths: &ProjectPaths) -> Result<String, String> {
 
 fn doctor_runtime(paths: &ProjectPaths) -> Result<String, String> {
     let runtime_ok = paths.runtime_root.exists();
-    let config_ok = paths.config_path.exists();
-    let state_ok = paths.state_dir.exists();
+    let config_status = if !paths.config_path.exists() {
+        "missing".to_string()
+    } else if LocalConfig::read_from_path(&paths.config_path).is_ok() {
+        "ok".to_string()
+    } else {
+        "invalid (rerun install)".to_string()
+    };
+
+    let snapshot_path = paths.state_dir.join("current-run.json");
+    let state_status = if !paths.state_dir.exists() {
+        "missing".to_string()
+    } else if !snapshot_path.exists() {
+        "missing current-run.json (rerun install)".to_string()
+    } else if RunSnapshot::read_from_path(&snapshot_path).is_ok() {
+        "ok".to_string()
+    } else {
+        "invalid current-run.json (rerun install)".to_string()
+    };
 
     Ok(format!(
         "runtime: {}\nconfig: {}\nstate: {}\nroot: {}",
         if runtime_ok { "ok" } else { "missing" },
-        if config_ok { "ok" } else { "missing" },
-        if state_ok { "ok" } else { "missing" },
+        config_status,
+        state_status,
         paths.runtime_root.display()
     ))
 }
@@ -175,6 +191,40 @@ mod tests {
         assert!(output.contains("runtime: ok"));
         assert!(output.contains("config: ok"));
         assert!(output.contains("state: ok"));
+    }
+
+    #[test]
+    fn doctor_reports_invalid_config() {
+        let dir = tempdir().unwrap();
+        let _ = run(&["install"], dir.path()).unwrap();
+        std::fs::write(
+            dir.path().join(".sane").join("config.local.toml"),
+            "not = [valid",
+        )
+        .unwrap();
+
+        let output = run(&["doctor"], dir.path()).unwrap();
+
+        assert!(output.contains("config: invalid"));
+        assert!(output.contains("rerun install"));
+    }
+
+    #[test]
+    fn doctor_reports_missing_current_run_snapshot() {
+        let dir = tempdir().unwrap();
+        let _ = run(&["install"], dir.path()).unwrap();
+        std::fs::remove_file(
+            dir.path()
+                .join(".sane")
+                .join("state")
+                .join("current-run.json"),
+        )
+        .unwrap();
+
+        let output = run(&["doctor"], dir.path()).unwrap();
+
+        assert!(output.contains("state: missing current-run.json"));
+        assert!(output.contains("rerun install"));
     }
 
     #[test]

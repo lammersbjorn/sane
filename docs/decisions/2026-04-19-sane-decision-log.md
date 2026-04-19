@@ -39,6 +39,9 @@ Primary source session:
 - No daily wrapper required for prompting
 - No command-first UX
 - No wrapper-first runtime
+- Rust should primarily be the installer / configurator / updater / doctor / asset manager
+- Codex-native installation targets are the main product surface
+- Local state may exist, but it must stay thin and operational rather than becoming a separate day-to-day runtime
 
 ### Workflow / Orchestration
 
@@ -106,7 +109,7 @@ Primary source session:
 
 These are not final implementation details, but they are already the preferred direction:
 
-- Local runtime first, optional Codex-native export
+- Thin Rust control plane first, Codex-native asset management as the core product
 - Adaptive policy engine over rigid modes
 - No numeric scoring engine as the core UX
 - Structured machine-readable state plus compact human summaries

@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add the first real `Sane` runtime layer: project-local `.sane` paths, config/state persistence helpers, and usable `install`, `config`, and `doctor` TUI commands.
+**Goal:** Add the first thin `Sane` operational layer: project-local `.sane` paths, config/state persistence helpers, and usable `install`, `config`, and `doctor` TUI commands.
 
-**Architecture:** Keep the first runtime slice intentionally small and local-first. The path layer computes a canonical `.sane` directory under the project root. Config and state crates own serialization and file I/O. The TUI becomes a thin command shell over those primitives.
+**Architecture:** Keep the first operational slice intentionally small and local-first. The path layer computes a canonical `.sane` directory under the project root. Config and state crates own serialization and file I/O for operational metadata only. The TUI remains a thin command shell over those primitives.
 
 **Tech Stack:** Rust, Cargo workspace, `serde`, `serde_json`, `toml`, standard library filesystem APIs.
 
@@ -28,5 +28,5 @@
 
 ## Notes
 
-- Local runtime namespace is `.sane`, not `.betteragents`
+- Local operational namespace is `.sane`, not `.betteragents`
 - Commit steps remain blocked until the repo is initialized with git

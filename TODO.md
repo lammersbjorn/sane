@@ -17,7 +17,9 @@ Do not re-litigate already-locked philosophy unless a new decision log explicitl
 - No required command language
 - No required `AGENTS.md`
 - No repo takeover by default
-- Local-first runtime under `.sane`
+- Rust is the thin installer/config/doctor layer
+- Codex-native assets are the core product surface
+- Local operational state may exist under `.sane`, but it must stay thin
 - TUI is for setup/ops, not normal prompting
 - Adaptive workflow policy, not rigid user-facing modes
 - Single-agent default
@@ -34,7 +36,7 @@ Implemented:
 - public GitHub repo
 - dual license
 - repo-owned commit-msg hook
-- `.sane` runtime namespace
+- `.sane` operational namespace
 - typed config persistence
 - typed run snapshot persistence
 - initial `install`, `config`, `doctor`, and `export` command shell
@@ -63,12 +65,13 @@ cargo test
 - [x] Add model preset structures for coordinator, sidecar, and verifier roles
 - [ ] Add first-class subagent/model selection config that respects subscription/capability constraints
 - [ ] Improve `doctor` with real checks and actionable repair suggestions
-- [ ] Replace placeholder `export` with a minimal export design and first implementation boundary
+- [ ] Replace placeholder `export` with the first real Codex-native asset management boundary
 
 ## Next
 
 - [ ] Add state/event log design using compact machine-readable files
 - [ ] Add context compaction / handoff primitives
+- [ ] Add Codex-native asset installation targets and layout
 - [ ] Add better install flow UX in the TUI
 - [ ] Add update and rollback flow design
 - [ ] Add explicit privacy/telemetry config structures
@@ -88,7 +91,7 @@ cargo test
 - [ ] Exact model preset matrix
 - [ ] Exact TUI library direction if current shell grows into a richer UI
 - [ ] Exact `v1` built-in packs
-- [ ] Exact export surfaces beyond optional `AGENTS.md`
+- [ ] Exact Codex-native asset surfaces to manage at user level vs repo level
 - [ ] Exact telemetry schema
 - [ ] Exact self-hosting milestone checklist
 
@@ -99,14 +102,16 @@ cargo test
 - If you change philosophy or scope, update the decision log first
 - Keep README public-facing and short
 - Keep internal planning detail in `docs/` and this file
+- Keep subfolder `README.md` files current when responsibilities change
 - Do not add heavy dependencies without clear justification
 - Do not turn `Sane` into a daily wrapper or command ritual
+- Do not let `.sane` grow into the primary product runtime
 
 ## Suggested Next Slice
 
 Recommended next implementation slice:
 
-1. add project-root detection
-2. introduce real config schema for model/subagent presets
-3. make `doctor` validate that schema and runtime layout
-4. keep the TUI shell thin while the core/runtime crates get smarter
+1. make `doctor` validate config and state properly
+2. define the first Codex-native installation targets
+3. implement managed asset generation/install for one thin target surface
+4. keep the TUI shell thin while the Codex-facing asset manager gets smarter

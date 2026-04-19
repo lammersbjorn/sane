@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Bootstrap the `Sane` repository into a working Rust workspace with durable planning docs, base crate boundaries, config/state foundations, and an initial TUI shell that can grow into the real installer.
+**Goal:** Bootstrap the `Sane` repository into a working Rust workspace with durable planning docs, base crate boundaries, config/state foundations, and an initial TUI shell that can grow into the real installer and Codex-native asset manager.
 
-**Architecture:** Start with the smallest cross-platform foundation that matches the design spec: a Rust workspace with clear crate boundaries, typed config/state primitives, and a TUI shell that exposes placeholder install/config/export/doctor screens. Keep repo shape and state contracts intentionally small so the next research-backed passes can fill in behavior without large rewrites.
+**Architecture:** Start with the smallest cross-platform foundation that matches the design spec: a Rust workspace with clear crate boundaries, typed config/state primitives, and a TUI shell that exposes placeholder install/config/export/doctor screens. Keep repo shape and operational state contracts intentionally small so the next research-backed passes can fill in real Codex-native asset management without large rewrites.
 
 **Tech Stack:** Rust, Cargo workspace, `serde`, `toml`, `ratatui` or similar TUI library (final choice during Task 3), JSON/JSONL state files, Markdown docs.
 
@@ -73,7 +73,7 @@ thiserror = "2"
 
 ```gitignore
 /target
-/.betteragents
+/.sane
 .DS_Store
 Thumbs.db
 ```

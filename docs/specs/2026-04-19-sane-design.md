@@ -57,22 +57,24 @@ Prompt bloat, giant always-loaded methodology, and excessive orchestration are p
 
 ## System Architecture
 
-`Sane` should use a local runtime plus optional Codex-native export.
+`Sane` should use a thin Rust control plane to install, manage, and repair Codex-native assets.
 
 ### Runtime Layers
 
-1. Stable local runtime
+1. Rust control plane
 - installed via TUI
 - cross-platform
-- not tied to a specific repo export
+- owns install / configure / update / export / doctor flows
 
-2. Project-local runtime state
+2. Codex-native targets
+- user-level Codex assets
+- optional repo-level assets
+- skills, hooks, custom agents, model/subagent presets, and related managed files
+
+3. Thin local operational state
 - local-only by default
-- stores run state, decisions, summaries, and compact machine-readable history
-
-3. Optional exported native surfaces
-- generated only when the user explicitly enables sharing/export
-- can include `AGENTS.md` and other Codex-native assets later
+- stores installer/configuration state and other operational metadata only
+- should not become a separate day-to-day runtime that users interact with directly
 
 4. Built-in curated capability packs
 - shipped with `v1`
@@ -81,27 +83,26 @@ Prompt bloat, giant always-loaded methodology, and excessive orchestration are p
 
 ## State Model
 
-The state model should separate stable policy, machine state, and human summaries.
+The state model should separate stable policy, thin operational state, and human summaries.
 
 ### Requirements
 
 - readable enough for humans to inspect
 - compact enough for token-efficient loading
-- append-friendly for long sessions
-- easy to snapshot and compact
+- easy to inspect and migrate
 - portable across macOS, Linux, and Windows
 
 ### Recommended Shape
 
 - config/policy: `TOML`
-- event streams and structured state: `JSON` / `JSONL`
-- handoff / current-brief summaries: small `Markdown`
+- operational state: `JSON` / `JSONL`
+- handoff / current-brief summaries: small `Markdown` only where truly needed
 
 ### Default Behavior
 
-- all runtime state lives in a namespaced local directory
+- local operational state lives in a namespaced local directory
 - state is gitignored by default
-- explicit promotion/export is required before anything becomes shared repo surface
+- explicit install/export is required before anything becomes shared repo surface
 
 ## Adaptive Orchestration Model
 
@@ -159,7 +160,7 @@ Exact presets remain an open implementation task, but the design principle is fi
 
 ## TUI
 
-The TUI is an operations surface, not a chatting surface.
+The TUI is the installer/configuration surface, not a chatting surface.
 
 ### `v1` responsibilities
 
@@ -176,6 +177,7 @@ The TUI is an operations surface, not a chatting surface.
 - become the normal way users prompt Codex
 - turn ordinary use into a command flow
 - hide what files or config it changes
+- grow into a parallel non-Codex runtime
 
 ## Privacy / Telemetry
 
@@ -263,3 +265,7 @@ crates/
 ```
 
 The crate boundaries are provisional and can be tightened during the first implementation pass.
+
+## Correction
+
+Earlier planning drifted toward treating `.sane` as the center of the product. That is not the intended architecture. The product should remain Codex-native, with Rust acting as the thin operational layer that installs and manages Codex-facing assets.
