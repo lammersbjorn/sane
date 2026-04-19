@@ -1101,6 +1101,7 @@ dependencies = [
  "sane-core",
  "sane-platform",
  "sane-state",
+ "serde_json",
  "tempfile",
 ]
 

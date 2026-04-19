@@ -38,6 +38,7 @@ Current managed targets are:
 1. local operational runtime under project `.sane`
 2. user skill pack at `~/.agents/skills/sane-router`
 3. optional additive global overlay block in `~/.codex/AGENTS.md`
+4. additive user-level hooks entry in `~/.codex/hooks.json`
 
 ## Required Operations
 
@@ -77,9 +78,11 @@ These are the backend actions the TUI is allowed to call in the current phase.
 
 - `export_user_skills`
 - `export_global_agents`
+- `export_hooks`
 - `export_all`
 - `uninstall_user_skills`
 - `uninstall_global_agents`
+- `uninstall_hooks`
 - `uninstall_all`
 
 ## Contract Rules
@@ -148,6 +151,7 @@ Current implementation note:
 - touched paths are deduplicated before render
 - inventory is now explicitly scoped as either `local runtime` or `codex-native`
 - current TUI status panel renders those two groups separately
+- current hooks target is user-level only and uses the `sane-tui` binary itself as the managed `SessionStart` command
 
 ## TUI Boundary Rule
 

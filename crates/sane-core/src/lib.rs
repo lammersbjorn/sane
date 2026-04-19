@@ -11,9 +11,11 @@ pub enum OperationKind {
     Doctor,
     ExportUserSkills,
     ExportGlobalAgents,
+    ExportHooks,
     ExportAll,
     UninstallUserSkills,
     UninstallGlobalAgents,
+    UninstallHooks,
     UninstallAll,
 }
 
@@ -109,8 +111,7 @@ impl OperationResult {
 
                 for item in items {
                     let prefix = if multiple_scopes { "  " } else { "" };
-                    let mut line =
-                        format!("{prefix}{}: {}", item.name, item.status.display_str());
+                    let mut line = format!("{prefix}{}: {}", item.name, item.status.display_str());
                     if let Some(repair_hint) = &item.repair_hint {
                         line.push_str(&format!(" ({repair_hint})"));
                     }

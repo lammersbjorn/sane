@@ -46,6 +46,7 @@ Implemented:
 - initial `install`, `config`, `doctor`, `export`, and `uninstall` command shell
 - first managed Codex-native user-skill target (`~/.agents/skills/sane-router`)
 - first optional managed global Codex overlay block (`~/.codex/AGENTS.md`)
+- first managed user-level hooks target (`~/.codex/hooks.json`)
 - `export all` / `uninstall all` for current managed targets
 
 Current gate:
@@ -130,8 +131,8 @@ See:
 
 Current allowed next slice:
 
-1. start `B4`
-2. add hooks as the next managed target
-3. keep merge/preserve/remove behavior additive and reversible
-4. extend inventory/doctor coverage for the new target
-5. only then move to further managed surfaces
+1. continue `B4`
+2. hooks shipped first
+3. next candidate is optional custom agents
+4. keep merge/preserve/remove behavior additive and reversible
+5. extend inventory/doctor coverage for each new target before moving on

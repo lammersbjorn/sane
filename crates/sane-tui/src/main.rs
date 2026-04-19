@@ -23,6 +23,7 @@ use sane_core::{
 };
 use sane_platform::{CodexPaths, ProjectPaths, detect_platform};
 use sane_state::RunSnapshot;
+use serde_json::{Map, Value, json};
 
 fn main() -> ExitCode {
     let args: Vec<String> = env::args().skip(1).collect();
@@ -101,6 +102,7 @@ fn run_with_home(args: &[&str], cwd: &Path, home: &Path) -> Result<String, Strin
 
     match command {
         Command::Summary => Ok(render_summary()),
+        Command::HookSessionStart => Ok(render_session_start_hook()),
         Command::Install
         | Command::Config
         | Command::Status
@@ -108,15 +110,17 @@ fn run_with_home(args: &[&str], cwd: &Path, home: &Path) -> Result<String, Strin
         | Command::ExportAll
         | Command::ExportUserSkills
         | Command::ExportGlobalAgents
+        | Command::ExportHooks
         | Command::UninstallAll
         | Command::UninstallUserSkills
-        | Command::UninstallGlobalAgents => execute_backend_command(command, &paths, &codex_paths)
+        | Command::UninstallGlobalAgents
+        | Command::UninstallHooks => execute_backend_command(command, &paths, &codex_paths)
             .map(|result| result.render_text()),
         Command::Export => {
-            Ok("export: available targets: all, user-skills, global-agents".to_string())
+            Ok("export: available targets: all, user-skills, global-agents, hooks".to_string())
         }
         Command::Uninstall => {
-            Ok("uninstall: available targets: all, user-skills, global-agents".to_string())
+            Ok("uninstall: available targets: all, user-skills, global-agents, hooks".to_string())
         }
     }
 }
@@ -128,14 +132,17 @@ enum Command {
     Config,
     Status,
     Doctor,
+    HookSessionStart,
     Export,
     ExportAll,
     ExportUserSkills,
     ExportGlobalAgents,
+    ExportHooks,
     Uninstall,
     UninstallAll,
     UninstallUserSkills,
     UninstallGlobalAgents,
+    UninstallHooks,
 }
 
 impl Command {
@@ -146,13 +153,16 @@ impl Command {
             (Some("config"), _) => Ok(Self::Config),
             (Some("status"), _) => Ok(Self::Status),
             (Some("doctor"), _) => Ok(Self::Doctor),
+            (Some("hook"), Some("session-start")) => Ok(Self::HookSessionStart),
             (Some("export"), Some("all")) => Ok(Self::ExportAll),
             (Some("export"), Some("user-skills")) => Ok(Self::ExportUserSkills),
             (Some("export"), Some("global-agents")) => Ok(Self::ExportGlobalAgents),
+            (Some("export"), Some("hooks")) => Ok(Self::ExportHooks),
             (Some("export"), None) => Ok(Self::Export),
             (Some("uninstall"), Some("all")) => Ok(Self::UninstallAll),
             (Some("uninstall"), Some("user-skills")) => Ok(Self::UninstallUserSkills),
             (Some("uninstall"), Some("global-agents")) => Ok(Self::UninstallGlobalAgents),
+            (Some("uninstall"), Some("hooks")) => Ok(Self::UninstallHooks),
             (Some("uninstall"), None) => Ok(Self::Uninstall),
             (Some(other), _) => Err(format!("unknown command: {other}")),
         }
@@ -169,12 +179,15 @@ fn execute_backend_command(
         Command::Config => show_config(paths),
         Command::Status => inventory_status(paths, codex_paths),
         Command::Doctor => doctor_runtime(paths, codex_paths),
+        Command::HookSessionStart => Err("hook event is not a backend operation".to_string()),
         Command::ExportAll => export_all(codex_paths),
         Command::ExportUserSkills => export_user_skills(codex_paths),
         Command::ExportGlobalAgents => export_global_agents(codex_paths),
+        Command::ExportHooks => export_hooks(codex_paths),
         Command::UninstallAll => uninstall_all(codex_paths),
         Command::UninstallUserSkills => uninstall_user_skills(codex_paths),
         Command::UninstallGlobalAgents => uninstall_global_agents(codex_paths),
+        Command::UninstallHooks => uninstall_hooks(codex_paths),
         Command::Summary | Command::Export | Command::Uninstall => {
             Err("backend command not executable".to_string())
         }
@@ -285,7 +298,7 @@ fn render_tui(frame: &mut Frame, app: &TuiApp) {
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(3),
-            Constraint::Length(9),
+            Constraint::Length(11),
             Constraint::Min(10),
         ])
         .split(frame.area());
@@ -365,7 +378,7 @@ fn inventory_status_label(item: &InventoryItem) -> &'static str {
 
 fn render_summary() -> String {
     format!(
-        "{NAME}\nplatform: {:?}\ncommands: install, config, status, export, uninstall, doctor",
+        "{NAME}\nplatform: {:?}\ncommands: install, config, status, export, uninstall, doctor, hook",
         detect_platform()
     )
 }
@@ -474,6 +487,16 @@ fn inventory_status(
     })
 }
 
+fn render_session_start_hook() -> String {
+    json!({
+        "hookSpecificOutput": {
+            "hookEventName": "SessionStart",
+            "additionalContext": "Sane active for this session: plain-language first, commands optional, avoid workflow lock-in, adapt model and subagent use to the task."
+        }
+    })
+    .to_string()
+}
+
 fn doctor_runtime(
     paths: &ProjectPaths,
     codex_paths: &CodexPaths,
@@ -484,16 +507,18 @@ fn doctor_runtime(
     let state = find_inventory(&inventory, "state");
     let user_skills = find_inventory(&inventory, "user-skills");
     let global_agents = find_inventory(&inventory, "global-agents");
+    let hooks = find_inventory(&inventory, "hooks");
 
     Ok(OperationResult {
         kind: OperationKind::Doctor,
         summary: format!(
-            "runtime: {}\nconfig: {}\nstate: {}\nuser-skills: {}\nglobal-agents: {}\nroot: {}\ncodex-home: {}",
+            "runtime: {}\nconfig: {}\nstate: {}\nuser-skills: {}\nglobal-agents: {}\nhooks: {}\nroot: {}\ncodex-home: {}",
             doctor_status(runtime),
             doctor_status(config),
             doctor_status(state),
             doctor_status(user_skills),
             doctor_status(global_agents),
+            doctor_status(hooks),
             paths.runtime_root.display(),
             codex_paths.codex_home.display()
         ),
@@ -512,6 +537,7 @@ fn inspect_inventory(
         .user_skills_dir
         .join(SANE_ROUTER_SKILL_NAME)
         .join("SKILL.md");
+    let hooks_inventory = inspect_hooks_inventory(codex_paths)?;
 
     let global_agents_inventory = if !codex_paths.global_agents_md.exists() {
         InventoryItem {
@@ -613,6 +639,7 @@ fn inspect_inventory(
             },
         },
         global_agents_inventory,
+        hooks_inventory,
     ])
 }
 
@@ -653,6 +680,12 @@ fn doctor_status(item: &InventoryItem) -> String {
             InventoryStatus::PresentWithoutSaneBlock => "present without Sane block".to_string(),
             _ => item.status.as_str().to_string(),
         },
+        "hooks" => match item.status {
+            InventoryStatus::Installed => "installed".to_string(),
+            InventoryStatus::Missing => "missing (run `export hooks`)".to_string(),
+            InventoryStatus::Invalid => "invalid (repair ~/.codex/hooks.json)".to_string(),
+            _ => item.status.display_str().to_string(),
+        },
         _ => item.status.as_str().to_string(),
     }
 }
@@ -691,11 +724,12 @@ fn export_user_skills(codex_paths: &CodexPaths) -> Result<OperationResult, Strin
 fn export_all(codex_paths: &CodexPaths) -> Result<OperationResult, String> {
     let user_skills = export_user_skills(codex_paths)?;
     let global_agents = export_global_agents(codex_paths)?;
+    let hooks = export_hooks(codex_paths)?;
 
     Ok(merge_results(
         OperationKind::ExportAll,
         "export all: installed managed targets",
-        vec![user_skills, global_agents],
+        vec![user_skills, global_agents, hooks],
     ))
 }
 
@@ -833,12 +867,252 @@ fn uninstall_global_agents(codex_paths: &CodexPaths) -> Result<OperationResult, 
 fn uninstall_all(codex_paths: &CodexPaths) -> Result<OperationResult, String> {
     let user_skills = uninstall_user_skills(codex_paths)?;
     let global_agents = uninstall_global_agents(codex_paths)?;
+    let hooks = uninstall_hooks(codex_paths)?;
 
     Ok(merge_results(
         OperationKind::UninstallAll,
         "uninstall all: removed managed targets",
-        vec![user_skills, global_agents],
+        vec![user_skills, global_agents, hooks],
     ))
+}
+
+fn export_hooks(codex_paths: &CodexPaths) -> Result<OperationResult, String> {
+    let command = managed_session_start_hook_command()?;
+    let hook_entry = json!({
+        "matcher": "startup|resume",
+        "hooks": [
+            {
+                "type": "command",
+                "command": command,
+                "statusMessage": "Loading Sane session defaults"
+            }
+        ]
+    });
+
+    if let Some(parent) = codex_paths.hooks_json.parent() {
+        fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+    }
+
+    let mut root = read_hooks_json(&codex_paths.hooks_json)?;
+    let hooks = root
+        .as_object_mut()
+        .ok_or_else(|| "hooks.json root must be an object".to_string())?
+        .entry("hooks")
+        .or_insert_with(|| Value::Object(Map::new()));
+    let hooks_object = hooks
+        .as_object_mut()
+        .ok_or_else(|| "hooks.json `hooks` must be an object".to_string())?;
+    let session_start = hooks_object
+        .entry("SessionStart")
+        .or_insert_with(|| Value::Array(Vec::new()));
+    let session_start_array = session_start
+        .as_array_mut()
+        .ok_or_else(|| "hooks.json `hooks.SessionStart` must be an array".to_string())?;
+
+    if !session_start_array
+        .iter()
+        .any(contains_managed_session_start_hook)
+    {
+        session_start_array.push(hook_entry);
+    }
+
+    write_hooks_json(&codex_paths.hooks_json, &root)?;
+
+    Ok(OperationResult {
+        kind: OperationKind::ExportHooks,
+        summary: "export hooks: installed managed SessionStart hook".to_string(),
+        details: vec![format!("path: {}", codex_paths.hooks_json.display())],
+        paths_touched: vec![codex_paths.hooks_json.display().to_string()],
+        inventory: vec![InventoryItem {
+            name: "hooks".to_string(),
+            scope: InventoryScope::CodexNative,
+            status: InventoryStatus::Installed,
+            path: codex_paths.hooks_json.display().to_string(),
+            repair_hint: None,
+        }],
+    })
+}
+
+fn uninstall_hooks(codex_paths: &CodexPaths) -> Result<OperationResult, String> {
+    if !codex_paths.hooks_json.exists() {
+        return Ok(OperationResult {
+            kind: OperationKind::UninstallHooks,
+            summary: "uninstall hooks: not installed".to_string(),
+            details: vec![],
+            paths_touched: vec![codex_paths.hooks_json.display().to_string()],
+            inventory: vec![InventoryItem {
+                name: "hooks".to_string(),
+                scope: InventoryScope::CodexNative,
+                status: InventoryStatus::Missing,
+                path: codex_paths.hooks_json.display().to_string(),
+                repair_hint: None,
+            }],
+        });
+    }
+
+    let mut root = read_hooks_json(&codex_paths.hooks_json)?;
+    let mut removed = false;
+
+    if let Some(hooks) = root.get_mut("hooks").and_then(Value::as_object_mut)
+        && let Some(session_start) = hooks.get_mut("SessionStart").and_then(Value::as_array_mut)
+    {
+        let before = session_start.len();
+        session_start.retain(|entry| !contains_managed_session_start_hook(entry));
+        removed = session_start.len() != before;
+
+        if session_start.is_empty() {
+            hooks.remove("SessionStart");
+        }
+        if hooks.is_empty() {
+            root.as_object_mut().expect("root object").remove("hooks");
+        }
+    }
+
+    if !removed {
+        return Ok(OperationResult {
+            kind: OperationKind::UninstallHooks,
+            summary: "uninstall hooks: not installed".to_string(),
+            details: vec![],
+            paths_touched: vec![codex_paths.hooks_json.display().to_string()],
+            inventory: vec![InventoryItem {
+                name: "hooks".to_string(),
+                scope: InventoryScope::CodexNative,
+                status: InventoryStatus::Missing,
+                path: codex_paths.hooks_json.display().to_string(),
+                repair_hint: None,
+            }],
+        });
+    }
+
+    if root
+        .as_object()
+        .map(|object| object.is_empty())
+        .unwrap_or(false)
+    {
+        fs::remove_file(&codex_paths.hooks_json).map_err(|error| error.to_string())?;
+    } else {
+        write_hooks_json(&codex_paths.hooks_json, &root)?;
+    }
+
+    Ok(OperationResult {
+        kind: OperationKind::UninstallHooks,
+        summary: "uninstall hooks: removed managed SessionStart hook".to_string(),
+        details: vec![],
+        paths_touched: vec![codex_paths.hooks_json.display().to_string()],
+        inventory: vec![InventoryItem {
+            name: "hooks".to_string(),
+            scope: InventoryScope::CodexNative,
+            status: InventoryStatus::Removed,
+            path: codex_paths.hooks_json.display().to_string(),
+            repair_hint: None,
+        }],
+    })
+}
+
+fn inspect_hooks_inventory(codex_paths: &CodexPaths) -> Result<InventoryItem, String> {
+    if detect_platform() == sane_platform::HostPlatform::Windows {
+        return Ok(InventoryItem {
+            name: "hooks".to_string(),
+            scope: InventoryScope::CodexNative,
+            status: InventoryStatus::Invalid,
+            path: codex_paths.hooks_json.display().to_string(),
+            repair_hint: Some("Codex hooks are currently disabled on Windows".to_string()),
+        });
+    }
+
+    if !codex_paths.hooks_json.exists() {
+        return Ok(InventoryItem {
+            name: "hooks".to_string(),
+            scope: InventoryScope::CodexNative,
+            status: InventoryStatus::Missing,
+            path: codex_paths.hooks_json.display().to_string(),
+            repair_hint: Some("run `export hooks`".to_string()),
+        });
+    }
+
+    let root = match read_hooks_json(&codex_paths.hooks_json) {
+        Ok(root) => root,
+        Err(_) => {
+            return Ok(InventoryItem {
+                name: "hooks".to_string(),
+                scope: InventoryScope::CodexNative,
+                status: InventoryStatus::Invalid,
+                path: codex_paths.hooks_json.display().to_string(),
+                repair_hint: Some(
+                    "repair ~/.codex/hooks.json or remove conflicting JSON".to_string(),
+                ),
+            });
+        }
+    };
+    let status = if root
+        .get("hooks")
+        .and_then(Value::as_object)
+        .and_then(|hooks| hooks.get("SessionStart"))
+        .and_then(Value::as_array)
+        .map(|entries| entries.iter().any(contains_managed_session_start_hook))
+        .unwrap_or(false)
+    {
+        InventoryStatus::Installed
+    } else {
+        InventoryStatus::Missing
+    };
+
+    Ok(InventoryItem {
+        name: "hooks".to_string(),
+        scope: InventoryScope::CodexNative,
+        status,
+        path: codex_paths.hooks_json.display().to_string(),
+        repair_hint: if status == InventoryStatus::Installed {
+            None
+        } else {
+            Some("run `export hooks`".to_string())
+        },
+    })
+}
+
+fn read_hooks_json(path: &Path) -> Result<Value, String> {
+    if !path.exists() {
+        return Ok(json!({}));
+    }
+
+    let body = fs::read_to_string(path).map_err(|error| error.to_string())?;
+    serde_json::from_str(&body).map_err(|error| format!("invalid hooks.json: {error}"))
+}
+
+fn write_hooks_json(path: &Path, value: &Value) -> Result<(), String> {
+    let body = serde_json::to_string_pretty(value).map_err(|error| error.to_string())?;
+    fs::write(path, format!("{body}\n")).map_err(|error| error.to_string())
+}
+
+fn managed_session_start_hook_command() -> Result<String, String> {
+    let exe = env::current_exe().map_err(|error| error.to_string())?;
+    Ok(format!(
+        "{} hook session-start",
+        shell_quote(exe.to_string_lossy().as_ref())
+    ))
+}
+
+fn contains_managed_session_start_hook(entry: &Value) -> bool {
+    entry
+        .get("hooks")
+        .and_then(Value::as_array)
+        .map(|hooks| {
+            hooks.iter().any(|hook| {
+                hook.get("command")
+                    .and_then(Value::as_str)
+                    .map(is_managed_session_start_hook_command)
+                    .unwrap_or(false)
+            })
+        })
+        .unwrap_or(false)
+}
+
+fn is_managed_session_start_hook_command(command: &str) -> bool {
+    command.contains("hook session-start")
+}
+
+fn shell_quote(value: &str) -> String {
+    format!("'{}'", value.replace('\'', "'\"'\"'"))
 }
 
 fn merge_results(
@@ -938,6 +1212,7 @@ mod tests {
         assert!(output.contains("state: ok"));
         assert!(output.contains("user-skills: missing"));
         assert!(output.contains("global-agents: missing"));
+        assert!(output.contains("hooks: missing"));
     }
 
     #[test]
@@ -986,6 +1261,7 @@ mod tests {
         assert!(output.contains("export"));
         assert!(output.contains("uninstall"));
         assert!(output.contains("doctor"));
+        assert!(output.contains("hook"));
     }
 
     #[test]
@@ -1067,6 +1343,7 @@ mod tests {
 
         assert!(output.contains("export user-skills"));
         assert!(output.contains("export global-agents"));
+        assert!(output.contains("export hooks"));
         assert!(
             home.path()
                 .join(".agents")
@@ -1076,6 +1353,7 @@ mod tests {
                 .exists()
         );
         assert!(home.path().join(".codex").join("AGENTS.md").exists());
+        assert!(home.path().join(".codex").join("hooks.json").exists());
     }
 
     #[test]
@@ -1136,6 +1414,7 @@ mod tests {
                 .exists()
         );
         assert!(!home.path().join(".codex").join("AGENTS.md").exists());
+        assert!(!home.path().join(".codex").join("hooks.json").exists());
     }
 
     #[test]
@@ -1147,11 +1426,13 @@ mod tests {
         let _ = run_with_home(&["install"], project.path(), home.path()).unwrap();
         let _ = run_with_home(&["export", "user-skills"], project.path(), home.path()).unwrap();
         let _ = run_with_home(&["export", "global-agents"], project.path(), home.path()).unwrap();
+        let _ = run_with_home(&["export", "hooks"], project.path(), home.path()).unwrap();
 
         let output = run_with_home(&["doctor"], project.path(), home.path()).unwrap();
 
         assert!(output.contains("user-skills: installed"));
         assert!(output.contains("global-agents: installed"));
+        assert!(output.contains("hooks: installed"));
     }
 
     #[test]
@@ -1190,12 +1471,15 @@ mod tests {
         let _ = run_with_home(&["install"], project.path(), home.path()).unwrap();
         let output = run_with_home(&["status"], project.path(), home.path()).unwrap();
 
-        assert!(output.contains("status: 5 managed targets inspected"));
+        assert!(output.contains("status: 6 managed targets inspected"));
+        assert!(output.contains("local runtime:"));
+        assert!(output.contains("codex-native:"));
         assert!(output.contains("runtime: installed"));
         assert!(output.contains("config: installed"));
         assert!(output.contains("state: installed"));
         assert!(output.contains("user-skills: missing (run `export user-skills`)"));
         assert!(output.contains("global-agents: missing (run `export global-agents`)"));
+        assert!(output.contains("hooks: missing (run `export hooks`)"));
     }
 
     #[test]
@@ -1214,6 +1498,68 @@ mod tests {
             .split(", ")
             .collect::<Vec<_>>();
 
-        assert_eq!(paths.len(), 2);
+        assert_eq!(paths.len(), 3);
+    }
+
+    #[test]
+    fn export_hooks_installs_managed_session_start_hook() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+
+        let output = run_with_home(&["export", "hooks"], project.path(), home.path()).unwrap();
+        let hooks_path = home.path().join(".codex").join("hooks.json");
+        let body = std::fs::read_to_string(&hooks_path).unwrap();
+
+        assert!(output.contains("export hooks"));
+        assert!(body.contains("SessionStart"));
+        assert!(body.contains("hook session-start"));
+        assert!(body.contains("Loading Sane session defaults"));
+    }
+
+    #[test]
+    fn uninstall_hooks_preserves_unrelated_entries() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        let codex_dir = home.path().join(".codex");
+        std::fs::create_dir_all(&codex_dir).unwrap();
+        std::fs::write(
+            codex_dir.join("hooks.json"),
+            r#"{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo existing"
+          }
+        ]
+      }
+    ]
+  }
+}
+"#,
+        )
+        .unwrap();
+
+        let _ = run_with_home(&["export", "hooks"], project.path(), home.path()).unwrap();
+        let output = run_with_home(&["uninstall", "hooks"], project.path(), home.path()).unwrap();
+        let body = std::fs::read_to_string(codex_dir.join("hooks.json")).unwrap();
+
+        assert!(output.contains("uninstall hooks"));
+        assert!(body.contains("\"Stop\""));
+        assert!(body.contains("echo existing"));
+        assert!(!body.contains("hook session-start"));
+    }
+
+    #[test]
+    fn hook_session_start_emits_context_json() {
+        let output = run_with_home(&["hook", "session-start"], Path::new("."), Path::new("."))
+            .unwrap();
+
+        assert!(output.contains("\"hookEventName\":\"SessionStart\""));
+        assert!(output.contains("Sane active for this session"));
     }
 }

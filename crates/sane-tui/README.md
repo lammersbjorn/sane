@@ -13,5 +13,6 @@ Current responsibility:
 - thin orchestration over managed Codex-native targets
 - doctor/reporting for managed local and Codex-native surfaces
 - current batch ergonomics for all managed targets
+- first managed hooks target at `~/.codex/hooks.json`
 
 This crate should stay thin. Push durable behavior into the lower crates when possible.
