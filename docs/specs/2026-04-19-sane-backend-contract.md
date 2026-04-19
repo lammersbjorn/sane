@@ -80,6 +80,7 @@ These are the backend actions the TUI is allowed to call in the current phase.
   - current recommended set:
     - `context7`
     - `playwright`
+    - `grep.app`
   - do not treat `opensrc` as default recommended profile
 
 - `apply_codex_profile`
@@ -195,7 +196,8 @@ Current implementation note:
 - current TUI status panel renders those two groups separately
 - current hooks target is user-level only and uses the `sane-tui` binary itself as the managed `SessionStart` command
 - current custom-agents target installs two read-only managed agents: `sane-reviewer` and `sane-explorer`
-- current Codex config work is inspection-only; future writes require diff preview plus backup / restore
+- current Codex config work supports narrow explicit opt-in writes for the core profile only
+- integrations remain preview-only for now
 
 ## TUI Boundary Rule
 

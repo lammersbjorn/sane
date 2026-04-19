@@ -20,9 +20,8 @@ Already implemented:
 - opt-in privacy / telemetry screen with local-only consent levels and reset controls
 - read-only Codex config inspection for current model, reasoning, MCP, plugin, and trust summary
 - opt-in local backup of `~/.codex/config.toml` into `.sane/backups/codex-config/`
-- read-only preview of recommended core Codex profile changes before any future managed write flow
-- explicit opt-in apply/restore flow for the narrow core Codex profile with local backup first
-- read-only preview of the separate recommended integrations profile (`Context7` + `Playwright`)
+- read-only preview plus explicit opt-in apply/restore flow for the narrow core Codex profile
+- read-only preview of the separate recommended integrations profile (`Context7` + `Playwright` + `grep.app`)
 - backend/dev escape hatch verbs for `install`, `config`, `status`, `doctor`, `export`, and `uninstall`
 - grouped audit view separating local runtime state from Codex-native managed assets
 - first managed user-level hooks target at `~/.codex/hooks.json`

@@ -1252,6 +1252,7 @@ fn preview_integrations_profile(codex_paths: &CodexPaths) -> Result<OperationRes
         InventoryStatus::Missing => vec![
             "context7: missing -> recommended".to_string(),
             "playwright: missing -> recommended".to_string(),
+            "grep.app: missing -> recommended".to_string(),
             "opensrc: optional, not in default recommended profile".to_string(),
         ],
         InventoryStatus::Invalid => vec![
@@ -2503,6 +2504,9 @@ fn integration_profile_preview_details(config: &TomlValue) -> Vec<String> {
     let has_opensrc = mcp_servers
         .map(|table| table.contains_key("opensrc"))
         .unwrap_or(false);
+    let has_grep = mcp_servers
+        .map(|table| table.contains_key("grep") || table.contains_key("grep_app"))
+        .unwrap_or(false);
 
     let mut details = Vec::new();
     if has_context7 {
@@ -2514,6 +2518,11 @@ fn integration_profile_preview_details(config: &TomlValue) -> Vec<String> {
         details.push("playwright: keep installed".to_string());
     } else {
         details.push("playwright: missing -> recommended".to_string());
+    }
+    if has_grep {
+        details.push("grep.app: keep installed".to_string());
+    } else {
+        details.push("grep.app: missing -> recommended".to_string());
     }
     if has_opensrc {
         details
@@ -3297,9 +3306,10 @@ args = ["opensrc-mcp"]
         )
         .unwrap();
 
-        assert!(output.contains("integrations-profile preview: 2 recommended change(s)"));
+        assert!(output.contains("integrations-profile preview: 3 recommended change(s)"));
         assert!(output.contains("context7: missing -> recommended"));
         assert!(output.contains("playwright: missing -> recommended"));
+        assert!(output.contains("grep.app: missing -> recommended"));
         assert!(
             output.contains("opensrc: installed but stays outside default recommended profile")
         );

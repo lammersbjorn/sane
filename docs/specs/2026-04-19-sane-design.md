@@ -87,7 +87,7 @@ Prompt bloat, giant always-loaded methodology, and excessive orchestration are p
 
 Current Codex settings stance:
 - inspect and preview first
-- backup before any future managed write flow
+- backup before managed writes
 - keep bare core profile narrow
 - treat integrations as separate opt-in profile work
 - preserve unrelated user config when applying core profile

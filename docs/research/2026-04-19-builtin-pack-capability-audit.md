@@ -118,6 +118,7 @@ Best shape:
 Recommended first optional integrations:
 - `Context7`
 - `Playwright`
+- `grep.app`
 
 Why:
 - both have broad utility
@@ -154,7 +155,8 @@ Why not default:
 `recommended-integrations`
 - optional `Context7`
 - optional `Playwright`
-- later maybe `OpenSRC`
+- optional `grep.app`
+- experimental `OpenSRC`
 
 ## `v1` Recommendation
 
@@ -171,6 +173,7 @@ Also offer one optional integration preset:
 - `recommended-integrations`
   - includes `Context7`
   - includes `Playwright`
+  - includes `grep.app`
   - does not include `OpenSRC` by default
 
 Do not expose a public pack API yet.
