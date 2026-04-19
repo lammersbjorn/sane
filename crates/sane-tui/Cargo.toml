@@ -1,0 +1,14 @@
+[package]
+name = "sane-tui"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
+sane-core = { path = "../sane-core" }
+sane-config = { path = "../sane-config" }
+sane-platform = { path = "../sane-platform" }
+sane-state = { path = "../sane-state" }
+
+[dev-dependencies]
+tempfile.workspace = true

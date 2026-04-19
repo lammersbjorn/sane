@@ -1,0 +1,10 @@
+[package]
+name = "sane-platform"
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+
+[dependencies]
+
+[dev-dependencies]
+tempfile.workspace = true
