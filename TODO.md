@@ -60,6 +60,7 @@ Implemented:
 - optional packs now show `configured` vs `installed` truthfully depending on whether managed user-skill assets were exported
 - exported `sane-router` skill and global AGENTS overlay now reflect enabled guidance packs and current model-role defaults
 - status/doctor now catch drift when exported guidance assets no longer match enabled packs or model-role defaults
+- TUI save flows now warn immediately when config changes leave managed guidance exports stale
 - `export all` / `uninstall all` for current managed targets
 - pure adaptive policy crate with typed obligations and tests
 - internal backend policy preview for canonical adaptive scenarios

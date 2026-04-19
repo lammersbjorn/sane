@@ -688,13 +688,7 @@ fn run_tui_loop(
                         Ok(result) => {
                             app.output = result.render_text();
                             app.screen = TuiScreen::Home;
-                            match inventory_status(&app.paths, &app.codex_paths) {
-                                Ok(status) => app.status = status,
-                                Err(error) => {
-                                    app.output
-                                        .push_str(&format!("\nstatus refresh failed: {error}"));
-                                }
-                            }
+                            refresh_status_after_save(app);
                         }
                         Err(error) => app.output = format!("save failed: {error}"),
                     },
@@ -716,13 +710,7 @@ fn run_tui_loop(
                         Ok(result) => {
                             app.output = result.render_text();
                             app.screen = TuiScreen::Home;
-                            match inventory_status(&app.paths, &app.codex_paths) {
-                                Ok(status) => app.status = status,
-                                Err(error) => {
-                                    app.output
-                                        .push_str(&format!("\nstatus refresh failed: {error}"));
-                                }
-                            }
+                            refresh_status_after_save(app);
                         }
                         Err(error) => app.output = format!("save failed: {error}"),
                     },
@@ -741,19 +729,45 @@ fn run_tui_loop(
                         Ok(result) => {
                             app.output = result.render_text();
                             app.screen = TuiScreen::Home;
-                            match inventory_status(&app.paths, &app.codex_paths) {
-                                Ok(status) => app.status = status,
-                                Err(error) => {
-                                    app.output
-                                        .push_str(&format!("\nstatus refresh failed: {error}"));
-                                }
-                            }
+                            refresh_status_after_save(app);
                         }
                         Err(error) => app.output = format!("save failed: {error}"),
                     },
                     _ => {}
                 },
             }
+        }
+    }
+}
+
+fn refresh_status_after_save(app: &mut TuiApp) {
+    match inventory_status(&app.paths, &app.codex_paths) {
+        Ok(status) => {
+            append_export_drift_warnings(&mut app.output, &status);
+            app.status = status;
+        }
+        Err(error) => {
+            app.output
+                .push_str(&format!("\nstatus refresh failed: {error}"));
+        }
+    }
+}
+
+fn append_export_drift_warnings(output: &mut String, status: &OperationResult) {
+    for item in &status.inventory {
+        let warning = match (item.name.as_str(), item.status) {
+            ("user-skills", InventoryStatus::Invalid) => {
+                Some("warning: exported user-skills stale; rerun `export user-skills`")
+            }
+            ("global-agents", InventoryStatus::Invalid) => {
+                Some("warning: exported global-agents stale; rerun `export global-agents`")
+            }
+            _ => None,
+        };
+
+        if let Some(warning) = warning {
+            output.push('\n');
+            output.push_str(warning);
         }
     }
 }
@@ -4278,6 +4292,40 @@ mod tests {
         let _ = super::save_config(&paths, &config).unwrap();
 
         assert!(paths.telemetry_dir.join("queue.jsonl").exists());
+    }
+
+    #[test]
+    fn append_export_drift_warnings_flags_stale_guidance_exports() {
+        let mut output = "config: saved".to_string();
+        let status = sane_core::OperationResult {
+            kind: sane_core::OperationKind::ShowStatus,
+            summary: "status: ok".to_string(),
+            details: vec![],
+            paths_touched: vec![],
+            inventory: vec![
+                sane_core::InventoryItem {
+                    name: "user-skills".to_string(),
+                    scope: sane_core::InventoryScope::CodexNative,
+                    status: sane_core::InventoryStatus::Invalid,
+                    path: "/tmp/user-skills".to_string(),
+                    repair_hint: Some("rerun `export user-skills`".to_string()),
+                },
+                sane_core::InventoryItem {
+                    name: "global-agents".to_string(),
+                    scope: sane_core::InventoryScope::CodexNative,
+                    status: sane_core::InventoryStatus::Invalid,
+                    path: "/tmp/AGENTS.md".to_string(),
+                    repair_hint: Some("rerun `export global-agents`".to_string()),
+                },
+            ],
+        };
+
+        super::append_export_drift_warnings(&mut output, &status);
+
+        assert!(output.contains("warning: exported user-skills stale; rerun `export user-skills`"));
+        assert!(
+            output.contains("warning: exported global-agents stale; rerun `export global-agents`")
+        );
     }
 
     #[test]

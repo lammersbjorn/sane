@@ -22,6 +22,7 @@ Current responsibility:
 - optional packs now move from config-only to installed once managed user-skill exports are present
 - current user-skill and global AGENTS exports pick up enabled guidance packs and current model-role defaults from local config
 - stale exported guidance assets are now flagged by status/doctor and repaired by rerunning export
+- TUI save flows now warn immediately when config changes make managed guidance exports stale
 - user-facing operational output
 - thin orchestration over managed Codex-native targets
 - doctor/reporting for managed local and Codex-native surfaces
