@@ -90,6 +90,7 @@ Current Codex settings stance:
 - backup before any future managed write flow
 - keep bare core profile narrow
 - treat integrations as separate opt-in profile work
+- preserve unrelated user config when applying core profile
 
 ## State Model
 

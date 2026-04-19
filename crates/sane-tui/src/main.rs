@@ -111,6 +111,8 @@ fn run_with_home(args: &[&str], cwd: &Path, home: &Path) -> Result<String, Strin
         | Command::CodexConfig
         | Command::BackupCodexConfig
         | Command::PreviewCodexProfile
+        | Command::ApplyCodexProfile
+        | Command::RestoreCodexConfig
         | Command::Status
         | Command::Doctor
         | Command::ExportAll
@@ -129,6 +131,8 @@ fn run_with_home(args: &[&str], cwd: &Path, home: &Path) -> Result<String, Strin
                 .to_string(),
         ),
         Command::Preview => Ok("preview: available targets: codex-profile".to_string()),
+        Command::Apply => Ok("apply: available targets: codex-profile".to_string()),
+        Command::Restore => Ok("restore: available targets: codex-config".to_string()),
         Command::Uninstall => Ok(
             "uninstall: available targets: all, user-skills, global-agents, hooks, custom-agents"
                 .to_string(),
@@ -145,6 +149,10 @@ enum Command {
     BackupCodexConfig,
     Preview,
     PreviewCodexProfile,
+    Apply,
+    ApplyCodexProfile,
+    Restore,
+    RestoreCodexConfig,
     Status,
     Doctor,
     HookSessionStart,
@@ -172,6 +180,10 @@ impl Command {
             (Some("backup"), Some("codex-config")) => Ok(Self::BackupCodexConfig),
             (Some("preview"), Some("codex-profile")) => Ok(Self::PreviewCodexProfile),
             (Some("preview"), None) => Ok(Self::Preview),
+            (Some("apply"), Some("codex-profile")) => Ok(Self::ApplyCodexProfile),
+            (Some("apply"), None) => Ok(Self::Apply),
+            (Some("restore"), Some("codex-config")) => Ok(Self::RestoreCodexConfig),
+            (Some("restore"), None) => Ok(Self::Restore),
             (Some("status"), _) => Ok(Self::Status),
             (Some("doctor"), _) => Ok(Self::Doctor),
             (Some("hook"), Some("session-start")) => Ok(Self::HookSessionStart),
@@ -203,6 +215,8 @@ fn execute_backend_command(
         Command::CodexConfig => show_codex_config(codex_paths),
         Command::BackupCodexConfig => backup_codex_config(paths, codex_paths),
         Command::PreviewCodexProfile => preview_codex_profile(codex_paths),
+        Command::ApplyCodexProfile => apply_codex_profile(paths, codex_paths),
+        Command::RestoreCodexConfig => restore_codex_config(paths, codex_paths),
         Command::Status => inventory_status(paths, codex_paths),
         Command::Doctor => doctor_runtime(paths, codex_paths),
         Command::HookSessionStart => Err("hook event is not a backend operation".to_string()),
@@ -216,9 +230,12 @@ fn execute_backend_command(
         Command::UninstallGlobalAgents => uninstall_global_agents(codex_paths),
         Command::UninstallHooks => uninstall_hooks(codex_paths),
         Command::UninstallCustomAgents => uninstall_custom_agents(codex_paths),
-        Command::Summary | Command::Preview | Command::Export | Command::Uninstall => {
-            Err("backend command not executable".to_string())
-        }
+        Command::Summary
+        | Command::Preview
+        | Command::Apply
+        | Command::Restore
+        | Command::Export
+        | Command::Uninstall => Err("backend command not executable".to_string()),
     }?;
     append_operation_event(paths, &result)?;
     Ok(result)
@@ -417,6 +434,8 @@ impl TuiApp {
                 TuiAction::backend("Inspect Codex config", Command::CodexConfig),
                 TuiAction::backend("Preview Codex profile", Command::PreviewCodexProfile),
                 TuiAction::backend("Backup Codex config", Command::BackupCodexConfig),
+                TuiAction::backend("Apply Codex profile", Command::ApplyCodexProfile),
+                TuiAction::backend("Restore Codex config", Command::RestoreCodexConfig),
                 TuiAction::backend("Doctor", Command::Doctor),
                 TuiAction::backend("Export user skill", Command::ExportUserSkills),
                 TuiAction::backend("Export global agents", Command::ExportGlobalAgents),
@@ -860,7 +879,7 @@ fn inventory_status_label(item: &InventoryItem) -> &'static str {
 
 fn render_summary() -> String {
     format!(
-        "{NAME}\nplatform: {:?}\ncommands: install, config, codex-config, preview, backup, status, export, uninstall, doctor, hook",
+        "{NAME}\nplatform: {:?}\ncommands: install, config, codex-config, preview, backup, apply, restore, status, export, uninstall, doctor, hook",
         detect_platform()
     )
 }
@@ -900,6 +919,8 @@ fn operation_kind_label(kind: OperationKind) -> &'static str {
         OperationKind::ShowCodexConfig => "show_codex_config",
         OperationKind::BackupCodexConfig => "backup_codex_config",
         OperationKind::PreviewCodexProfile => "preview_codex_profile",
+        OperationKind::ApplyCodexProfile => "apply_codex_profile",
+        OperationKind::RestoreCodexConfig => "restore_codex_config",
         OperationKind::ResetTelemetryData => "reset_telemetry_data",
         OperationKind::ShowStatus => "show_status",
         OperationKind::Doctor => "doctor",
@@ -1171,14 +1192,7 @@ fn backup_codex_config(
         });
     }
 
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_err(|error| error.to_string())?
-        .as_secs();
-    let backup_path = paths
-        .codex_config_backups_dir
-        .join(format!("config-{timestamp}.toml"));
-    fs::copy(&codex_paths.config_toml, &backup_path).map_err(|error| error.to_string())?;
+    let backup_path = write_codex_config_backup(paths, codex_paths)?;
 
     Ok(OperationResult {
         kind: OperationKind::BackupCodexConfig,
@@ -1218,6 +1232,123 @@ fn preview_codex_profile(codex_paths: &CodexPaths) -> Result<OperationResult, St
         details,
         paths_touched: vec![codex_paths.config_toml.display().to_string()],
         inventory: vec![inventory],
+    })
+}
+
+fn apply_codex_profile(
+    paths: &ProjectPaths,
+    codex_paths: &CodexPaths,
+) -> Result<OperationResult, String> {
+    paths
+        .ensure_runtime_dirs()
+        .map_err(|error| error.to_string())?;
+
+    let inventory = inspect_codex_config_inventory(codex_paths)?;
+    if inventory.status == InventoryStatus::Invalid {
+        return Ok(OperationResult {
+            kind: OperationKind::ApplyCodexProfile,
+            summary: "codex-profile apply: blocked by invalid config".to_string(),
+            details: vec![
+                "repair ~/.codex/config.toml first".to_string(),
+                "Sane only writes after a clean parse".to_string(),
+            ],
+            paths_touched: vec![codex_paths.config_toml.display().to_string()],
+            inventory: vec![inventory],
+        });
+    }
+
+    let backup_path = if inventory.status == InventoryStatus::Installed {
+        Some(write_codex_config_backup(paths, codex_paths)?)
+    } else {
+        None
+    };
+
+    let mut config = if inventory.status == InventoryStatus::Installed {
+        read_codex_config(&codex_paths.config_toml)?
+    } else {
+        TomlValue::Table(toml::map::Map::new())
+    };
+
+    let before_details = if inventory.status == InventoryStatus::Installed {
+        codex_profile_preview_details(&config)
+    } else {
+        vec![
+            "model: <missing> -> gpt-5.4".to_string(),
+            "reasoning: <missing> -> high".to_string(),
+            "codex hooks: <missing> -> enabled".to_string(),
+        ]
+    };
+    apply_core_codex_profile_to_value(&mut config)?;
+    write_codex_config(&codex_paths.config_toml, &config)?;
+
+    let mut details = before_details;
+    details.push("applied keys: model, model_reasoning_effort, features.codex_hooks".to_string());
+    if let Some(path) = &backup_path {
+        details.push(format!("backup: {}", path.display()));
+    } else {
+        details.push("backup: skipped (no prior config existed)".to_string());
+    }
+
+    let mut paths_touched = vec![codex_paths.config_toml.display().to_string()];
+    if let Some(path) = &backup_path {
+        paths_touched.push(path.display().to_string());
+    }
+
+    Ok(OperationResult {
+        kind: OperationKind::ApplyCodexProfile,
+        summary: "codex-profile apply: wrote recommended core profile".to_string(),
+        details,
+        paths_touched,
+        inventory: vec![InventoryItem {
+            name: "codex-config".to_string(),
+            scope: InventoryScope::CodexNative,
+            status: InventoryStatus::Installed,
+            path: codex_paths.config_toml.display().to_string(),
+            repair_hint: None,
+        }],
+    })
+}
+
+fn restore_codex_config(
+    paths: &ProjectPaths,
+    codex_paths: &CodexPaths,
+) -> Result<OperationResult, String> {
+    let Some(backup_path) = latest_codex_config_backup(paths)? else {
+        return Ok(OperationResult {
+            kind: OperationKind::RestoreCodexConfig,
+            summary: "codex-config restore: no backup available".to_string(),
+            details: vec![format!(
+                "expected backups under {}",
+                paths.codex_config_backups_dir.display()
+            )],
+            paths_touched: vec![paths.codex_config_backups_dir.display().to_string()],
+            inventory: vec![inspect_codex_config_inventory(codex_paths)?],
+        });
+    };
+
+    if let Some(parent) = codex_paths.config_toml.parent() {
+        fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+    }
+    fs::copy(&backup_path, &codex_paths.config_toml).map_err(|error| error.to_string())?;
+
+    Ok(OperationResult {
+        kind: OperationKind::RestoreCodexConfig,
+        summary: format!(
+            "codex-config restore: restored from {}",
+            backup_path.display()
+        ),
+        details: vec![format!("target: {}", codex_paths.config_toml.display())],
+        paths_touched: vec![
+            backup_path.display().to_string(),
+            codex_paths.config_toml.display().to_string(),
+        ],
+        inventory: vec![InventoryItem {
+            name: "codex-config".to_string(),
+            scope: InventoryScope::CodexNative,
+            status: InventoryStatus::Installed,
+            path: codex_paths.config_toml.display().to_string(),
+            repair_hint: None,
+        }],
     })
 }
 
@@ -2138,10 +2269,70 @@ fn inspect_codex_config_inventory(codex_paths: &CodexPaths) -> Result<InventoryI
     })
 }
 
+fn write_codex_config(path: &Path, config: &TomlValue) -> Result<(), String> {
+    let body = toml::to_string_pretty(config).map_err(|error| error.to_string())?;
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+    }
+    fs::write(path, format!("{body}\n")).map_err(|error| error.to_string())
+}
+
 fn read_codex_config(path: &Path) -> Result<TomlValue, String> {
     let body = fs::read_to_string(path).map_err(|error| error.to_string())?;
     body.parse::<TomlValue>()
         .map_err(|error| format!("invalid config.toml: {error}"))
+}
+
+fn write_codex_config_backup(
+    paths: &ProjectPaths,
+    codex_paths: &CodexPaths,
+) -> Result<std::path::PathBuf, String> {
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|error| error.to_string())?
+        .as_secs();
+    let backup_path = paths
+        .codex_config_backups_dir
+        .join(format!("config-{timestamp}.toml"));
+    fs::copy(&codex_paths.config_toml, &backup_path).map_err(|error| error.to_string())?;
+    Ok(backup_path)
+}
+
+fn latest_codex_config_backup(paths: &ProjectPaths) -> Result<Option<std::path::PathBuf>, String> {
+    if !paths.codex_config_backups_dir.exists() {
+        return Ok(None);
+    }
+
+    let mut backups = fs::read_dir(&paths.codex_config_backups_dir)
+        .map_err(|error| error.to_string())?
+        .filter_map(|entry| entry.ok().map(|value| value.path()))
+        .filter(|path| path.is_file())
+        .collect::<Vec<_>>();
+    backups.sort();
+    Ok(backups.pop())
+}
+
+fn apply_core_codex_profile_to_value(config: &mut TomlValue) -> Result<(), String> {
+    let table = config
+        .as_table_mut()
+        .ok_or_else(|| "config.toml root must be a table".to_string())?;
+    table.insert(
+        "model".to_string(),
+        TomlValue::String("gpt-5.4".to_string()),
+    );
+    table.insert(
+        "model_reasoning_effort".to_string(),
+        TomlValue::String("high".to_string()),
+    );
+
+    let features = table
+        .entry("features".to_string())
+        .or_insert_with(|| TomlValue::Table(toml::map::Map::new()));
+    let features_table = features
+        .as_table_mut()
+        .ok_or_else(|| "[features] must be a table".to_string())?;
+    features_table.insert("codex_hooks".to_string(), TomlValue::Boolean(true));
+    Ok(())
 }
 
 fn codex_config_details(config: &TomlValue) -> Vec<String> {
@@ -2575,6 +2766,8 @@ mod tests {
         assert!(output.contains("codex-config"));
         assert!(output.contains("preview"));
         assert!(output.contains("backup"));
+        assert!(output.contains("apply"));
+        assert!(output.contains("restore"));
         assert!(output.contains("status"));
         assert!(output.contains("export"));
         assert!(output.contains("uninstall"));
@@ -2790,6 +2983,8 @@ mod tests {
                 "Inspect Codex config",
                 "Preview Codex profile",
                 "Backup Codex config",
+                "Apply Codex profile",
+                "Restore Codex config",
                 "Doctor",
                 "Export user skill",
                 "Export global agents",
@@ -3007,6 +3202,69 @@ codex_hooks = false
         assert!(output.contains("reasoning: medium -> high"));
         assert!(output.contains("codex hooks: disabled -> enabled"));
         assert!(output.contains("integrations stay outside bare core profile"));
+    }
+
+    #[test]
+    fn apply_codex_profile_updates_only_core_keys_and_preserves_other_content() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        let codex_dir = home.path().join(".codex");
+        std::fs::create_dir_all(&codex_dir).unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        std::fs::write(
+            codex_dir.join("config.toml"),
+            r#"model = "gpt-5.3-codex"
+model_reasoning_effort = "medium"
+
+[features]
+codex_hooks = false
+
+[tui]
+theme = "zenburn"
+
+[mcp_servers.context7]
+url = "https://mcp.context7.com/mcp"
+"#,
+        )
+        .unwrap();
+
+        let output =
+            run_with_home(&["apply", "codex-profile"], project.path(), home.path()).unwrap();
+        let body = std::fs::read_to_string(codex_dir.join("config.toml")).unwrap();
+        let backup_dir = project
+            .path()
+            .join(".sane")
+            .join("backups")
+            .join("codex-config");
+
+        assert!(output.contains("codex-profile apply: wrote recommended core profile"));
+        assert!(body.contains("model = \"gpt-5.4\""));
+        assert!(body.contains("model_reasoning_effort = \"high\""));
+        assert!(body.contains("codex_hooks = true"));
+        assert!(body.contains("theme = \"zenburn\""));
+        assert!(body.contains("[mcp_servers.context7]"));
+        assert!(backup_dir.exists());
+    }
+
+    #[test]
+    fn restore_codex_config_restores_latest_backup() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        let codex_dir = home.path().join(".codex");
+        std::fs::create_dir_all(&codex_dir).unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        let config_path = codex_dir.join("config.toml");
+        std::fs::write(&config_path, "model = \"gpt-5.3-codex\"\n").unwrap();
+
+        let _ = run_with_home(&["backup", "codex-config"], project.path(), home.path()).unwrap();
+        std::fs::write(&config_path, "model = \"gpt-5.4\"\n").unwrap();
+
+        let output =
+            run_with_home(&["restore", "codex-config"], project.path(), home.path()).unwrap();
+        let restored = std::fs::read_to_string(&config_path).unwrap();
+
+        assert!(output.contains("codex-config restore: restored from"));
+        assert!(restored.contains("model = \"gpt-5.3-codex\""));
     }
 
     #[test]

@@ -51,6 +51,7 @@ Implemented:
 - read-only inspection of `~/.codex/config.toml`
 - opt-in local backup flow for `~/.codex/config.toml`
 - read-only preview of recommended core Codex profile changes
+- explicit opt-in apply / restore flow for narrow core Codex profile
 - `export all` / `uninstall all` for current managed targets
 
 Current gate:

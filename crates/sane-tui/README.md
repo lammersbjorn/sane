@@ -12,6 +12,7 @@ Current responsibility:
 - read-only Codex config inspection for current user-level settings
 - read-only preview of recommended core Codex profile changes
 - opt-in Codex config backup flow into `.sane/backups/codex-config`
+- explicit opt-in apply / restore flow for the narrow core Codex profile
 - action list, status summary, output panel, and quit flow
 - grouped status inventory for local runtime vs Codex-native assets
 - user-facing operational output

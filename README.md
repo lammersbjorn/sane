@@ -21,6 +21,7 @@ Already implemented:
 - read-only Codex config inspection for current model, reasoning, MCP, plugin, and trust summary
 - opt-in local backup of `~/.codex/config.toml` into `.sane/backups/codex-config/`
 - read-only preview of recommended core Codex profile changes before any future managed write flow
+- explicit opt-in apply/restore flow for the narrow core Codex profile with local backup first
 - backend/dev escape hatch verbs for `install`, `config`, `status`, `doctor`, `export`, and `uninstall`
 - grouped audit view separating local runtime state from Codex-native managed assets
 - first managed user-level hooks target at `~/.codex/hooks.json`
@@ -74,6 +75,8 @@ cargo run -p sane-tui -- config
 cargo run -p sane-tui -- codex-config
 cargo run -p sane-tui -- preview codex-profile
 cargo run -p sane-tui -- backup codex-config
+cargo run -p sane-tui -- apply codex-profile
+cargo run -p sane-tui -- restore codex-config
 cargo run -p sane-tui -- doctor
 cargo run -p sane-tui -- export all
 cargo run -p sane-tui -- export hooks
@@ -88,7 +91,11 @@ Current hook note:
 
 Current Codex config note:
 - Sane only inspects `~/.codex/config.toml` right now.
-- Any future managed settings/profile writes must stay explicit opt-in with diff preview and backup/restore.
+- Current managed writes are narrow and explicit opt-in only:
+  - `model`
+  - `model_reasoning_effort`
+  - `features.codex_hooks`
+- Everything else is preserved.
 
 ## Commit Hook
 

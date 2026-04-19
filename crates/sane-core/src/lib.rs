@@ -12,6 +12,8 @@ pub enum OperationKind {
     ShowCodexConfig,
     BackupCodexConfig,
     PreviewCodexProfile,
+    ApplyCodexProfile,
+    RestoreCodexConfig,
     ResetTelemetryData,
     ShowStatus,
     Doctor,

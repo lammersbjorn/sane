@@ -75,6 +75,18 @@ These are the backend actions the TUI is allowed to call in the current phase.
   - keep recommendations narrow: core model, reasoning, and hook support only
   - keep integrations out of the bare core profile preview
 
+- `apply_codex_profile`
+  - backup current `~/.codex/config.toml` first when it exists
+  - write only:
+    - `model`
+    - `model_reasoning_effort`
+    - `features.codex_hooks`
+  - preserve all unrelated user config
+
+- `restore_codex_config`
+  - restore latest local backup from `.sane/backups/codex-config/`
+  - never guess from remote state
+
 - `show_status`
   - read structured inventory for all current managed targets
   - keep touched paths explicit for auditability
