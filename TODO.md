@@ -47,11 +47,12 @@ Implemented:
 - first managed Codex-native user-skill target (`~/.agents/skills/sane-router`)
 - first optional managed global Codex overlay block (`~/.codex/AGENTS.md`)
 - first managed user-level hooks target (`~/.codex/hooks.json`)
+- first managed user-level custom agents target (`~/.codex/agents/`)
 - `export all` / `uninstall all` for current managed targets
 
 Current gate:
 
-- `B1` thin backend contract
+- `B4` next managed targets
 
 Current command examples:
 
@@ -132,7 +133,7 @@ See:
 Current allowed next slice:
 
 1. continue `B4`
-2. hooks shipped first
-3. next candidate is optional custom agents
+2. hooks and custom agents shipped
+3. next candidate is optional further overlays or repo-level export design
 4. keep merge/preserve/remove behavior additive and reversible
 5. extend inventory/doctor coverage for each new target before moving on

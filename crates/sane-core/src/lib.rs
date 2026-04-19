@@ -1,5 +1,7 @@
 pub const NAME: &str = "Sane";
 pub const SANE_ROUTER_SKILL_NAME: &str = "sane-router";
+pub const SANE_REVIEWER_AGENT_NAME: &str = "sane-reviewer";
+pub const SANE_EXPLORER_AGENT_NAME: &str = "sane-explorer";
 pub const SANE_GLOBAL_AGENTS_BEGIN: &str = "<!-- sane:global-agents:start -->";
 pub const SANE_GLOBAL_AGENTS_END: &str = "<!-- sane:global-agents:end -->";
 
@@ -12,10 +14,12 @@ pub enum OperationKind {
     ExportUserSkills,
     ExportGlobalAgents,
     ExportHooks,
+    ExportCustomAgents,
     ExportAll,
     UninstallUserSkills,
     UninstallGlobalAgents,
     UninstallHooks,
+    UninstallCustomAgents,
     UninstallAll,
 }
 
@@ -162,5 +166,37 @@ pub fn sane_global_agents_overlay() -> &'static str {
 - Keep repo mutation optional
 - Use subagents only when the work decomposes cleanly
 - Choose model and reasoning settings per task when available
+"#
+}
+
+pub fn sane_reviewer_agent() -> &'static str {
+    r#"name = "sane_reviewer"
+description = "Read-only reviewer for Sane. Focus on correctness, regressions, missing tests, and risky assumptions."
+sandbox_mode = "read-only"
+
+developer_instructions = """
+Review with Sane philosophy:
+- findings first
+- focus on real bugs, regressions, safety gaps, and missing tests
+- be terse and specific
+- cite concrete files and behavior
+- do not propose speculative churn
+"""
+"#
+}
+
+pub fn sane_explorer_agent() -> &'static str {
+    r#"name = "sane_explorer"
+description = "Read-only codebase explorer for Sane. Map systems, trace flows, and hand back exact file anchors without changing code."
+sandbox_mode = "read-only"
+
+developer_instructions = """
+Explore with Sane philosophy:
+- map only what the task needs
+- prefer concrete file paths and direct evidence
+- summarize architecture without fluff
+- do not edit files
+- keep context tight
+"""
 "#
 }

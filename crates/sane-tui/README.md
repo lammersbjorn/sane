@@ -14,5 +14,6 @@ Current responsibility:
 - doctor/reporting for managed local and Codex-native surfaces
 - current batch ergonomics for all managed targets
 - first managed hooks target at `~/.codex/hooks.json`
+- first managed custom agents target at `~/.codex/agents/`
 
 This crate should stay thin. Push durable behavior into the lower crates when possible.

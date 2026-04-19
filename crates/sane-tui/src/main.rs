@@ -18,8 +18,9 @@ use ratatui::{Frame, Terminal};
 use sane_config::LocalConfig;
 use sane_core::{
     InventoryItem, InventoryScope, InventoryStatus, NAME, OperationKind, OperationResult,
-    SANE_GLOBAL_AGENTS_BEGIN, SANE_GLOBAL_AGENTS_END, SANE_ROUTER_SKILL_NAME,
-    sane_global_agents_overlay, sane_router_skill,
+    SANE_EXPLORER_AGENT_NAME, SANE_GLOBAL_AGENTS_BEGIN, SANE_GLOBAL_AGENTS_END,
+    SANE_REVIEWER_AGENT_NAME, SANE_ROUTER_SKILL_NAME, sane_explorer_agent,
+    sane_global_agents_overlay, sane_reviewer_agent, sane_router_skill,
 };
 use sane_platform::{CodexPaths, ProjectPaths, detect_platform};
 use sane_state::RunSnapshot;
@@ -111,17 +112,21 @@ fn run_with_home(args: &[&str], cwd: &Path, home: &Path) -> Result<String, Strin
         | Command::ExportUserSkills
         | Command::ExportGlobalAgents
         | Command::ExportHooks
+        | Command::ExportCustomAgents
         | Command::UninstallAll
         | Command::UninstallUserSkills
         | Command::UninstallGlobalAgents
-        | Command::UninstallHooks => execute_backend_command(command, &paths, &codex_paths)
+        | Command::UninstallHooks
+        | Command::UninstallCustomAgents => execute_backend_command(command, &paths, &codex_paths)
             .map(|result| result.render_text()),
-        Command::Export => {
-            Ok("export: available targets: all, user-skills, global-agents, hooks".to_string())
-        }
-        Command::Uninstall => {
-            Ok("uninstall: available targets: all, user-skills, global-agents, hooks".to_string())
-        }
+        Command::Export => Ok(
+            "export: available targets: all, user-skills, global-agents, hooks, custom-agents"
+                .to_string(),
+        ),
+        Command::Uninstall => Ok(
+            "uninstall: available targets: all, user-skills, global-agents, hooks, custom-agents"
+                .to_string(),
+        ),
     }
 }
 
@@ -138,11 +143,13 @@ enum Command {
     ExportUserSkills,
     ExportGlobalAgents,
     ExportHooks,
+    ExportCustomAgents,
     Uninstall,
     UninstallAll,
     UninstallUserSkills,
     UninstallGlobalAgents,
     UninstallHooks,
+    UninstallCustomAgents,
 }
 
 impl Command {
@@ -158,11 +165,13 @@ impl Command {
             (Some("export"), Some("user-skills")) => Ok(Self::ExportUserSkills),
             (Some("export"), Some("global-agents")) => Ok(Self::ExportGlobalAgents),
             (Some("export"), Some("hooks")) => Ok(Self::ExportHooks),
+            (Some("export"), Some("custom-agents")) => Ok(Self::ExportCustomAgents),
             (Some("export"), None) => Ok(Self::Export),
             (Some("uninstall"), Some("all")) => Ok(Self::UninstallAll),
             (Some("uninstall"), Some("user-skills")) => Ok(Self::UninstallUserSkills),
             (Some("uninstall"), Some("global-agents")) => Ok(Self::UninstallGlobalAgents),
             (Some("uninstall"), Some("hooks")) => Ok(Self::UninstallHooks),
+            (Some("uninstall"), Some("custom-agents")) => Ok(Self::UninstallCustomAgents),
             (Some("uninstall"), None) => Ok(Self::Uninstall),
             (Some(other), _) => Err(format!("unknown command: {other}")),
         }
@@ -184,10 +193,12 @@ fn execute_backend_command(
         Command::ExportUserSkills => export_user_skills(codex_paths),
         Command::ExportGlobalAgents => export_global_agents(codex_paths),
         Command::ExportHooks => export_hooks(codex_paths),
+        Command::ExportCustomAgents => export_custom_agents(codex_paths),
         Command::UninstallAll => uninstall_all(codex_paths),
         Command::UninstallUserSkills => uninstall_user_skills(codex_paths),
         Command::UninstallGlobalAgents => uninstall_global_agents(codex_paths),
         Command::UninstallHooks => uninstall_hooks(codex_paths),
+        Command::UninstallCustomAgents => uninstall_custom_agents(codex_paths),
         Command::Summary | Command::Export | Command::Uninstall => {
             Err("backend command not executable".to_string())
         }
@@ -225,6 +236,10 @@ impl TuiApp {
                 TuiAction::new("Install runtime", Command::Install),
                 TuiAction::new("Inspect config", Command::Config),
                 TuiAction::new("Doctor", Command::Doctor),
+                TuiAction::new("Export user skill", Command::ExportUserSkills),
+                TuiAction::new("Export global agents", Command::ExportGlobalAgents),
+                TuiAction::new("Export hooks", Command::ExportHooks),
+                TuiAction::new("Export custom agents", Command::ExportCustomAgents),
                 TuiAction::new("Export all", Command::ExportAll),
                 TuiAction::new("Uninstall all", Command::UninstallAll),
             ],
@@ -508,17 +523,19 @@ fn doctor_runtime(
     let user_skills = find_inventory(&inventory, "user-skills");
     let global_agents = find_inventory(&inventory, "global-agents");
     let hooks = find_inventory(&inventory, "hooks");
+    let custom_agents = find_inventory(&inventory, "custom-agents");
 
     Ok(OperationResult {
         kind: OperationKind::Doctor,
         summary: format!(
-            "runtime: {}\nconfig: {}\nstate: {}\nuser-skills: {}\nglobal-agents: {}\nhooks: {}\nroot: {}\ncodex-home: {}",
+            "runtime: {}\nconfig: {}\nstate: {}\nuser-skills: {}\nglobal-agents: {}\nhooks: {}\ncustom-agents: {}\nroot: {}\ncodex-home: {}",
             doctor_status(runtime),
             doctor_status(config),
             doctor_status(state),
             doctor_status(user_skills),
             doctor_status(global_agents),
             doctor_status(hooks),
+            doctor_status(custom_agents),
             paths.runtime_root.display(),
             codex_paths.codex_home.display()
         ),
@@ -538,6 +555,7 @@ fn inspect_inventory(
         .join(SANE_ROUTER_SKILL_NAME)
         .join("SKILL.md");
     let hooks_inventory = inspect_hooks_inventory(codex_paths)?;
+    let custom_agents_inventory = inspect_custom_agents_inventory(codex_paths);
 
     let global_agents_inventory = if !codex_paths.global_agents_md.exists() {
         InventoryItem {
@@ -640,6 +658,7 @@ fn inspect_inventory(
         },
         global_agents_inventory,
         hooks_inventory,
+        custom_agents_inventory,
     ])
 }
 
@@ -686,6 +705,12 @@ fn doctor_status(item: &InventoryItem) -> String {
             InventoryStatus::Invalid => "invalid (repair ~/.codex/hooks.json)".to_string(),
             _ => item.status.display_str().to_string(),
         },
+        "custom-agents" => match item.status {
+            InventoryStatus::Installed => "installed".to_string(),
+            InventoryStatus::Missing => "missing (run `export custom-agents`)".to_string(),
+            InventoryStatus::Invalid => "invalid (rerun `export custom-agents`)".to_string(),
+            _ => item.status.display_str().to_string(),
+        },
         _ => item.status.as_str().to_string(),
     }
 }
@@ -725,11 +750,12 @@ fn export_all(codex_paths: &CodexPaths) -> Result<OperationResult, String> {
     let user_skills = export_user_skills(codex_paths)?;
     let global_agents = export_global_agents(codex_paths)?;
     let hooks = export_hooks(codex_paths)?;
+    let custom_agents = export_custom_agents(codex_paths)?;
 
     Ok(merge_results(
         OperationKind::ExportAll,
         "export all: installed managed targets",
-        vec![user_skills, global_agents, hooks],
+        vec![user_skills, global_agents, hooks, custom_agents],
     ))
 }
 
@@ -868,12 +894,105 @@ fn uninstall_all(codex_paths: &CodexPaths) -> Result<OperationResult, String> {
     let user_skills = uninstall_user_skills(codex_paths)?;
     let global_agents = uninstall_global_agents(codex_paths)?;
     let hooks = uninstall_hooks(codex_paths)?;
+    let custom_agents = uninstall_custom_agents(codex_paths)?;
 
     Ok(merge_results(
         OperationKind::UninstallAll,
         "uninstall all: removed managed targets",
-        vec![user_skills, global_agents, hooks],
+        vec![user_skills, global_agents, hooks, custom_agents],
     ))
+}
+
+fn export_custom_agents(codex_paths: &CodexPaths) -> Result<OperationResult, String> {
+    fs::create_dir_all(&codex_paths.custom_agents_dir).map_err(|error| error.to_string())?;
+    let reviewer_path = codex_paths
+        .custom_agents_dir
+        .join(format!("{SANE_REVIEWER_AGENT_NAME}.toml"));
+    let explorer_path = codex_paths
+        .custom_agents_dir
+        .join(format!("{SANE_EXPLORER_AGENT_NAME}.toml"));
+
+    fs::write(&reviewer_path, sane_reviewer_agent()).map_err(|error| error.to_string())?;
+    fs::write(&explorer_path, sane_explorer_agent()).map_err(|error| error.to_string())?;
+
+    Ok(OperationResult {
+        kind: OperationKind::ExportCustomAgents,
+        summary: "export custom-agents: installed managed agent files".to_string(),
+        details: vec![
+            format!("path: {}", reviewer_path.display()),
+            format!("path: {}", explorer_path.display()),
+        ],
+        paths_touched: vec![
+            reviewer_path.display().to_string(),
+            explorer_path.display().to_string(),
+        ],
+        inventory: vec![InventoryItem {
+            name: "custom-agents".to_string(),
+            scope: InventoryScope::CodexNative,
+            status: InventoryStatus::Installed,
+            path: codex_paths.custom_agents_dir.display().to_string(),
+            repair_hint: None,
+        }],
+    })
+}
+
+fn uninstall_custom_agents(codex_paths: &CodexPaths) -> Result<OperationResult, String> {
+    let reviewer_path = codex_paths
+        .custom_agents_dir
+        .join(format!("{SANE_REVIEWER_AGENT_NAME}.toml"));
+    let explorer_path = codex_paths
+        .custom_agents_dir
+        .join(format!("{SANE_EXPLORER_AGENT_NAME}.toml"));
+    let managed_paths = [&reviewer_path, &explorer_path];
+
+    let had_any = managed_paths.iter().any(|path| path.exists());
+    if !had_any {
+        return Ok(OperationResult {
+            kind: OperationKind::UninstallCustomAgents,
+            summary: "uninstall custom-agents: not installed".to_string(),
+            details: vec![],
+            paths_touched: vec![codex_paths.custom_agents_dir.display().to_string()],
+            inventory: vec![InventoryItem {
+                name: "custom-agents".to_string(),
+                scope: InventoryScope::CodexNative,
+                status: InventoryStatus::Missing,
+                path: codex_paths.custom_agents_dir.display().to_string(),
+                repair_hint: None,
+            }],
+        });
+    }
+
+    for path in managed_paths {
+        if path.exists() {
+            fs::remove_file(path).map_err(|error| error.to_string())?;
+        }
+    }
+
+    if codex_paths.custom_agents_dir.exists()
+        && fs::read_dir(&codex_paths.custom_agents_dir)
+            .map_err(|error| error.to_string())?
+            .next()
+            .is_none()
+    {
+        fs::remove_dir(&codex_paths.custom_agents_dir).map_err(|error| error.to_string())?;
+    }
+
+    Ok(OperationResult {
+        kind: OperationKind::UninstallCustomAgents,
+        summary: "uninstall custom-agents: removed managed agent files".to_string(),
+        details: vec![],
+        paths_touched: vec![
+            reviewer_path.display().to_string(),
+            explorer_path.display().to_string(),
+        ],
+        inventory: vec![InventoryItem {
+            name: "custom-agents".to_string(),
+            scope: InventoryScope::CodexNative,
+            status: InventoryStatus::Removed,
+            path: codex_paths.custom_agents_dir.display().to_string(),
+            repair_hint: None,
+        }],
+    })
 }
 
 fn export_hooks(codex_paths: &CodexPaths) -> Result<OperationResult, String> {
@@ -1070,6 +1189,36 @@ fn inspect_hooks_inventory(codex_paths: &CodexPaths) -> Result<InventoryItem, St
     })
 }
 
+fn inspect_custom_agents_inventory(codex_paths: &CodexPaths) -> InventoryItem {
+    let reviewer_path = codex_paths
+        .custom_agents_dir
+        .join(format!("{SANE_REVIEWER_AGENT_NAME}.toml"));
+    let explorer_path = codex_paths
+        .custom_agents_dir
+        .join(format!("{SANE_EXPLORER_AGENT_NAME}.toml"));
+    let reviewer_exists = reviewer_path.exists();
+    let explorer_exists = explorer_path.exists();
+
+    let status = match (reviewer_exists, explorer_exists) {
+        (true, true) => InventoryStatus::Installed,
+        (false, false) => InventoryStatus::Missing,
+        _ => InventoryStatus::Invalid,
+    };
+
+    InventoryItem {
+        name: "custom-agents".to_string(),
+        scope: InventoryScope::CodexNative,
+        status,
+        path: codex_paths.custom_agents_dir.display().to_string(),
+        repair_hint: match status {
+            InventoryStatus::Installed => None,
+            InventoryStatus::Missing => Some("run `export custom-agents`".to_string()),
+            InventoryStatus::Invalid => Some("rerun `export custom-agents`".to_string()),
+            _ => None,
+        },
+    }
+}
+
 fn read_hooks_json(path: &Path) -> Result<Value, String> {
     if !path.exists() {
         return Ok(json!({}));
@@ -1213,6 +1362,7 @@ mod tests {
         assert!(output.contains("user-skills: missing"));
         assert!(output.contains("global-agents: missing"));
         assert!(output.contains("hooks: missing"));
+        assert!(output.contains("custom-agents: missing"));
     }
 
     #[test]
@@ -1344,6 +1494,7 @@ mod tests {
         assert!(output.contains("export user-skills"));
         assert!(output.contains("export global-agents"));
         assert!(output.contains("export hooks"));
+        assert!(output.contains("export custom-agents"));
         assert!(
             home.path()
                 .join(".agents")
@@ -1354,6 +1505,13 @@ mod tests {
         );
         assert!(home.path().join(".codex").join("AGENTS.md").exists());
         assert!(home.path().join(".codex").join("hooks.json").exists());
+        assert!(
+            home.path()
+                .join(".codex")
+                .join("agents")
+                .join("sane-reviewer.toml")
+                .exists()
+        );
     }
 
     #[test]
@@ -1415,6 +1573,7 @@ mod tests {
         );
         assert!(!home.path().join(".codex").join("AGENTS.md").exists());
         assert!(!home.path().join(".codex").join("hooks.json").exists());
+        assert!(!home.path().join(".codex").join("agents").exists());
     }
 
     #[test]
@@ -1427,12 +1586,14 @@ mod tests {
         let _ = run_with_home(&["export", "user-skills"], project.path(), home.path()).unwrap();
         let _ = run_with_home(&["export", "global-agents"], project.path(), home.path()).unwrap();
         let _ = run_with_home(&["export", "hooks"], project.path(), home.path()).unwrap();
+        let _ = run_with_home(&["export", "custom-agents"], project.path(), home.path()).unwrap();
 
         let output = run_with_home(&["doctor"], project.path(), home.path()).unwrap();
 
         assert!(output.contains("user-skills: installed"));
         assert!(output.contains("global-agents: installed"));
         assert!(output.contains("hooks: installed"));
+        assert!(output.contains("custom-agents: installed"));
     }
 
     #[test]
@@ -1456,6 +1617,10 @@ mod tests {
                 "Install runtime",
                 "Inspect config",
                 "Doctor",
+                "Export user skill",
+                "Export global agents",
+                "Export hooks",
+                "Export custom agents",
                 "Export all",
                 "Uninstall all",
             ]
@@ -1471,7 +1636,7 @@ mod tests {
         let _ = run_with_home(&["install"], project.path(), home.path()).unwrap();
         let output = run_with_home(&["status"], project.path(), home.path()).unwrap();
 
-        assert!(output.contains("status: 6 managed targets inspected"));
+        assert!(output.contains("status: 7 managed targets inspected"));
         assert!(output.contains("local runtime:"));
         assert!(output.contains("codex-native:"));
         assert!(output.contains("runtime: installed"));
@@ -1480,6 +1645,7 @@ mod tests {
         assert!(output.contains("user-skills: missing (run `export user-skills`)"));
         assert!(output.contains("global-agents: missing (run `export global-agents`)"));
         assert!(output.contains("hooks: missing (run `export hooks`)"));
+        assert!(output.contains("custom-agents: missing (run `export custom-agents`)"));
     }
 
     #[test]
@@ -1498,7 +1664,7 @@ mod tests {
             .split(", ")
             .collect::<Vec<_>>();
 
-        assert_eq!(paths.len(), 3);
+        assert_eq!(paths.len(), 5);
     }
 
     #[test]
@@ -1515,6 +1681,43 @@ mod tests {
         assert!(body.contains("SessionStart"));
         assert!(body.contains("hook session-start"));
         assert!(body.contains("Loading Sane session defaults"));
+    }
+
+    #[test]
+    fn export_custom_agents_installs_managed_agent_files() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+
+        let output =
+            run_with_home(&["export", "custom-agents"], project.path(), home.path()).unwrap();
+        let agents_dir = home.path().join(".codex").join("agents");
+        let reviewer = std::fs::read_to_string(agents_dir.join("sane-reviewer.toml")).unwrap();
+        let explorer = std::fs::read_to_string(agents_dir.join("sane-explorer.toml")).unwrap();
+
+        assert!(output.contains("export custom-agents"));
+        assert!(reviewer.contains("name = \"sane_reviewer\""));
+        assert!(reviewer.contains("sandbox_mode = \"read-only\""));
+        assert!(explorer.contains("name = \"sane_explorer\""));
+    }
+
+    #[test]
+    fn uninstall_custom_agents_preserves_unrelated_agent_files() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        let agents_dir = home.path().join(".codex").join("agents");
+        std::fs::create_dir_all(&agents_dir).unwrap();
+        std::fs::write(agents_dir.join("other-agent.toml"), "name = \"other\"\n").unwrap();
+
+        let _ = run_with_home(&["export", "custom-agents"], project.path(), home.path()).unwrap();
+        let output =
+            run_with_home(&["uninstall", "custom-agents"], project.path(), home.path()).unwrap();
+
+        assert!(output.contains("uninstall custom-agents"));
+        assert!(agents_dir.join("other-agent.toml").exists());
+        assert!(!agents_dir.join("sane-reviewer.toml").exists());
+        assert!(!agents_dir.join("sane-explorer.toml").exists());
     }
 
     #[test]
@@ -1556,8 +1759,8 @@ mod tests {
 
     #[test]
     fn hook_session_start_emits_context_json() {
-        let output = run_with_home(&["hook", "session-start"], Path::new("."), Path::new("."))
-            .unwrap();
+        let output =
+            run_with_home(&["hook", "session-start"], Path::new("."), Path::new(".")).unwrap();
 
         assert!(output.contains("\"hookEventName\":\"SessionStart\""));
         assert!(output.contains("Sane active for this session"));

@@ -16,6 +16,7 @@ Already implemented:
 - backend/dev escape hatch verbs for `install`, `config`, `status`, `doctor`, `export`, and `uninstall`
 - grouped audit view separating local runtime state from Codex-native managed assets
 - first managed user-level hooks target at `~/.codex/hooks.json`
+- first managed user-level custom agents target at `~/.codex/agents/`
 - first managed Codex-native user surfaces:
   - `~/.agents/skills/sane-router`
   - optional `~/.codex/AGENTS.md` overlay block
@@ -38,8 +39,10 @@ cargo run -p sane-tui -- config
 cargo run -p sane-tui -- doctor
 cargo run -p sane-tui -- export all
 cargo run -p sane-tui -- export hooks
+cargo run -p sane-tui -- export custom-agents
 cargo run -p sane-tui -- uninstall all
 cargo run -p sane-tui -- uninstall hooks
+cargo run -p sane-tui -- uninstall custom-agents
 ```
 
 Current hook note:

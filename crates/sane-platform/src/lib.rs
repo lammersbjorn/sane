@@ -24,6 +24,7 @@ pub struct CodexPaths {
     pub codex_home: PathBuf,
     pub user_agents_dir: PathBuf,
     pub user_skills_dir: PathBuf,
+    pub custom_agents_dir: PathBuf,
     pub global_agents_md: PathBuf,
     pub hooks_json: PathBuf,
 }
@@ -94,12 +95,14 @@ impl CodexPaths {
         let codex_home = home_dir.join(".codex");
         let user_agents_dir = home_dir.join(".agents");
         let user_skills_dir = user_agents_dir.join("skills");
+        let custom_agents_dir = codex_home.join("agents");
 
         Self {
             home_dir,
             codex_home: codex_home.clone(),
             user_agents_dir,
             user_skills_dir,
+            custom_agents_dir,
             global_agents_md: codex_home.join("AGENTS.md"),
             hooks_json: codex_home.join("hooks.json"),
         }
