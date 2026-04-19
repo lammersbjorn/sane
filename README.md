@@ -10,9 +10,10 @@ Early public WIP.
 
 Already implemented:
 - Rust workspace bootstrap
-- project-local `.sane` runtime namespace
+- thin project-local `.sane` operational namespace
 - config/state persistence foundations
-- initial `install`, `config`, and `doctor` commands
+- initial `install`, `config`, `doctor`, `export`, and `uninstall` commands
+- first managed Codex-native user-skill surface
 
 ## Quick Start
 
@@ -21,6 +22,8 @@ cargo run -p sane-tui
 cargo run -p sane-tui -- install
 cargo run -p sane-tui -- config
 cargo run -p sane-tui -- doctor
+cargo run -p sane-tui -- export user-skills
+cargo run -p sane-tui -- uninstall user-skills
 ```
 
 ## Commit Hook

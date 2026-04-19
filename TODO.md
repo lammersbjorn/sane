@@ -39,7 +39,8 @@ Implemented:
 - `.sane` operational namespace
 - typed config persistence
 - typed run snapshot persistence
-- initial `install`, `config`, `doctor`, and `export` command shell
+- initial `install`, `config`, `doctor`, `export`, and `uninstall` command shell
+- first managed Codex-native user-skill target (`~/.agents/skills/sane-router`)
 
 Current command examples:
 
@@ -65,13 +66,14 @@ cargo test
 - [x] Add model preset structures for coordinator, sidecar, and verifier roles
 - [ ] Add first-class subagent/model selection config that respects subscription/capability constraints
 - [ ] Improve `doctor` with real checks and actionable repair suggestions
-- [ ] Replace placeholder `export` with the first real Codex-native asset management boundary
+- [x] Replace placeholder `export` with the first real Codex-native asset management boundary
+- [x] Add symmetric uninstall flow for managed user-skill assets
 
 ## Next
 
 - [ ] Add state/event log design using compact machine-readable files
 - [ ] Add context compaction / handoff primitives
-- [ ] Add Codex-native asset installation targets and layout
+- [ ] Add next Codex-native asset targets and layout (`hooks`, optional user/global overlays)
 - [ ] Add better install flow UX in the TUI
 - [ ] Add update and rollback flow design
 - [ ] Add explicit privacy/telemetry config structures
@@ -114,4 +116,5 @@ Recommended next implementation slice:
 1. make `doctor` validate config and state properly
 2. define the first Codex-native installation targets
 3. implement managed asset generation/install for one thin target surface
-4. keep the TUI shell thin while the Codex-facing asset manager gets smarter
+4. add uninstall + repair flows for each managed target
+5. keep the TUI shell thin while the Codex-facing asset manager gets smarter

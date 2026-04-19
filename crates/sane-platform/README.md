@@ -6,5 +6,6 @@ Current responsibility:
 - host platform detection
 - project-root discovery
 - `.sane` operational path layout
+- Codex-native user path discovery (`~/.codex`, `~/.agents/skills`, hooks, AGENTS)
 
 Keep this crate focused on filesystem/platform concerns.

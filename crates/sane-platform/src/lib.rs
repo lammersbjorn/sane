@@ -18,6 +18,16 @@ pub struct ProjectPaths {
     pub sessions_dir: PathBuf,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CodexPaths {
+    pub home_dir: PathBuf,
+    pub codex_home: PathBuf,
+    pub user_agents_dir: PathBuf,
+    pub user_skills_dir: PathBuf,
+    pub global_agents_md: PathBuf,
+    pub hooks_json: PathBuf,
+}
+
 pub fn detect_platform() -> HostPlatform {
     match std::env::consts::OS {
         "macos" => HostPlatform::MacOs,
@@ -75,5 +85,37 @@ impl ProjectPaths {
         std::fs::create_dir_all(&self.logs_dir)?;
         std::fs::create_dir_all(&self.sessions_dir)?;
         Ok(())
+    }
+}
+
+impl CodexPaths {
+    pub fn new(home_dir: impl AsRef<Path>) -> Self {
+        let home_dir = home_dir.as_ref().to_path_buf();
+        let codex_home = home_dir.join(".codex");
+        let user_agents_dir = home_dir.join(".agents");
+        let user_skills_dir = user_agents_dir.join("skills");
+
+        Self {
+            home_dir,
+            codex_home: codex_home.clone(),
+            user_agents_dir,
+            user_skills_dir,
+            global_agents_md: codex_home.join("AGENTS.md"),
+            hooks_json: codex_home.join("hooks.json"),
+        }
+    }
+
+    pub fn discover() -> std::io::Result<Self> {
+        let home = std::env::var_os("HOME")
+            .or_else(|| std::env::var_os("USERPROFILE"))
+            .map(PathBuf::from)
+            .ok_or_else(|| {
+                std::io::Error::new(
+                    std::io::ErrorKind::NotFound,
+                    "could not resolve HOME or USERPROFILE",
+                )
+            })?;
+
+        Ok(Self::new(home))
     }
 }

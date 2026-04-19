@@ -1,4 +1,4 @@
-use sane_platform::ProjectPaths;
+use sane_platform::{CodexPaths, ProjectPaths};
 use tempfile::tempdir;
 
 #[test]
@@ -27,4 +27,25 @@ fn discover_project_root_walks_up_to_cargo_manifest() {
 
     assert_eq!(discovered.project_root, dir.path());
     assert_eq!(discovered.runtime_root, dir.path().join(".sane"));
+}
+
+#[test]
+fn codex_paths_use_user_skill_location_from_docs() {
+    let home = tempdir().unwrap();
+    let paths = CodexPaths::new(home.path());
+
+    assert_eq!(paths.codex_home, home.path().join(".codex"));
+    assert_eq!(paths.user_agents_dir, home.path().join(".agents"));
+    assert_eq!(
+        paths.user_skills_dir,
+        home.path().join(".agents").join("skills")
+    );
+    assert_eq!(
+        paths.global_agents_md,
+        home.path().join(".codex").join("AGENTS.md")
+    );
+    assert_eq!(
+        paths.hooks_json,
+        home.path().join(".codex").join("hooks.json")
+    );
 }

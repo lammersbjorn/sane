@@ -1,10 +1,11 @@
 use std::env;
+use std::fs;
 use std::path::Path;
 use std::process::ExitCode;
 
 use sane_config::LocalConfig;
-use sane_core::NAME;
-use sane_platform::{ProjectPaths, detect_platform};
+use sane_core::{NAME, SANE_ROUTER_SKILL_NAME, sane_router_skill};
+use sane_platform::{CodexPaths, ProjectPaths, detect_platform};
 use sane_state::RunSnapshot;
 
 fn main() -> ExitCode {
@@ -17,7 +18,19 @@ fn main() -> ExitCode {
         }
     };
 
-    match run(&args.iter().map(String::as_str).collect::<Vec<_>>(), &cwd) {
+    let codex_paths = match CodexPaths::discover() {
+        Ok(paths) => paths,
+        Err(error) => {
+            eprintln!("failed to resolve home directory: {error}");
+            return ExitCode::FAILURE;
+        }
+    };
+
+    match run_with_home(
+        &args.iter().map(String::as_str).collect::<Vec<_>>(),
+        &cwd,
+        &codex_paths.home_dir,
+    ) {
         Ok(output) => {
             println!("{output}");
             ExitCode::SUCCESS
@@ -29,16 +42,26 @@ fn main() -> ExitCode {
     }
 }
 
+#[cfg(test)]
 fn run(args: &[&str], cwd: &Path) -> Result<String, String> {
+    let codex_paths = CodexPaths::discover().map_err(|error| error.to_string())?;
+    run_with_home(args, cwd, &codex_paths.home_dir)
+}
+
+fn run_with_home(args: &[&str], cwd: &Path, home: &Path) -> Result<String, String> {
     let command = Command::from_args(args)?;
     let paths = ProjectPaths::discover(cwd).map_err(|error| error.to_string())?;
+    let codex_paths = CodexPaths::new(home);
 
     match command {
         Command::Summary => Ok(render_summary()),
         Command::Install => install_runtime(&paths),
         Command::Config => show_config(&paths),
         Command::Doctor => doctor_runtime(&paths),
-        Command::Export => Ok("export: not implemented yet".to_string()),
+        Command::Export => Ok("export: available targets: user-skills".to_string()),
+        Command::ExportUserSkills => export_user_skills(&codex_paths),
+        Command::Uninstall => Ok("uninstall: available targets: user-skills".to_string()),
+        Command::UninstallUserSkills => uninstall_user_skills(&codex_paths),
     }
 }
 
@@ -49,24 +72,30 @@ enum Command {
     Config,
     Doctor,
     Export,
+    ExportUserSkills,
+    Uninstall,
+    UninstallUserSkills,
 }
 
 impl Command {
     fn from_args(args: &[&str]) -> Result<Self, String> {
-        match args.first().copied() {
-            None => Ok(Self::Summary),
-            Some("install") => Ok(Self::Install),
-            Some("config") => Ok(Self::Config),
-            Some("doctor") => Ok(Self::Doctor),
-            Some("export") => Ok(Self::Export),
-            Some(other) => Err(format!("unknown command: {other}")),
+        match (args.first().copied(), args.get(1).copied()) {
+            (None, _) => Ok(Self::Summary),
+            (Some("install"), _) => Ok(Self::Install),
+            (Some("config"), _) => Ok(Self::Config),
+            (Some("doctor"), _) => Ok(Self::Doctor),
+            (Some("export"), Some("user-skills")) => Ok(Self::ExportUserSkills),
+            (Some("export"), None) => Ok(Self::Export),
+            (Some("uninstall"), Some("user-skills")) => Ok(Self::UninstallUserSkills),
+            (Some("uninstall"), None) => Ok(Self::Uninstall),
+            (Some(other), _) => Err(format!("unknown command: {other}")),
         }
     }
 }
 
 fn render_summary() -> String {
     format!(
-        "{NAME}\nplatform: {:?}\ncommands: install, config, export, doctor",
+        "{NAME}\nplatform: {:?}\ncommands: install, config, export, uninstall, doctor",
         detect_platform()
     )
 }
@@ -154,13 +183,43 @@ fn doctor_runtime(paths: &ProjectPaths) -> Result<String, String> {
     ))
 }
 
+fn export_user_skills(codex_paths: &CodexPaths) -> Result<String, String> {
+    let skill_dir = codex_paths.user_skills_dir.join(SANE_ROUTER_SKILL_NAME);
+    fs::create_dir_all(&skill_dir).map_err(|error| error.to_string())?;
+    let skill_path = skill_dir.join("SKILL.md");
+    fs::write(&skill_path, sane_router_skill()).map_err(|error| error.to_string())?;
+
+    Ok(format!(
+        "export user-skills: installed {}\npath: {}",
+        SANE_ROUTER_SKILL_NAME,
+        skill_path.display()
+    ))
+}
+
+fn uninstall_user_skills(codex_paths: &CodexPaths) -> Result<String, String> {
+    let skill_dir = codex_paths.user_skills_dir.join(SANE_ROUTER_SKILL_NAME);
+
+    if !skill_dir.exists() {
+        return Ok(format!(
+            "uninstall user-skills: {} not installed",
+            SANE_ROUTER_SKILL_NAME
+        ));
+    }
+
+    fs::remove_dir_all(&skill_dir).map_err(|error| error.to_string())?;
+    Ok(format!(
+        "uninstall user-skills: removed {}",
+        SANE_ROUTER_SKILL_NAME
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use std::path::Path;
 
     use tempfile::tempdir;
 
-    use super::run;
+    use super::{run, run_with_home};
 
     #[test]
     fn install_creates_dot_sane_runtime() {
@@ -233,6 +292,8 @@ mod tests {
 
         assert!(output.contains("install"));
         assert!(output.contains("config"));
+        assert!(output.contains("export"));
+        assert!(output.contains("uninstall"));
         assert!(output.contains("doctor"));
     }
 
@@ -247,5 +308,48 @@ mod tests {
 
         assert!(output.contains(dir.path().join(".sane").to_string_lossy().as_ref()));
         assert!(dir.path().join(".sane").join("config.local.toml").exists());
+    }
+
+    #[test]
+    fn export_user_skills_installs_managed_sane_skill_pack() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+
+        let output =
+            run_with_home(&["export", "user-skills"], project.path(), home.path()).unwrap();
+
+        let skill_path = home
+            .path()
+            .join(".agents")
+            .join("skills")
+            .join("sane-router")
+            .join("SKILL.md");
+
+        assert!(output.contains("user-skills"));
+        assert!(skill_path.exists());
+        let body = std::fs::read_to_string(skill_path).unwrap();
+        assert!(body.contains("name: sane-router"));
+        assert!(body.contains("plain-language"));
+    }
+
+    #[test]
+    fn uninstall_user_skills_removes_managed_sane_skill_pack() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+
+        let _ = run_with_home(&["export", "user-skills"], project.path(), home.path()).unwrap();
+        let output =
+            run_with_home(&["uninstall", "user-skills"], project.path(), home.path()).unwrap();
+
+        let skill_path = home
+            .path()
+            .join(".agents")
+            .join("skills")
+            .join("sane-router");
+
+        assert!(output.contains("uninstall user-skills"));
+        assert!(!skill_path.exists());
     }
 }
