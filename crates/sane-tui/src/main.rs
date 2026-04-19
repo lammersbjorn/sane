@@ -916,7 +916,8 @@ fn promote_operation_summary(paths: &ProjectPaths, result: &OperationResult) -> 
 
     summary
         .write_to_path(&paths.summary_path)
-        .map_err(|error| error.to_string())
+        .map_err(|error| error.to_string())?;
+    refresh_brief(paths, &summary)
 }
 
 fn operation_milestone(kind: OperationKind) -> Option<&'static str> {
@@ -930,6 +931,33 @@ fn operation_milestone(kind: OperationKind) -> Option<&'static str> {
         OperationKind::UninstallAll => Some("managed assets uninstalled"),
         _ => None,
     }
+}
+
+fn refresh_brief(paths: &ProjectPaths, summary: &RunSummary) -> Result<(), String> {
+    let objective = if paths.current_run_path.exists() {
+        RunSnapshot::read_from_path(&paths.current_run_path)
+            .map(|snapshot| snapshot.objective)
+            .unwrap_or_else(|_| "unknown".to_string())
+    } else {
+        "unknown".to_string()
+    };
+
+    let milestone = summary
+        .completed_milestones
+        .last()
+        .cloned()
+        .unwrap_or_else(|| "none".to_string());
+    let touched = summary
+        .files_touched
+        .last()
+        .cloned()
+        .unwrap_or_else(|| "none".to_string());
+
+    let body = format!(
+        "# Sane Brief\n\n- Current goal: {objective}\n- Last milestone: {milestone}\n- Last touched path: {touched}\n"
+    );
+    ensure_file_with_default(&paths.brief_path, "")?;
+    fs::write(&paths.brief_path, body).map_err(|error| error.to_string())
 }
 
 fn install_runtime(paths: &ProjectPaths) -> Result<OperationResult, String> {
@@ -2130,6 +2158,20 @@ mod tests {
         assert!(body.contains("runtime installed"));
         assert!(body.contains("user skills exported"));
         assert!(body.contains("config.local.toml"));
+    }
+
+    #[test]
+    fn backend_operations_refresh_brief_from_summary() {
+        let dir = tempdir().unwrap();
+        let home = tempdir().unwrap();
+
+        let _ = run_with_home(&["install"], dir.path(), home.path()).unwrap();
+        let _ = run_with_home(&["export", "user-skills"], dir.path(), home.path()).unwrap();
+
+        let brief = std::fs::read_to_string(dir.path().join(".sane").join("BRIEF.md")).unwrap();
+
+        assert!(brief.contains("Current goal: initialize sane runtime"));
+        assert!(brief.contains("Last milestone: user skills exported"));
     }
 
     #[test]
