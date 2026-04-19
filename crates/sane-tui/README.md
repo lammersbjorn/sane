@@ -9,6 +9,9 @@ Current responsibility:
 - no-args interactive TUI home screen
 - no-args interactive TUI config editor for model defaults
 - no-args interactive privacy / telemetry screen with reset control
+- read-only Codex config inspection for current user-level settings
+- read-only preview of recommended core Codex profile changes
+- opt-in Codex config backup flow into `.sane/backups/codex-config`
 - action list, status summary, output panel, and quit flow
 - grouped status inventory for local runtime vs Codex-native assets
 - user-facing operational output

@@ -20,6 +20,8 @@ pub struct ProjectPaths {
     pub artifacts_path: PathBuf,
     pub brief_path: PathBuf,
     pub cache_dir: PathBuf,
+    pub backups_dir: PathBuf,
+    pub codex_config_backups_dir: PathBuf,
     pub logs_dir: PathBuf,
     pub sessions_dir: PathBuf,
     pub telemetry_dir: PathBuf,
@@ -29,6 +31,7 @@ pub struct ProjectPaths {
 pub struct CodexPaths {
     pub home_dir: PathBuf,
     pub codex_home: PathBuf,
+    pub config_toml: PathBuf,
     pub user_agents_dir: PathBuf,
     pub user_skills_dir: PathBuf,
     pub custom_agents_dir: PathBuf,
@@ -50,6 +53,8 @@ impl ProjectPaths {
         let runtime_root = project_root.join(".sane");
         let state_dir = runtime_root.join("state");
         let cache_dir = runtime_root.join("cache");
+        let backups_dir = runtime_root.join("backups");
+        let codex_config_backups_dir = backups_dir.join("codex-config");
         let logs_dir = runtime_root.join("logs");
         let sessions_dir = runtime_root.join("sessions");
         let telemetry_dir = runtime_root.join("telemetry");
@@ -72,6 +77,8 @@ impl ProjectPaths {
             artifacts_path,
             brief_path,
             cache_dir,
+            backups_dir,
+            codex_config_backups_dir,
             logs_dir,
             sessions_dir,
             telemetry_dir,
@@ -104,6 +111,7 @@ impl ProjectPaths {
     pub fn ensure_runtime_dirs(&self) -> std::io::Result<()> {
         std::fs::create_dir_all(&self.state_dir)?;
         std::fs::create_dir_all(&self.cache_dir)?;
+        std::fs::create_dir_all(&self.codex_config_backups_dir)?;
         std::fs::create_dir_all(&self.logs_dir)?;
         std::fs::create_dir_all(&self.sessions_dir)?;
         Ok(())
@@ -121,6 +129,7 @@ impl CodexPaths {
         Self {
             home_dir,
             codex_home: codex_home.clone(),
+            config_toml: codex_home.join("config.toml"),
             user_agents_dir,
             user_skills_dir,
             custom_agents_dir,

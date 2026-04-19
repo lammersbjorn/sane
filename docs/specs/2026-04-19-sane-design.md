@@ -73,6 +73,7 @@ Prompt bloat, giant always-loaded methodology, and excessive orchestration are p
 - first thin implemented surfaces:
   - user-level skills under `~/.agents/skills`
   - optional additive global overlay in `~/.codex/AGENTS.md`
+  - read-only inspection of `~/.codex/config.toml`
 
 3. Thin local operational state
 - local-only by default
@@ -83,6 +84,12 @@ Prompt bloat, giant always-loaded methodology, and excessive orchestration are p
 - shipped with `v1`
 - internally pack-shaped
 - no frozen public plugin API yet
+
+Current Codex settings stance:
+- inspect and preview first
+- backup before any future managed write flow
+- keep bare core profile narrow
+- treat integrations as separate opt-in profile work
 
 ## State Model
 

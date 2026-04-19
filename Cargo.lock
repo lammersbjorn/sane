@@ -1103,6 +1103,7 @@ dependencies = [
  "sane-state",
  "serde_json",
  "tempfile",
+ "toml",
 ]
 
 [[package]]

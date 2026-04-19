@@ -41,6 +41,10 @@ Current managed targets are:
 4. additive user-level hooks entry in `~/.codex/hooks.json`
 5. additive user-level custom agents in `~/.codex/agents/`
 
+Current read-only inspected Codex surface:
+
+1. user-level Codex config at `~/.codex/config.toml`
+
 ## Required Operations
 
 These are the backend actions the TUI is allowed to call in the current phase.
@@ -56,6 +60,21 @@ These are the backend actions the TUI is allowed to call in the current phase.
   - read config from `.sane/config.local.toml`
   - display current model-role defaults
 
+- `show_codex_config`
+  - read `~/.codex/config.toml` if present
+  - summarize current model, reasoning, hooks feature, MCP servers, plugins, trusted project count, and TUI theme
+  - remain read-only until explicit opt-in write flow exists
+
+- `backup_codex_config`
+  - copy `~/.codex/config.toml` into local `.sane/backups/codex-config/`
+  - never mutate user Codex config
+  - exist to support future diff-preview/write safety
+
+- `preview_codex_profile`
+  - compute read-only recommended core profile changes for user Codex config
+  - keep recommendations narrow: core model, reasoning, and hook support only
+  - keep integrations out of the bare core profile preview
+
 - `show_status`
   - read structured inventory for all current managed targets
   - keep touched paths explicit for auditability
@@ -67,9 +86,10 @@ These are the backend actions the TUI is allowed to call in the current phase.
   - inspect `.sane` runtime presence
   - inspect config validity
   - inspect run snapshot validity
-  - inspect managed user skill presence
-  - inspect managed global AGENTS block presence
-  - emit repair hints
+- inspect managed user skill presence
+- inspect managed global AGENTS block presence
+- inspect user-level Codex config presence / parse validity
+- emit repair hints
 
 - `inventory`
   - structured status of all managed targets
@@ -156,6 +176,7 @@ Current implementation note:
 - current TUI status panel renders those two groups separately
 - current hooks target is user-level only and uses the `sane-tui` binary itself as the managed `SessionStart` command
 - current custom-agents target installs two read-only managed agents: `sane-reviewer` and `sane-explorer`
+- current Codex config work is inspection-only; future writes require diff preview plus backup / restore
 
 ## TUI Boundary Rule
 

@@ -3,6 +3,7 @@ use std::fs;
 use std::path::Path;
 use std::process::ExitCode;
 use std::time::Duration;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use crossterm::execute;
@@ -25,6 +26,7 @@ use sane_core::{
 use sane_platform::{CodexPaths, ProjectPaths, detect_platform};
 use sane_state::{EventRecord, RunSnapshot, RunSummary};
 use serde_json::{Map, Value, json};
+use toml::Value as TomlValue;
 
 fn main() -> ExitCode {
     let args: Vec<String> = env::args().skip(1).collect();
@@ -106,6 +108,9 @@ fn run_with_home(args: &[&str], cwd: &Path, home: &Path) -> Result<String, Strin
         Command::HookSessionStart => Ok(render_session_start_hook()),
         Command::Install
         | Command::Config
+        | Command::CodexConfig
+        | Command::BackupCodexConfig
+        | Command::PreviewCodexProfile
         | Command::Status
         | Command::Doctor
         | Command::ExportAll
@@ -123,6 +128,7 @@ fn run_with_home(args: &[&str], cwd: &Path, home: &Path) -> Result<String, Strin
             "export: available targets: all, user-skills, global-agents, hooks, custom-agents"
                 .to_string(),
         ),
+        Command::Preview => Ok("preview: available targets: codex-profile".to_string()),
         Command::Uninstall => Ok(
             "uninstall: available targets: all, user-skills, global-agents, hooks, custom-agents"
                 .to_string(),
@@ -135,6 +141,10 @@ enum Command {
     Summary,
     Install,
     Config,
+    CodexConfig,
+    BackupCodexConfig,
+    Preview,
+    PreviewCodexProfile,
     Status,
     Doctor,
     HookSessionStart,
@@ -158,6 +168,10 @@ impl Command {
             (None, _) => Ok(Self::Summary),
             (Some("install"), _) => Ok(Self::Install),
             (Some("config"), _) => Ok(Self::Config),
+            (Some("codex-config"), _) => Ok(Self::CodexConfig),
+            (Some("backup"), Some("codex-config")) => Ok(Self::BackupCodexConfig),
+            (Some("preview"), Some("codex-profile")) => Ok(Self::PreviewCodexProfile),
+            (Some("preview"), None) => Ok(Self::Preview),
             (Some("status"), _) => Ok(Self::Status),
             (Some("doctor"), _) => Ok(Self::Doctor),
             (Some("hook"), Some("session-start")) => Ok(Self::HookSessionStart),
@@ -186,6 +200,9 @@ fn execute_backend_command(
     let result = match command {
         Command::Install => install_runtime(paths),
         Command::Config => show_config(paths),
+        Command::CodexConfig => show_codex_config(codex_paths),
+        Command::BackupCodexConfig => backup_codex_config(paths, codex_paths),
+        Command::PreviewCodexProfile => preview_codex_profile(codex_paths),
         Command::Status => inventory_status(paths, codex_paths),
         Command::Doctor => doctor_runtime(paths, codex_paths),
         Command::HookSessionStart => Err("hook event is not a backend operation".to_string()),
@@ -199,7 +216,7 @@ fn execute_backend_command(
         Command::UninstallGlobalAgents => uninstall_global_agents(codex_paths),
         Command::UninstallHooks => uninstall_hooks(codex_paths),
         Command::UninstallCustomAgents => uninstall_custom_agents(codex_paths),
-        Command::Summary | Command::Export | Command::Uninstall => {
+        Command::Summary | Command::Preview | Command::Export | Command::Uninstall => {
             Err("backend command not executable".to_string())
         }
     }?;
@@ -397,6 +414,9 @@ impl TuiApp {
                 TuiAction::config_editor("Edit model defaults"),
                 TuiAction::privacy_editor("Privacy / telemetry"),
                 TuiAction::backend("Inspect config", Command::Config),
+                TuiAction::backend("Inspect Codex config", Command::CodexConfig),
+                TuiAction::backend("Preview Codex profile", Command::PreviewCodexProfile),
+                TuiAction::backend("Backup Codex config", Command::BackupCodexConfig),
                 TuiAction::backend("Doctor", Command::Doctor),
                 TuiAction::backend("Export user skill", Command::ExportUserSkills),
                 TuiAction::backend("Export global agents", Command::ExportGlobalAgents),
@@ -840,7 +860,7 @@ fn inventory_status_label(item: &InventoryItem) -> &'static str {
 
 fn render_summary() -> String {
     format!(
-        "{NAME}\nplatform: {:?}\ncommands: install, config, status, export, uninstall, doctor, hook",
+        "{NAME}\nplatform: {:?}\ncommands: install, config, codex-config, preview, backup, status, export, uninstall, doctor, hook",
         detect_platform()
     )
 }
@@ -877,6 +897,9 @@ fn operation_kind_label(kind: OperationKind) -> &'static str {
     match kind {
         OperationKind::InstallRuntime => "install_runtime",
         OperationKind::ShowConfig => "show_config",
+        OperationKind::ShowCodexConfig => "show_codex_config",
+        OperationKind::BackupCodexConfig => "backup_codex_config",
+        OperationKind::PreviewCodexProfile => "preview_codex_profile",
         OperationKind::ResetTelemetryData => "reset_telemetry_data",
         OperationKind::ShowStatus => "show_status",
         OperationKind::Doctor => "doctor",
@@ -1087,6 +1110,117 @@ fn show_config(paths: &ProjectPaths) -> Result<OperationResult, String> {
     })
 }
 
+fn show_codex_config(codex_paths: &CodexPaths) -> Result<OperationResult, String> {
+    let inventory = inspect_codex_config_inventory(codex_paths)?;
+
+    if inventory.status == InventoryStatus::Missing {
+        return Ok(OperationResult {
+            kind: OperationKind::ShowCodexConfig,
+            summary: format!(
+                "codex-config: missing at {}",
+                codex_paths.config_toml.display()
+            ),
+            details: vec![
+                "read-only today".to_string(),
+                "future settings profile stays opt-in with diff preview and backup".to_string(),
+            ],
+            paths_touched: vec![codex_paths.config_toml.display().to_string()],
+            inventory: vec![inventory],
+        });
+    }
+
+    let config = read_codex_config(&codex_paths.config_toml)?;
+    Ok(OperationResult {
+        kind: OperationKind::ShowCodexConfig,
+        summary: format!("codex-config: ok at {}", codex_paths.config_toml.display()),
+        details: codex_config_details(&config),
+        paths_touched: vec![codex_paths.config_toml.display().to_string()],
+        inventory: vec![inventory],
+    })
+}
+
+fn backup_codex_config(
+    paths: &ProjectPaths,
+    codex_paths: &CodexPaths,
+) -> Result<OperationResult, String> {
+    paths
+        .ensure_runtime_dirs()
+        .map_err(|error| error.to_string())?;
+
+    let inventory = inspect_codex_config_inventory(codex_paths)?;
+    if inventory.status == InventoryStatus::Missing {
+        return Ok(OperationResult {
+            kind: OperationKind::BackupCodexConfig,
+            summary: format!(
+                "codex-config backup: nothing to back up at {}",
+                codex_paths.config_toml.display()
+            ),
+            details: vec!["read-only today".to_string()],
+            paths_touched: vec![codex_paths.config_toml.display().to_string()],
+            inventory: vec![inventory],
+        });
+    }
+
+    if inventory.status == InventoryStatus::Invalid {
+        return Ok(OperationResult {
+            kind: OperationKind::BackupCodexConfig,
+            summary: "codex-config backup: skipped because config is invalid".to_string(),
+            details: vec!["repair ~/.codex/config.toml first".to_string()],
+            paths_touched: vec![codex_paths.config_toml.display().to_string()],
+            inventory: vec![inventory],
+        });
+    }
+
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|error| error.to_string())?
+        .as_secs();
+    let backup_path = paths
+        .codex_config_backups_dir
+        .join(format!("config-{timestamp}.toml"));
+    fs::copy(&codex_paths.config_toml, &backup_path).map_err(|error| error.to_string())?;
+
+    Ok(OperationResult {
+        kind: OperationKind::BackupCodexConfig,
+        summary: format!("codex-config backup: wrote {}", backup_path.display()),
+        details: vec![
+            format!("source: {}", codex_paths.config_toml.display()),
+            "future managed profile writes must preview diff before applying".to_string(),
+        ],
+        paths_touched: vec![
+            codex_paths.config_toml.display().to_string(),
+            backup_path.display().to_string(),
+        ],
+        inventory: vec![inventory],
+    })
+}
+
+fn preview_codex_profile(codex_paths: &CodexPaths) -> Result<OperationResult, String> {
+    let inventory = inspect_codex_config_inventory(codex_paths)?;
+    let details = match inventory.status {
+        InventoryStatus::Missing => vec![
+            "model: <missing> -> gpt-5.4".to_string(),
+            "reasoning: <missing> -> high".to_string(),
+            "codex hooks: <missing> -> enabled".to_string(),
+            "note: integrations stay outside bare core profile".to_string(),
+        ],
+        InventoryStatus::Invalid => vec![
+            "cannot preview managed profile until ~/.codex/config.toml parses cleanly".to_string(),
+            "repair current config first".to_string(),
+        ],
+        _ => codex_profile_preview_details(&read_codex_config(&codex_paths.config_toml)?),
+    };
+
+    let change_count = details.iter().filter(|line| line.contains("->")).count();
+    Ok(OperationResult {
+        kind: OperationKind::PreviewCodexProfile,
+        summary: format!("codex-profile preview: {change_count} recommended change(s)"),
+        details,
+        paths_touched: vec![codex_paths.config_toml.display().to_string()],
+        inventory: vec![inventory],
+    })
+}
+
 fn config_details(config: &LocalConfig) -> Vec<String> {
     vec![
         format!("version: {}", config.version),
@@ -1216,6 +1350,7 @@ fn doctor_runtime(
     let current_run = find_inventory(&inventory, "current-run");
     let summary = find_inventory(&inventory, "summary");
     let brief = find_inventory(&inventory, "brief");
+    let codex_config = find_inventory(&inventory, "codex-config");
     let user_skills = find_inventory(&inventory, "user-skills");
     let global_agents = find_inventory(&inventory, "global-agents");
     let hooks = find_inventory(&inventory, "hooks");
@@ -1224,12 +1359,13 @@ fn doctor_runtime(
     Ok(OperationResult {
         kind: OperationKind::Doctor,
         summary: format!(
-            "runtime: {}\nconfig: {}\ncurrent-run: {}\nsummary: {}\nbrief: {}\nuser-skills: {}\nglobal-agents: {}\nhooks: {}\ncustom-agents: {}\nroot: {}\ncodex-home: {}",
+            "runtime: {}\nconfig: {}\ncurrent-run: {}\nsummary: {}\nbrief: {}\ncodex-config: {}\nuser-skills: {}\nglobal-agents: {}\nhooks: {}\ncustom-agents: {}\nroot: {}\ncodex-home: {}",
             doctor_status(runtime),
             doctor_status(config),
             doctor_status(current_run),
             doctor_status(summary),
             doctor_status(brief),
+            doctor_status(codex_config),
             doctor_status(user_skills),
             doctor_status(global_agents),
             doctor_status(hooks),
@@ -1251,6 +1387,7 @@ fn inspect_inventory(
         .user_skills_dir
         .join(SANE_ROUTER_SKILL_NAME)
         .join("SKILL.md");
+    let codex_config_inventory = inspect_codex_config_inventory(codex_paths)?;
     let hooks_inventory = inspect_hooks_inventory(codex_paths)?;
     let custom_agents_inventory = inspect_custom_agents_inventory(codex_paths);
 
@@ -1373,6 +1510,13 @@ fn inspect_inventory(
             },
         },
         InventoryItem {
+            name: "codex-config".to_string(),
+            scope: InventoryScope::CodexNative,
+            status: codex_config_inventory.status,
+            path: codex_config_inventory.path,
+            repair_hint: codex_config_inventory.repair_hint,
+        },
+        InventoryItem {
             name: "user-skills".to_string(),
             scope: InventoryScope::CodexNative,
             status: if user_skill_path.exists() {
@@ -1434,6 +1578,12 @@ fn doctor_status(item: &InventoryItem) -> String {
             InventoryStatus::Installed => "installed".to_string(),
             InventoryStatus::Missing => "missing (run `export user-skills`)".to_string(),
             _ => item.status.as_str().to_string(),
+        },
+        "codex-config" => match item.status {
+            InventoryStatus::Installed => "installed".to_string(),
+            InventoryStatus::Missing => "missing (read-only today)".to_string(),
+            InventoryStatus::Invalid => "invalid (repair ~/.codex/config.toml)".to_string(),
+            _ => item.status.display_str().to_string(),
         },
         "global-agents" => match item.status {
             InventoryStatus::Installed => "installed".to_string(),
@@ -1961,6 +2111,167 @@ fn inspect_custom_agents_inventory(codex_paths: &CodexPaths) -> InventoryItem {
     }
 }
 
+fn inspect_codex_config_inventory(codex_paths: &CodexPaths) -> Result<InventoryItem, String> {
+    let status = if !codex_paths.config_toml.exists() {
+        InventoryStatus::Missing
+    } else if read_codex_config(&codex_paths.config_toml).is_ok() {
+        InventoryStatus::Installed
+    } else {
+        InventoryStatus::Invalid
+    };
+
+    Ok(InventoryItem {
+        name: "codex-config".to_string(),
+        scope: InventoryScope::CodexNative,
+        status,
+        path: codex_paths.config_toml.display().to_string(),
+        repair_hint: match status {
+            InventoryStatus::Installed => None,
+            InventoryStatus::Missing => {
+                Some("read-only today; future managed profile stays opt-in".to_string())
+            }
+            InventoryStatus::Invalid => {
+                Some("repair ~/.codex/config.toml before managed profile support".to_string())
+            }
+            _ => None,
+        },
+    })
+}
+
+fn read_codex_config(path: &Path) -> Result<TomlValue, String> {
+    let body = fs::read_to_string(path).map_err(|error| error.to_string())?;
+    body.parse::<TomlValue>()
+        .map_err(|error| format!("invalid config.toml: {error}"))
+}
+
+fn codex_config_details(config: &TomlValue) -> Vec<String> {
+    let model = config
+        .get("model")
+        .and_then(TomlValue::as_str)
+        .unwrap_or("unset");
+    let reasoning = config
+        .get("model_reasoning_effort")
+        .and_then(TomlValue::as_str)
+        .unwrap_or("unset");
+    let hooks_enabled = config
+        .get("features")
+        .and_then(TomlValue::as_table)
+        .and_then(|table| table.get("codex_hooks"))
+        .and_then(TomlValue::as_bool);
+    let mcp_server_names = config
+        .get("mcp_servers")
+        .and_then(TomlValue::as_table)
+        .map(|table| {
+            let mut names = table.keys().cloned().collect::<Vec<_>>();
+            names.sort();
+            names
+        })
+        .unwrap_or_default();
+    let trusted_projects = config
+        .get("projects")
+        .and_then(TomlValue::as_table)
+        .map(|table| table.len())
+        .unwrap_or(0);
+    let theme = config
+        .get("tui")
+        .and_then(TomlValue::as_table)
+        .and_then(|table| table.get("theme"))
+        .and_then(TomlValue::as_str)
+        .unwrap_or("unset");
+    let enabled_plugins = config
+        .get("plugins")
+        .and_then(TomlValue::as_table)
+        .map(|table| {
+            let mut names = table
+                .iter()
+                .filter(|(_, value)| {
+                    value
+                        .as_table()
+                        .and_then(|plugin| plugin.get("enabled"))
+                        .and_then(TomlValue::as_bool)
+                        .unwrap_or(false)
+                })
+                .map(|(name, _)| name.clone())
+                .collect::<Vec<_>>();
+            names.sort();
+            names
+        })
+        .unwrap_or_default();
+
+    vec![
+        format!("model: {model}"),
+        format!("reasoning: {reasoning}"),
+        format!(
+            "codex hooks: {}",
+            hooks_enabled
+                .map(|value| if value { "enabled" } else { "disabled" })
+                .unwrap_or("unset")
+        ),
+        format!("mcp servers: {}", mcp_server_names.len()),
+        format!(
+            "mcp server names: {}",
+            if mcp_server_names.is_empty() {
+                "none".to_string()
+            } else {
+                mcp_server_names.join(", ")
+            }
+        ),
+        format!("enabled plugins: {}", enabled_plugins.len()),
+        format!(
+            "plugin names: {}",
+            if enabled_plugins.is_empty() {
+                "none".to_string()
+            } else {
+                enabled_plugins.join(", ")
+            }
+        ),
+        format!("trusted projects: {trusted_projects}"),
+        format!("tui theme: {theme}"),
+    ]
+}
+
+fn codex_profile_preview_details(config: &TomlValue) -> Vec<String> {
+    let current_model = config
+        .get("model")
+        .and_then(TomlValue::as_str)
+        .unwrap_or("unset");
+    let current_reasoning = config
+        .get("model_reasoning_effort")
+        .and_then(TomlValue::as_str)
+        .unwrap_or("unset");
+    let current_hooks = config
+        .get("features")
+        .and_then(TomlValue::as_table)
+        .and_then(|table| table.get("codex_hooks"))
+        .and_then(TomlValue::as_bool);
+
+    let mut details = Vec::new();
+    push_profile_change(&mut details, "model", current_model, "gpt-5.4");
+    push_profile_change(&mut details, "reasoning", current_reasoning, "high");
+    push_profile_change(
+        &mut details,
+        "codex hooks",
+        current_hooks
+            .map(|value| if value { "enabled" } else { "disabled" })
+            .unwrap_or("unset"),
+        "enabled",
+    );
+
+    if !details.iter().any(|line| line.contains("->")) {
+        details.push("core profile already matches current recommendation".to_string());
+    }
+    details.push("note: integrations stay outside bare core profile".to_string());
+    details
+}
+
+fn push_profile_change(details: &mut Vec<String>, label: &str, current: &str, recommended: &str) {
+    if current == recommended {
+        details.push(format!("{label}: keep {recommended}"));
+    } else {
+        details.push(format!("{label}: {current} -> {recommended}"));
+    }
+}
+
 fn read_hooks_json(path: &Path) -> Result<Value, String> {
     if !path.exists() {
         return Ok(json!({}));
@@ -2125,6 +2436,7 @@ mod tests {
         assert!(output.contains("current-run: ok"));
         assert!(output.contains("summary: ok"));
         assert!(output.contains("brief: ok"));
+        assert!(output.contains("codex-config: missing (read-only today)"));
         assert!(output.contains("user-skills: missing"));
         assert!(output.contains("global-agents: missing"));
         assert!(output.contains("hooks: missing"));
@@ -2260,6 +2572,9 @@ mod tests {
 
         assert!(output.contains("install"));
         assert!(output.contains("config"));
+        assert!(output.contains("codex-config"));
+        assert!(output.contains("preview"));
+        assert!(output.contains("backup"));
         assert!(output.contains("status"));
         assert!(output.contains("export"));
         assert!(output.contains("uninstall"));
@@ -2472,6 +2787,9 @@ mod tests {
                 "Edit model defaults",
                 "Privacy / telemetry",
                 "Inspect config",
+                "Inspect Codex config",
+                "Preview Codex profile",
+                "Backup Codex config",
                 "Doctor",
                 "Export user skill",
                 "Export global agents",
@@ -2567,7 +2885,7 @@ mod tests {
         let _ = run_with_home(&["install"], project.path(), home.path()).unwrap();
         let output = run_with_home(&["status"], project.path(), home.path()).unwrap();
 
-        assert!(output.contains("status: 9 managed targets inspected"));
+        assert!(output.contains("status: 10 managed targets inspected"));
         assert!(output.contains("local runtime:"));
         assert!(output.contains("codex-native:"));
         assert!(output.contains("runtime: installed"));
@@ -2575,10 +2893,120 @@ mod tests {
         assert!(output.contains("current-run: installed"));
         assert!(output.contains("summary: installed"));
         assert!(output.contains("brief: installed"));
+        assert!(output.contains(
+            "codex-config: missing (read-only today; future managed profile stays opt-in)"
+        ));
         assert!(output.contains("user-skills: missing (run `export user-skills`)"));
         assert!(output.contains("global-agents: missing (run `export global-agents`)"));
         assert!(output.contains("hooks: missing (run `export hooks`)"));
         assert!(output.contains("custom-agents: missing (run `export custom-agents`)"));
+    }
+
+    #[test]
+    fn codex_config_reports_current_settings_summary() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        let codex_dir = home.path().join(".codex");
+        std::fs::create_dir_all(&codex_dir).unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        std::fs::write(
+            codex_dir.join("config.toml"),
+            r#"model = "gpt-5.4"
+model_reasoning_effort = "high"
+
+[features]
+codex_hooks = true
+
+[mcp_servers.context7]
+url = "https://mcp.context7.com/mcp"
+
+[mcp_servers.playwright]
+command = "bunx"
+args = ["@playwright/mcp@latest"]
+
+[projects."/tmp/example"]
+trust_level = "trusted"
+
+[tui]
+theme = "zenburn"
+
+[plugins."superpowers@openai-curated"]
+enabled = true
+"#,
+        )
+        .unwrap();
+
+        let output = run_with_home(&["codex-config"], project.path(), home.path()).unwrap();
+
+        assert!(output.contains("codex-config: ok"));
+        assert!(output.contains("model: gpt-5.4"));
+        assert!(output.contains("reasoning: high"));
+        assert!(output.contains("codex hooks: enabled"));
+        assert!(output.contains("mcp servers: 2"));
+        assert!(output.contains("mcp server names: context7, playwright"));
+        assert!(output.contains("enabled plugins: 1"));
+        assert!(output.contains("plugin names: superpowers@openai-curated"));
+        assert!(output.contains("trusted projects: 1"));
+        assert!(output.contains("tui theme: zenburn"));
+    }
+
+    #[test]
+    fn backup_codex_config_copies_current_user_config() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        let codex_dir = home.path().join(".codex");
+        std::fs::create_dir_all(&codex_dir).unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        std::fs::write(
+            codex_dir.join("config.toml"),
+            "model = \"gpt-5.4\"\nmodel_reasoning_effort = \"high\"\n",
+        )
+        .unwrap();
+
+        let output =
+            run_with_home(&["backup", "codex-config"], project.path(), home.path()).unwrap();
+        let backup_dir = project
+            .path()
+            .join(".sane")
+            .join("backups")
+            .join("codex-config");
+        let backups = std::fs::read_dir(&backup_dir)
+            .unwrap()
+            .map(|entry| entry.unwrap().path())
+            .collect::<Vec<_>>();
+
+        assert!(output.contains("codex-config backup: wrote"));
+        assert_eq!(backups.len(), 1);
+        let backup_body = std::fs::read_to_string(&backups[0]).unwrap();
+        assert!(backup_body.contains("model = \"gpt-5.4\""));
+    }
+
+    #[test]
+    fn preview_codex_profile_reports_core_recommendations() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        let codex_dir = home.path().join(".codex");
+        std::fs::create_dir_all(&codex_dir).unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        std::fs::write(
+            codex_dir.join("config.toml"),
+            r#"model = "gpt-5.3-codex"
+model_reasoning_effort = "medium"
+
+[features]
+codex_hooks = false
+"#,
+        )
+        .unwrap();
+
+        let output =
+            run_with_home(&["preview", "codex-profile"], project.path(), home.path()).unwrap();
+
+        assert!(output.contains("codex-profile preview: 3 recommended change(s)"));
+        assert!(output.contains("model: gpt-5.3-codex -> gpt-5.4"));
+        assert!(output.contains("reasoning: medium -> high"));
+        assert!(output.contains("codex hooks: disabled -> enabled"));
+        assert!(output.contains("integrations stay outside bare core profile"));
     }
 
     #[test]

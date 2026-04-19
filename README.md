@@ -18,6 +18,9 @@ Already implemented:
 - validated model-role config using the actual Codex model/reasoning choices available in-app
 - TUI model defaults editor for coordinator, sidecar, and verifier roles
 - opt-in privacy / telemetry screen with local-only consent levels and reset controls
+- read-only Codex config inspection for current model, reasoning, MCP, plugin, and trust summary
+- opt-in local backup of `~/.codex/config.toml` into `.sane/backups/codex-config/`
+- read-only preview of recommended core Codex profile changes before any future managed write flow
 - backend/dev escape hatch verbs for `install`, `config`, `status`, `doctor`, `export`, and `uninstall`
 - grouped audit view separating local runtime state from Codex-native managed assets
 - first managed user-level hooks target at `~/.codex/hooks.json`
@@ -68,6 +71,9 @@ Backend/dev escape hatches still exist:
 cargo run -p sane-tui -- status
 cargo run -p sane-tui -- install
 cargo run -p sane-tui -- config
+cargo run -p sane-tui -- codex-config
+cargo run -p sane-tui -- preview codex-profile
+cargo run -p sane-tui -- backup codex-config
 cargo run -p sane-tui -- doctor
 cargo run -p sane-tui -- export all
 cargo run -p sane-tui -- export hooks
@@ -79,6 +85,10 @@ cargo run -p sane-tui -- uninstall custom-agents
 
 Current hook note:
 - Codex hooks are still experimental upstream, and OpenAI’s current hooks docs say Windows support is temporarily disabled as of April 19, 2026.
+
+Current Codex config note:
+- Sane only inspects `~/.codex/config.toml` right now.
+- Any future managed settings/profile writes must stay explicit opt-in with diff preview and backup/restore.
 
 ## Commit Hook
 

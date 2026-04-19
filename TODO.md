@@ -48,11 +48,14 @@ Implemented:
 - first optional managed global Codex overlay block (`~/.codex/AGENTS.md`)
 - first managed user-level hooks target (`~/.codex/hooks.json`)
 - first managed user-level custom agents target (`~/.codex/agents/`)
+- read-only inspection of `~/.codex/config.toml`
+- opt-in local backup flow for `~/.codex/config.toml`
+- read-only preview of recommended core Codex profile changes
 - `export all` / `uninstall all` for current managed targets
 
 Current gate:
 
-- `B4` next managed targets
+- `B4` safe Codex settings groundwork only
 
 Current command examples:
 
@@ -136,5 +139,6 @@ Current allowed next slice:
 2. otherwise update the actual state files to match `R3`
 3. keep TUI first, backend verbs escape hatch only
 4. keep merge/preserve/remove behavior additive and reversible
-5. do not start adaptive orchestration before the `R3` state shape is real in code
-6. if user-level Codex settings management is added later, make it explicit opt-in with diff preview and backup / restore
+5. keep Codex config work read-only or backup/diff-only until explicit opt-in write flow exists
+6. do not start adaptive orchestration before the `R3` state shape is real in code
+7. if user-level Codex settings management is added later, make it explicit opt-in with diff preview and backup / restore

@@ -44,6 +44,14 @@ fn project_paths_use_dot_sane_namespace() {
     assert_eq!(paths.brief_path, dir.path().join(".sane").join("BRIEF.md"));
     assert_eq!(paths.logs_dir, dir.path().join(".sane").join("logs"));
     assert_eq!(paths.cache_dir, dir.path().join(".sane").join("cache"));
+    assert_eq!(paths.backups_dir, dir.path().join(".sane").join("backups"));
+    assert_eq!(
+        paths.codex_config_backups_dir,
+        dir.path()
+            .join(".sane")
+            .join("backups")
+            .join("codex-config")
+    );
     assert_eq!(
         paths.telemetry_dir,
         dir.path().join(".sane").join("telemetry")
@@ -69,6 +77,10 @@ fn codex_paths_use_user_skill_location_from_docs() {
     let paths = CodexPaths::new(home.path());
 
     assert_eq!(paths.codex_home, home.path().join(".codex"));
+    assert_eq!(
+        paths.config_toml,
+        home.path().join(".codex").join("config.toml")
+    );
     assert_eq!(paths.user_agents_dir, home.path().join(".agents"));
     assert_eq!(
         paths.user_skills_dir,

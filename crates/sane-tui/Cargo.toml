@@ -8,6 +8,7 @@ version.workspace = true
 crossterm.workspace = true
 ratatui.workspace = true
 serde_json.workspace = true
+toml.workspace = true
 sane-core = { path = "../sane-core" }
 sane-config = { path = "../sane-config" }
 sane-platform = { path = "../sane-platform" }
