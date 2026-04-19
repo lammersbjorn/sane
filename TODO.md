@@ -42,6 +42,7 @@ Implemented:
 - `.sane` operational namespace
 - typed config persistence
 - typed run snapshot persistence
+- typed backend operation / inventory result structures
 - initial `install`, `config`, `doctor`, `export`, and `uninstall` command shell
 - first managed Codex-native user-skill target (`~/.agents/skills/sane-router`)
 - first optional managed global Codex overlay block (`~/.codex/AGENTS.md`)
@@ -69,6 +70,7 @@ cargo test
 - [x] Add project-root detection instead of assuming the current working directory is the project root
 - [x] Expand `LocalConfig` into a real runtime config schema
 - [x] Add model preset structures for coordinator, sidecar, and verifier roles
+- [x] Add typed backend operation / inventory structures for the future TUI to wrap
 - [ ] Add first-class subagent/model selection config that respects subscription/capability constraints
 - [x] Improve `doctor` with real checks and actionable repair suggestions
 - [x] Replace placeholder `export` with the first real Codex-native asset management boundary

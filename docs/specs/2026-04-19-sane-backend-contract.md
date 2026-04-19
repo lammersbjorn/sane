@@ -102,6 +102,12 @@ Required next step:
   - test assertions
   - optional debug/CLI output
 
+Current state:
+
+- typed shared backend result/inventory structures now exist
+- current command shell renders those typed results back into text
+- proper TUI still needs to wrap the typed layer instead of strings directly
+
 Recommended typed shape:
 
 - `kind`

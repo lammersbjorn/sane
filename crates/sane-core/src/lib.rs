@@ -3,6 +3,83 @@ pub const SANE_ROUTER_SKILL_NAME: &str = "sane-router";
 pub const SANE_GLOBAL_AGENTS_BEGIN: &str = "<!-- sane:global-agents:start -->";
 pub const SANE_GLOBAL_AGENTS_END: &str = "<!-- sane:global-agents:end -->";
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OperationKind {
+    InstallRuntime,
+    ShowConfig,
+    Doctor,
+    ExportUserSkills,
+    ExportGlobalAgents,
+    ExportAll,
+    UninstallUserSkills,
+    UninstallGlobalAgents,
+    UninstallAll,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InventoryStatus {
+    Installed,
+    Missing,
+    Invalid,
+    PresentWithoutSaneBlock,
+    Removed,
+}
+
+impl InventoryStatus {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Installed => "installed",
+            Self::Missing => "missing",
+            Self::Invalid => "invalid",
+            Self::PresentWithoutSaneBlock => "present_without_sane_block",
+            Self::Removed => "removed",
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct InventoryItem {
+    pub name: String,
+    pub status: InventoryStatus,
+    pub path: String,
+    pub repair_hint: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OperationResult {
+    pub kind: OperationKind,
+    pub summary: String,
+    pub details: Vec<String>,
+    pub paths_touched: Vec<String>,
+    pub inventory: Vec<InventoryItem>,
+}
+
+impl OperationResult {
+    pub fn render_text(&self) -> String {
+        let mut lines = vec![self.summary.clone()];
+
+        if !self.details.is_empty() {
+            lines.extend(self.details.clone());
+        }
+
+        if !self.inventory.is_empty() {
+            for item in &self.inventory {
+                let mut line = format!("{}: {}", item.name, item.status.as_str());
+                if let Some(repair_hint) = &item.repair_hint {
+                    line.push_str(&format!(" ({repair_hint})"));
+                }
+                lines.push(line);
+            }
+        }
+
+        if !self.paths_touched.is_empty() {
+            lines.push(format!("paths: {}", self.paths_touched.join(", ")));
+        }
+
+        lines.join("\n")
+    }
+}
+
 pub fn sane_router_skill() -> &'static str {
     r#"---
 name: sane-router

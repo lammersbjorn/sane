@@ -6,5 +6,6 @@ Current responsibility:
 - shared product naming/constants
 - tiny built-in managed asset templates shared across installers
 - managed block markers for additive Codex-native file edits
+- typed backend result and inventory structures shared across surfaces
 
 Keep this crate tiny. Do not move operational logic here unless it is genuinely cross-cutting.
