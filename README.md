@@ -17,6 +17,7 @@ Already implemented:
 - append-only operational event log under `.sane/state/events.jsonl`
 - validated model-role config using the actual Codex model/reasoning choices available in-app
 - TUI model defaults editor for coordinator, sidecar, and verifier roles
+- TUI built-in pack editor for `core`, `caveman`, `cavemem`, `rtk`, and `frontend-craft`
 - opt-in privacy / telemetry screen with local-only consent levels and reset controls
 - read-only Codex config inspection for current model, reasoning, MCP, plugin, and trust summary
 - opt-in local backup of `~/.codex/config.toml` into `.sane/backups/codex-config/`
@@ -43,6 +44,8 @@ No-args now opens the actual TUI.
 Current config editor:
 - opens inside the TUI
 - edits `coordinator`, `sidecar`, and `verifier` defaults
+- built-in pack editor also opens inside the TUI
+- `core` stays required, optional packs toggle locally for now
 - validates against the current Codex model set:
   - `gpt-5.4`
   - `gpt-5.2-codex`

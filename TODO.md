@@ -41,6 +41,7 @@ Implemented:
 - repo-owned commit-msg hook
 - `.sane` operational namespace
 - typed config persistence
+- built-in pack config persistence
 - typed run snapshot persistence
 - typed backend operation / inventory result structures
 - initial `install`, `config`, `doctor`, `export`, and `uninstall` command shell
@@ -54,6 +55,7 @@ Implemented:
 - explicit opt-in apply / restore flow for narrow core Codex profile
 - explicit opt-in apply flow for separate recommended integrations profile
 - explicit opt-in Cloudflare provider profile for Cloudflare MCP tooling
+- built-in pack editor in the TUI with local-only optional pack toggles
 - `export all` / `uninstall all` for current managed targets
 
 Current gate:

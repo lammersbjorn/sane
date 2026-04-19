@@ -30,6 +30,7 @@ fn local_config_default_contains_model_role_presets() {
     assert_eq!(config.models.sidecar.model, "gpt-5.4-mini");
     assert_eq!(config.models.verifier.model, "gpt-5.4");
     assert_eq!(config.privacy.telemetry.as_str(), "off");
+    assert_eq!(config.packs.enabled_names(), vec!["core"]);
 }
 
 #[test]
@@ -83,6 +84,13 @@ reasoning_effort = "medium"
 
 [privacy]
 telemetry = "product-improvement"
+
+[packs]
+core = true
+caveman = true
+cavemem = true
+rtk = true
+frontend-craft = true
 "#,
     )
     .unwrap();
@@ -90,4 +98,39 @@ telemetry = "product-improvement"
     let config = LocalConfig::read_from_path(&path).unwrap();
     assert_eq!(config.models.coordinator.reasoning_effort.as_str(), "xhigh");
     assert_eq!(config.privacy.telemetry.as_str(), "product-improvement");
+    assert_eq!(
+        config.packs.enabled_names(),
+        vec!["core", "caveman", "cavemem", "rtk", "frontend-craft"]
+    );
+}
+
+#[test]
+fn local_config_rejects_disabling_core_pack() {
+    let dir = tempdir().unwrap();
+    let path = dir.path().join("config.local.toml");
+    std::fs::write(
+        &path,
+        r#"
+version = 1
+
+[models.coordinator]
+model = "gpt-5.4"
+reasoning_effort = "high"
+
+[models.sidecar]
+model = "gpt-5.4-mini"
+reasoning_effort = "medium"
+
+[models.verifier]
+model = "gpt-5.4"
+reasoning_effort = "medium"
+
+[packs]
+core = false
+"#,
+    )
+    .unwrap();
+
+    let error = LocalConfig::read_from_path(&path).unwrap_err().to_string();
+    assert!(error.contains("core pack must stay enabled"));
 }

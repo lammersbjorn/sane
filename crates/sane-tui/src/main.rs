@@ -274,6 +274,7 @@ enum TuiActionKind {
     Backend(Command),
     OpenConfigEditor,
     OpenPrivacyEditor,
+    OpenPackEditor,
 }
 
 impl TuiAction {
@@ -288,6 +289,13 @@ impl TuiAction {
         Self {
             label,
             kind: TuiActionKind::OpenConfigEditor,
+        }
+    }
+
+    const fn pack_editor(label: &'static str) -> Self {
+        Self {
+            label,
+            kind: TuiActionKind::OpenPackEditor,
         }
     }
 
@@ -313,6 +321,7 @@ enum TuiScreen {
     Home,
     ConfigEditor(ConfigEditor),
     PrivacyEditor(PrivacyEditor),
+    PackEditor(PackEditor),
 }
 
 struct ConfigEditor {
@@ -322,6 +331,11 @@ struct ConfigEditor {
 
 struct PrivacyEditor {
     config: LocalConfig,
+}
+
+struct PackEditor {
+    config: LocalConfig,
+    selected: usize,
 }
 
 impl ConfigEditor {
@@ -373,6 +387,35 @@ impl PrivacyEditor {
     }
 }
 
+impl PackEditor {
+    fn new(config: LocalConfig) -> Self {
+        Self {
+            config,
+            selected: 0,
+        }
+    }
+
+    fn next(&mut self) {
+        self.selected = (self.selected + 1) % PackField::ALL.len();
+    }
+
+    fn previous(&mut self) {
+        self.selected = if self.selected == 0 {
+            PackField::ALL.len() - 1
+        } else {
+            self.selected - 1
+        };
+    }
+
+    fn toggle_current(&mut self) {
+        PackField::ALL[self.selected].toggle(&mut self.config);
+    }
+
+    fn reset_defaults(&mut self) {
+        self.config.packs = sane_config::PackConfig::default();
+    }
+}
+
 #[derive(Clone, Copy)]
 enum ConfigField {
     CoordinatorModel,
@@ -381,6 +424,45 @@ enum ConfigField {
     SidecarReasoning,
     VerifierModel,
     VerifierReasoning,
+}
+
+#[derive(Clone, Copy)]
+enum PackField {
+    Caveman,
+    Cavemem,
+    Rtk,
+    FrontendCraft,
+}
+
+impl PackField {
+    const ALL: [Self; 4] = [Self::Caveman, Self::Cavemem, Self::Rtk, Self::FrontendCraft];
+
+    fn label(self) -> &'static str {
+        match self {
+            Self::Caveman => "caveman",
+            Self::Cavemem => "cavemem",
+            Self::Rtk => "rtk",
+            Self::FrontendCraft => "frontend-craft",
+        }
+    }
+
+    fn enabled(self, config: &LocalConfig) -> bool {
+        match self {
+            Self::Caveman => config.packs.caveman,
+            Self::Cavemem => config.packs.cavemem,
+            Self::Rtk => config.packs.rtk,
+            Self::FrontendCraft => config.packs.frontend_craft,
+        }
+    }
+
+    fn toggle(self, config: &mut LocalConfig) {
+        match self {
+            Self::Caveman => config.packs.caveman = !config.packs.caveman,
+            Self::Cavemem => config.packs.cavemem = !config.packs.cavemem,
+            Self::Rtk => config.packs.rtk = !config.packs.rtk,
+            Self::FrontendCraft => config.packs.frontend_craft = !config.packs.frontend_craft,
+        }
+    }
 }
 
 impl ConfigField {
@@ -451,6 +533,7 @@ impl TuiApp {
             actions: vec![
                 TuiAction::backend("Install runtime", Command::Install),
                 TuiAction::config_editor("Edit model defaults"),
+                TuiAction::pack_editor("Edit built-in packs"),
                 TuiAction::privacy_editor("Privacy / telemetry"),
                 TuiAction::backend("Inspect config", Command::Config),
                 TuiAction::backend("Inspect Codex config", Command::CodexConfig),
@@ -524,6 +607,16 @@ impl TuiApp {
                         "Config editor open. Left/right cycles values. Enter saves. r resets."
                             .to_string();
                     self.screen = TuiScreen::ConfigEditor(ConfigEditor::new(config));
+                }
+                Err(error) => {
+                    self.output = format!("action failed: {error}");
+                }
+            },
+            TuiActionKind::OpenPackEditor => match load_or_default_config(&self.paths) {
+                Ok(config) => {
+                    self.output = "Pack screen open. Up/down picks pack. Space toggles optional packs. Enter saves. r resets optional packs."
+                        .to_string();
+                    self.screen = TuiScreen::PackEditor(PackEditor::new(config));
                 }
                 Err(error) => {
                     self.output = format!("action failed: {error}");
@@ -621,6 +714,31 @@ fn run_tui_loop(
                     },
                     _ => {}
                 },
+                TuiScreen::PackEditor(editor) => match key.code {
+                    KeyCode::Char('q') | KeyCode::Esc => {
+                        app.screen = TuiScreen::Home;
+                        app.output = "Pack screen closed without saving.".to_string();
+                    }
+                    KeyCode::Down | KeyCode::Char('j') => editor.next(),
+                    KeyCode::Up | KeyCode::Char('k') => editor.previous(),
+                    KeyCode::Left | KeyCode::Right | KeyCode::Char(' ') => editor.toggle_current(),
+                    KeyCode::Char('r') => editor.reset_defaults(),
+                    KeyCode::Enter => match save_config(&app.paths, &editor.config) {
+                        Ok(result) => {
+                            app.output = result.render_text();
+                            app.screen = TuiScreen::Home;
+                            match inventory_status(&app.paths, &app.codex_paths) {
+                                Ok(status) => app.status = status,
+                                Err(error) => {
+                                    app.output
+                                        .push_str(&format!("\nstatus refresh failed: {error}"));
+                                }
+                            }
+                        }
+                        Err(error) => app.output = format!("save failed: {error}"),
+                    },
+                    _ => {}
+                },
             }
         }
     }
@@ -631,6 +749,7 @@ fn render_tui(frame: &mut Frame, app: &TuiApp) {
         TuiScreen::Home => render_home(frame, app),
         TuiScreen::ConfigEditor(editor) => render_config_editor(frame, app, editor),
         TuiScreen::PrivacyEditor(editor) => render_privacy_editor(frame, app, editor),
+        TuiScreen::PackEditor(editor) => render_pack_editor(frame, app, editor),
     }
 }
 
@@ -769,6 +888,41 @@ fn render_privacy_editor(frame: &mut Frame, app: &TuiApp, editor: &PrivacyEditor
     frame.render_widget(output, chunks[2]);
 }
 
+fn render_pack_editor(frame: &mut Frame, app: &TuiApp, editor: &PackEditor) {
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(3),
+            Constraint::Min(10),
+            Constraint::Length(5),
+        ])
+        .split(frame.area());
+
+    let header = Paragraph::new(vec![
+        Line::from("Built-in Packs"),
+        Line::from("core stays on. Up/down selects. Space toggles optional packs. Enter saves. Esc backs out."),
+    ])
+    .block(Block::default().borders(Borders::ALL).title(NAME))
+    .wrap(Wrap { trim: true });
+    frame.render_widget(header, chunks[0]);
+
+    let main = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Length(38), Constraint::Min(24)])
+        .split(chunks[1]);
+
+    render_pack_fields(frame, main[0], editor);
+    let details = Paragraph::new(pack_lines(&editor.config))
+        .block(Block::default().borders(Borders::ALL).title("Pack Summary"))
+        .wrap(Wrap { trim: false });
+    frame.render_widget(details, main[1]);
+
+    let output = Paragraph::new(app.output.as_str())
+        .block(Block::default().borders(Borders::ALL).title("Output"))
+        .wrap(Wrap { trim: false });
+    frame.render_widget(output, chunks[2]);
+}
+
 fn render_actions(frame: &mut Frame, area: Rect, app: &TuiApp) {
     let items = app
         .actions
@@ -806,6 +960,25 @@ fn render_config_fields(frame: &mut Frame, area: Rect, editor: &ConfigEditor) {
             .borders(Borders::ALL)
             .title("Role Defaults"),
     );
+    frame.render_widget(list, area);
+}
+
+fn render_pack_fields(frame: &mut Frame, area: Rect, editor: &PackEditor) {
+    let mut items = vec![ListItem::new("core: enabled (required)")];
+    items.extend(PackField::ALL.iter().enumerate().map(|(index, field)| {
+        let state = if field.enabled(&editor.config) {
+            "enabled"
+        } else {
+            "disabled"
+        };
+        ListItem::new(format!("{}: {state}", field.label())).style(if index == editor.selected {
+            Style::default().add_modifier(Modifier::REVERSED)
+        } else {
+            Style::default()
+        })
+    }));
+
+    let list = List::new(items).block(Block::default().borders(Borders::ALL).title("Packs"));
     frame.render_widget(list, area);
 }
 
@@ -848,6 +1021,22 @@ fn privacy_lines(paths: &ProjectPaths, config: &LocalConfig) -> Vec<Line<'static
         Line::from(format!("summary path: {summary}")),
         Line::from(format!("events path: {events}")),
         Line::from(format!("queue path: {queue}")),
+    ]
+}
+
+fn pack_lines(config: &LocalConfig) -> Vec<Line<'static>> {
+    vec![
+        Line::from(format!(
+            "enabled packs: {}",
+            config.packs.enabled_names().join(", ")
+        )),
+        Line::from(""),
+        Line::from("core"),
+        Line::from("Required foundation pack."),
+        Line::from(""),
+        Line::from("caveman / cavemem / rtk / frontend-craft"),
+        Line::from("Optional local config selections only for now."),
+        Line::from("No marketplace or third-party plugin API yet."),
     ]
 }
 
@@ -1639,6 +1828,7 @@ fn config_details(config: &LocalConfig) -> Vec<String> {
             config.models.verifier.reasoning_effort.as_str()
         ),
         format!("telemetry: {}", config.privacy.telemetry.as_str()),
+        format!("packs: {}", config.packs.enabled_names().join(", ")),
     ]
 }
 
@@ -3375,6 +3565,7 @@ mod tests {
             vec![
                 "Install runtime",
                 "Edit model defaults",
+                "Edit built-in packs",
                 "Privacy / telemetry",
                 "Inspect config",
                 "Inspect Codex config",
@@ -3419,6 +3610,13 @@ mod tests {
                 },
             },
             privacy: sane_config::PrivacyConfig::default(),
+            packs: sane_config::PackConfig {
+                core: true,
+                caveman: true,
+                cavemem: false,
+                rtk: true,
+                frontend_craft: false,
+            },
         };
 
         let result = super::save_config(&paths, &config).unwrap();
@@ -3427,6 +3625,12 @@ mod tests {
         assert!(result.summary.contains("config: saved"));
         assert_eq!(saved, config);
         assert!(result.details.iter().any(|line| line == "telemetry: off"));
+        assert!(
+            result
+                .details
+                .iter()
+                .any(|line| line == "packs: core, caveman, rtk")
+        );
     }
 
     #[test]

@@ -8,6 +8,7 @@ Current responsibility:
 - backend/dev status inventory shell
 - no-args interactive TUI home screen
 - no-args interactive TUI config editor for model defaults
+- no-args interactive TUI pack editor for built-in pack toggles
 - no-args interactive privacy / telemetry screen with reset control
 - read-only Codex config inspection for current user-level settings
 - read-only preview of recommended core Codex profile changes

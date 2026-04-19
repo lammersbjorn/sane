@@ -22,6 +22,8 @@ pub struct LocalConfig {
     pub models: ModelRolePresets,
     #[serde(default)]
     pub privacy: PrivacyConfig,
+    #[serde(default)]
+    pub packs: PackConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -34,6 +36,19 @@ pub struct ModelRolePresets {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct PrivacyConfig {
     pub telemetry: TelemetryLevel,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct PackConfig {
+    pub core: bool,
+    #[serde(default)]
+    pub caveman: bool,
+    #[serde(default)]
+    pub cavemem: bool,
+    #[serde(default)]
+    pub rtk: bool,
+    #[serde(rename = "frontend-craft", default)]
+    pub frontend_craft: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -131,6 +146,7 @@ impl Default for LocalConfig {
             version: 1,
             models: ModelRolePresets::default(),
             privacy: PrivacyConfig::default(),
+            packs: PackConfig::default(),
         }
     }
 }
@@ -139,6 +155,18 @@ impl Default for PrivacyConfig {
     fn default() -> Self {
         Self {
             telemetry: TelemetryLevel::Off,
+        }
+    }
+}
+
+impl Default for PackConfig {
+    fn default() -> Self {
+        Self {
+            core: true,
+            caveman: false,
+            cavemem: false,
+            rtk: false,
+            frontend_craft: false,
         }
     }
 }
@@ -216,6 +244,7 @@ impl LocalConfig {
         self.models.sidecar.validate("sidecar")?;
         self.models.verifier.validate("verifier")?;
         self.privacy.validate()?;
+        self.packs.validate()?;
         Ok(())
     }
 }
@@ -239,6 +268,36 @@ impl PrivacyConfig {
             TelemetryLevel::Off
             | TelemetryLevel::LocalOnly
             | TelemetryLevel::ProductImprovement => Ok(()),
+        }
+    }
+}
+
+impl PackConfig {
+    pub fn enabled_names(&self) -> Vec<&'static str> {
+        let mut enabled = vec![];
+        if self.core {
+            enabled.push("core");
+        }
+        if self.caveman {
+            enabled.push("caveman");
+        }
+        if self.cavemem {
+            enabled.push("cavemem");
+        }
+        if self.rtk {
+            enabled.push("rtk");
+        }
+        if self.frontend_craft {
+            enabled.push("frontend-craft");
+        }
+        enabled
+    }
+
+    pub fn validate(&self) -> Result<(), String> {
+        if self.core {
+            Ok(())
+        } else {
+            Err("core pack must stay enabled".to_string())
         }
     }
 }

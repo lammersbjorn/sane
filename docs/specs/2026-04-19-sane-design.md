@@ -84,6 +84,7 @@ Prompt bloat, giant always-loaded methodology, and excessive orchestration are p
 - shipped with `v1`
 - internally pack-shaped
 - no frozen public plugin API yet
+- current local config/editor foundation can enable or disable optional built-in packs without exposing a public plugin system
 
 Current Codex settings stance:
 - inspect and preview first

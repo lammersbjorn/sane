@@ -7,6 +7,7 @@ Current responsibility:
 - model-role preset defaults
 - supported Codex model/reasoning validation
 - privacy / telemetry consent config
+- built-in pack enablement config
 - config read/write helpers
 
 This crate should describe configuration, not perform installation or runtime orchestration.
