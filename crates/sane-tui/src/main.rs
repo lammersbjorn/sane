@@ -867,7 +867,8 @@ fn append_operation_event(paths: &ProjectPaths, result: &OperationResult) -> Res
     );
     event
         .append_jsonl(&paths.events_path)
-        .map_err(|error| error.to_string())
+        .map_err(|error| error.to_string())?;
+    promote_operation_summary(paths, result)
 }
 
 fn operation_kind_label(kind: OperationKind) -> &'static str {
@@ -887,6 +888,47 @@ fn operation_kind_label(kind: OperationKind) -> &'static str {
         OperationKind::UninstallHooks => "uninstall_hooks",
         OperationKind::UninstallCustomAgents => "uninstall_custom_agents",
         OperationKind::UninstallAll => "uninstall_all",
+    }
+}
+
+fn promote_operation_summary(paths: &ProjectPaths, result: &OperationResult) -> Result<(), String> {
+    let mut summary = if paths.summary_path.exists() {
+        RunSummary::read_from_path(&paths.summary_path).unwrap_or_default()
+    } else {
+        RunSummary::default()
+    };
+
+    for path in &result.paths_touched {
+        if !summary.files_touched.contains(path) {
+            summary.files_touched.push(path.clone());
+        }
+    }
+    summary.files_touched.sort();
+
+    if let Some(milestone) = operation_milestone(result.kind)
+        && !summary
+            .completed_milestones
+            .iter()
+            .any(|item| item == milestone)
+    {
+        summary.completed_milestones.push(milestone.to_string());
+    }
+
+    summary
+        .write_to_path(&paths.summary_path)
+        .map_err(|error| error.to_string())
+}
+
+fn operation_milestone(kind: OperationKind) -> Option<&'static str> {
+    match kind {
+        OperationKind::InstallRuntime => Some("runtime installed"),
+        OperationKind::ExportUserSkills => Some("user skills exported"),
+        OperationKind::ExportGlobalAgents => Some("global agents exported"),
+        OperationKind::ExportHooks => Some("hooks exported"),
+        OperationKind::ExportCustomAgents => Some("custom agents exported"),
+        OperationKind::ExportAll => Some("managed assets exported"),
+        OperationKind::UninstallAll => Some("managed assets uninstalled"),
+        _ => None,
     }
 }
 
@@ -912,13 +954,7 @@ fn install_runtime(paths: &ProjectPaths) -> Result<OperationResult, String> {
     }
 
     if !paths.summary_path.exists() {
-        let summary = RunSummary {
-            version: 1,
-            accepted_decisions: vec![],
-            completed_milestones: vec!["runtime installed".to_string()],
-            constraints: vec![],
-            files_touched: vec![],
-        };
+        let summary = RunSummary::default();
         summary
             .write_to_path(&paths.summary_path)
             .map_err(|error| error.to_string())?;
@@ -2078,6 +2114,22 @@ mod tests {
 
         assert!(body.contains("\"action\":\"install_runtime\""));
         assert!(body.contains("\"action\":\"doctor\""));
+    }
+
+    #[test]
+    fn backend_operations_promote_summary_state() {
+        let dir = tempdir().unwrap();
+        let home = tempdir().unwrap();
+
+        let _ = run_with_home(&["install"], dir.path(), home.path()).unwrap();
+        let _ = run_with_home(&["export", "user-skills"], dir.path(), home.path()).unwrap();
+
+        let summary_path = dir.path().join(".sane").join("state").join("summary.json");
+        let body = std::fs::read_to_string(summary_path).unwrap();
+
+        assert!(body.contains("runtime installed"));
+        assert!(body.contains("user skills exported"));
+        assert!(body.contains("config.local.toml"));
     }
 
     #[test]

@@ -117,6 +117,18 @@ impl RunSummary {
     }
 }
 
+impl Default for RunSummary {
+    fn default() -> Self {
+        Self {
+            version: 1,
+            accepted_decisions: vec![],
+            completed_milestones: vec![],
+            constraints: vec![],
+            files_touched: vec![],
+        }
+    }
+}
+
 impl EventRecord {
     pub fn new(
         category: impl Into<String>,
