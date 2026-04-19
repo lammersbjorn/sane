@@ -47,6 +47,7 @@ Implemented:
 - initial `install`, `config`, `doctor`, `export`, and `uninstall` command shell
 - first managed Codex-native user-skill target (`~/.agents/skills/sane-router`)
 - optional repo-local shared skill target (`<repo>/.agents/skills/sane-router`)
+- optional repo-local shared AGENTS target (`<repo>/AGENTS.md`)
 - first optional managed global Codex overlay block (`~/.codex/AGENTS.md`)
 - first managed user-level hooks target (`~/.codex/hooks.json`)
 - first managed user-level custom agents target (`~/.codex/agents/`)
@@ -69,6 +70,7 @@ Implemented:
 - TUI now exposes adaptive policy inspection directly instead of leaving it command-only
 - TUI now requires confirmation for risky apply/restore/uninstall actions
 - optional repo-local skill export now exists as an explicit separate target and is not part of `export all`
+- optional repo-local AGENTS export now exists as an explicit separate target and is not part of `export all`
 
 Current gate:
 

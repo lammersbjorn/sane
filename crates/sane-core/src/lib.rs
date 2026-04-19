@@ -8,6 +8,8 @@ pub const SANE_REVIEWER_AGENT_NAME: &str = "sane-reviewer";
 pub const SANE_EXPLORER_AGENT_NAME: &str = "sane-explorer";
 pub const SANE_GLOBAL_AGENTS_BEGIN: &str = "<!-- sane:global-agents:start -->";
 pub const SANE_GLOBAL_AGENTS_END: &str = "<!-- sane:global-agents:end -->";
+pub const SANE_REPO_AGENTS_BEGIN: &str = "<!-- sane:repo-agents:start -->";
+pub const SANE_REPO_AGENTS_END: &str = "<!-- sane:repo-agents:end -->";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct GuidancePacks {
@@ -46,12 +48,14 @@ pub enum OperationKind {
     Doctor,
     ExportUserSkills,
     ExportRepoSkills,
+    ExportRepoAgents,
     ExportGlobalAgents,
     ExportHooks,
     ExportCustomAgents,
     ExportAll,
     UninstallUserSkills,
     UninstallRepoSkills,
+    UninstallRepoAgents,
     UninstallGlobalAgents,
     UninstallHooks,
     UninstallCustomAgents,

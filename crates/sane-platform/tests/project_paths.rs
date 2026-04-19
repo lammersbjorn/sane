@@ -11,6 +11,7 @@ fn project_paths_use_dot_sane_namespace() {
         paths.repo_skills_dir,
         dir.path().join(".agents").join("skills")
     );
+    assert_eq!(paths.repo_agents_md, dir.path().join("AGENTS.md"));
     assert_eq!(paths.runtime_root, dir.path().join(".sane"));
     assert_eq!(
         paths.config_path,

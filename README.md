@@ -164,6 +164,7 @@ These are current built-in packs, not a frozen long-term public API:
 
 - router skill export
 - optional repo-local skill export into `.agents/skills/`
+- optional repo-local `AGENTS.md` export
 - managed `AGENTS.md` block export
 - managed hook export
 - managed custom-agent export
@@ -192,6 +193,7 @@ Provider-specific profiles stay separate.
 It can also optionally write shared repo skills into:
 
 - `.agents/skills/`
+- `AGENTS.md`
 
 ### User-level Codex surfaces
 
@@ -221,6 +223,7 @@ By design:
 - `.sane/BRIEF.md`
 - `.sane/backups/`
 - `.agents/skills/sane-router/`
+- `AGENTS.md`
 - `~/.agents/skills/sane-router/`
 - optional pack skill directories exported by `Sane`
 - a Sane-managed block inside `~/.codex/AGENTS.md`

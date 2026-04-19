@@ -39,6 +39,7 @@ Depending on the action, this crate can coordinate writes to:
 
 - `.sane/`
 - `.agents/skills/`
+- `AGENTS.md`
 - `~/.agents/skills/`
 - `~/.codex/AGENTS.md`
 - `~/.codex/hooks.json`

@@ -20,9 +20,10 @@ use sane_config::{AVAILABLE_MODELS, LocalConfig, ModelPreset, ReasoningEffort, T
 use sane_core::{
     GuidancePacks, InventoryItem, InventoryScope, InventoryStatus, ModelRoleGuidance, NAME,
     OperationKind, OperationResult, SANE_EXPLORER_AGENT_NAME, SANE_GLOBAL_AGENTS_BEGIN,
-    SANE_GLOBAL_AGENTS_END, SANE_REVIEWER_AGENT_NAME, SANE_ROUTER_SKILL_NAME, sane_explorer_agent,
-    sane_global_agents_overlay, sane_optional_pack_skill, sane_optional_pack_skill_name,
-    sane_reviewer_agent, sane_router_skill,
+    SANE_GLOBAL_AGENTS_END, SANE_REPO_AGENTS_BEGIN, SANE_REPO_AGENTS_END, SANE_REVIEWER_AGENT_NAME,
+    SANE_ROUTER_SKILL_NAME, sane_explorer_agent, sane_global_agents_overlay,
+    sane_optional_pack_skill, sane_optional_pack_skill_name, sane_reviewer_agent,
+    sane_router_skill,
 };
 use sane_platform::{CodexPaths, ProjectPaths, detect_platform};
 use sane_policy::{
@@ -130,18 +131,20 @@ fn run_with_home(args: &[&str], cwd: &Path, home: &Path) -> Result<String, Strin
         | Command::ExportAll
         | Command::ExportUserSkills
         | Command::ExportRepoSkills
+        | Command::ExportRepoAgents
         | Command::ExportGlobalAgents
         | Command::ExportHooks
         | Command::ExportCustomAgents
         | Command::UninstallAll
         | Command::UninstallUserSkills
         | Command::UninstallRepoSkills
+        | Command::UninstallRepoAgents
         | Command::UninstallGlobalAgents
         | Command::UninstallHooks
         | Command::UninstallCustomAgents => execute_backend_command(command, &paths, &codex_paths)
             .map(|result| result.render_text()),
         Command::Export => Ok(
-            "export: available targets: all, user-skills, repo-skills, global-agents, hooks, custom-agents"
+            "export: available targets: all, user-skills, repo-skills, repo-agents, global-agents, hooks, custom-agents"
                 .to_string(),
         ),
         Command::Preview => Ok(
@@ -154,7 +157,7 @@ fn run_with_home(args: &[&str], cwd: &Path, home: &Path) -> Result<String, Strin
         ),
         Command::Restore => Ok("restore: available targets: codex-config".to_string()),
         Command::Uninstall => Ok(
-            "uninstall: available targets: all, user-skills, repo-skills, global-agents, hooks, custom-agents"
+            "uninstall: available targets: all, user-skills, repo-skills, repo-agents, global-agents, hooks, custom-agents"
                 .to_string(),
         ),
     }
@@ -186,6 +189,7 @@ enum Command {
     ExportAll,
     ExportUserSkills,
     ExportRepoSkills,
+    ExportRepoAgents,
     ExportGlobalAgents,
     ExportHooks,
     ExportCustomAgents,
@@ -193,6 +197,7 @@ enum Command {
     UninstallAll,
     UninstallUserSkills,
     UninstallRepoSkills,
+    UninstallRepoAgents,
     UninstallGlobalAgents,
     UninstallHooks,
     UninstallCustomAgents,
@@ -224,6 +229,7 @@ impl Command {
             (Some("export"), Some("all")) => Ok(Self::ExportAll),
             (Some("export"), Some("user-skills")) => Ok(Self::ExportUserSkills),
             (Some("export"), Some("repo-skills")) => Ok(Self::ExportRepoSkills),
+            (Some("export"), Some("repo-agents")) => Ok(Self::ExportRepoAgents),
             (Some("export"), Some("global-agents")) => Ok(Self::ExportGlobalAgents),
             (Some("export"), Some("hooks")) => Ok(Self::ExportHooks),
             (Some("export"), Some("custom-agents")) => Ok(Self::ExportCustomAgents),
@@ -231,6 +237,7 @@ impl Command {
             (Some("uninstall"), Some("all")) => Ok(Self::UninstallAll),
             (Some("uninstall"), Some("user-skills")) => Ok(Self::UninstallUserSkills),
             (Some("uninstall"), Some("repo-skills")) => Ok(Self::UninstallRepoSkills),
+            (Some("uninstall"), Some("repo-agents")) => Ok(Self::UninstallRepoAgents),
             (Some("uninstall"), Some("global-agents")) => Ok(Self::UninstallGlobalAgents),
             (Some("uninstall"), Some("hooks")) => Ok(Self::UninstallHooks),
             (Some("uninstall"), Some("custom-agents")) => Ok(Self::UninstallCustomAgents),
@@ -264,12 +271,14 @@ fn execute_backend_command(
         Command::ExportAll => export_all(paths, codex_paths),
         Command::ExportUserSkills => export_user_skills(paths, codex_paths),
         Command::ExportRepoSkills => export_repo_skills(paths),
+        Command::ExportRepoAgents => export_repo_agents(paths),
         Command::ExportGlobalAgents => export_global_agents(paths, codex_paths),
         Command::ExportHooks => export_hooks(codex_paths),
         Command::ExportCustomAgents => export_custom_agents(codex_paths),
         Command::UninstallAll => uninstall_all(codex_paths),
         Command::UninstallUserSkills => uninstall_user_skills(codex_paths),
         Command::UninstallRepoSkills => uninstall_repo_skills(paths),
+        Command::UninstallRepoAgents => uninstall_repo_agents(paths),
         Command::UninstallGlobalAgents => uninstall_global_agents(codex_paths),
         Command::UninstallHooks => uninstall_hooks(codex_paths),
         Command::UninstallCustomAgents => uninstall_custom_agents(codex_paths),
@@ -577,11 +586,13 @@ impl TuiApp {
                 TuiAction::backend("Run doctor", Command::Doctor),
                 TuiAction::backend("Export router skill", Command::ExportUserSkills),
                 TuiAction::backend("Export repo skills", Command::ExportRepoSkills),
+                TuiAction::backend("Export repo AGENTS", Command::ExportRepoAgents),
                 TuiAction::backend("Export AGENTS block", Command::ExportGlobalAgents),
                 TuiAction::backend("Export hooks", Command::ExportHooks),
                 TuiAction::backend("Export custom agents", Command::ExportCustomAgents),
                 TuiAction::backend("Export all", Command::ExportAll),
                 TuiAction::backend("Uninstall repo skills", Command::UninstallRepoSkills),
+                TuiAction::backend("Uninstall repo AGENTS", Command::UninstallRepoAgents),
                 TuiAction::backend("Uninstall all", Command::UninstallAll),
             ],
             selected: 0,
@@ -796,6 +807,7 @@ fn command_requires_confirmation(command: Command) -> bool {
             | Command::UninstallAll
             | Command::UninstallUserSkills
             | Command::UninstallRepoSkills
+            | Command::UninstallRepoAgents
             | Command::UninstallGlobalAgents
             | Command::UninstallHooks
             | Command::UninstallCustomAgents
@@ -1316,6 +1328,12 @@ fn command_help_lines(command: Command) -> Vec<Line<'static>> {
             ),
             Line::from("This is explicit repo mutation and is not part of `export all`."),
         ],
+        Command::ExportRepoAgents => vec![
+            Line::from("Install Sane's managed block into this repo's root `AGENTS.md`."),
+            Line::from(""),
+            Line::from("Use this only when you want repo-local shared AGENTS guidance."),
+            Line::from("This is explicit repo mutation and is not part of `export all`."),
+        ],
         Command::ExportGlobalAgents => vec![
             Line::from("Install or refresh Sane's managed global `AGENTS.md` guidance block."),
             Line::from(""),
@@ -1351,6 +1369,11 @@ fn command_help_lines(command: Command) -> Vec<Line<'static>> {
             Line::from("Remove Sane-managed repo skills from this repo's `.agents/skills` folder."),
             Line::from(""),
             Line::from("Only Sane-managed repo skill directories should be removed."),
+        ],
+        Command::UninstallRepoAgents => vec![
+            Line::from("Remove Sane's managed block from this repo's root `AGENTS.md`."),
+            Line::from(""),
+            Line::from("Only the Sane-managed block should be removed."),
         ],
         _ => vec![Line::from("No help available for this option yet.")],
     }
@@ -1480,9 +1503,9 @@ fn status_lines(status: &OperationResult) -> Vec<Line<'static>> {
     let codex_config = find_inventory(&status.inventory, "codex-config");
     let user_skills = find_inventory(&status.inventory, "user-skills");
     let repo_skills = find_inventory(&status.inventory, "repo-skills");
+    let repo_agents = find_inventory(&status.inventory, "repo-agents");
     let global_agents = find_inventory(&status.inventory, "global-agents");
     let hooks = find_inventory(&status.inventory, "hooks");
-    let custom_agents = find_inventory(&status.inventory, "custom-agents");
 
     let enabled_packs = status
         .inventory
@@ -1513,10 +1536,10 @@ fn status_lines(status: &OperationResult) -> Vec<Line<'static>> {
             home_status_label(repo_skills),
         )),
         Line::from(format!(
-            "Extra: AGENTS {} | hooks {} | agents {}",
+            "Extra: repo AGENTS {} | user AGENTS {} | hooks {}",
+            home_status_label(repo_agents),
             home_status_label(global_agents),
             home_status_label(hooks),
-            home_status_label(custom_agents),
         )),
     ]
 }
@@ -1605,12 +1628,14 @@ fn operation_kind_label(kind: OperationKind) -> &'static str {
         OperationKind::Doctor => "doctor",
         OperationKind::ExportUserSkills => "export_user_skills",
         OperationKind::ExportRepoSkills => "export_repo_skills",
+        OperationKind::ExportRepoAgents => "export_repo_agents",
         OperationKind::ExportGlobalAgents => "export_global_agents",
         OperationKind::ExportHooks => "export_hooks",
         OperationKind::ExportCustomAgents => "export_custom_agents",
         OperationKind::ExportAll => "export_all",
         OperationKind::UninstallUserSkills => "uninstall_user_skills",
         OperationKind::UninstallRepoSkills => "uninstall_repo_skills",
+        OperationKind::UninstallRepoAgents => "uninstall_repo_agents",
         OperationKind::UninstallGlobalAgents => "uninstall_global_agents",
         OperationKind::UninstallHooks => "uninstall_hooks",
         OperationKind::UninstallCustomAgents => "uninstall_custom_agents",
@@ -1786,11 +1811,13 @@ fn operation_milestone(kind: OperationKind) -> Option<&'static str> {
         OperationKind::InstallRuntime => Some("runtime installed"),
         OperationKind::ExportUserSkills => Some("user skills exported"),
         OperationKind::ExportRepoSkills => Some("repo skills exported"),
+        OperationKind::ExportRepoAgents => Some("repo AGENTS exported"),
         OperationKind::ExportGlobalAgents => Some("global agents exported"),
         OperationKind::ExportHooks => Some("hooks exported"),
         OperationKind::ExportCustomAgents => Some("custom agents exported"),
         OperationKind::ExportAll => Some("managed assets exported"),
         OperationKind::UninstallRepoSkills => Some("repo skills removed"),
+        OperationKind::UninstallRepoAgents => Some("repo AGENTS removed"),
         OperationKind::UninstallAll => Some("managed assets uninstalled"),
         _ => None,
     }
@@ -2611,6 +2638,7 @@ fn doctor_runtime(
     let codex_config = find_inventory(&inventory, "codex-config");
     let user_skills = find_inventory(&inventory, "user-skills");
     let repo_skills = find_inventory(&inventory, "repo-skills");
+    let repo_agents = find_inventory(&inventory, "repo-agents");
     let global_agents = find_inventory(&inventory, "global-agents");
     let hooks = find_inventory(&inventory, "hooks");
     let custom_agents = find_inventory(&inventory, "custom-agents");
@@ -2618,7 +2646,7 @@ fn doctor_runtime(
     Ok(OperationResult {
         kind: OperationKind::Doctor,
         summary: format!(
-            "runtime: {}\nconfig: {}\ncurrent-run: {}\nsummary: {}\nbrief: {}\npack-core: {}\npack-caveman: {}\npack-cavemem: {}\npack-rtk: {}\npack-frontend-craft: {}\ncodex-config: {}\nuser-skills: {}\nrepo-skills: {}\nglobal-agents: {}\nhooks: {}\ncustom-agents: {}\nroot: {}\ncodex-home: {}",
+            "runtime: {}\nconfig: {}\ncurrent-run: {}\nsummary: {}\nbrief: {}\npack-core: {}\npack-caveman: {}\npack-cavemem: {}\npack-rtk: {}\npack-frontend-craft: {}\ncodex-config: {}\nuser-skills: {}\nrepo-skills: {}\nrepo-agents: {}\nglobal-agents: {}\nhooks: {}\ncustom-agents: {}\nroot: {}\ncodex-home: {}",
             doctor_status(runtime),
             doctor_status(config),
             doctor_status(current_run),
@@ -2632,6 +2660,7 @@ fn doctor_runtime(
             doctor_status(codex_config),
             doctor_status(user_skills),
             doctor_status(repo_skills),
+            doctor_status(repo_agents),
             doctor_status(global_agents),
             doctor_status(hooks),
             doctor_status(custom_agents),
@@ -2678,54 +2707,26 @@ fn inspect_inventory(
         .as_ref()
         .map(|(packs, roles)| sane_global_agents_overlay(*packs, roles));
 
-    let global_agents_inventory = if !codex_paths.global_agents_md.exists() {
-        InventoryItem {
-            name: "global-agents".to_string(),
-            scope: InventoryScope::CodexNative,
-            status: InventoryStatus::Missing,
-            path: codex_paths.global_agents_md.display().to_string(),
-            repair_hint: Some("run `export global-agents`".to_string()),
-        }
-    } else {
-        let body =
-            fs::read_to_string(&codex_paths.global_agents_md).map_err(|error| error.to_string())?;
-        if body.contains(SANE_GLOBAL_AGENTS_BEGIN) && body.contains(SANE_GLOBAL_AGENTS_END) {
-            let status = if let Some(expected) = &expected_global_agents {
-                let rendered = upsert_managed_block(
-                    &body,
-                    SANE_GLOBAL_AGENTS_BEGIN,
-                    SANE_GLOBAL_AGENTS_END,
-                    expected,
-                );
-                if rendered == body {
-                    InventoryStatus::Installed
-                } else {
-                    InventoryStatus::Invalid
-                }
-            } else {
-                InventoryStatus::Installed
-            };
-            InventoryItem {
-                name: "global-agents".to_string(),
-                scope: InventoryScope::CodexNative,
-                status,
-                path: codex_paths.global_agents_md.display().to_string(),
-                repair_hint: if status == InventoryStatus::Invalid {
-                    Some("rerun `export global-agents`".to_string())
-                } else {
-                    None
-                },
-            }
-        } else {
-            InventoryItem {
-                name: "global-agents".to_string(),
-                scope: InventoryScope::CodexNative,
-                status: InventoryStatus::PresentWithoutSaneBlock,
-                path: codex_paths.global_agents_md.display().to_string(),
-                repair_hint: Some("run `export global-agents`".to_string()),
-            }
-        }
-    };
+    let repo_agents_inventory = inspect_agents_block(
+        &paths.repo_agents_md,
+        "repo-agents",
+        SANE_REPO_AGENTS_BEGIN,
+        SANE_REPO_AGENTS_END,
+        expected_global_agents.as_ref(),
+        true,
+        "export repo-agents",
+    )
+    .map_err(|error| error.to_string())?;
+    let global_agents_inventory = inspect_agents_block(
+        &codex_paths.global_agents_md,
+        "global-agents",
+        SANE_GLOBAL_AGENTS_BEGIN,
+        SANE_GLOBAL_AGENTS_END,
+        expected_global_agents.as_ref(),
+        false,
+        "export global-agents",
+    )
+    .map_err(|error| error.to_string())?;
 
     let mut inventory = vec![
         InventoryItem {
@@ -2853,6 +2854,7 @@ fn inspect_inventory(
             )
             .map_err(|error| error.to_string())?,
         },
+        repo_agents_inventory,
         global_agents_inventory,
         hooks_inventory,
         custom_agents_inventory,
@@ -3007,6 +3009,68 @@ fn skill_target_hint(
     }
 }
 
+fn inspect_agents_block(
+    path: &Path,
+    inventory_name: &str,
+    begin: &str,
+    end: &str,
+    expected: Option<&String>,
+    optional_when_missing: bool,
+    export_command: &str,
+) -> std::io::Result<InventoryItem> {
+    if !path.exists() {
+        return Ok(InventoryItem {
+            name: inventory_name.to_string(),
+            scope: InventoryScope::CodexNative,
+            status: if optional_when_missing {
+                InventoryStatus::Disabled
+            } else {
+                InventoryStatus::Missing
+            },
+            path: path.display().to_string(),
+            repair_hint: if optional_when_missing {
+                Some("optional repo export".to_string())
+            } else {
+                Some(format!("run `{export_command}`"))
+            },
+        });
+    }
+
+    let body = fs::read_to_string(path)?;
+    if body.contains(begin) && body.contains(end) {
+        let status = if let Some(expected) = expected {
+            let rendered = upsert_managed_block(&body, begin, end, expected);
+            if rendered == body {
+                InventoryStatus::Installed
+            } else {
+                InventoryStatus::Invalid
+            }
+        } else {
+            InventoryStatus::Installed
+        };
+
+        return Ok(InventoryItem {
+            name: inventory_name.to_string(),
+            scope: InventoryScope::CodexNative,
+            status,
+            path: path.display().to_string(),
+            repair_hint: if status == InventoryStatus::Invalid {
+                Some(format!("rerun `{export_command}`"))
+            } else {
+                None
+            },
+        });
+    }
+
+    Ok(InventoryItem {
+        name: inventory_name.to_string(),
+        scope: InventoryScope::CodexNative,
+        status: InventoryStatus::PresentWithoutSaneBlock,
+        path: path.display().to_string(),
+        repair_hint: Some(format!("run `{export_command}`")),
+    })
+}
+
 fn find_inventory<'a>(inventory: &'a [InventoryItem], name: &str) -> &'a InventoryItem {
     inventory
         .iter()
@@ -3064,6 +3128,13 @@ fn doctor_status(item: &InventoryItem) -> String {
             InventoryStatus::Installed => "installed".to_string(),
             InventoryStatus::Disabled => "disabled (optional repo export)".to_string(),
             InventoryStatus::Invalid => "invalid (rerun `export repo-skills`)".to_string(),
+            _ => item.status.as_str().to_string(),
+        },
+        "repo-agents" => match item.status {
+            InventoryStatus::Installed => "installed".to_string(),
+            InventoryStatus::Disabled => "disabled (optional repo export)".to_string(),
+            InventoryStatus::Invalid => "invalid (rerun `export repo-agents`)".to_string(),
+            InventoryStatus::PresentWithoutSaneBlock => "present without Sane block".to_string(),
             _ => item.status.as_str().to_string(),
         },
         "codex-config" => match item.status {
@@ -3179,6 +3250,18 @@ fn export_skills_target(
     })
 }
 
+fn export_repo_agents(paths: &ProjectPaths) -> Result<OperationResult, String> {
+    export_agents_target(
+        paths,
+        &paths.repo_agents_md,
+        SANE_REPO_AGENTS_BEGIN,
+        SANE_REPO_AGENTS_END,
+        OperationKind::ExportRepoAgents,
+        "repo-agents",
+        "export repo-agents",
+    )
+}
+
 fn export_all(paths: &ProjectPaths, codex_paths: &CodexPaths) -> Result<OperationResult, String> {
     let user_skills = export_user_skills(paths, codex_paths)?;
     let global_agents = export_global_agents(paths, codex_paths)?;
@@ -3196,12 +3279,32 @@ fn export_global_agents(
     paths: &ProjectPaths,
     codex_paths: &CodexPaths,
 ) -> Result<OperationResult, String> {
-    if let Some(parent) = codex_paths.global_agents_md.parent() {
+    export_agents_target(
+        paths,
+        &codex_paths.global_agents_md,
+        SANE_GLOBAL_AGENTS_BEGIN,
+        SANE_GLOBAL_AGENTS_END,
+        OperationKind::ExportGlobalAgents,
+        "global-agents",
+        "export global-agents",
+    )
+}
+
+fn export_agents_target(
+    paths: &ProjectPaths,
+    agents_path: &Path,
+    begin: &str,
+    end: &str,
+    kind: OperationKind,
+    inventory_name: &str,
+    summary_prefix: &str,
+) -> Result<OperationResult, String> {
+    if let Some(parent) = agents_path.parent() {
         fs::create_dir_all(parent).map_err(|error| error.to_string())?;
     }
 
-    let existing = if codex_paths.global_agents_md.exists() {
-        fs::read_to_string(&codex_paths.global_agents_md).map_err(|error| error.to_string())?
+    let existing = if agents_path.exists() {
+        fs::read_to_string(agents_path).map_err(|error| error.to_string())?
     } else {
         String::new()
     };
@@ -3210,25 +3313,25 @@ fn export_global_agents(
     let roles = active_model_role_guidance(paths)?;
     let updated = upsert_managed_block(
         &existing,
-        SANE_GLOBAL_AGENTS_BEGIN,
-        SANE_GLOBAL_AGENTS_END,
+        begin,
+        end,
         &sane_global_agents_overlay(packs, &roles),
     );
-    fs::write(&codex_paths.global_agents_md, updated).map_err(|error| error.to_string())?;
+    fs::write(agents_path, updated).map_err(|error| error.to_string())?;
 
     Ok(OperationResult {
-        kind: OperationKind::ExportGlobalAgents,
-        summary: "export global-agents: installed managed block".to_string(),
+        kind,
+        summary: format!("{summary_prefix}: installed managed block"),
         details: vec![
-            format!("path: {}", codex_paths.global_agents_md.display()),
+            format!("path: {}", agents_path.display()),
             format!("packs: {}", format_guidance_packs(packs)),
         ],
-        paths_touched: vec![codex_paths.global_agents_md.display().to_string()],
+        paths_touched: vec![agents_path.display().to_string()],
         inventory: vec![InventoryItem {
-            name: "global-agents".to_string(),
+            name: inventory_name.to_string(),
             scope: InventoryScope::CodexNative,
             status: InventoryStatus::Installed,
-            path: codex_paths.global_agents_md.display().to_string(),
+            path: agents_path.display().to_string(),
             repair_hint: None,
         }],
     })
@@ -3251,6 +3354,18 @@ fn uninstall_repo_skills(paths: &ProjectPaths) -> Result<OperationResult, String
         "repo-skills",
         true,
         "uninstall repo-skills",
+    )
+}
+
+fn uninstall_repo_agents(paths: &ProjectPaths) -> Result<OperationResult, String> {
+    uninstall_agents_target(
+        &paths.repo_agents_md,
+        SANE_REPO_AGENTS_BEGIN,
+        SANE_REPO_AGENTS_END,
+        OperationKind::UninstallRepoAgents,
+        "repo-agents",
+        true,
+        "uninstall repo-agents",
     )
 }
 
@@ -3317,58 +3432,81 @@ fn uninstall_skills_target(
 }
 
 fn uninstall_global_agents(codex_paths: &CodexPaths) -> Result<OperationResult, String> {
-    if !codex_paths.global_agents_md.exists() {
+    uninstall_agents_target(
+        &codex_paths.global_agents_md,
+        SANE_GLOBAL_AGENTS_BEGIN,
+        SANE_GLOBAL_AGENTS_END,
+        OperationKind::UninstallGlobalAgents,
+        "global-agents",
+        false,
+        "uninstall global-agents",
+    )
+}
+
+fn uninstall_agents_target(
+    agents_path: &Path,
+    begin: &str,
+    end: &str,
+    kind: OperationKind,
+    inventory_name: &str,
+    optional_when_missing: bool,
+    summary_prefix: &str,
+) -> Result<OperationResult, String> {
+    if !agents_path.exists() {
         return Ok(OperationResult {
-            kind: OperationKind::UninstallGlobalAgents,
-            summary: "uninstall global-agents: not installed".to_string(),
+            kind,
+            summary: format!("{summary_prefix}: not installed"),
             details: vec![],
-            paths_touched: vec![codex_paths.global_agents_md.display().to_string()],
+            paths_touched: vec![agents_path.display().to_string()],
             inventory: vec![InventoryItem {
-                name: "global-agents".to_string(),
+                name: inventory_name.to_string(),
                 scope: InventoryScope::CodexNative,
-                status: InventoryStatus::Missing,
-                path: codex_paths.global_agents_md.display().to_string(),
+                status: if optional_when_missing {
+                    InventoryStatus::Disabled
+                } else {
+                    InventoryStatus::Missing
+                },
+                path: agents_path.display().to_string(),
                 repair_hint: None,
             }],
         });
     }
 
-    let existing =
-        fs::read_to_string(&codex_paths.global_agents_md).map_err(|error| error.to_string())?;
-    let updated = remove_managed_block(&existing, SANE_GLOBAL_AGENTS_BEGIN, SANE_GLOBAL_AGENTS_END);
+    let existing = fs::read_to_string(agents_path).map_err(|error| error.to_string())?;
+    let updated = remove_managed_block(&existing, begin, end);
 
     if updated == existing {
         return Ok(OperationResult {
-            kind: OperationKind::UninstallGlobalAgents,
-            summary: "uninstall global-agents: not installed".to_string(),
+            kind,
+            summary: format!("{summary_prefix}: not installed"),
             details: vec![],
-            paths_touched: vec![codex_paths.global_agents_md.display().to_string()],
+            paths_touched: vec![agents_path.display().to_string()],
             inventory: vec![InventoryItem {
-                name: "global-agents".to_string(),
+                name: inventory_name.to_string(),
                 scope: InventoryScope::CodexNative,
                 status: InventoryStatus::PresentWithoutSaneBlock,
-                path: codex_paths.global_agents_md.display().to_string(),
+                path: agents_path.display().to_string(),
                 repair_hint: None,
             }],
         });
     }
 
     if updated.trim().is_empty() {
-        fs::remove_file(&codex_paths.global_agents_md).map_err(|error| error.to_string())?;
+        fs::remove_file(agents_path).map_err(|error| error.to_string())?;
     } else {
-        fs::write(&codex_paths.global_agents_md, updated).map_err(|error| error.to_string())?;
+        fs::write(agents_path, updated).map_err(|error| error.to_string())?;
     }
 
     Ok(OperationResult {
-        kind: OperationKind::UninstallGlobalAgents,
-        summary: "uninstall global-agents: removed managed block".to_string(),
+        kind,
+        summary: format!("{summary_prefix}: removed managed block"),
         details: vec![],
-        paths_touched: vec![codex_paths.global_agents_md.display().to_string()],
+        paths_touched: vec![agents_path.display().to_string()],
         inventory: vec![InventoryItem {
-            name: "global-agents".to_string(),
+            name: inventory_name.to_string(),
             scope: InventoryScope::CodexNative,
             status: InventoryStatus::Removed,
-            path: codex_paths.global_agents_md.display().to_string(),
+            path: agents_path.display().to_string(),
             repair_hint: None,
         }],
     })
@@ -4225,6 +4363,7 @@ mod tests {
         assert!(output.contains("codex-config: missing (run `apply codex-profile`)"));
         assert!(output.contains("user-skills: missing"));
         assert!(output.contains("repo-skills: disabled"));
+        assert!(output.contains("repo-agents: disabled"));
         assert!(output.contains("global-agents: missing"));
         assert!(output.contains("hooks: missing"));
         assert!(output.contains("custom-agents: missing"));
@@ -4525,6 +4664,23 @@ mod tests {
     }
 
     #[test]
+    fn export_repo_agents_installs_managed_overlay() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+
+        let output =
+            run_with_home(&["export", "repo-agents"], project.path(), home.path()).unwrap();
+        let agents_path = project.path().join("AGENTS.md");
+
+        assert!(output.contains("repo-agents"));
+        assert!(agents_path.exists());
+        let body = std::fs::read_to_string(agents_path).unwrap();
+        assert!(body.contains("<!-- sane:repo-agents:start -->"));
+        assert!(body.contains("Plain-language first"));
+    }
+
+    #[test]
     fn export_global_agents_reflects_enabled_guidance_packs() {
         let project = tempdir().unwrap();
         let home = tempdir().unwrap();
@@ -4668,6 +4824,22 @@ mod tests {
     }
 
     #[test]
+    fn uninstall_repo_agents_removes_only_managed_repo_block() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        std::fs::write(project.path().join("AGENTS.md"), "existing repo rules\n").unwrap();
+
+        let _ = run_with_home(&["export", "repo-agents"], project.path(), home.path()).unwrap();
+        let output =
+            run_with_home(&["uninstall", "repo-agents"], project.path(), home.path()).unwrap();
+
+        let body = std::fs::read_to_string(project.path().join("AGENTS.md")).unwrap();
+        assert!(output.contains("uninstall repo-agents"));
+        assert_eq!(body, "existing repo rules\n");
+    }
+
+    #[test]
     fn uninstall_global_agents_removes_only_managed_block() {
         let project = tempdir().unwrap();
         let home = tempdir().unwrap();
@@ -4765,11 +4937,13 @@ mod tests {
                 "Run doctor",
                 "Export router skill",
                 "Export repo skills",
+                "Export repo AGENTS",
                 "Export AGENTS block",
                 "Export hooks",
                 "Export custom agents",
                 "Export all",
                 "Uninstall repo skills",
+                "Uninstall repo AGENTS",
                 "Uninstall all",
             ]
         );
@@ -5009,7 +5183,7 @@ mod tests {
         let _ = run_with_home(&["install"], project.path(), home.path()).unwrap();
         let output = run_with_home(&["status"], project.path(), home.path()).unwrap();
 
-        assert!(output.contains("status: 16 managed targets inspected"));
+        assert!(output.contains("status: 17 managed targets inspected"));
         assert!(output.contains("local runtime:"));
         assert!(output.contains("codex-native:"));
         assert!(output.contains("runtime: installed"));
@@ -5025,6 +5199,7 @@ mod tests {
         assert!(output.contains("codex-config: missing (use `apply codex-profile` or `apply integrations-profile` to create it)"));
         assert!(output.contains("user-skills: missing (run `export user-skills`)"));
         assert!(output.contains("repo-skills: disabled (optional repo export)"));
+        assert!(output.contains("repo-agents: disabled (optional repo export)"));
         assert!(output.contains("global-agents: missing (run `export global-agents`)"));
         assert!(output.contains("hooks: missing (run `export hooks`)"));
         assert!(output.contains("custom-agents: missing (run `export custom-agents`)"));

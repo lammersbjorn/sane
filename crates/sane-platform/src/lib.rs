@@ -12,6 +12,7 @@ pub struct ProjectPaths {
     pub project_root: PathBuf,
     pub repo_agents_dir: PathBuf,
     pub repo_skills_dir: PathBuf,
+    pub repo_agents_md: PathBuf,
     pub runtime_root: PathBuf,
     pub config_path: PathBuf,
     pub state_dir: PathBuf,
@@ -54,6 +55,7 @@ impl ProjectPaths {
         let project_root = project_root.as_ref().to_path_buf();
         let repo_agents_dir = project_root.join(".agents");
         let repo_skills_dir = repo_agents_dir.join("skills");
+        let repo_agents_md = project_root.join("AGENTS.md");
         let runtime_root = project_root.join(".sane");
         let state_dir = runtime_root.join("state");
         let cache_dir = runtime_root.join("cache");
@@ -73,6 +75,7 @@ impl ProjectPaths {
             project_root,
             repo_agents_dir,
             repo_skills_dir,
+            repo_agents_md,
             runtime_root: runtime_root.clone(),
             config_path: runtime_root.join("config.local.toml"),
             state_dir,
