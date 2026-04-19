@@ -65,6 +65,7 @@ Implemented:
 - pure adaptive policy crate with typed obligations and tests
 - internal backend policy preview for canonical adaptive scenarios
 - internal backend policy preview now shows configured coordinator / sidecar / verifier roles per scenario
+- TUI now exposes adaptive policy inspection directly instead of leaving it command-only
 
 Current gate:
 

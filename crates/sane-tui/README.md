@@ -16,6 +16,7 @@ Current responsibility:
 - explicit opt-in apply / restore flow for the narrow core Codex profile
 - explicit opt-in apply flow for the separate recommended integrations profile
 - explicit opt-in Cloudflare provider profile flow
+- TUI action for inspecting adaptive policy scenarios and current role/model mapping
 - action list, status summary, output panel, and quit flow
 - grouped status inventory for local runtime vs Codex-native assets
 - built-in pack status surfaced through local runtime inventory
