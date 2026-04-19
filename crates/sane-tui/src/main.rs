@@ -2017,6 +2017,9 @@ fn inspect_inventory(
     let hooks_inventory = inspect_hooks_inventory(codex_paths)?;
     let custom_agents_inventory = inspect_custom_agents_inventory(codex_paths);
     let pack_inventory = inspect_pack_inventory(paths);
+    let expected_packs = active_guidance_packs(paths).ok();
+    let expected_user_skill = expected_packs.map(sane_router_skill);
+    let expected_global_agents = expected_packs.map(sane_global_agents_overlay);
 
     let global_agents_inventory = if !codex_paths.global_agents_md.exists() {
         InventoryItem {
@@ -2030,12 +2033,31 @@ fn inspect_inventory(
         let body =
             fs::read_to_string(&codex_paths.global_agents_md).map_err(|error| error.to_string())?;
         if body.contains(SANE_GLOBAL_AGENTS_BEGIN) && body.contains(SANE_GLOBAL_AGENTS_END) {
+            let status = if let Some(expected) = &expected_global_agents {
+                let rendered = upsert_managed_block(
+                    &body,
+                    SANE_GLOBAL_AGENTS_BEGIN,
+                    SANE_GLOBAL_AGENTS_END,
+                    expected,
+                );
+                if rendered == body {
+                    InventoryStatus::Installed
+                } else {
+                    InventoryStatus::Invalid
+                }
+            } else {
+                InventoryStatus::Installed
+            };
             InventoryItem {
                 name: "global-agents".to_string(),
                 scope: InventoryScope::CodexNative,
-                status: InventoryStatus::Installed,
+                status,
                 path: codex_paths.global_agents_md.display().to_string(),
-                repair_hint: None,
+                repair_hint: if status == InventoryStatus::Invalid {
+                    Some("rerun `export global-agents`".to_string())
+                } else {
+                    None
+                },
             }
         } else {
             InventoryItem {
@@ -2150,13 +2172,33 @@ fn inspect_inventory(
             name: "user-skills".to_string(),
             scope: InventoryScope::CodexNative,
             status: if user_skill_path.exists() {
-                InventoryStatus::Installed
+                if let Some(expected) = &expected_user_skill {
+                    let body =
+                        fs::read_to_string(&user_skill_path).map_err(|error| error.to_string())?;
+                    if body == *expected {
+                        InventoryStatus::Installed
+                    } else {
+                        InventoryStatus::Invalid
+                    }
+                } else {
+                    InventoryStatus::Installed
+                }
             } else {
                 InventoryStatus::Missing
             },
             path: user_skill_path.display().to_string(),
             repair_hint: if user_skill_path.exists() {
-                None
+                if expected_user_skill.is_some() {
+                    let body =
+                        fs::read_to_string(&user_skill_path).map_err(|error| error.to_string())?;
+                    if body == *expected_user_skill.as_ref().unwrap() {
+                        None
+                    } else {
+                        Some("rerun `export user-skills`".to_string())
+                    }
+                } else {
+                    None
+                }
             } else {
                 Some("run `export user-skills`".to_string())
             },
@@ -2271,6 +2313,7 @@ fn doctor_status(item: &InventoryItem) -> String {
         "user-skills" => match item.status {
             InventoryStatus::Installed => "installed".to_string(),
             InventoryStatus::Missing => "missing (run `export user-skills`)".to_string(),
+            InventoryStatus::Invalid => "invalid (rerun `export user-skills`)".to_string(),
             _ => item.status.as_str().to_string(),
         },
         "codex-config" => match item.status {
@@ -2282,6 +2325,7 @@ fn doctor_status(item: &InventoryItem) -> String {
         "global-agents" => match item.status {
             InventoryStatus::Installed => "installed".to_string(),
             InventoryStatus::Missing => "missing (run `export global-agents`)".to_string(),
+            InventoryStatus::Invalid => "invalid (rerun `export global-agents`)".to_string(),
             InventoryStatus::PresentWithoutSaneBlock => "present without Sane block".to_string(),
             _ => item.status.as_str().to_string(),
         },
@@ -3583,6 +3627,31 @@ mod tests {
 
         assert!(body.contains("cavemem pack active"));
         assert!(body.contains("rtk pack active"));
+    }
+
+    #[test]
+    fn status_reports_pack_drift_for_exported_guidance_assets() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        let paths = sane_platform::ProjectPaths::discover(project.path()).unwrap();
+
+        let base = sane_config::LocalConfig::default();
+        let _ = super::save_config(&paths, &base).unwrap();
+        let _ = run_with_home(&["export", "user-skills"], project.path(), home.path()).unwrap();
+        let _ = run_with_home(&["export", "global-agents"], project.path(), home.path()).unwrap();
+
+        let mut changed = sane_config::LocalConfig::default();
+        changed.packs.caveman = true;
+        let _ = super::save_config(&paths, &changed).unwrap();
+
+        let status = run_with_home(&["status"], project.path(), home.path()).unwrap();
+        let doctor = run_with_home(&["doctor"], project.path(), home.path()).unwrap();
+
+        assert!(status.contains("user-skills: invalid (rerun `export user-skills`)"));
+        assert!(status.contains("global-agents: invalid (rerun `export global-agents`)"));
+        assert!(doctor.contains("user-skills: invalid (rerun `export user-skills`)"));
+        assert!(doctor.contains("global-agents: invalid (rerun `export global-agents`)"));
     }
 
     #[test]

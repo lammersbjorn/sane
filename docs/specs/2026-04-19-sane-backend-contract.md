@@ -45,6 +45,7 @@ Current managed targets are:
 Current managed export behavior also depends on local config:
 - exported `sane-router` skill content can reflect enabled guidance packs
 - exported global `AGENTS.md` overlay can reflect enabled guidance packs
+- status/doctor should flag those assets as invalid when current exports drift from enabled guidance-pack config
 
 ## Required Operations
 

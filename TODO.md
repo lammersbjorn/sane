@@ -59,6 +59,7 @@ Implemented:
 - built-in pack state exposed in status / doctor inventory
 - optional packs currently show configured vs disabled truthfully; managed pack installation still deferred
 - exported `sane-router` skill and global AGENTS overlay now reflect enabled guidance packs
+- status/doctor now catch drift when exported guidance assets no longer match enabled packs
 - `export all` / `uninstall all` for current managed targets
 
 Current gate:
