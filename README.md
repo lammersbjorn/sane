@@ -16,6 +16,7 @@ Already implemented:
 - first managed Codex-native user surfaces:
   - `~/.agents/skills/sane-router`
   - optional `~/.codex/AGENTS.md` overlay block
+- `doctor` now inspects both `.sane` operational state and managed Codex-native user assets
 
 ## Quick Start
 

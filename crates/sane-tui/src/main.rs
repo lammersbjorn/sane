@@ -60,7 +60,7 @@ fn run_with_home(args: &[&str], cwd: &Path, home: &Path) -> Result<String, Strin
         Command::Summary => Ok(render_summary()),
         Command::Install => install_runtime(&paths),
         Command::Config => show_config(&paths),
-        Command::Doctor => doctor_runtime(&paths),
+        Command::Doctor => doctor_runtime(&paths, &codex_paths),
         Command::Export => Ok("export: available targets: user-skills, global-agents".to_string()),
         Command::ExportUserSkills => export_user_skills(&codex_paths),
         Command::ExportGlobalAgents => export_global_agents(&codex_paths),
@@ -164,7 +164,7 @@ fn show_config(paths: &ProjectPaths) -> Result<String, String> {
     ))
 }
 
-fn doctor_runtime(paths: &ProjectPaths) -> Result<String, String> {
+fn doctor_runtime(paths: &ProjectPaths, codex_paths: &CodexPaths) -> Result<String, String> {
     let runtime_ok = paths.runtime_root.exists();
     let config_status = if !paths.config_path.exists() {
         "missing".to_string()
@@ -184,13 +184,33 @@ fn doctor_runtime(paths: &ProjectPaths) -> Result<String, String> {
     } else {
         "invalid current-run.json (rerun install)".to_string()
     };
+    let user_skill_dir = codex_paths.user_skills_dir.join(SANE_ROUTER_SKILL_NAME);
+    let user_skill_status = if user_skill_dir.join("SKILL.md").exists() {
+        "installed".to_string()
+    } else {
+        "missing (run `export user-skills`)".to_string()
+    };
+    let global_agents_status = if !codex_paths.global_agents_md.exists() {
+        "missing (run `export global-agents`)".to_string()
+    } else {
+        let body =
+            fs::read_to_string(&codex_paths.global_agents_md).map_err(|error| error.to_string())?;
+        if body.contains(SANE_GLOBAL_AGENTS_BEGIN) && body.contains(SANE_GLOBAL_AGENTS_END) {
+            "installed".to_string()
+        } else {
+            "present without Sane block".to_string()
+        }
+    };
 
     Ok(format!(
-        "runtime: {}\nconfig: {}\nstate: {}\nroot: {}",
+        "runtime: {}\nconfig: {}\nstate: {}\nuser-skills: {}\nglobal-agents: {}\nroot: {}\ncodex-home: {}",
         if runtime_ok { "ok" } else { "missing" },
         config_status,
         state_status,
-        paths.runtime_root.display()
+        user_skill_status,
+        global_agents_status,
+        paths.runtime_root.display(),
+        codex_paths.codex_home.display()
     ))
 }
 
@@ -331,25 +351,29 @@ mod tests {
     #[test]
     fn doctor_reports_runtime_status() {
         let dir = tempdir().unwrap();
-        let _ = run(&["install"], dir.path()).unwrap();
-        let output = run(&["doctor"], dir.path()).unwrap();
+        let home = tempdir().unwrap();
+        let _ = run_with_home(&["install"], dir.path(), home.path()).unwrap();
+        let output = run_with_home(&["doctor"], dir.path(), home.path()).unwrap();
 
         assert!(output.contains("runtime: ok"));
         assert!(output.contains("config: ok"));
         assert!(output.contains("state: ok"));
+        assert!(output.contains("user-skills: missing"));
+        assert!(output.contains("global-agents: missing"));
     }
 
     #[test]
     fn doctor_reports_invalid_config() {
         let dir = tempdir().unwrap();
-        let _ = run(&["install"], dir.path()).unwrap();
+        let home = tempdir().unwrap();
+        let _ = run_with_home(&["install"], dir.path(), home.path()).unwrap();
         std::fs::write(
             dir.path().join(".sane").join("config.local.toml"),
             "not = [valid",
         )
         .unwrap();
 
-        let output = run(&["doctor"], dir.path()).unwrap();
+        let output = run_with_home(&["doctor"], dir.path(), home.path()).unwrap();
 
         assert!(output.contains("config: invalid"));
         assert!(output.contains("rerun install"));
@@ -358,7 +382,8 @@ mod tests {
     #[test]
     fn doctor_reports_missing_current_run_snapshot() {
         let dir = tempdir().unwrap();
-        let _ = run(&["install"], dir.path()).unwrap();
+        let home = tempdir().unwrap();
+        let _ = run_with_home(&["install"], dir.path(), home.path()).unwrap();
         std::fs::remove_file(
             dir.path()
                 .join(".sane")
@@ -367,7 +392,7 @@ mod tests {
         )
         .unwrap();
 
-        let output = run(&["doctor"], dir.path()).unwrap();
+        let output = run_with_home(&["doctor"], dir.path(), home.path()).unwrap();
 
         assert!(output.contains("state: missing current-run.json"));
         assert!(output.contains("rerun install"));
@@ -489,5 +514,21 @@ mod tests {
         let body = std::fs::read_to_string(codex_dir.join("AGENTS.md")).unwrap();
         assert!(output.contains("uninstall global-agents"));
         assert_eq!(body, "existing rules\n");
+    }
+
+    #[test]
+    fn doctor_reports_installed_managed_assets() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+
+        let _ = run_with_home(&["install"], project.path(), home.path()).unwrap();
+        let _ = run_with_home(&["export", "user-skills"], project.path(), home.path()).unwrap();
+        let _ = run_with_home(&["export", "global-agents"], project.path(), home.path()).unwrap();
+
+        let output = run_with_home(&["doctor"], project.path(), home.path()).unwrap();
+
+        assert!(output.contains("user-skills: installed"));
+        assert!(output.contains("global-agents: installed"));
     }
 }

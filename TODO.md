@@ -66,7 +66,7 @@ cargo test
 - [x] Expand `LocalConfig` into a real runtime config schema
 - [x] Add model preset structures for coordinator, sidecar, and verifier roles
 - [ ] Add first-class subagent/model selection config that respects subscription/capability constraints
-- [ ] Improve `doctor` with real checks and actionable repair suggestions
+- [x] Improve `doctor` with real checks and actionable repair suggestions
 - [x] Replace placeholder `export` with the first real Codex-native asset management boundary
 - [x] Add symmetric uninstall flow for managed user-skill assets
 
@@ -76,6 +76,7 @@ cargo test
 - [ ] Add context compaction / handoff primitives
 - [ ] Add next Codex-native asset targets and layout (`hooks`, optional custom agents, future repo overlays)
 - [ ] Add better install flow UX in the TUI
+- [ ] Add codex-native asset status listing / inventory view
 - [ ] Add update and rollback flow design
 - [ ] Add explicit privacy/telemetry config structures
 - [ ] Add issue-relay draft flow design
