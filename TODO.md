@@ -7,9 +7,12 @@ High-signal handoff file for continuing `Sane` across agents and sessions.
 Before changing architecture or product direction, read:
 
 - `docs/decisions/2026-04-19-sane-decision-log.md`
+- `docs/plans/2026-04-19-sane-strict-implementation-plan.md`
+- `docs/specs/2026-04-19-sane-backend-contract.md`
 - `docs/specs/2026-04-19-sane-design.md`
 
 Do not re-litigate already-locked philosophy unless a new decision log explicitly changes it.
+Do not skip ahead of the strict implementation plan.
 
 ## Hard Guardrails
 
@@ -114,11 +117,13 @@ cargo test
 
 ## Suggested Next Slice
 
-Recommended next implementation slice:
+See:
 
-1. make `doctor` validate config and state properly
-2. define the first Codex-native installation targets
-3. implement managed asset generation/install for one thin target surface
-4. add uninstall + repair flows for each managed target
-5. expand to the next safe additive Codex-native target without turning Sane into a wrapper
-6. keep the TUI shell thin while the Codex-facing asset manager gets smarter
+- `docs/plans/2026-04-19-sane-strict-implementation-plan.md`
+
+Current allowed next slice:
+
+1. stabilize backend contract for TUI wrapping
+2. verify it
+3. document it
+4. only then move to the proper interactive TUI phase
