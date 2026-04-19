@@ -1063,7 +1063,9 @@ fn doctor_runtime(
     let inventory = inspect_inventory(paths, codex_paths)?;
     let runtime = find_inventory(&inventory, "runtime");
     let config = find_inventory(&inventory, "config");
-    let state = find_inventory(&inventory, "state");
+    let current_run = find_inventory(&inventory, "current-run");
+    let summary = find_inventory(&inventory, "summary");
+    let brief = find_inventory(&inventory, "brief");
     let user_skills = find_inventory(&inventory, "user-skills");
     let global_agents = find_inventory(&inventory, "global-agents");
     let hooks = find_inventory(&inventory, "hooks");
@@ -1072,10 +1074,12 @@ fn doctor_runtime(
     Ok(OperationResult {
         kind: OperationKind::Doctor,
         summary: format!(
-            "runtime: {}\nconfig: {}\nstate: {}\nuser-skills: {}\nglobal-agents: {}\nhooks: {}\ncustom-agents: {}\nroot: {}\ncodex-home: {}",
+            "runtime: {}\nconfig: {}\ncurrent-run: {}\nsummary: {}\nbrief: {}\nuser-skills: {}\nglobal-agents: {}\nhooks: {}\ncustom-agents: {}\nroot: {}\ncodex-home: {}",
             doctor_status(runtime),
             doctor_status(config),
-            doctor_status(state),
+            doctor_status(current_run),
+            doctor_status(summary),
+            doctor_status(brief),
             doctor_status(user_skills),
             doctor_status(global_agents),
             doctor_status(hooks),
@@ -1166,7 +1170,7 @@ fn inspect_inventory(
             },
         },
         InventoryItem {
-            name: "state".to_string(),
+            name: "current-run".to_string(),
             scope: InventoryScope::LocalRuntime,
             status: if !paths.state_dir.exists() || !paths.current_run_path.exists() {
                 InventoryStatus::Missing
@@ -1179,6 +1183,40 @@ fn inspect_inventory(
             repair_hint: if !paths.state_dir.exists() || !paths.current_run_path.exists() {
                 Some("rerun `install`".to_string())
             } else if RunSnapshot::read_from_path(&paths.current_run_path).is_ok() {
+                None
+            } else {
+                Some("rerun `install`".to_string())
+            },
+        },
+        InventoryItem {
+            name: "summary".to_string(),
+            scope: InventoryScope::LocalRuntime,
+            status: if !paths.state_dir.exists() || !paths.summary_path.exists() {
+                InventoryStatus::Missing
+            } else if RunSummary::read_from_path(&paths.summary_path).is_ok() {
+                InventoryStatus::Installed
+            } else {
+                InventoryStatus::Invalid
+            },
+            path: paths.summary_path.display().to_string(),
+            repair_hint: if !paths.state_dir.exists() || !paths.summary_path.exists() {
+                Some("rerun `install`".to_string())
+            } else if RunSummary::read_from_path(&paths.summary_path).is_ok() {
+                None
+            } else {
+                Some("rerun `install`".to_string())
+            },
+        },
+        InventoryItem {
+            name: "brief".to_string(),
+            scope: InventoryScope::LocalRuntime,
+            status: if paths.brief_path.exists() {
+                InventoryStatus::Installed
+            } else {
+                InventoryStatus::Missing
+            },
+            path: paths.brief_path.display().to_string(),
+            repair_hint: if paths.brief_path.exists() {
                 None
             } else {
                 Some("rerun `install`".to_string())
@@ -1220,10 +1258,21 @@ fn doctor_status(item: &InventoryItem) -> String {
             InventoryStatus::Invalid => "invalid (rerun install)".to_string(),
             _ => item.status.as_str().to_string(),
         },
-        "state" => match item.status {
+        "current-run" => match item.status {
             InventoryStatus::Installed => "ok".to_string(),
             InventoryStatus::Missing => "missing current-run.json (rerun install)".to_string(),
             InventoryStatus::Invalid => "invalid current-run.json (rerun install)".to_string(),
+            _ => item.status.as_str().to_string(),
+        },
+        "summary" => match item.status {
+            InventoryStatus::Installed => "ok".to_string(),
+            InventoryStatus::Missing => "missing summary.json (rerun install)".to_string(),
+            InventoryStatus::Invalid => "invalid summary.json (rerun install)".to_string(),
+            _ => item.status.as_str().to_string(),
+        },
+        "brief" => match item.status {
+            InventoryStatus::Installed => "ok".to_string(),
+            InventoryStatus::Missing => "missing BRIEF.md (rerun install)".to_string(),
             _ => item.status.as_str().to_string(),
         },
         "runtime" => match item.status {
@@ -1916,7 +1965,9 @@ mod tests {
 
         assert!(output.contains("runtime: ok"));
         assert!(output.contains("config: ok"));
-        assert!(output.contains("state: ok"));
+        assert!(output.contains("current-run: ok"));
+        assert!(output.contains("summary: ok"));
+        assert!(output.contains("brief: ok"));
         assert!(output.contains("user-skills: missing"));
         assert!(output.contains("global-agents: missing"));
         assert!(output.contains("hooks: missing"));
@@ -1955,7 +2006,20 @@ mod tests {
 
         let output = run_with_home(&["doctor"], dir.path(), home.path()).unwrap();
 
-        assert!(output.contains("state: missing current-run.json"));
+        assert!(output.contains("current-run: missing current-run.json"));
+        assert!(output.contains("rerun install"));
+    }
+
+    #[test]
+    fn doctor_reports_missing_summary_file() {
+        let dir = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        let _ = run_with_home(&["install"], dir.path(), home.path()).unwrap();
+        std::fs::remove_file(dir.path().join(".sane").join("state").join("summary.json")).unwrap();
+
+        let output = run_with_home(&["doctor"], dir.path(), home.path()).unwrap();
+
+        assert!(output.contains("summary: missing summary.json"));
         assert!(output.contains("rerun install"));
     }
 
@@ -2256,12 +2320,14 @@ mod tests {
         let _ = run_with_home(&["install"], project.path(), home.path()).unwrap();
         let output = run_with_home(&["status"], project.path(), home.path()).unwrap();
 
-        assert!(output.contains("status: 7 managed targets inspected"));
+        assert!(output.contains("status: 9 managed targets inspected"));
         assert!(output.contains("local runtime:"));
         assert!(output.contains("codex-native:"));
         assert!(output.contains("runtime: installed"));
         assert!(output.contains("config: installed"));
-        assert!(output.contains("state: installed"));
+        assert!(output.contains("current-run: installed"));
+        assert!(output.contains("summary: installed"));
+        assert!(output.contains("brief: installed"));
         assert!(output.contains("user-skills: missing (run `export user-skills`)"));
         assert!(output.contains("global-agents: missing (run `export global-agents`)"));
         assert!(output.contains("hooks: missing (run `export hooks`)"));
