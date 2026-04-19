@@ -121,12 +121,18 @@ Recommended first optional integrations:
 - `grep.app`
 
 Why:
-- both have broad utility
-- both materially improve coding/research/testing workflows
-- both make sense for many users, but not every user
+- all three have broad utility
+- all three materially improve coding/research/testing workflows
+- all three make sense for many users, but not every user
 
 Experimental / not default:
 - `OpenSRC`
+
+Provider-specific optional later:
+- `Cloudflare`
+- `GitHub`
+- `Vercel`
+- `Supabase`
 
 Why not default:
 - less proven in this product plan so far
@@ -157,6 +163,11 @@ Why not default:
 - optional `Playwright`
 - optional `grep.app`
 - experimental `OpenSRC`
+- provider-specific profiles later:
+  - `Cloudflare`
+  - `GitHub`
+  - `Vercel`
+  - `Supabase`
 
 ## `v1` Recommendation
 

@@ -21,7 +21,8 @@ Already implemented:
 - read-only Codex config inspection for current model, reasoning, MCP, plugin, and trust summary
 - opt-in local backup of `~/.codex/config.toml` into `.sane/backups/codex-config/`
 - read-only preview plus explicit opt-in apply/restore flow for the narrow core Codex profile
-- read-only preview of the separate recommended integrations profile (`Context7` + `Playwright` + `grep.app`)
+- read-only preview plus explicit opt-in apply flow for the separate recommended integrations profile (`Context7` + `Playwright` + `grep.app`)
+- separate explicit opt-in Cloudflare provider profile for Cloudflare MCP tooling
 - backend/dev escape hatch verbs for `install`, `config`, `status`, `doctor`, `export`, and `uninstall`
 - grouped audit view separating local runtime state from Codex-native managed assets
 - first managed user-level hooks target at `~/.codex/hooks.json`
@@ -75,8 +76,11 @@ cargo run -p sane-tui -- config
 cargo run -p sane-tui -- codex-config
 cargo run -p sane-tui -- preview codex-profile
 cargo run -p sane-tui -- preview integrations-profile
+cargo run -p sane-tui -- preview cloudflare-profile
 cargo run -p sane-tui -- backup codex-config
 cargo run -p sane-tui -- apply codex-profile
+cargo run -p sane-tui -- apply integrations-profile
+cargo run -p sane-tui -- apply cloudflare-profile
 cargo run -p sane-tui -- restore codex-config
 cargo run -p sane-tui -- doctor
 cargo run -p sane-tui -- export all
@@ -96,6 +100,12 @@ Current Codex config note:
   - `model`
   - `model_reasoning_effort`
   - `features.codex_hooks`
+- Current managed integrations writes are also explicit opt-in only:
+  - `mcp_servers.context7`
+  - `mcp_servers.playwright`
+  - `mcp_servers.grep_app`
+- Separate provider profile currently supported:
+  - `mcp_servers.cloudflare-api`
 - Everything else is preserved.
 
 ## Commit Hook

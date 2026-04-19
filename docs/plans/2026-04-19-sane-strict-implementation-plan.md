@@ -116,6 +116,18 @@ Must answer:
 - what must never be collected
 - inspect/reset UX
 
+### R6. Packaging / Distribution Strategy
+
+Goal:
+- decide how `Sane` becomes broadly installable after `v1`
+
+Must answer:
+- canonical release artifact source
+- macOS/Linux package path
+- Windows package path
+- Rust-native fallback path
+- automation and signing implications
+
 ## Build Gates
 
 Only build these in order.
@@ -258,6 +270,7 @@ Current repo already has:
 Current mismatch with locked product direction:
 - pack/plugin-ready architecture not yet reflected clearly enough in plan/docs
 - builtin pack work not clearly separated into research gate
+- packaging/distribution plan not yet reflected clearly enough in plan/docs
 
 ## Working Rule For Any Agent
 

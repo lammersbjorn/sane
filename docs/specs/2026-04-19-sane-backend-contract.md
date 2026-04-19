@@ -21,7 +21,7 @@ This contract covers only:
 - local operational runtime setup under `.sane`
 - current managed Codex-native user assets
 - status / doctor reporting
-- config inspection
+- narrow Codex config profile management
 
 It does not yet cover:
 
@@ -40,10 +40,7 @@ Current managed targets are:
 3. optional additive global overlay block in `~/.codex/AGENTS.md`
 4. additive user-level hooks entry in `~/.codex/hooks.json`
 5. additive user-level custom agents in `~/.codex/agents/`
-
-Current read-only inspected Codex surface:
-
-1. user-level Codex config at `~/.codex/config.toml`
+6. narrow explicit opt-in profile management for user-level Codex config at `~/.codex/config.toml`
 
 ## Required Operations
 
@@ -82,6 +79,27 @@ These are the backend actions the TUI is allowed to call in the current phase.
     - `playwright`
     - `grep.app`
   - do not treat `opensrc` as default recommended profile
+
+- `apply_integrations_profile`
+  - backup current `~/.codex/config.toml` first when it exists
+  - write only missing recommended integrations:
+    - `mcp_servers.context7`
+    - `mcp_servers.playwright`
+    - `mcp_servers.grep_app`
+  - leave `opensrc` outside the default recommended profile
+  - preserve all unrelated user config
+
+- `preview_cloudflare_profile`
+  - compute read-only optional provider profile changes for Cloudflare
+  - current provider target:
+    - `cloudflare-api`
+  - keep it separate from the broad recommended integrations profile
+
+- `apply_cloudflare_profile`
+  - backup current `~/.codex/config.toml` first when it exists
+  - write only:
+    - `mcp_servers.cloudflare-api`
+  - preserve all unrelated user config
 
 - `apply_codex_profile`
   - backup current `~/.codex/config.toml` first when it exists
@@ -196,8 +214,9 @@ Current implementation note:
 - current TUI status panel renders those two groups separately
 - current hooks target is user-level only and uses the `sane-tui` binary itself as the managed `SessionStart` command
 - current custom-agents target installs two read-only managed agents: `sane-reviewer` and `sane-explorer`
-- current Codex config work supports narrow explicit opt-in writes for the core profile only
-- integrations remain preview-only for now
+- current Codex config work supports narrow explicit opt-in writes for the core profile
+- current integrations profile work supports narrow explicit opt-in writes for recommended MCP servers only
+- current Cloudflare profile work supports separate explicit opt-in provider-profile writes only
 
 ## TUI Boundary Rule
 

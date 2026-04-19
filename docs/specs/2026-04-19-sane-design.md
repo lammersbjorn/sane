@@ -73,7 +73,7 @@ Prompt bloat, giant always-loaded methodology, and excessive orchestration are p
 - first thin implemented surfaces:
   - user-level skills under `~/.agents/skills`
   - optional additive global overlay in `~/.codex/AGENTS.md`
-  - read-only inspection of `~/.codex/config.toml`
+  - narrow explicit opt-in management of `~/.codex/config.toml`
 
 3. Thin local operational state
 - local-only by default
@@ -90,7 +90,9 @@ Current Codex settings stance:
 - backup before managed writes
 - keep bare core profile narrow
 - treat integrations as separate opt-in profile work
+- treat provider-specific stacks like Cloudflare as separate opt-in profiles
 - preserve unrelated user config when applying core profile
+- preserve unrelated user config when applying recommended integrations
 
 ## State Model
 

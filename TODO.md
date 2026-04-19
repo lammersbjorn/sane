@@ -52,7 +52,8 @@ Implemented:
 - opt-in local backup flow for `~/.codex/config.toml`
 - read-only preview of recommended core Codex profile changes
 - explicit opt-in apply / restore flow for narrow core Codex profile
-- read-only preview for separate recommended integrations profile
+- explicit opt-in apply flow for separate recommended integrations profile
+- explicit opt-in Cloudflare provider profile for Cloudflare MCP tooling
 - `export all` / `uninstall all` for current managed targets
 
 Current gate:
@@ -95,6 +96,7 @@ cargo test
 - [x] `R3` state / compaction design
 - [x] `R4` Codex-native surface map
 - [x] `R5` privacy / telemetry schema
+- [x] `R6` packaging / distribution audit
 
 ## Build Gates
 
@@ -110,12 +112,19 @@ cargo test
 - [ ] Self-hosting shadow mode
 - [ ] Eval harness for routing, compaction, and self-improvement
 - [ ] Windows/macOS/Linux path and install hardening passes
+- [ ] Packaging/distribution rollout after `v1`:
+  - GitHub Releases
+  - Homebrew tap
+  - winget
+  - Scoop
+  - crates.io / cargo-binstall polish
 
 ## Open Research / Decisions
 
 - [ ] Exact TUI library choice
 - [ ] Exact `v1` built-in packs
 - [ ] Exact self-hosting milestone checklist
+- [ ] Exact post-`v1` packaging automation sequence
 
 ## Agent Working Rules
 

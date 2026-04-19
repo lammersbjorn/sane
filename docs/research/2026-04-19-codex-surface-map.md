@@ -73,7 +73,7 @@ Observed local behavior:
 - schema stability is less explicit than the surfaces above, so treat it as a higher-risk target
 
 Sane implication:
-- user-level Codex settings can become an opt-in managed surface later
+- user-level Codex settings are valid as an opt-in managed surface
 - never treat config takeover as baseline install behavior
 - require preserve / diff preview / backup / restore before touching it
 - MCP/plugin presets like `Context7`, `Playwright`, or `grep.app` belong here if Sane manages them later
@@ -88,7 +88,7 @@ These are safe as baseline because they do not mutate the repo:
 - `~/.codex/hooks.json`
 - optional managed block inside `~/.codex/AGENTS.md`
 - thin project-local `.sane`
-- not `~/.codex/config.toml` yet
+- no automatic `~/.codex/config.toml` mutation
 
 ### Optional repo export phase
 
@@ -106,13 +106,13 @@ Why this order:
 - repo custom agents are useful once teams want shared specialist roles
 - repo hooks are highest-risk because they execute code and stack with user hooks
 
-Optional later user-level target:
+Optional user-level target:
 5. `~/.codex/config.toml` profile management
 
-Why later:
+Why optional:
 - highest chance of clobbering unrelated user settings
 - “best” values are opinionated and may vary by subscription and platform
-- needs diff preview, backup, and restore before it is safe enough
+- must keep diff preview, backup, and restore before it is safe enough
 - this is also the right place for optional recommended MCP/plugin presets rather than core default install
 
 ## Sane v1 Recommendation
@@ -129,7 +129,7 @@ Recommended managed surfaces for `v1`:
 - user hooks
 - user custom agents
 - optional global `AGENTS.md` overlay
-- user config profile later only, never default
+- optional user config profile management, never default
 - no repo export by default
 
 ## Deferred
@@ -140,7 +140,7 @@ Defer until after repo export UX is explicit:
 - root `AGENTS.md` generation with merge/update logic
 - per-subdirectory `.agents/skills` export strategy
 - managed plugin distribution format
-- managed `~/.codex/config.toml` presets until safe preview/restore UX exists
+- broader managed `~/.codex/config.toml` presets beyond the current narrow explicit opt-in profiles
 
 ## Decision
 

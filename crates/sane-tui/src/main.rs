@@ -112,7 +112,10 @@ fn run_with_home(args: &[&str], cwd: &Path, home: &Path) -> Result<String, Strin
         | Command::BackupCodexConfig
         | Command::PreviewCodexProfile
         | Command::PreviewIntegrationsProfile
+        | Command::PreviewCloudflareProfile
         | Command::ApplyCodexProfile
+        | Command::ApplyIntegrationsProfile
+        | Command::ApplyCloudflareProfile
         | Command::RestoreCodexConfig
         | Command::Status
         | Command::Doctor
@@ -131,10 +134,14 @@ fn run_with_home(args: &[&str], cwd: &Path, home: &Path) -> Result<String, Strin
             "export: available targets: all, user-skills, global-agents, hooks, custom-agents"
                 .to_string(),
         ),
-        Command::Preview => {
-            Ok("preview: available targets: codex-profile, integrations-profile".to_string())
-        }
-        Command::Apply => Ok("apply: available targets: codex-profile".to_string()),
+        Command::Preview => Ok(
+            "preview: available targets: codex-profile, integrations-profile, cloudflare-profile"
+                .to_string(),
+        ),
+        Command::Apply => Ok(
+            "apply: available targets: codex-profile, integrations-profile, cloudflare-profile"
+                .to_string(),
+        ),
         Command::Restore => Ok("restore: available targets: codex-config".to_string()),
         Command::Uninstall => Ok(
             "uninstall: available targets: all, user-skills, global-agents, hooks, custom-agents"
@@ -153,8 +160,11 @@ enum Command {
     Preview,
     PreviewCodexProfile,
     PreviewIntegrationsProfile,
+    PreviewCloudflareProfile,
     Apply,
     ApplyCodexProfile,
+    ApplyIntegrationsProfile,
+    ApplyCloudflareProfile,
     Restore,
     RestoreCodexConfig,
     Status,
@@ -184,8 +194,11 @@ impl Command {
             (Some("backup"), Some("codex-config")) => Ok(Self::BackupCodexConfig),
             (Some("preview"), Some("codex-profile")) => Ok(Self::PreviewCodexProfile),
             (Some("preview"), Some("integrations-profile")) => Ok(Self::PreviewIntegrationsProfile),
+            (Some("preview"), Some("cloudflare-profile")) => Ok(Self::PreviewCloudflareProfile),
             (Some("preview"), None) => Ok(Self::Preview),
             (Some("apply"), Some("codex-profile")) => Ok(Self::ApplyCodexProfile),
+            (Some("apply"), Some("integrations-profile")) => Ok(Self::ApplyIntegrationsProfile),
+            (Some("apply"), Some("cloudflare-profile")) => Ok(Self::ApplyCloudflareProfile),
             (Some("apply"), None) => Ok(Self::Apply),
             (Some("restore"), Some("codex-config")) => Ok(Self::RestoreCodexConfig),
             (Some("restore"), None) => Ok(Self::Restore),
@@ -221,7 +234,10 @@ fn execute_backend_command(
         Command::BackupCodexConfig => backup_codex_config(paths, codex_paths),
         Command::PreviewCodexProfile => preview_codex_profile(codex_paths),
         Command::PreviewIntegrationsProfile => preview_integrations_profile(codex_paths),
+        Command::PreviewCloudflareProfile => preview_cloudflare_profile(codex_paths),
         Command::ApplyCodexProfile => apply_codex_profile(paths, codex_paths),
+        Command::ApplyIntegrationsProfile => apply_integrations_profile(paths, codex_paths),
+        Command::ApplyCloudflareProfile => apply_cloudflare_profile(paths, codex_paths),
         Command::RestoreCodexConfig => restore_codex_config(paths, codex_paths),
         Command::Status => inventory_status(paths, codex_paths),
         Command::Doctor => doctor_runtime(paths, codex_paths),
@@ -443,6 +459,15 @@ impl TuiApp {
                     "Preview integrations profile",
                     Command::PreviewIntegrationsProfile,
                 ),
+                TuiAction::backend(
+                    "Preview Cloudflare profile",
+                    Command::PreviewCloudflareProfile,
+                ),
+                TuiAction::backend(
+                    "Apply integrations profile",
+                    Command::ApplyIntegrationsProfile,
+                ),
+                TuiAction::backend("Apply Cloudflare profile", Command::ApplyCloudflareProfile),
                 TuiAction::backend("Backup Codex config", Command::BackupCodexConfig),
                 TuiAction::backend("Apply Codex profile", Command::ApplyCodexProfile),
                 TuiAction::backend("Restore Codex config", Command::RestoreCodexConfig),
@@ -930,7 +955,10 @@ fn operation_kind_label(kind: OperationKind) -> &'static str {
         OperationKind::BackupCodexConfig => "backup_codex_config",
         OperationKind::PreviewCodexProfile => "preview_codex_profile",
         OperationKind::PreviewIntegrationsProfile => "preview_integrations_profile",
+        OperationKind::PreviewCloudflareProfile => "preview_cloudflare_profile",
         OperationKind::ApplyCodexProfile => "apply_codex_profile",
+        OperationKind::ApplyIntegrationsProfile => "apply_integrations_profile",
+        OperationKind::ApplyCloudflareProfile => "apply_cloudflare_profile",
         OperationKind::RestoreCodexConfig => "restore_codex_config",
         OperationKind::ResetTelemetryData => "reset_telemetry_data",
         OperationKind::ShowStatus => "show_status",
@@ -1153,8 +1181,9 @@ fn show_codex_config(codex_paths: &CodexPaths) -> Result<OperationResult, String
                 codex_paths.config_toml.display()
             ),
             details: vec![
-                "read-only today".to_string(),
-                "future settings profile stays opt-in with diff preview and backup".to_string(),
+                "no user Codex config exists yet".to_string(),
+                "use `apply codex-profile` or `apply integrations-profile` to create one"
+                    .to_string(),
             ],
             paths_touched: vec![codex_paths.config_toml.display().to_string()],
             inventory: vec![inventory],
@@ -1187,7 +1216,7 @@ fn backup_codex_config(
                 "codex-config backup: nothing to back up at {}",
                 codex_paths.config_toml.display()
             ),
-            details: vec!["read-only today".to_string()],
+            details: vec!["no ~/.codex/config.toml exists yet".to_string()],
             paths_touched: vec![codex_paths.config_toml.display().to_string()],
             inventory: vec![inventory],
         });
@@ -1273,6 +1302,32 @@ fn preview_integrations_profile(codex_paths: &CodexPaths) -> Result<OperationRes
     })
 }
 
+fn preview_cloudflare_profile(codex_paths: &CodexPaths) -> Result<OperationResult, String> {
+    let inventory = inspect_codex_config_inventory(codex_paths)?;
+    let details = match inventory.status {
+        InventoryStatus::Missing => vec![
+            "cloudflare-api: missing -> optional provider profile".to_string(),
+            "oauth and permissions stay explicit at connect time".to_string(),
+            "note: not part of the broad recommended integrations profile".to_string(),
+        ],
+        InventoryStatus::Invalid => vec![
+            "cannot preview cloudflare profile until ~/.codex/config.toml parses cleanly"
+                .to_string(),
+            "repair current config first".to_string(),
+        ],
+        _ => cloudflare_profile_preview_details(&read_codex_config(&codex_paths.config_toml)?),
+    };
+    let change_count = details.iter().filter(|line| line.contains("->")).count();
+
+    Ok(OperationResult {
+        kind: OperationKind::PreviewCloudflareProfile,
+        summary: format!("cloudflare-profile preview: {change_count} recommended change(s)"),
+        details,
+        paths_touched: vec![codex_paths.config_toml.display().to_string()],
+        inventory: vec![inventory],
+    })
+}
+
 fn apply_codex_profile(
     paths: &ProjectPaths,
     codex_paths: &CodexPaths,
@@ -1335,6 +1390,181 @@ fn apply_codex_profile(
     Ok(OperationResult {
         kind: OperationKind::ApplyCodexProfile,
         summary: "codex-profile apply: wrote recommended core profile".to_string(),
+        details,
+        paths_touched,
+        inventory: vec![InventoryItem {
+            name: "codex-config".to_string(),
+            scope: InventoryScope::CodexNative,
+            status: InventoryStatus::Installed,
+            path: codex_paths.config_toml.display().to_string(),
+            repair_hint: None,
+        }],
+    })
+}
+
+fn apply_integrations_profile(
+    paths: &ProjectPaths,
+    codex_paths: &CodexPaths,
+) -> Result<OperationResult, String> {
+    paths
+        .ensure_runtime_dirs()
+        .map_err(|error| error.to_string())?;
+
+    let inventory = inspect_codex_config_inventory(codex_paths)?;
+    if inventory.status == InventoryStatus::Invalid {
+        return Ok(OperationResult {
+            kind: OperationKind::ApplyIntegrationsProfile,
+            summary: "integrations-profile apply: blocked by invalid config".to_string(),
+            details: vec![
+                "repair ~/.codex/config.toml first".to_string(),
+                "Sane only writes after a clean parse".to_string(),
+            ],
+            paths_touched: vec![codex_paths.config_toml.display().to_string()],
+            inventory: vec![inventory],
+        });
+    }
+
+    let current_config = if inventory.status == InventoryStatus::Installed {
+        read_codex_config(&codex_paths.config_toml)?
+    } else {
+        TomlValue::Table(toml::map::Map::new())
+    };
+    let before_details = if inventory.status == InventoryStatus::Installed {
+        integration_profile_preview_details(&current_config)
+    } else {
+        vec![
+            "context7: missing -> recommended".to_string(),
+            "playwright: missing -> recommended".to_string(),
+            "grep.app: missing -> recommended".to_string(),
+            "opensrc: optional, not in default recommended profile".to_string(),
+        ]
+    };
+
+    let mut updated_config = current_config.clone();
+    let applied_keys = apply_integrations_profile_to_value(&mut updated_config)?;
+
+    if applied_keys.is_empty() {
+        return Ok(OperationResult {
+            kind: OperationKind::ApplyIntegrationsProfile,
+            summary: "integrations-profile apply: already satisfied".to_string(),
+            details: before_details,
+            paths_touched: vec![codex_paths.config_toml.display().to_string()],
+            inventory: vec![inventory],
+        });
+    }
+
+    let backup_path = if inventory.status == InventoryStatus::Installed {
+        Some(write_codex_config_backup(paths, codex_paths)?)
+    } else {
+        None
+    };
+
+    write_codex_config(&codex_paths.config_toml, &updated_config)?;
+
+    let mut details = before_details;
+    details.push(format!("applied keys: {}", applied_keys.join(", ")));
+    details.push("opensrc left untouched".to_string());
+    if let Some(path) = &backup_path {
+        details.push(format!("backup: {}", path.display()));
+    } else {
+        details.push("backup: skipped (no prior config existed)".to_string());
+    }
+
+    let mut paths_touched = vec![codex_paths.config_toml.display().to_string()];
+    if let Some(path) = &backup_path {
+        paths_touched.push(path.display().to_string());
+    }
+
+    Ok(OperationResult {
+        kind: OperationKind::ApplyIntegrationsProfile,
+        summary: "integrations-profile apply: wrote recommended integrations".to_string(),
+        details,
+        paths_touched,
+        inventory: vec![InventoryItem {
+            name: "codex-config".to_string(),
+            scope: InventoryScope::CodexNative,
+            status: InventoryStatus::Installed,
+            path: codex_paths.config_toml.display().to_string(),
+            repair_hint: None,
+        }],
+    })
+}
+
+fn apply_cloudflare_profile(
+    paths: &ProjectPaths,
+    codex_paths: &CodexPaths,
+) -> Result<OperationResult, String> {
+    paths
+        .ensure_runtime_dirs()
+        .map_err(|error| error.to_string())?;
+
+    let inventory = inspect_codex_config_inventory(codex_paths)?;
+    if inventory.status == InventoryStatus::Invalid {
+        return Ok(OperationResult {
+            kind: OperationKind::ApplyCloudflareProfile,
+            summary: "cloudflare-profile apply: blocked by invalid config".to_string(),
+            details: vec![
+                "repair ~/.codex/config.toml first".to_string(),
+                "Sane only writes after a clean parse".to_string(),
+            ],
+            paths_touched: vec![codex_paths.config_toml.display().to_string()],
+            inventory: vec![inventory],
+        });
+    }
+
+    let current_config = if inventory.status == InventoryStatus::Installed {
+        read_codex_config(&codex_paths.config_toml)?
+    } else {
+        TomlValue::Table(toml::map::Map::new())
+    };
+    let before_details = if inventory.status == InventoryStatus::Installed {
+        cloudflare_profile_preview_details(&current_config)
+    } else {
+        vec![
+            "cloudflare-api: missing -> optional provider profile".to_string(),
+            "oauth and permissions stay explicit at connect time".to_string(),
+            "note: not part of the broad recommended integrations profile".to_string(),
+        ]
+    };
+
+    let mut updated_config = current_config.clone();
+    let applied_keys = apply_cloudflare_profile_to_value(&mut updated_config)?;
+
+    if applied_keys.is_empty() {
+        return Ok(OperationResult {
+            kind: OperationKind::ApplyCloudflareProfile,
+            summary: "cloudflare-profile apply: already satisfied".to_string(),
+            details: before_details,
+            paths_touched: vec![codex_paths.config_toml.display().to_string()],
+            inventory: vec![inventory],
+        });
+    }
+
+    let backup_path = if inventory.status == InventoryStatus::Installed {
+        Some(write_codex_config_backup(paths, codex_paths)?)
+    } else {
+        None
+    };
+
+    write_codex_config(&codex_paths.config_toml, &updated_config)?;
+
+    let mut details = before_details;
+    details.push(format!("applied keys: {}", applied_keys.join(", ")));
+    details.push("cloudflare stays outside broad recommended-integrations".to_string());
+    if let Some(path) = &backup_path {
+        details.push(format!("backup: {}", path.display()));
+    } else {
+        details.push("backup: skipped (no prior config existed)".to_string());
+    }
+
+    let mut paths_touched = vec![codex_paths.config_toml.display().to_string()];
+    if let Some(path) = &backup_path {
+        paths_touched.push(path.display().to_string());
+    }
+
+    Ok(OperationResult {
+        kind: OperationKind::ApplyCloudflareProfile,
+        summary: "cloudflare-profile apply: wrote optional provider profile".to_string(),
         details,
         paths_touched,
         inventory: vec![InventoryItem {
@@ -1750,7 +1980,7 @@ fn doctor_status(item: &InventoryItem) -> String {
         },
         "codex-config" => match item.status {
             InventoryStatus::Installed => "installed".to_string(),
-            InventoryStatus::Missing => "missing (read-only today)".to_string(),
+            InventoryStatus::Missing => "missing (run `apply codex-profile`)".to_string(),
             InventoryStatus::Invalid => "invalid (repair ~/.codex/config.toml)".to_string(),
             _ => item.status.display_str().to_string(),
         },
@@ -2296,12 +2526,11 @@ fn inspect_codex_config_inventory(codex_paths: &CodexPaths) -> Result<InventoryI
         path: codex_paths.config_toml.display().to_string(),
         repair_hint: match status {
             InventoryStatus::Installed => None,
-            InventoryStatus::Missing => {
-                Some("read-only today; future managed profile stays opt-in".to_string())
-            }
-            InventoryStatus::Invalid => {
-                Some("repair ~/.codex/config.toml before managed profile support".to_string())
-            }
+            InventoryStatus::Missing => Some(
+                "use `apply codex-profile` or `apply integrations-profile` to create it"
+                    .to_string(),
+            ),
+            InventoryStatus::Invalid => Some("repair ~/.codex/config.toml first".to_string()),
             _ => None,
         },
     })
@@ -2371,6 +2600,79 @@ fn apply_core_codex_profile_to_value(config: &mut TomlValue) -> Result<(), Strin
         .ok_or_else(|| "[features] must be a table".to_string())?;
     features_table.insert("codex_hooks".to_string(), TomlValue::Boolean(true));
     Ok(())
+}
+
+fn apply_integrations_profile_to_value(config: &mut TomlValue) -> Result<Vec<String>, String> {
+    let table = config
+        .as_table_mut()
+        .ok_or_else(|| "config.toml root must be a table".to_string())?;
+    let mcp_servers = table
+        .entry("mcp_servers".to_string())
+        .or_insert_with(|| TomlValue::Table(toml::map::Map::new()));
+    let mcp_table = mcp_servers
+        .as_table_mut()
+        .ok_or_else(|| "[mcp_servers] must be a table".to_string())?;
+
+    let mut applied_keys = Vec::new();
+
+    if !mcp_table.contains_key("context7") {
+        let mut context7 = toml::map::Map::new();
+        context7.insert(
+            "url".to_string(),
+            TomlValue::String("https://mcp.context7.com/mcp".to_string()),
+        );
+        mcp_table.insert("context7".to_string(), TomlValue::Table(context7));
+        applied_keys.push("mcp_servers.context7".to_string());
+    }
+
+    if !mcp_table.contains_key("playwright") {
+        let mut playwright = toml::map::Map::new();
+        playwright.insert("command".to_string(), TomlValue::String("npx".to_string()));
+        playwright.insert(
+            "args".to_string(),
+            TomlValue::Array(vec![TomlValue::String(
+                "@playwright/mcp@latest".to_string(),
+            )]),
+        );
+        mcp_table.insert("playwright".to_string(), TomlValue::Table(playwright));
+        applied_keys.push("mcp_servers.playwright".to_string());
+    }
+
+    if !mcp_table.contains_key("grep") && !mcp_table.contains_key("grep_app") {
+        let mut grep_app = toml::map::Map::new();
+        grep_app.insert(
+            "url".to_string(),
+            TomlValue::String("https://mcp.grep.app".to_string()),
+        );
+        mcp_table.insert("grep_app".to_string(), TomlValue::Table(grep_app));
+        applied_keys.push("mcp_servers.grep_app".to_string());
+    }
+
+    Ok(applied_keys)
+}
+
+fn apply_cloudflare_profile_to_value(config: &mut TomlValue) -> Result<Vec<String>, String> {
+    let table = config
+        .as_table_mut()
+        .ok_or_else(|| "config.toml root must be a table".to_string())?;
+    let mcp_servers = table
+        .entry("mcp_servers".to_string())
+        .or_insert_with(|| TomlValue::Table(toml::map::Map::new()));
+    let mcp_table = mcp_servers
+        .as_table_mut()
+        .ok_or_else(|| "[mcp_servers] must be a table".to_string())?;
+
+    if mcp_table.contains_key("cloudflare-api") {
+        return Ok(Vec::new());
+    }
+
+    let mut cloudflare = toml::map::Map::new();
+    cloudflare.insert(
+        "url".to_string(),
+        TomlValue::String("https://mcp.cloudflare.com/mcp".to_string()),
+    );
+    mcp_table.insert("cloudflare-api".to_string(), TomlValue::Table(cloudflare));
+    Ok(vec!["mcp_servers.cloudflare-api".to_string()])
 }
 
 fn codex_config_details(config: &TomlValue) -> Vec<String> {
@@ -2530,6 +2832,23 @@ fn integration_profile_preview_details(config: &TomlValue) -> Vec<String> {
     } else {
         details.push("opensrc: optional, not in default recommended profile".to_string());
     }
+    details
+}
+
+fn cloudflare_profile_preview_details(config: &TomlValue) -> Vec<String> {
+    let mcp_servers = config.get("mcp_servers").and_then(TomlValue::as_table);
+    let has_cloudflare = mcp_servers
+        .map(|table| table.contains_key("cloudflare-api"))
+        .unwrap_or(false);
+
+    let mut details = Vec::new();
+    if has_cloudflare {
+        details.push("cloudflare-api: keep installed".to_string());
+    } else {
+        details.push("cloudflare-api: missing -> optional provider profile".to_string());
+    }
+    details.push("oauth and permissions stay explicit at connect time".to_string());
+    details.push("note: not part of the broad recommended integrations profile".to_string());
     details
 }
 
@@ -2705,7 +3024,7 @@ mod tests {
         assert!(output.contains("current-run: ok"));
         assert!(output.contains("summary: ok"));
         assert!(output.contains("brief: ok"));
-        assert!(output.contains("codex-config: missing (read-only today)"));
+        assert!(output.contains("codex-config: missing (run `apply codex-profile`)"));
         assert!(output.contains("user-skills: missing"));
         assert!(output.contains("global-agents: missing"));
         assert!(output.contains("hooks: missing"));
@@ -3061,6 +3380,9 @@ mod tests {
                 "Inspect Codex config",
                 "Preview Codex profile",
                 "Preview integrations profile",
+                "Preview Cloudflare profile",
+                "Apply integrations profile",
+                "Apply Cloudflare profile",
                 "Backup Codex config",
                 "Apply Codex profile",
                 "Restore Codex config",
@@ -3167,9 +3489,7 @@ mod tests {
         assert!(output.contains("current-run: installed"));
         assert!(output.contains("summary: installed"));
         assert!(output.contains("brief: installed"));
-        assert!(output.contains(
-            "codex-config: missing (read-only today; future managed profile stays opt-in)"
-        ));
+        assert!(output.contains("codex-config: missing (use `apply codex-profile` or `apply integrations-profile` to create it)"));
         assert!(output.contains("user-skills: missing (run `export user-skills`)"));
         assert!(output.contains("global-agents: missing (run `export global-agents`)"));
         assert!(output.contains("hooks: missing (run `export hooks`)"));
@@ -3355,6 +3675,143 @@ url = "https://mcp.context7.com/mcp"
         assert!(body.contains("theme = \"zenburn\""));
         assert!(body.contains("[mcp_servers.context7]"));
         assert!(backup_dir.exists());
+    }
+
+    #[test]
+    fn apply_integrations_profile_adds_only_recommended_entries() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        let codex_dir = home.path().join(".codex");
+        std::fs::create_dir_all(&codex_dir).unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        std::fs::write(
+            codex_dir.join("config.toml"),
+            r#"[mcp_servers.context7]
+url = "https://mcp.context7.com/mcp"
+
+[mcp_servers.opensrc]
+command = "bunx"
+args = ["opensrc-mcp"]
+"#,
+        )
+        .unwrap();
+
+        let output = run_with_home(
+            &["apply", "integrations-profile"],
+            project.path(),
+            home.path(),
+        )
+        .unwrap();
+        let body = std::fs::read_to_string(codex_dir.join("config.toml")).unwrap();
+        let backup_dir = project
+            .path()
+            .join(".sane")
+            .join("backups")
+            .join("codex-config");
+
+        assert!(output.contains("integrations-profile apply: wrote recommended integrations"));
+        assert!(output.contains("applied keys: mcp_servers.playwright, mcp_servers.grep_app"));
+        assert!(output.contains("opensrc left untouched"));
+        assert!(body.contains("[mcp_servers.context7]"));
+        assert!(body.contains("[mcp_servers.playwright]"));
+        assert!(body.contains("command = \"npx\""));
+        assert!(body.contains("\"@playwright/mcp@latest\""));
+        assert!(body.contains("[mcp_servers.grep_app]"));
+        assert!(body.contains("url = \"https://mcp.grep.app\""));
+        assert!(body.contains("[mcp_servers.opensrc]"));
+        assert!(backup_dir.exists());
+    }
+
+    #[test]
+    fn apply_integrations_profile_noops_when_recommendations_already_exist() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        let codex_dir = home.path().join(".codex");
+        std::fs::create_dir_all(&codex_dir).unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        std::fs::write(
+            codex_dir.join("config.toml"),
+            r#"[mcp_servers.context7]
+url = "https://mcp.context7.com/mcp"
+
+[mcp_servers.playwright]
+command = "npx"
+args = ["@playwright/mcp@latest"]
+
+[mcp_servers.grep_app]
+url = "https://mcp.grep.app"
+"#,
+        )
+        .unwrap();
+
+        let output = run_with_home(
+            &["apply", "integrations-profile"],
+            project.path(),
+            home.path(),
+        )
+        .unwrap();
+
+        assert!(output.contains("integrations-profile apply: already satisfied"));
+        assert!(output.contains("context7: keep installed"));
+        assert!(output.contains("playwright: keep installed"));
+        assert!(output.contains("grep.app: keep installed"));
+    }
+
+    #[test]
+    fn preview_cloudflare_profile_reports_optional_provider_profile() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        let codex_dir = home.path().join(".codex");
+        std::fs::create_dir_all(&codex_dir).unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        std::fs::write(
+            codex_dir.join("config.toml"),
+            r#"[mcp_servers.context7]
+url = "https://mcp.context7.com/mcp"
+"#,
+        )
+        .unwrap();
+
+        let output = run_with_home(
+            &["preview", "cloudflare-profile"],
+            project.path(),
+            home.path(),
+        )
+        .unwrap();
+
+        assert!(output.contains("cloudflare-profile preview: 1 recommended change(s)"));
+        assert!(output.contains("cloudflare-api: missing -> optional provider profile"));
+        assert!(output.contains("oauth and permissions stay explicit at connect time"));
+    }
+
+    #[test]
+    fn apply_cloudflare_profile_adds_optional_provider_server_only() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        let codex_dir = home.path().join(".codex");
+        std::fs::create_dir_all(&codex_dir).unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        std::fs::write(
+            codex_dir.join("config.toml"),
+            r#"[mcp_servers.context7]
+url = "https://mcp.context7.com/mcp"
+"#,
+        )
+        .unwrap();
+
+        let output = run_with_home(
+            &["apply", "cloudflare-profile"],
+            project.path(),
+            home.path(),
+        )
+        .unwrap();
+        let body = std::fs::read_to_string(codex_dir.join("config.toml")).unwrap();
+
+        assert!(output.contains("cloudflare-profile apply: wrote optional provider profile"));
+        assert!(output.contains("applied keys: mcp_servers.cloudflare-api"));
+        assert!(body.contains("[mcp_servers.context7]"));
+        assert!(body.contains("[mcp_servers.cloudflare-api]"));
+        assert!(body.contains("url = \"https://mcp.cloudflare.com/mcp\""));
     }
 
     #[test]

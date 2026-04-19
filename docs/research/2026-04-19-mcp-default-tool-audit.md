@@ -34,6 +34,9 @@ If a tool is powerful but high-privilege or provider-specific, it should move to
   - [Vercel MCP docs](https://vercel.com/docs/agent-resources/vercel-mcp)
 - Supabase MCP:
   - [Supabase MCP docs](https://supabase.com/docs/guides/getting-started/mcp)
+- Cloudflare MCP:
+  - [cloudflare/mcp](https://github.com/cloudflare/mcp)
+  - [Cloudflare MCP server docs](https://developers.cloudflare.com/agents/model-context-protocol/mcp-servers-for-cloudflare/)
 - OpenSRC:
   - [opensrc official site](https://opensrc.sh/)
 - MCP security research:
@@ -153,6 +156,24 @@ Why:
 Good future shape:
 - `supabase-dev` optional provider profile with strong warning text
 
+### 8. Cloudflare MCP
+
+Verdict:
+- not broad default
+- add as provider-specific optional profile later
+
+Why:
+- official and well-documented
+- strong token-efficiency story through Cloudflare code mode
+- broad Cloudflare product coverage
+- still provider-specific and permissioned
+- belongs with other cloud/provider profiles, not the “almost everyone” baseline
+
+Good future shape:
+- `cloudflare` optional provider profile
+- preview permissions clearly before install
+- keep it out of the broad recommended profile unless the user explicitly wants Cloudflare tooling
+
 ## Security Implication
 
 The research strongly supports a conservative default posture:
@@ -180,6 +201,7 @@ Keep this profile intentionally small:
 - `github-power`
 - `vercel`
 - `supabase-dev`
+- `cloudflare`
 
 ### Experimental / advanced only
 
@@ -193,3 +215,4 @@ Update the current `recommended-integrations` stance to:
 - add `grep.app`
 - remove `OpenSRC` from default recommended profile
 - move GitHub/Vercel/Supabase into provider-specific optional profiles later
+- move Cloudflare into provider-specific optional profiles later
