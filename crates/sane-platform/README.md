@@ -16,6 +16,15 @@ That includes:
 
 It is also the place for path normalization so `Sane` behaves like a good citizen on macOS, Linux, and Windows.
 
+This is the crate that lets Sane consistently find and manage paths like:
+
+- `.sane/`
+- `~/.agents/skills/`
+- `~/.codex/config.toml`
+- `~/.codex/hooks.json`
+- `~/.codex/AGENTS.md`
+- `~/.codex/agents/`
+
 ## Why This Crate Exists
 
 `Sane` is meant to work on macOS, Linux, and Windows.

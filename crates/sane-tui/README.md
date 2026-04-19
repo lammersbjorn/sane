@@ -20,6 +20,16 @@ It owns the TUI and the action layer behind flows like:
 
 It is the orchestrator that wires stable rules and config to the real world of files, paths, state, and user actions.
 
+This is also the crate that actually installs, previews, applies, repairs, and removes:
+
+- the `sane-router` skill
+- optional pack skills
+- managed `AGENTS.md` guidance
+- managed hooks
+- managed custom agents
+- Codex profile changes
+- local `.sane` runtime files
+
 ## Why This Crate Exists
 
 `Sane` is supposed to feel like a helpful control surface, not another workflow tax.

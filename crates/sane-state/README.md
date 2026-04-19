@@ -26,8 +26,17 @@ The goal is a thin, inspectable layer, not a giant hidden runtime.
 
 - current run snapshots
 - summaries
-- event records
+- event, decision, and artifact records
 - JSON and JSONL read/write helpers
+
+Today that mainly means files like:
+
+- `.sane/state/current-run.json`
+- `.sane/state/summary.json`
+- `.sane/state/events.jsonl`
+- `.sane/state/decisions.jsonl`
+- `.sane/state/artifacts.jsonl`
+- `.sane/BRIEF.md`
 
 ## What It Does Not Own
 

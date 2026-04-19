@@ -31,6 +31,16 @@ Please include:
 - your current commit hash (`git rev-parse HEAD`) if you are running from source
 - any logs or screenshots that help reproduce the problem
 
+It also helps to say which Sane surface failed:
+
+- local `.sane` runtime
+- `sane-router` skill
+- pack skill export
+- global `AGENTS.md` block
+- hooks
+- custom agents
+- Codex config profile preview or apply
+
 For install or config problems, details matter.
 
 ## Scope Reminder

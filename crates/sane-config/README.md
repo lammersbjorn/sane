@@ -15,6 +15,8 @@ When a user changes:
 
 the rules for those settings live here.
 
+Those settings are what drive the generated router skill, pack exports, managed overlays, custom agents, and Codex profile previews.
+
 ## Why This Crate Exists
 
 `Sane` has to keep configuration stable even while the UI, profiles, and install flows evolve.

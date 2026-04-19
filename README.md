@@ -1,4 +1,4 @@
-# ⚖️ Sane
+<h1 align="center">⚖️ Sane</h1>
 
 <p align="center">
   <strong>Make Codex feel better without changing how you work.</strong>
@@ -18,6 +18,7 @@
 <p align="center">
   <a href="#why-sane">Why Sane</a> •
   <a href="#what-sane-is">What Sane Is</a> •
+  <a href="#under-the-hood">Under the Hood</a> •
   <a href="#who-its-for">Who It's For</a> •
   <a href="#how-it-feels">How It Feels</a> •
   <a href="#what-it-manages">What It Manages</a> •
@@ -28,6 +29,9 @@
 > [!WARNING]
 > `Sane` is still pre-release.
 > It is being built in public and actively dogfooded, but the surface area is not stable yet.
+
+> [!NOTE]
+> `Sane` is being built for [Buildstory Hackathon #2](https://www.buildstory.com/projects/sane), where the goal is to ship a real open-source Codex QoL tool in public during the event.
 
 ## Why Sane
 
@@ -42,7 +46,7 @@ Codex is already powerful. The friction is everything around it:
 
 ## What Sane Is
 
-`Sane` is a local-first installer and configuration TUI for Codex.
+`Sane` is a local-first Codex QoL layer.
 
 It helps you:
 
@@ -52,6 +56,9 @@ It helps you:
 - keep long sessions healthier
 - inspect, repair, back up, restore, and uninstall what it manages
 
+The TUI is only the front door.
+The actual product is the Codex-native skills, hooks, agent files, config profiles, and local state that `Sane` installs and manages.
+
 `Sane` is not a replacement chat interface and not a wrapper you have to prompt through every day.
 
 Here, "Codex-native assets" means things like:
@@ -60,6 +67,51 @@ Here, "Codex-native assets" means things like:
 - hooks
 - custom agents
 - managed overlays such as `AGENTS.md` guidance blocks
+
+## Under the Hood
+
+`Sane` works by generating and maintaining native Codex surfaces from one local source of truth.
+
+### What it actually installs and manages
+
+| Surface | What Sane manages | Why it exists |
+| --- | --- | --- |
+| Local config | `.sane/config.local.toml` | Stores model-role defaults, pack toggles, and privacy choices |
+| Router skill | `~/.agents/skills/sane-router/SKILL.md` | Gives Codex a plain-language-first Sane workflow skill |
+| Pack skills | `sane-caveman`, `sane-cavemem`, `sane-rtk`, `sane-frontend-craft` | Add optional guidance layers without forcing commands |
+| Global overlay | managed block inside `~/.codex/AGENTS.md` | Adds always-on Sane guidance without taking over the whole file |
+| Hooks | managed entries inside `~/.codex/hooks.json` | Adds lightweight Codex hook behavior where useful |
+| Custom agents | managed files in `~/.codex/agents/` such as `sane-explorer` and `sane-reviewer` | Gives Sane bounded specialist roles it can lean on later |
+| Codex config | narrow diffs to `~/.codex/config.toml` | Applies recommended core, integrations, and provider profiles safely |
+| Local operational state | `.sane/state/*`, `BRIEF.md`, backups | Lets Sane inspect, repair, summarize, and roll back what it manages |
+
+### How the moving parts fit together
+
+1. You choose defaults in the TUI.
+2. `Sane` stores those choices in `.sane/config.local.toml`.
+3. `Sane` renders native Codex assets from that config:
+   - router skill
+   - optional pack skills
+   - global guidance overlay
+   - hooks
+   - custom agent files
+   - narrow Codex config updates
+4. You keep using Codex normally.
+5. Codex now has those assets available during normal sessions.
+6. `Sane` uses `.sane` state and backups to keep that setup inspectable, repairable, and removable.
+
+### How skills, packs, and agents relate
+
+- `sane-router` is the main plain-language skill. It is the first layer that keeps command ritual optional.
+- packs change the generated guidance around that layer:
+  - `core` = base Sane behavior
+  - `caveman` = token-efficient communication bias
+  - `cavemem` = compact long-session memory bias
+  - `rtk` = prefer RTK-routed shell execution when RTK policy exists
+  - `frontend-craft` = stronger frontend design and anti-generic-UI bias
+- hooks are small glue points, not the whole product
+- custom agents are specialist files for bounded roles, not a visible multi-agent theater
+- `.sane` is operational state for Sane itself, not a replacement runtime for Codex
 
 ## Who It's For
 
@@ -94,7 +146,7 @@ The goal is simple: better behavior, less ceremony.
 
 ## What Sane Does Not Require
 
-- `AGENTS.md`
+- repository-level `AGENTS.md`
 - repo mutation
 - command-first workflows
 - one fixed development methodology
@@ -107,19 +159,29 @@ Repository-level exports may exist later, but they are optional by design.
 ```mermaid
 flowchart LR
     U["You"] --> T["Sane TUI"]
-    T --> C["Codex config and assets"]
-    T --> S["Local .sane state"]
-    U --> X["Codex"]
+    T --> L[".sane/config.local.toml"]
+    L --> R["sane-router skill"]
+    L --> P["optional pack skills"]
+    L --> A["managed AGENTS block"]
+    L --> H["managed hooks"]
+    L --> G["custom agent files"]
+    L --> C["recommended Codex config diffs"]
+    T --> S[".sane state and backups"]
+    R --> X["Codex sessions"]
+    P --> X
+    A --> X
+    H --> X
+    G --> X
     C --> X
-    S --> T
+    U --> X
 ```
 
 In plain English:
 
 - you keep talking to Codex directly
-- `Sane` manages the setup around that workflow
+- `Sane` turns one local config into native Codex behavior
 - local state stays local by default
-- Codex-native surfaces stay first-class
+- the installer is just the control surface for those generated skills, hooks, agents, and config changes
 
 ## Getting Started
 

@@ -16,6 +16,14 @@ That includes:
 - block markers for additive file edits
 - generated text that must stay consistent across surfaces
 
+In practice, that means this crate carries the shared vocabulary behind things like:
+
+- `sane-router`
+- optional pack skills
+- managed `AGENTS.md` blocks
+- managed hook entries
+- managed custom agent files
+
 ## Why This Crate Exists
 
 Without a shared core, the TUI, policy layer, and file-management code drift fast.

@@ -551,41 +551,56 @@ impl TuiApp {
             paths: paths.clone(),
             codex_paths: codex_paths.clone(),
             actions: vec![
-                TuiAction::backend("Install runtime", Command::Install),
-                TuiAction::config_editor("Edit model defaults"),
+                TuiAction::backend("Install or repair local runtime", Command::Install),
+                TuiAction::config_editor("Edit model-role defaults"),
                 TuiAction::pack_editor("Edit built-in packs"),
                 TuiAction::privacy_editor("Privacy / telemetry"),
-                TuiAction::backend("Inspect config", Command::Config),
-                TuiAction::backend("Inspect Codex config", Command::CodexConfig),
-                TuiAction::backend("Preview Codex profile", Command::PreviewCodexProfile),
+                TuiAction::backend("Inspect local Sane config", Command::Config),
+                TuiAction::backend("Inspect current Codex config", Command::CodexConfig),
                 TuiAction::backend(
-                    "Preview integrations profile",
+                    "Preview recommended core Codex profile",
+                    Command::PreviewCodexProfile,
+                ),
+                TuiAction::backend(
+                    "Preview recommended integrations profile",
                     Command::PreviewIntegrationsProfile,
                 ),
                 TuiAction::backend(
-                    "Preview Cloudflare profile",
+                    "Preview optional Cloudflare profile",
                     Command::PreviewCloudflareProfile,
                 ),
                 TuiAction::backend(
-                    "Apply integrations profile",
+                    "Apply recommended integrations profile",
                     Command::ApplyIntegrationsProfile,
                 ),
-                TuiAction::backend("Apply Cloudflare profile", Command::ApplyCloudflareProfile),
-                TuiAction::backend("Backup Codex config", Command::BackupCodexConfig),
-                TuiAction::backend("Apply Codex profile", Command::ApplyCodexProfile),
-                TuiAction::backend("Restore Codex config", Command::RestoreCodexConfig),
-                TuiAction::backend("Inspect adaptive policy", Command::DebugPolicyPreview),
-                TuiAction::backend("Doctor", Command::Doctor),
-                TuiAction::backend("Export user skill", Command::ExportUserSkills),
-                TuiAction::backend("Export global agents", Command::ExportGlobalAgents),
-                TuiAction::backend("Export hooks", Command::ExportHooks),
-                TuiAction::backend("Export custom agents", Command::ExportCustomAgents),
-                TuiAction::backend("Export all", Command::ExportAll),
-                TuiAction::backend("Uninstall all", Command::UninstallAll),
+                TuiAction::backend(
+                    "Apply optional Cloudflare profile",
+                    Command::ApplyCloudflareProfile,
+                ),
+                TuiAction::backend("Create Codex config backup", Command::BackupCodexConfig),
+                TuiAction::backend(
+                    "Apply recommended core Codex profile",
+                    Command::ApplyCodexProfile,
+                ),
+                TuiAction::backend(
+                    "Restore latest Codex config backup",
+                    Command::RestoreCodexConfig,
+                ),
+                TuiAction::backend("Inspect adaptive policy preview", Command::DebugPolicyPreview),
+                TuiAction::backend("Run doctor", Command::Doctor),
+                TuiAction::backend("Export Sane router skill", Command::ExportUserSkills),
+                TuiAction::backend(
+                    "Export managed global AGENTS block",
+                    Command::ExportGlobalAgents,
+                ),
+                TuiAction::backend("Export managed hooks", Command::ExportHooks),
+                TuiAction::backend("Export managed custom agents", Command::ExportCustomAgents),
+                TuiAction::backend("Export all managed assets", Command::ExportAll),
+                TuiAction::backend("Uninstall all Sane-managed assets", Command::UninstallAll),
             ],
             selected: 0,
             status,
-            output: "Ready. Use arrows or j/k. Enter runs action. q quits.".to_string(),
+            output: "Ready. Up/down picks an option. Enter opens or runs it. The middle panel explains the selected option.".to_string(),
             screen: TuiScreen::Home,
         })
     }
@@ -833,7 +848,7 @@ fn render_home(frame: &mut Frame, app: &TuiApp) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3),
+            Constraint::Length(4),
             Constraint::Length(11),
             Constraint::Min(10),
         ])
@@ -841,7 +856,8 @@ fn render_home(frame: &mut Frame, app: &TuiApp) {
 
     let header = Paragraph::new(vec![
         Line::from(NAME),
-        Line::from("Installer/config TUI. Backend verbs stay escape hatch only."),
+        Line::from("Installer and configuration TUI for Sane."),
+        Line::from("Up/down selects. Enter opens or runs. q quits. The detail panel explains the selected option."),
     ])
     .block(Block::default().borders(Borders::ALL).title("Home"))
     .wrap(Wrap { trim: true });
@@ -854,14 +870,19 @@ fn render_home(frame: &mut Frame, app: &TuiApp) {
 
     let main = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Length(28), Constraint::Min(20)])
+        .constraints([
+            Constraint::Length(38),
+            Constraint::Length(44),
+            Constraint::Min(24),
+        ])
         .split(chunks[2]);
 
     render_actions(frame, main[0], app);
+    render_action_help(frame, main[1], app);
     let output = Paragraph::new(app.output.as_str())
         .block(Block::default().borders(Borders::ALL).title("Output"))
         .wrap(Wrap { trim: false });
-    frame.render_widget(output, main[1]);
+    frame.render_widget(output, main[2]);
 }
 
 fn render_config_editor(frame: &mut Frame, app: &TuiApp, editor: &ConfigEditor) {
@@ -888,21 +909,9 @@ fn render_config_editor(frame: &mut Frame, app: &TuiApp, editor: &ConfigEditor) 
         .split(chunks[1]);
 
     render_config_fields(frame, main[0], editor);
-    let side = Paragraph::new(vec![
-        Line::from("Models"),
-        Line::from(AVAILABLE_MODELS.join(", ")),
-        Line::from(""),
-        Line::from("Reasoning"),
-        Line::from(
-            ReasoningEffort::all()
-                .iter()
-                .map(|value| value.display_str())
-                .collect::<Vec<_>>()
-                .join(", "),
-        ),
-    ])
-    .block(Block::default().borders(Borders::ALL).title("Choices"))
-    .wrap(Wrap { trim: false });
+    let side = Paragraph::new(config_field_help_lines(editor))
+        .block(Block::default().borders(Borders::ALL).title("Field Help"))
+        .wrap(Wrap { trim: false });
     frame.render_widget(side, main[1]);
 
     let output = Paragraph::new(app.output.as_str())
@@ -915,7 +924,7 @@ fn render_privacy_editor(frame: &mut Frame, app: &TuiApp, editor: &PrivacyEditor
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3),
+            Constraint::Length(4),
             Constraint::Min(10),
             Constraint::Length(5),
         ])
@@ -923,7 +932,10 @@ fn render_privacy_editor(frame: &mut Frame, app: &TuiApp, editor: &PrivacyEditor
 
     let header = Paragraph::new(vec![
         Line::from("Privacy / Telemetry"),
-        Line::from("Left/right changes consent. Enter saves. d deletes local telemetry data. Esc backs out."),
+        Line::from(
+            "Left/right changes consent. Enter saves. d deletes local telemetry data. Esc backs out.",
+        ),
+        Line::from("Telemetry stays optional and product-improvement-only."),
     ])
     .block(Block::default().borders(Borders::ALL).title(NAME))
     .wrap(Wrap { trim: true });
@@ -940,14 +952,8 @@ fn render_privacy_editor(frame: &mut Frame, app: &TuiApp, editor: &PrivacyEditor
             editor.config.privacy.telemetry.display_str()
         )),
         Line::from(""),
-        Line::from("Allowed levels:"),
-        Line::from(
-            TelemetryLevel::all()
-                .iter()
-                .map(|value| value.as_str())
-                .collect::<Vec<_>>()
-                .join(", "),
-        ),
+        Line::from("Meaning"),
+        Line::from(telemetry_level_explanation(editor.config.privacy.telemetry)),
     ])
     .block(Block::default().borders(Borders::ALL).title("Setting"))
     .wrap(Wrap { trim: false });
@@ -968,7 +974,7 @@ fn render_pack_editor(frame: &mut Frame, app: &TuiApp, editor: &PackEditor) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3),
+            Constraint::Length(4),
             Constraint::Min(10),
             Constraint::Length(5),
         ])
@@ -977,6 +983,7 @@ fn render_pack_editor(frame: &mut Frame, app: &TuiApp, editor: &PackEditor) {
     let header = Paragraph::new(vec![
         Line::from("Built-in Packs"),
         Line::from("core stays on. Up/down selects. Space toggles optional packs. Enter saves. Esc backs out."),
+        Line::from("Packs change local guidance and may make exports stale until you re-export."),
     ])
     .block(Block::default().borders(Borders::ALL).title(NAME))
     .wrap(Wrap { trim: true });
@@ -988,7 +995,7 @@ fn render_pack_editor(frame: &mut Frame, app: &TuiApp, editor: &PackEditor) {
         .split(chunks[1]);
 
     render_pack_fields(frame, main[0], editor);
-    let details = Paragraph::new(pack_lines(&editor.config))
+    let details = Paragraph::new(pack_lines(editor))
         .block(Block::default().borders(Borders::ALL).title("Pack Summary"))
         .wrap(Wrap { trim: false });
     frame.render_widget(details, main[1]);
@@ -1040,11 +1047,27 @@ fn render_actions(frame: &mut Frame, area: Rect, app: &TuiApp) {
         .map(|action| ListItem::new(action.label))
         .collect::<Vec<_>>();
     let list = List::new(items)
-        .block(Block::default().borders(Borders::ALL).title("Actions"))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("Actions (Enter to open or run)"),
+        )
         .highlight_style(Style::default().add_modifier(Modifier::REVERSED))
         .highlight_symbol("> ");
     let mut state = ListState::default().with_selected(Some(app.selected));
     frame.render_stateful_widget(list, area, &mut state);
+}
+
+fn render_action_help(frame: &mut Frame, area: Rect, app: &TuiApp) {
+    let action = &app.actions[app.selected];
+    let help = Paragraph::new(action_help_lines(action))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("What This Option Does"),
+        )
+        .wrap(Wrap { trim: false });
+    frame.render_widget(help, area);
 }
 
 fn render_config_fields(frame: &mut Frame, area: Rect, editor: &ConfigEditor) {
@@ -1134,20 +1157,289 @@ fn privacy_lines(paths: &ProjectPaths, config: &LocalConfig) -> Vec<Line<'static
     ]
 }
 
-fn pack_lines(config: &LocalConfig) -> Vec<Line<'static>> {
+fn pack_lines(editor: &PackEditor) -> Vec<Line<'static>> {
+    let selected = PackField::ALL[editor.selected];
+
     vec![
         Line::from(format!(
             "enabled packs: {}",
-            config.packs.enabled_names().join(", ")
+            editor.config.packs.enabled_names().join(", ")
         )),
         Line::from(""),
-        Line::from("core"),
-        Line::from("Required foundation pack."),
+        Line::from(format!("selected pack: {}", selected.label())),
+        Line::from(pack_field_explanation(selected)),
         Line::from(""),
-        Line::from("caveman / cavemem / rtk / frontend-craft"),
-        Line::from("Optional local config selections only for now."),
+        Line::from("Effect"),
+        Line::from("Updates local pack config first."),
+        Line::from("Some exports may need rerunning after save."),
         Line::from("No marketplace or third-party plugin API yet."),
     ]
+}
+
+fn action_help_lines(action: &TuiAction) -> Vec<Line<'static>> {
+    let mut lines = match action.kind {
+        TuiActionKind::OpenConfigEditor => vec![
+            Line::from("Change the default model and reasoning roles Sane works from."),
+            Line::from(""),
+            Line::from("Coordinator = main high-context worker."),
+            Line::from("Sidecar = cheaper bounded helper."),
+            Line::from("Verifier = review and checking role."),
+            Line::from(""),
+            Line::from("Saving here can make managed exports stale until you re-export them."),
+        ],
+        TuiActionKind::OpenPackEditor => vec![
+            Line::from("Enable or disable built-in guidance packs."),
+            Line::from(""),
+            Line::from("Packs change local config first."),
+            Line::from("Some exports will need rerunning after save."),
+            Line::from("Core stays enabled because it is the base Sane guidance layer."),
+        ],
+        TuiActionKind::OpenPrivacyEditor => vec![
+            Line::from("Choose how much telemetry state Sane may keep locally."),
+            Line::from(""),
+            Line::from("off = no optional telemetry files"),
+            Line::from("local-only = keep local product-improvement data on this machine only"),
+            Line::from("product-improvement = opt in to future product-improvement reporting"),
+            Line::from(""),
+            Line::from("This does not change issue reporting; that stays separate."),
+        ],
+        TuiActionKind::Backend(command) => command_help_lines(command),
+    };
+
+    if let TuiActionKind::Backend(command) = action.kind
+        && command_requires_confirmation(command)
+    {
+        lines.push(Line::from(""));
+        lines.push(Line::from("Safety"));
+        lines.push(Line::from("Confirmation required before this action runs."));
+    }
+
+    lines
+}
+
+fn command_help_lines(command: Command) -> Vec<Line<'static>> {
+    match command {
+        Command::Install => vec![
+            Line::from("Create or repair the local `.sane` runtime in this project."),
+            Line::from(""),
+            Line::from(
+                "This sets up config, state files, and the baseline local layout Sane expects.",
+            ),
+            Line::from("Use this first in a new repo or if local runtime files are missing."),
+        ],
+        Command::Config => vec![
+            Line::from("Show the current local Sane config."),
+            Line::from(""),
+            Line::from(
+                "Use this if you want a plain text readout of model defaults, pack choices, and privacy settings.",
+            ),
+        ],
+        Command::CodexConfig => vec![
+            Line::from("Read your current `~/.codex/config.toml` without changing it."),
+            Line::from(""),
+            Line::from(
+                "Use this before previewing or applying profiles so you can see the starting point.",
+            ),
+        ],
+        Command::BackupCodexConfig => vec![
+            Line::from("Save a timestamped backup of `~/.codex/config.toml` into `.sane/backups`."),
+            Line::from(""),
+            Line::from(
+                "Use this before applying profile changes if you want an easy rollback point.",
+            ),
+        ],
+        Command::PreviewCodexProfile => vec![
+            Line::from("Show the core Codex settings Sane recommends by default."),
+            Line::from(""),
+            Line::from("Preview only. No files are changed."),
+            Line::from(
+                "This is the safest way to see what Sane wants to set for model, reasoning, and hooks.",
+            ),
+        ],
+        Command::PreviewIntegrationsProfile => vec![
+            Line::from("Show the optional integrations profile Sane recommends."),
+            Line::from(""),
+            Line::from("Preview only. No files are changed."),
+            Line::from(
+                "Today this is where recommended MCP and integration defaults are inspected before apply.",
+            ),
+        ],
+        Command::PreviewCloudflareProfile => vec![
+            Line::from("Show the optional Cloudflare provider profile."),
+            Line::from(""),
+            Line::from("Preview only. No files are changed."),
+            Line::from(
+                "Use this only if you want Cloudflare-specific tooling added to Codex config.",
+            ),
+        ],
+        Command::ApplyCodexProfile => vec![
+            Line::from("Write Sane's recommended core Codex profile into `~/.codex/config.toml`."),
+            Line::from(""),
+            Line::from("This is a real config mutation."),
+            Line::from("Use preview and backup first if you want to compare before writing."),
+        ],
+        Command::ApplyIntegrationsProfile => vec![
+            Line::from("Write the recommended integrations profile into `~/.codex/config.toml`."),
+            Line::from(""),
+            Line::from(
+                "This adds optional integrations while preserving unrelated config where possible.",
+            ),
+            Line::from(
+                "Use preview first if you want to inspect exactly what will be recommended.",
+            ),
+        ],
+        Command::ApplyCloudflareProfile => vec![
+            Line::from(
+                "Write the optional Cloudflare provider profile into `~/.codex/config.toml`.",
+            ),
+            Line::from(""),
+            Line::from("This is provider-specific and not part of the bare default profile."),
+        ],
+        Command::RestoreCodexConfig => vec![
+            Line::from("Restore the latest saved backup of your Codex config."),
+            Line::from(""),
+            Line::from("Use this if a profile apply did not give you the result you wanted."),
+        ],
+        Command::DebugPolicyPreview => vec![
+            Line::from("Show Sane's current internal adaptive policy preview."),
+            Line::from(""),
+            Line::from("This is mostly for development right now."),
+            Line::from(
+                "It helps inspect how coordinator, sidecar, and verifier roles are being recommended.",
+            ),
+        ],
+        Command::Doctor => vec![
+            Line::from("Audit local runtime files and managed Codex assets."),
+            Line::from(""),
+            Line::from("Use this when something feels broken, stale, or partially installed."),
+            Line::from("Doctor points at missing, invalid, or drifted managed targets."),
+        ],
+        Command::ExportUserSkills => vec![
+            Line::from("Install Sane's user skill into your user skills directory."),
+            Line::from(""),
+            Line::from("This makes Sane guidance available as a Codex-native skill."),
+        ],
+        Command::ExportGlobalAgents => vec![
+            Line::from("Install or refresh Sane's managed global `AGENTS.md` guidance block."),
+            Line::from(""),
+            Line::from("This is additive: Sane manages only its own marked block."),
+        ],
+        Command::ExportHooks => vec![
+            Line::from("Install or refresh Sane's managed hook entries in `~/.codex/hooks.json`."),
+            Line::from(""),
+            Line::from("Use this if you want Sane's optional hook behavior enabled."),
+        ],
+        Command::ExportCustomAgents => vec![
+            Line::from("Install or refresh Sane-managed custom agent files."),
+            Line::from(""),
+            Line::from(
+                "These agent files support Sane's coordinator, sidecar, and verifier model-role setup.",
+            ),
+        ],
+        Command::ExportAll => vec![
+            Line::from("Install or refresh all currently managed Codex-native assets."),
+            Line::from(""),
+            Line::from(
+                "Use this after changing packs or model-role defaults so exports match current config.",
+            ),
+        ],
+        Command::UninstallAll => vec![
+            Line::from("Remove all Sane-managed Codex-native assets."),
+            Line::from(""),
+            Line::from(
+                "Only Sane-managed content should be removed; unrelated user content should be preserved.",
+            ),
+        ],
+        _ => vec![Line::from("No help available for this option yet.")],
+    }
+}
+
+fn config_field_help_lines(editor: &ConfigEditor) -> Vec<Line<'static>> {
+    let field = ConfigField::ALL[editor.selected];
+    let value = field.value(&editor.config);
+
+    let mut lines = vec![
+        Line::from(field.label()),
+        Line::from(format!("Current value: {value}")),
+        Line::from(""),
+        Line::from(config_field_explanation(field)),
+        Line::from(""),
+        Line::from("Role meanings"),
+        Line::from("Coordinator = main top-level worker"),
+        Line::from("Sidecar = smaller bounded helper"),
+        Line::from("Verifier = review and correctness pass"),
+        Line::from(""),
+        Line::from("Choices"),
+    ];
+
+    match field {
+        ConfigField::CoordinatorModel | ConfigField::SidecarModel | ConfigField::VerifierModel => {
+            lines.push(Line::from(AVAILABLE_MODELS.join(", ")));
+        }
+        ConfigField::CoordinatorReasoning
+        | ConfigField::SidecarReasoning
+        | ConfigField::VerifierReasoning => {
+            lines.push(Line::from(
+                ReasoningEffort::all()
+                    .iter()
+                    .map(|value| value.display_str())
+                    .collect::<Vec<_>>()
+                    .join(", "),
+            ));
+        }
+    }
+
+    lines
+}
+
+fn config_field_explanation(field: ConfigField) -> &'static str {
+    match field {
+        ConfigField::CoordinatorModel => {
+            "Main model for the highest-context work: planning, shaping, integration, and hard calls."
+        }
+        ConfigField::CoordinatorReasoning => {
+            "Default reasoning depth for the main coordinator role."
+        }
+        ConfigField::SidecarModel => {
+            "Smaller or faster model for bounded helper work that should not consume coordinator budget."
+        }
+        ConfigField::SidecarReasoning => {
+            "Default reasoning depth for sidecar tasks such as narrow inspections or support work."
+        }
+        ConfigField::VerifierModel => "Model used when Sane wants a reviewer or checker role.",
+        ConfigField::VerifierReasoning => {
+            "Default reasoning depth for review, checking, and verification tasks."
+        }
+    }
+}
+
+fn telemetry_level_explanation(level: TelemetryLevel) -> &'static str {
+    match level {
+        TelemetryLevel::Off => "Do not keep optional telemetry files.",
+        TelemetryLevel::LocalOnly => {
+            "Keep telemetry locally for inspection and reset, but do not plan for remote reporting."
+        }
+        TelemetryLevel::ProductImprovement => {
+            "Opt in to future product-improvement reporting. Still intended only for improving Sane."
+        }
+    }
+}
+
+fn pack_field_explanation(field: PackField) -> &'static str {
+    match field {
+        PackField::Caveman => {
+            "Compressed communication guidance. Useful when you want less token-heavy prose by default."
+        }
+        PackField::Cavemem => {
+            "Compact durable-memory guidance for long sessions and cleaner handoffs."
+        }
+        PackField::Rtk => {
+            "Shell-routing guidance: if RTK policy exists, prefer RTK-routed command execution."
+        }
+        PackField::FrontendCraft => {
+            "Frontend craft guidance. Biases Sane away from generic AI UI output and toward stronger design quality."
+        }
+    }
 }
 
 fn path_state(path: &Path) -> &'static str {
@@ -4237,30 +4529,71 @@ mod tests {
         assert_eq!(
             labels,
             vec![
-                "Install runtime",
-                "Edit model defaults",
+                "Install or repair local runtime",
+                "Edit model-role defaults",
                 "Edit built-in packs",
                 "Privacy / telemetry",
-                "Inspect config",
-                "Inspect Codex config",
-                "Preview Codex profile",
-                "Preview integrations profile",
-                "Preview Cloudflare profile",
-                "Apply integrations profile",
-                "Apply Cloudflare profile",
-                "Backup Codex config",
-                "Apply Codex profile",
-                "Restore Codex config",
-                "Inspect adaptive policy",
-                "Doctor",
-                "Export user skill",
-                "Export global agents",
-                "Export hooks",
-                "Export custom agents",
-                "Export all",
-                "Uninstall all",
+                "Inspect local Sane config",
+                "Inspect current Codex config",
+                "Preview recommended core Codex profile",
+                "Preview recommended integrations profile",
+                "Preview optional Cloudflare profile",
+                "Apply recommended integrations profile",
+                "Apply optional Cloudflare profile",
+                "Create Codex config backup",
+                "Apply recommended core Codex profile",
+                "Restore latest Codex config backup",
+                "Inspect adaptive policy preview",
+                "Run doctor",
+                "Export Sane router skill",
+                "Export managed global AGENTS block",
+                "Export managed hooks",
+                "Export managed custom agents",
+                "Export all managed assets",
+                "Uninstall all Sane-managed assets",
             ]
         );
+    }
+
+    #[test]
+    fn codex_profile_preview_help_stays_non_destructive() {
+        let body = super::command_help_lines(super::Command::PreviewCodexProfile)
+            .into_iter()
+            .map(|line| line.to_string())
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        assert!(body.contains("Preview only. No files are changed."));
+        assert!(body.contains("model, reasoning, and hooks"));
+    }
+
+    #[test]
+    fn config_field_help_explains_role_meaning() {
+        let editor = super::ConfigEditor::new(sane_config::LocalConfig::default());
+        let body = super::config_field_help_lines(&editor)
+            .into_iter()
+            .map(|line| line.to_string())
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        assert!(body.contains("Coordinator model"));
+        assert!(body.contains("main top-level worker"));
+        assert!(body.contains("Sidecar = smaller bounded helper"));
+        assert!(body.contains("Verifier = review and correctness pass"));
+    }
+
+    #[test]
+    fn pack_help_explains_selected_pack() {
+        let editor = super::PackEditor::new(sane_config::LocalConfig::default());
+        let body = super::pack_lines(&editor)
+            .into_iter()
+            .map(|line| line.to_string())
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        assert!(body.contains("selected pack: caveman"));
+        assert!(body.contains("Compressed communication guidance"));
+        assert!(body.contains("Some exports may need rerunning after save."));
     }
 
     #[test]
