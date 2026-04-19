@@ -551,52 +551,31 @@ impl TuiApp {
             paths: paths.clone(),
             codex_paths: codex_paths.clone(),
             actions: vec![
-                TuiAction::backend("Install or repair local runtime", Command::Install),
-                TuiAction::config_editor("Edit model-role defaults"),
+                TuiAction::backend("Install / repair runtime", Command::Install),
+                TuiAction::config_editor("Edit model roles"),
                 TuiAction::pack_editor("Edit built-in packs"),
                 TuiAction::privacy_editor("Privacy / telemetry"),
-                TuiAction::backend("Inspect local Sane config", Command::Config),
-                TuiAction::backend("Inspect current Codex config", Command::CodexConfig),
+                TuiAction::backend("Show local Sane config", Command::Config),
+                TuiAction::backend("Show current Codex config", Command::CodexConfig),
+                TuiAction::backend("Preview core Codex profile", Command::PreviewCodexProfile),
                 TuiAction::backend(
-                    "Preview recommended core Codex profile",
-                    Command::PreviewCodexProfile,
-                ),
-                TuiAction::backend(
-                    "Preview recommended integrations profile",
+                    "Preview integrations profile",
                     Command::PreviewIntegrationsProfile,
                 ),
-                TuiAction::backend(
-                    "Preview optional Cloudflare profile",
-                    Command::PreviewCloudflareProfile,
-                ),
-                TuiAction::backend(
-                    "Apply recommended integrations profile",
-                    Command::ApplyIntegrationsProfile,
-                ),
-                TuiAction::backend(
-                    "Apply optional Cloudflare profile",
-                    Command::ApplyCloudflareProfile,
-                ),
-                TuiAction::backend("Create Codex config backup", Command::BackupCodexConfig),
-                TuiAction::backend(
-                    "Apply recommended core Codex profile",
-                    Command::ApplyCodexProfile,
-                ),
-                TuiAction::backend(
-                    "Restore latest Codex config backup",
-                    Command::RestoreCodexConfig,
-                ),
-                TuiAction::backend("Inspect adaptive policy preview", Command::DebugPolicyPreview),
+                TuiAction::backend("Preview Cloudflare profile", Command::PreviewCloudflareProfile),
+                TuiAction::backend("Apply integrations profile", Command::ApplyIntegrationsProfile),
+                TuiAction::backend("Apply Cloudflare profile", Command::ApplyCloudflareProfile),
+                TuiAction::backend("Backup Codex config", Command::BackupCodexConfig),
+                TuiAction::backend("Apply core Codex profile", Command::ApplyCodexProfile),
+                TuiAction::backend("Restore Codex config", Command::RestoreCodexConfig),
+                TuiAction::backend("Inspect adaptive policy", Command::DebugPolicyPreview),
                 TuiAction::backend("Run doctor", Command::Doctor),
-                TuiAction::backend("Export Sane router skill", Command::ExportUserSkills),
-                TuiAction::backend(
-                    "Export managed global AGENTS block",
-                    Command::ExportGlobalAgents,
-                ),
-                TuiAction::backend("Export managed hooks", Command::ExportHooks),
-                TuiAction::backend("Export managed custom agents", Command::ExportCustomAgents),
-                TuiAction::backend("Export all managed assets", Command::ExportAll),
-                TuiAction::backend("Uninstall all Sane-managed assets", Command::UninstallAll),
+                TuiAction::backend("Export router skill", Command::ExportUserSkills),
+                TuiAction::backend("Export AGENTS block", Command::ExportGlobalAgents),
+                TuiAction::backend("Export hooks", Command::ExportHooks),
+                TuiAction::backend("Export custom agents", Command::ExportCustomAgents),
+                TuiAction::backend("Export all assets", Command::ExportAll),
+                TuiAction::backend("Uninstall all assets", Command::UninstallAll),
             ],
             selected: 0,
             status,
@@ -848,8 +827,8 @@ fn render_home(frame: &mut Frame, app: &TuiApp) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(4),
-            Constraint::Length(11),
+            Constraint::Length(5),
+            Constraint::Length(8),
             Constraint::Min(10),
         ])
         .split(frame.area());
@@ -864,25 +843,29 @@ fn render_home(frame: &mut Frame, app: &TuiApp) {
     frame.render_widget(header, chunks[0]);
 
     let status = Paragraph::new(status_lines(&app.status))
-        .block(Block::default().borders(Borders::ALL).title("Status"))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("Status Summary"),
+        )
         .wrap(Wrap { trim: false });
     frame.render_widget(status, chunks[1]);
 
     let main = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Length(38),
-            Constraint::Length(44),
-            Constraint::Min(24),
-        ])
+        .constraints([Constraint::Length(30), Constraint::Min(30)])
         .split(chunks[2]);
 
     render_actions(frame, main[0], app);
-    render_action_help(frame, main[1], app);
+    let right = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(10), Constraint::Min(8)])
+        .split(main[1]);
+    render_action_help(frame, right[0], app);
     let output = Paragraph::new(app.output.as_str())
         .block(Block::default().borders(Borders::ALL).title("Output"))
         .wrap(Wrap { trim: false });
-    frame.render_widget(output, main[2]);
+    frame.render_widget(output, right[1]);
 }
 
 fn render_config_editor(frame: &mut Frame, app: &TuiApp, editor: &ConfigEditor) {
@@ -1470,37 +1453,84 @@ fn wrap_index(current: usize, len: usize, step: isize) -> usize {
 }
 
 fn status_lines(status: &OperationResult) -> Vec<Line<'static>> {
-    let mut lines = Vec::new();
+    let runtime = find_inventory(&status.inventory, "runtime");
+    let config = find_inventory(&status.inventory, "config");
+    let current_run = find_inventory(&status.inventory, "current-run");
+    let summary = find_inventory(&status.inventory, "summary");
+    let brief = find_inventory(&status.inventory, "brief");
+    let codex_config = find_inventory(&status.inventory, "codex-config");
+    let user_skills = find_inventory(&status.inventory, "user-skills");
+    let global_agents = find_inventory(&status.inventory, "global-agents");
+    let hooks = find_inventory(&status.inventory, "hooks");
+    let custom_agents = find_inventory(&status.inventory, "custom-agents");
 
-    for scope in [InventoryScope::LocalRuntime, InventoryScope::CodexNative] {
-        let items = status
-            .inventory
-            .iter()
-            .filter(|item| item.scope == scope)
-            .collect::<Vec<_>>();
-        if items.is_empty() {
-            continue;
-        }
+    let enabled_packs = status
+        .inventory
+        .iter()
+        .filter(|item| item.name.starts_with("pack-"))
+        .filter(|item| {
+            matches!(
+                item.status,
+                InventoryStatus::Installed | InventoryStatus::Configured
+            )
+        })
+        .map(|item| item.name.trim_start_matches("pack-").to_string())
+        .collect::<Vec<_>>();
 
-        lines.push(Line::from(scope.display_str().to_uppercase()));
-        for item in items {
-            lines.push(Line::from(format!("  {}", inventory_detail_line(item))));
-        }
-    }
-
-    lines
+    vec![
+        Line::from("Local runtime"),
+        Line::from(format!(
+            "  runtime {} | config {} | state {} | brief {}",
+            home_status_label(runtime),
+            home_status_label(config),
+            combined_state_label(current_run, summary),
+            home_status_label(brief),
+        )),
+        Line::from(format!("  enabled packs: {}", enabled_packs.join(", "))),
+        Line::from("Codex-native"),
+        Line::from(format!(
+            "  codex config {} | router skill {} | AGENTS block {}",
+            home_status_label(codex_config),
+            home_status_label(user_skills),
+            home_status_label(global_agents),
+        )),
+        Line::from(format!(
+            "  hooks {} | custom agents {}",
+            home_status_label(hooks),
+            home_status_label(custom_agents),
+        )),
+        Line::from("Use Doctor for the full file-by-file audit."),
+    ]
 }
 
-fn inventory_detail_line(item: &InventoryItem) -> String {
-    let mut line = format!("{}: {}", item.name, inventory_status_label(item));
-    if let Some(repair_hint) = &item.repair_hint {
-        line.push_str(&format!(" ({repair_hint})"));
+fn home_status_label(item: &InventoryItem) -> &'static str {
+    match item.status {
+        InventoryStatus::Installed => "ok",
+        InventoryStatus::Configured => "configured",
+        InventoryStatus::Disabled => "disabled",
+        InventoryStatus::Missing => "missing",
+        InventoryStatus::Invalid => "needs repair",
+        InventoryStatus::PresentWithoutSaneBlock => "present without Sane",
+        InventoryStatus::Removed => "removed",
     }
-    line
 }
 
-fn inventory_status_label(item: &InventoryItem) -> &'static str {
-    item.status.display_str()
+fn combined_state_label(current_run: &InventoryItem, summary: &InventoryItem) -> &'static str {
+    if matches!(current_run.status, InventoryStatus::Installed)
+        && matches!(summary.status, InventoryStatus::Installed)
+    {
+        "ok"
+    } else if matches!(
+        current_run.status,
+        InventoryStatus::Invalid | InventoryStatus::Missing
+    ) || matches!(
+        summary.status,
+        InventoryStatus::Invalid | InventoryStatus::Missing
+    ) {
+        "needs attention"
+    } else {
+        "partial"
+    }
 }
 
 fn render_summary() -> String {
@@ -4529,28 +4559,28 @@ mod tests {
         assert_eq!(
             labels,
             vec![
-                "Install or repair local runtime",
-                "Edit model-role defaults",
+                "Install / repair runtime",
+                "Edit model roles",
                 "Edit built-in packs",
                 "Privacy / telemetry",
-                "Inspect local Sane config",
-                "Inspect current Codex config",
-                "Preview recommended core Codex profile",
-                "Preview recommended integrations profile",
-                "Preview optional Cloudflare profile",
-                "Apply recommended integrations profile",
-                "Apply optional Cloudflare profile",
-                "Create Codex config backup",
-                "Apply recommended core Codex profile",
-                "Restore latest Codex config backup",
-                "Inspect adaptive policy preview",
+                "Show local Sane config",
+                "Show current Codex config",
+                "Preview core Codex profile",
+                "Preview integrations profile",
+                "Preview Cloudflare profile",
+                "Apply integrations profile",
+                "Apply Cloudflare profile",
+                "Backup Codex config",
+                "Apply core Codex profile",
+                "Restore Codex config",
+                "Inspect adaptive policy",
                 "Run doctor",
-                "Export Sane router skill",
-                "Export managed global AGENTS block",
-                "Export managed hooks",
-                "Export managed custom agents",
-                "Export all managed assets",
-                "Uninstall all Sane-managed assets",
+                "Export router skill",
+                "Export AGENTS block",
+                "Export hooks",
+                "Export custom agents",
+                "Export all assets",
+                "Uninstall all assets",
             ]
         );
     }
