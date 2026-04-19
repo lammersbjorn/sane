@@ -42,6 +42,10 @@ Current managed targets are:
 5. additive user-level custom agents in `~/.codex/agents/`
 6. narrow explicit opt-in profile management for user-level Codex config at `~/.codex/config.toml`
 
+Current managed export behavior also depends on local config:
+- exported `sane-router` skill content can reflect enabled guidance packs
+- exported global `AGENTS.md` overlay can reflect enabled guidance packs
+
 ## Required Operations
 
 These are the backend actions the TUI is allowed to call in the current phase.

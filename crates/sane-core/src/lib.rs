@@ -5,6 +5,14 @@ pub const SANE_EXPLORER_AGENT_NAME: &str = "sane-explorer";
 pub const SANE_GLOBAL_AGENTS_BEGIN: &str = "<!-- sane:global-agents:start -->";
 pub const SANE_GLOBAL_AGENTS_END: &str = "<!-- sane:global-agents:end -->";
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct GuidancePacks {
+    pub caveman: bool,
+    pub cavemem: bool,
+    pub rtk: bool,
+    pub frontend_craft: bool,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OperationKind {
     InstallRuntime,
@@ -146,41 +154,81 @@ impl OperationResult {
     }
 }
 
-pub fn sane_router_skill() -> &'static str {
-    r#"---
-name: sane-router
-description: Install and manage Sane's Codex-native plain-language workflow assets, model routing defaults, subagent selection policy, and optional hooks without forcing repo mutation.
----
+pub fn sane_router_skill(packs: GuidancePacks) -> String {
+    let mut body = vec![
+        "---".to_string(),
+        "name: sane-router".to_string(),
+        "description: Install and manage Sane's Codex-native plain-language workflow assets, model routing defaults, subagent selection policy, and optional hooks without forcing repo mutation.".to_string(),
+        "---".to_string(),
+        "".to_string(),
+        "# Sane Router".to_string(),
+        "".to_string(),
+        "Use this managed skill when work touches Sane itself, its Codex-native asset installation, or its plain-language adaptive workflow rules.".to_string(),
+        "".to_string(),
+        "Prefer this skill for:".to_string(),
+        "- installing or uninstalling Sane-managed Codex assets".to_string(),
+        "- adjusting plain-language routing and model-role defaults".to_string(),
+        "- maintaining user-level skills, hooks, and optional AGENTS overlays".to_string(),
+        "- keeping Sane thin, Codex-native, and low-ceremony".to_string(),
+        "".to_string(),
+        "Keep behavior aligned with Sane philosophy:".to_string(),
+        "- plain-language first".to_string(),
+        "- commands optional".to_string(),
+        "- no required AGENTS.md".to_string(),
+        "- no workflow lock-in".to_string(),
+        "- model and subagent choice should adapt to task shape".to_string(),
+    ];
 
-# Sane Router
+    if packs.caveman {
+        body.push("- caveman pack active: prefer terse, token-efficient prose when normal clarity still holds".to_string());
+    }
+    if packs.cavemem {
+        body.push("- cavemem pack active: keep durable summaries compact and high-signal during long sessions".to_string());
+    }
+    if packs.rtk {
+        body.push("- rtk pack active: if RTK policy is present, route shell work through RTK instead of raw shell".to_string());
+    }
+    if packs.frontend_craft {
+        body.push("- frontend-craft pack active: avoid generic AI frontend output; prefer distinctive, production-grade interface craft".to_string());
+    }
 
-Use this managed skill when work touches Sane itself, its Codex-native asset installation, or its plain-language adaptive workflow rules.
-
-Prefer this skill for:
-- installing or uninstalling Sane-managed Codex assets
-- adjusting plain-language routing and model-role defaults
-- maintaining user-level skills, hooks, and optional AGENTS overlays
-- keeping Sane thin, Codex-native, and low-ceremony
-
-Keep behavior aligned with Sane philosophy:
-- plain-language first
-- commands optional
-- no required AGENTS.md
-- no workflow lock-in
-- model and subagent choice should adapt to task shape
-"#
+    body.push(String::new());
+    body.join("\n")
 }
 
-pub fn sane_global_agents_overlay() -> &'static str {
-    r#"# Sane
+pub fn sane_global_agents_overlay(packs: GuidancePacks) -> String {
+    let mut body = vec![
+        "# Sane".to_string(),
+        "".to_string(),
+        "- Plain-language first".to_string(),
+        "- Commands and skills are optional, not required".to_string(),
+        "- Prefer adaptive process over rigid visible modes".to_string(),
+        "- Keep repo mutation optional".to_string(),
+        "- Use subagents only when the work decomposes cleanly".to_string(),
+        "- Choose model and reasoning settings per task when available".to_string(),
+    ];
 
-- Plain-language first
-- Commands and skills are optional, not required
-- Prefer adaptive process over rigid visible modes
-- Keep repo mutation optional
-- Use subagents only when the work decomposes cleanly
-- Choose model and reasoning settings per task when available
-"#
+    if packs.caveman {
+        body.push("- caveman pack active: default to terse, token-aware prose when it does not reduce correctness".to_string());
+    }
+    if packs.cavemem {
+        body.push(
+            "- cavemem pack active: prefer compact durable memory and handoff summaries"
+                .to_string(),
+        );
+    }
+    if packs.rtk {
+        body.push(
+            "- rtk pack active: when RTK policy exists, prefer RTK-routed shell execution"
+                .to_string(),
+        );
+    }
+    if packs.frontend_craft {
+        body.push("- frontend-craft pack active: for frontend work, avoid generic AI aesthetics and push for stronger craft".to_string());
+    }
+
+    body.push(String::new());
+    body.join("\n")
 }
 
 pub fn sane_reviewer_agent() -> &'static str {

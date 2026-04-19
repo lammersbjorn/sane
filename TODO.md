@@ -58,6 +58,7 @@ Implemented:
 - built-in pack editor in the TUI with local-only optional pack toggles
 - built-in pack state exposed in status / doctor inventory
 - optional packs currently show configured vs disabled truthfully; managed pack installation still deferred
+- exported `sane-router` skill and global AGENTS overlay now reflect enabled guidance packs
 - `export all` / `uninstall all` for current managed targets
 
 Current gate:

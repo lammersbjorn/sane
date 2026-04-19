@@ -18,8 +18,8 @@ use ratatui::widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Wra
 use ratatui::{Frame, Terminal};
 use sane_config::{AVAILABLE_MODELS, LocalConfig, ModelPreset, ReasoningEffort, TelemetryLevel};
 use sane_core::{
-    InventoryItem, InventoryScope, InventoryStatus, NAME, OperationKind, OperationResult,
-    SANE_EXPLORER_AGENT_NAME, SANE_GLOBAL_AGENTS_BEGIN, SANE_GLOBAL_AGENTS_END,
+    GuidancePacks, InventoryItem, InventoryScope, InventoryStatus, NAME, OperationKind,
+    OperationResult, SANE_EXPLORER_AGENT_NAME, SANE_GLOBAL_AGENTS_BEGIN, SANE_GLOBAL_AGENTS_END,
     SANE_REVIEWER_AGENT_NAME, SANE_ROUTER_SKILL_NAME, sane_explorer_agent,
     sane_global_agents_overlay, sane_reviewer_agent, sane_router_skill,
 };
@@ -242,9 +242,9 @@ fn execute_backend_command(
         Command::Status => inventory_status(paths, codex_paths),
         Command::Doctor => doctor_runtime(paths, codex_paths),
         Command::HookSessionStart => Err("hook event is not a backend operation".to_string()),
-        Command::ExportAll => export_all(codex_paths),
-        Command::ExportUserSkills => export_user_skills(codex_paths),
-        Command::ExportGlobalAgents => export_global_agents(codex_paths),
+        Command::ExportAll => export_all(paths, codex_paths),
+        Command::ExportUserSkills => export_user_skills(paths, codex_paths),
+        Command::ExportGlobalAgents => export_global_agents(paths, codex_paths),
         Command::ExportHooks => export_hooks(codex_paths),
         Command::ExportCustomAgents => export_custom_agents(codex_paths),
         Command::UninstallAll => uninstall_all(codex_paths),
@@ -1832,6 +1832,33 @@ fn config_details(config: &LocalConfig) -> Vec<String> {
     ]
 }
 
+fn active_guidance_packs(paths: &ProjectPaths) -> Result<GuidancePacks, String> {
+    let config = load_or_default_config(paths)?;
+    Ok(GuidancePacks {
+        caveman: config.packs.caveman,
+        cavemem: config.packs.cavemem,
+        rtk: config.packs.rtk,
+        frontend_craft: config.packs.frontend_craft,
+    })
+}
+
+fn format_guidance_packs(packs: GuidancePacks) -> String {
+    let mut enabled = vec!["core"];
+    if packs.caveman {
+        enabled.push("caveman");
+    }
+    if packs.cavemem {
+        enabled.push("cavemem");
+    }
+    if packs.rtk {
+        enabled.push("rtk");
+    }
+    if packs.frontend_craft {
+        enabled.push("frontend-craft");
+    }
+    enabled.join(", ")
+}
+
 fn save_config(paths: &ProjectPaths, config: &LocalConfig) -> Result<OperationResult, String> {
     paths
         .ensure_runtime_dirs()
@@ -2284,16 +2311,23 @@ fn collect_paths_touched(inventory: &[InventoryItem]) -> Vec<String> {
     paths
 }
 
-fn export_user_skills(codex_paths: &CodexPaths) -> Result<OperationResult, String> {
+fn export_user_skills(
+    paths: &ProjectPaths,
+    codex_paths: &CodexPaths,
+) -> Result<OperationResult, String> {
     let skill_dir = codex_paths.user_skills_dir.join(SANE_ROUTER_SKILL_NAME);
     fs::create_dir_all(&skill_dir).map_err(|error| error.to_string())?;
     let skill_path = skill_dir.join("SKILL.md");
-    fs::write(&skill_path, sane_router_skill()).map_err(|error| error.to_string())?;
+    let packs = active_guidance_packs(paths)?;
+    fs::write(&skill_path, sane_router_skill(packs)).map_err(|error| error.to_string())?;
 
     Ok(OperationResult {
         kind: OperationKind::ExportUserSkills,
         summary: format!("export user-skills: installed {}", SANE_ROUTER_SKILL_NAME),
-        details: vec![format!("path: {}", skill_path.display())],
+        details: vec![
+            format!("path: {}", skill_path.display()),
+            format!("packs: {}", format_guidance_packs(packs)),
+        ],
         paths_touched: vec![skill_path.display().to_string()],
         inventory: vec![InventoryItem {
             name: "user-skills".to_string(),
@@ -2305,9 +2339,9 @@ fn export_user_skills(codex_paths: &CodexPaths) -> Result<OperationResult, Strin
     })
 }
 
-fn export_all(codex_paths: &CodexPaths) -> Result<OperationResult, String> {
-    let user_skills = export_user_skills(codex_paths)?;
-    let global_agents = export_global_agents(codex_paths)?;
+fn export_all(paths: &ProjectPaths, codex_paths: &CodexPaths) -> Result<OperationResult, String> {
+    let user_skills = export_user_skills(paths, codex_paths)?;
+    let global_agents = export_global_agents(paths, codex_paths)?;
     let hooks = export_hooks(codex_paths)?;
     let custom_agents = export_custom_agents(codex_paths)?;
 
@@ -2318,7 +2352,10 @@ fn export_all(codex_paths: &CodexPaths) -> Result<OperationResult, String> {
     ))
 }
 
-fn export_global_agents(codex_paths: &CodexPaths) -> Result<OperationResult, String> {
+fn export_global_agents(
+    paths: &ProjectPaths,
+    codex_paths: &CodexPaths,
+) -> Result<OperationResult, String> {
     if let Some(parent) = codex_paths.global_agents_md.parent() {
         fs::create_dir_all(parent).map_err(|error| error.to_string())?;
     }
@@ -2329,18 +2366,22 @@ fn export_global_agents(codex_paths: &CodexPaths) -> Result<OperationResult, Str
         String::new()
     };
 
+    let packs = active_guidance_packs(paths)?;
     let updated = upsert_managed_block(
         &existing,
         SANE_GLOBAL_AGENTS_BEGIN,
         SANE_GLOBAL_AGENTS_END,
-        sane_global_agents_overlay(),
+        &sane_global_agents_overlay(packs),
     );
     fs::write(&codex_paths.global_agents_md, updated).map_err(|error| error.to_string())?;
 
     Ok(OperationResult {
         kind: OperationKind::ExportGlobalAgents,
         summary: "export global-agents: installed managed block".to_string(),
-        details: vec![format!("path: {}", codex_paths.global_agents_md.display())],
+        details: vec![
+            format!("path: {}", codex_paths.global_agents_md.display()),
+            format!("packs: {}", format_guidance_packs(packs)),
+        ],
         paths_touched: vec![codex_paths.global_agents_md.display().to_string()],
         inventory: vec![InventoryItem {
             name: "global-agents".to_string(),
@@ -3483,6 +3524,33 @@ mod tests {
     }
 
     #[test]
+    fn export_user_skills_reflects_enabled_guidance_packs() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        let paths = sane_platform::ProjectPaths::discover(project.path()).unwrap();
+        let mut config = sane_config::LocalConfig::default();
+        config.packs.caveman = true;
+        config.packs.rtk = true;
+        config.packs.frontend_craft = true;
+        let _ = super::save_config(&paths, &config).unwrap();
+
+        let _ = run_with_home(&["export", "user-skills"], project.path(), home.path()).unwrap();
+
+        let skill_path = home
+            .path()
+            .join(".agents")
+            .join("skills")
+            .join("sane-router")
+            .join("SKILL.md");
+        let body = std::fs::read_to_string(skill_path).unwrap();
+
+        assert!(body.contains("caveman pack active"));
+        assert!(body.contains("rtk pack active"));
+        assert!(body.contains("frontend-craft pack active"));
+    }
+
+    #[test]
     fn export_global_agents_installs_managed_overlay() {
         let project = tempdir().unwrap();
         let home = tempdir().unwrap();
@@ -3497,6 +3565,24 @@ mod tests {
         let body = std::fs::read_to_string(agents_path).unwrap();
         assert!(body.contains("<!-- sane:global-agents:start -->"));
         assert!(body.contains("Plain-language first"));
+    }
+
+    #[test]
+    fn export_global_agents_reflects_enabled_guidance_packs() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        let paths = sane_platform::ProjectPaths::discover(project.path()).unwrap();
+        let mut config = sane_config::LocalConfig::default();
+        config.packs.cavemem = true;
+        config.packs.rtk = true;
+        let _ = super::save_config(&paths, &config).unwrap();
+
+        let _ = run_with_home(&["export", "global-agents"], project.path(), home.path()).unwrap();
+        let body = std::fs::read_to_string(home.path().join(".codex").join("AGENTS.md")).unwrap();
+
+        assert!(body.contains("cavemem pack active"));
+        assert!(body.contains("rtk pack active"));
     }
 
     #[test]

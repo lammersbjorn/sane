@@ -20,6 +20,7 @@ Current responsibility:
 - grouped status inventory for local runtime vs Codex-native assets
 - built-in pack status surfaced through local runtime inventory
 - optional packs currently report config state separately from real managed install state
+- current user-skill and global AGENTS exports pick up enabled guidance packs from local config
 - user-facing operational output
 - thin orchestration over managed Codex-native targets
 - doctor/reporting for managed local and Codex-native surfaces
