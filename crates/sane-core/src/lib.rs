@@ -36,6 +36,7 @@ pub enum OperationKind {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InventoryStatus {
     Installed,
+    Disabled,
     Missing,
     Invalid,
     PresentWithoutSaneBlock,
@@ -46,6 +47,7 @@ impl InventoryStatus {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Installed => "installed",
+            Self::Disabled => "disabled",
             Self::Missing => "missing",
             Self::Invalid => "invalid",
             Self::PresentWithoutSaneBlock => "present_without_sane_block",

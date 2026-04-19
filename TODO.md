@@ -56,6 +56,7 @@ Implemented:
 - explicit opt-in apply flow for separate recommended integrations profile
 - explicit opt-in Cloudflare provider profile for Cloudflare MCP tooling
 - built-in pack editor in the TUI with local-only optional pack toggles
+- built-in pack state exposed in status / doctor inventory
 - `export all` / `uninstall all` for current managed targets
 
 Current gate:

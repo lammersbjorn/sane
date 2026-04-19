@@ -1939,6 +1939,11 @@ fn doctor_runtime(
     let current_run = find_inventory(&inventory, "current-run");
     let summary = find_inventory(&inventory, "summary");
     let brief = find_inventory(&inventory, "brief");
+    let pack_core = find_inventory(&inventory, "pack-core");
+    let pack_caveman = find_inventory(&inventory, "pack-caveman");
+    let pack_cavemem = find_inventory(&inventory, "pack-cavemem");
+    let pack_rtk = find_inventory(&inventory, "pack-rtk");
+    let pack_frontend_craft = find_inventory(&inventory, "pack-frontend-craft");
     let codex_config = find_inventory(&inventory, "codex-config");
     let user_skills = find_inventory(&inventory, "user-skills");
     let global_agents = find_inventory(&inventory, "global-agents");
@@ -1948,12 +1953,17 @@ fn doctor_runtime(
     Ok(OperationResult {
         kind: OperationKind::Doctor,
         summary: format!(
-            "runtime: {}\nconfig: {}\ncurrent-run: {}\nsummary: {}\nbrief: {}\ncodex-config: {}\nuser-skills: {}\nglobal-agents: {}\nhooks: {}\ncustom-agents: {}\nroot: {}\ncodex-home: {}",
+            "runtime: {}\nconfig: {}\ncurrent-run: {}\nsummary: {}\nbrief: {}\npack-core: {}\npack-caveman: {}\npack-cavemem: {}\npack-rtk: {}\npack-frontend-craft: {}\ncodex-config: {}\nuser-skills: {}\nglobal-agents: {}\nhooks: {}\ncustom-agents: {}\nroot: {}\ncodex-home: {}",
             doctor_status(runtime),
             doctor_status(config),
             doctor_status(current_run),
             doctor_status(summary),
             doctor_status(brief),
+            doctor_status(pack_core),
+            doctor_status(pack_caveman),
+            doctor_status(pack_cavemem),
+            doctor_status(pack_rtk),
+            doctor_status(pack_frontend_craft),
             doctor_status(codex_config),
             doctor_status(user_skills),
             doctor_status(global_agents),
@@ -1979,6 +1989,7 @@ fn inspect_inventory(
     let codex_config_inventory = inspect_codex_config_inventory(codex_paths)?;
     let hooks_inventory = inspect_hooks_inventory(codex_paths)?;
     let custom_agents_inventory = inspect_custom_agents_inventory(codex_paths);
+    let pack_inventory = inspect_pack_inventory(paths);
 
     let global_agents_inventory = if !codex_paths.global_agents_md.exists() {
         InventoryItem {
@@ -2010,7 +2021,7 @@ fn inspect_inventory(
         }
     };
 
-    Ok(vec![
+    let mut inventory = vec![
         InventoryItem {
             name: "runtime".to_string(),
             scope: InventoryScope::LocalRuntime,
@@ -2098,6 +2109,9 @@ fn inspect_inventory(
                 Some("rerun `install`".to_string())
             },
         },
+    ];
+    inventory.extend(pack_inventory);
+    inventory.extend([
         InventoryItem {
             name: "codex-config".to_string(),
             scope: InventoryScope::CodexNative,
@@ -2123,7 +2137,58 @@ fn inspect_inventory(
         global_agents_inventory,
         hooks_inventory,
         custom_agents_inventory,
-    ])
+    ]);
+    Ok(inventory)
+}
+
+fn inspect_pack_inventory(paths: &ProjectPaths) -> Vec<InventoryItem> {
+    enum ConfigState {
+        Missing,
+        Invalid,
+        Loaded(LocalConfig),
+    }
+
+    let config_state = if !paths.config_path.exists() {
+        ConfigState::Missing
+    } else if let Ok(config) = LocalConfig::read_from_path(&paths.config_path) {
+        ConfigState::Loaded(config)
+    } else {
+        ConfigState::Invalid
+    };
+
+    let names = [
+        ("pack-core", "core"),
+        ("pack-caveman", "caveman"),
+        ("pack-cavemem", "cavemem"),
+        ("pack-rtk", "rtk"),
+        ("pack-frontend-craft", "frontend-craft"),
+    ];
+
+    names
+        .into_iter()
+        .map(|(inventory_name, pack_name)| InventoryItem {
+            name: inventory_name.to_string(),
+            scope: InventoryScope::LocalRuntime,
+            status: match &config_state {
+                ConfigState::Missing => InventoryStatus::Missing,
+                ConfigState::Invalid => InventoryStatus::Invalid,
+                ConfigState::Loaded(config) => match pack_name {
+                    "core" if config.packs.core => InventoryStatus::Installed,
+                    "caveman" if config.packs.caveman => InventoryStatus::Installed,
+                    "cavemem" if config.packs.cavemem => InventoryStatus::Installed,
+                    "rtk" if config.packs.rtk => InventoryStatus::Installed,
+                    "frontend-craft" if config.packs.frontend_craft => InventoryStatus::Installed,
+                    _ => InventoryStatus::Disabled,
+                },
+            },
+            path: paths.config_path.display().to_string(),
+            repair_hint: match &config_state {
+                ConfigState::Missing => Some("run `install`".to_string()),
+                ConfigState::Invalid => Some("repair config first".to_string()),
+                ConfigState::Loaded(_) => None,
+            },
+        })
+        .collect()
 }
 
 fn find_inventory<'a>(inventory: &'a [InventoryItem], name: &str) -> &'a InventoryItem {
@@ -2158,6 +2223,15 @@ fn doctor_status(item: &InventoryItem) -> String {
             InventoryStatus::Missing => "missing BRIEF.md (rerun install)".to_string(),
             _ => item.status.as_str().to_string(),
         },
+        "pack-core" | "pack-caveman" | "pack-cavemem" | "pack-rtk" | "pack-frontend-craft" => {
+            match item.status {
+                InventoryStatus::Installed => "enabled".to_string(),
+                InventoryStatus::Disabled => "disabled".to_string(),
+                InventoryStatus::Missing => "missing config (run `install`)".to_string(),
+                InventoryStatus::Invalid => "invalid config (repair config first)".to_string(),
+                _ => item.status.as_str().to_string(),
+            }
+        }
         "runtime" => match item.status {
             InventoryStatus::Installed => "ok".to_string(),
             InventoryStatus::Missing => "missing".to_string(),
@@ -3214,6 +3288,11 @@ mod tests {
         assert!(output.contains("current-run: ok"));
         assert!(output.contains("summary: ok"));
         assert!(output.contains("brief: ok"));
+        assert!(output.contains("pack-core: enabled"));
+        assert!(output.contains("pack-caveman: disabled"));
+        assert!(output.contains("pack-cavemem: disabled"));
+        assert!(output.contains("pack-rtk: disabled"));
+        assert!(output.contains("pack-frontend-craft: disabled"));
         assert!(output.contains("codex-config: missing (run `apply codex-profile`)"));
         assert!(output.contains("user-skills: missing"));
         assert!(output.contains("global-agents: missing"));
@@ -3685,7 +3764,7 @@ mod tests {
         let _ = run_with_home(&["install"], project.path(), home.path()).unwrap();
         let output = run_with_home(&["status"], project.path(), home.path()).unwrap();
 
-        assert!(output.contains("status: 10 managed targets inspected"));
+        assert!(output.contains("status: 15 managed targets inspected"));
         assert!(output.contains("local runtime:"));
         assert!(output.contains("codex-native:"));
         assert!(output.contains("runtime: installed"));
@@ -3693,6 +3772,11 @@ mod tests {
         assert!(output.contains("current-run: installed"));
         assert!(output.contains("summary: installed"));
         assert!(output.contains("brief: installed"));
+        assert!(output.contains("pack-core: installed"));
+        assert!(output.contains("pack-caveman: disabled"));
+        assert!(output.contains("pack-cavemem: disabled"));
+        assert!(output.contains("pack-rtk: disabled"));
+        assert!(output.contains("pack-frontend-craft: disabled"));
         assert!(output.contains("codex-config: missing (use `apply codex-profile` or `apply integrations-profile` to create it)"));
         assert!(output.contains("user-skills: missing (run `export user-skills`)"));
         assert!(output.contains("global-agents: missing (run `export global-agents`)"));

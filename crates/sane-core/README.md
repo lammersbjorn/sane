@@ -10,5 +10,6 @@ Current responsibility:
 - typed backend result and inventory structures shared across surfaces
 - backend operation identifiers, including explicit status/inventory inspection
 - inventory scope labels for separating local runtime state from Codex-native assets
+- inventory status labels including local pack enablement/disablement
 
 Keep this crate tiny. Do not move operational logic here unless it is genuinely cross-cutting.
