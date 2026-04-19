@@ -42,6 +42,7 @@ Implemented:
 - initial `install`, `config`, `doctor`, `export`, and `uninstall` command shell
 - first managed Codex-native user-skill target (`~/.agents/skills/sane-router`)
 - first optional managed global Codex overlay block (`~/.codex/AGENTS.md`)
+- `export all` / `uninstall all` for current managed targets
 
 Current command examples:
 

@@ -61,12 +61,16 @@ fn run_with_home(args: &[&str], cwd: &Path, home: &Path) -> Result<String, Strin
         Command::Install => install_runtime(&paths),
         Command::Config => show_config(&paths),
         Command::Doctor => doctor_runtime(&paths, &codex_paths),
-        Command::Export => Ok("export: available targets: user-skills, global-agents".to_string()),
+        Command::Export => {
+            Ok("export: available targets: all, user-skills, global-agents".to_string())
+        }
+        Command::ExportAll => export_all(&codex_paths),
         Command::ExportUserSkills => export_user_skills(&codex_paths),
         Command::ExportGlobalAgents => export_global_agents(&codex_paths),
         Command::Uninstall => {
-            Ok("uninstall: available targets: user-skills, global-agents".to_string())
+            Ok("uninstall: available targets: all, user-skills, global-agents".to_string())
         }
+        Command::UninstallAll => uninstall_all(&codex_paths),
         Command::UninstallUserSkills => uninstall_user_skills(&codex_paths),
         Command::UninstallGlobalAgents => uninstall_global_agents(&codex_paths),
     }
@@ -79,9 +83,11 @@ enum Command {
     Config,
     Doctor,
     Export,
+    ExportAll,
     ExportUserSkills,
     ExportGlobalAgents,
     Uninstall,
+    UninstallAll,
     UninstallUserSkills,
     UninstallGlobalAgents,
 }
@@ -93,9 +99,11 @@ impl Command {
             (Some("install"), _) => Ok(Self::Install),
             (Some("config"), _) => Ok(Self::Config),
             (Some("doctor"), _) => Ok(Self::Doctor),
+            (Some("export"), Some("all")) => Ok(Self::ExportAll),
             (Some("export"), Some("user-skills")) => Ok(Self::ExportUserSkills),
             (Some("export"), Some("global-agents")) => Ok(Self::ExportGlobalAgents),
             (Some("export"), None) => Ok(Self::Export),
+            (Some("uninstall"), Some("all")) => Ok(Self::UninstallAll),
             (Some("uninstall"), Some("user-skills")) => Ok(Self::UninstallUserSkills),
             (Some("uninstall"), Some("global-agents")) => Ok(Self::UninstallGlobalAgents),
             (Some("uninstall"), None) => Ok(Self::Uninstall),
@@ -227,6 +235,13 @@ fn export_user_skills(codex_paths: &CodexPaths) -> Result<String, String> {
     ))
 }
 
+fn export_all(codex_paths: &CodexPaths) -> Result<String, String> {
+    let user_skills = export_user_skills(codex_paths)?;
+    let global_agents = export_global_agents(codex_paths)?;
+
+    Ok(format!("{user_skills}\n{global_agents}"))
+}
+
 fn export_global_agents(codex_paths: &CodexPaths) -> Result<String, String> {
     if let Some(parent) = codex_paths.global_agents_md.parent() {
         fs::create_dir_all(parent).map_err(|error| error.to_string())?;
@@ -289,6 +304,13 @@ fn uninstall_global_agents(codex_paths: &CodexPaths) -> Result<String, String> {
     }
 
     Ok("uninstall global-agents: removed managed block".to_string())
+}
+
+fn uninstall_all(codex_paths: &CodexPaths) -> Result<String, String> {
+    let user_skills = uninstall_user_skills(codex_paths)?;
+    let global_agents = uninstall_global_agents(codex_paths)?;
+
+    Ok(format!("{user_skills}\n{global_agents}"))
 }
 
 fn upsert_managed_block(existing: &str, begin: &str, end: &str, body: &str) -> String {
@@ -479,6 +501,27 @@ mod tests {
     }
 
     #[test]
+    fn export_all_installs_all_current_managed_targets() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+
+        let output = run_with_home(&["export", "all"], project.path(), home.path()).unwrap();
+
+        assert!(output.contains("export user-skills"));
+        assert!(output.contains("export global-agents"));
+        assert!(
+            home.path()
+                .join(".agents")
+                .join("skills")
+                .join("sane-router")
+                .join("SKILL.md")
+                .exists()
+        );
+        assert!(home.path().join(".codex").join("AGENTS.md").exists());
+    }
+
+    #[test]
     fn uninstall_user_skills_removes_managed_sane_skill_pack() {
         let project = tempdir().unwrap();
         let home = tempdir().unwrap();
@@ -514,6 +557,28 @@ mod tests {
         let body = std::fs::read_to_string(codex_dir.join("AGENTS.md")).unwrap();
         assert!(output.contains("uninstall global-agents"));
         assert_eq!(body, "existing rules\n");
+    }
+
+    #[test]
+    fn uninstall_all_removes_all_current_managed_targets() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+
+        let _ = run_with_home(&["export", "all"], project.path(), home.path()).unwrap();
+        let output = run_with_home(&["uninstall", "all"], project.path(), home.path()).unwrap();
+
+        assert!(output.contains("uninstall user-skills"));
+        assert!(output.contains("uninstall global-agents"));
+        assert!(
+            !home
+                .path()
+                .join(".agents")
+                .join("skills")
+                .join("sane-router")
+                .exists()
+        );
+        assert!(!home.path().join(".codex").join("AGENTS.md").exists());
     }
 
     #[test]
