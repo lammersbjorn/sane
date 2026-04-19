@@ -24,6 +24,7 @@ Do not skip ahead of the strict implementation plan.
 - Codex-native assets are the core product surface
 - Local operational state may exist under `.sane`, but it must stay thin
 - TUI is for setup/ops, not normal prompting
+- no-args TUI should feel like onboarding first, settings second
 - Adaptive workflow policy, not rigid user-facing modes
 - Single-agent default
 - Subagents only when clearly useful
@@ -69,6 +70,8 @@ Implemented:
 - internal backend policy preview now shows configured coordinator / sidecar / verifier roles per scenario
 - TUI now exposes adaptive policy inspection directly instead of leaving it command-only
 - TUI now requires confirmation for risky apply/restore/uninstall actions
+- no-args TUI now opens into section-based onboarding instead of a flat settings/action wall
+- `sane settings` is the direct shortcut into configure mode
 - optional repo-local skill export now exists as an explicit separate target and is not part of `export all`
 - optional repo-local AGENTS export now exists as an explicit separate target and is not part of `export all`
 

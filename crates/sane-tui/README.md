@@ -1,6 +1,6 @@
 # ⚖️ sane-tui
 
-The installer, configurator, diagnostic, and recovery interface for `Sane`.
+The onboarding-first installer, configurator, diagnostic, and recovery interface for `Sane`.
 
 ## What This Crate Is
 
@@ -8,15 +8,11 @@ If someone opens `Sane`, this crate is the primary interface.
 
 It owns the user-facing flows for:
 
-- Install
-- Status
-- Doctor
-- Preview
-- Apply
-- Export
-- Backup
-- Restore
-- Uninstall
+- guided onboarding
+- configure/settings
+- exports
+- inspect
+- repair/recovery
 
 It is the bridge between local config and the Codex-native assets `Sane` manages.
 
@@ -54,7 +50,8 @@ It should do that carefully:
 
 ## What It Owns
 
-- the no-args `sane` TUI entry point
+- the no-args `sane` onboarding entry point
+- the `sane settings` shortcut into configure mode
 - action labels and help text
 - confirmation flows for risky operations
 - command dispatch into backend operations

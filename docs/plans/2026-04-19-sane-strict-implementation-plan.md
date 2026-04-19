@@ -164,26 +164,31 @@ Exit criteria:
 ## B2. Proper TUI Foundation
 
 Goal:
-- make no-args launch open the actual installer/config TUI
+- make no-args launch open the actual onboarding-first TUI
 
 Rules:
 - TUI-first user path
+- onboarding first, settings second
 - current command verbs may remain only as backend/dev escape hatch
 - docs present TUI first
 
 Minimum TUI:
-- home screen
+- onboarding home screen
+- section navigation
 - status summary
-- action list
+- action list inside each section
 - output/result panel
 - quit path
 
-First TUI actions:
-- install local runtime
-- doctor
-- export all current managed assets
-- uninstall all current managed assets
-- inspect config
+First TUI sections:
+- Start here
+- Configure
+- Exports
+- Inspect
+- Repair
+
+Required shortcut:
+- `sane settings` should jump directly into the configure/settings section
 
 Not allowed:
 - pack browser yet

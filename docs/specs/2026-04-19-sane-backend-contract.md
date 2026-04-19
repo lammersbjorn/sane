@@ -4,7 +4,7 @@ Last updated: 2026-04-19
 
 This document defines the thin backend contract the proper `Sane` TUI must wrap.
 
-It is not a promise that these operations remain exposed as user-facing CLI commands. In fact, per locked product decisions, they should not be the primary UX.
+It is not a promise that these operations remain exposed as user-facing CLI commands. Per locked product decisions, the primary UX is the onboarding-first TUI, with backend verbs kept as escape hatches.
 
 ## Purpose
 

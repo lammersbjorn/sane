@@ -57,7 +57,7 @@ What often feels bad is everything around it:
 
 ## What Sane Is
 
-- a setup and config TUI for Codex
+- an onboarding-first setup and config TUI for Codex
 - a manager for Codex-native skills, hooks, custom agents, and optional config profiles
 - a local-first layer that keeps just enough project state for repair, inspection, and handoff
 - a way to add stronger defaults without forcing a command-first workflow
@@ -81,7 +81,7 @@ cd sane
 cargo run -p sane
 ```
 
-That opens the TUI.
+That opens the onboarding TUI. If you already know you want the settings/config area, run `cargo run -p sane -- settings`.
 
 ## How People Actually Use It
 
@@ -119,6 +119,7 @@ That opens the TUI.
 ### 1. The TUI
 
 This is the control surface.
+It opens in guided onboarding first, then splits into configure, exports, inspect, and repair sections.
 It is where you install, preview, apply, export, back up, restore, diagnose, and uninstall.
 
 ### 2. Local project state
