@@ -2174,10 +2174,10 @@ fn inspect_pack_inventory(paths: &ProjectPaths) -> Vec<InventoryItem> {
                 ConfigState::Invalid => InventoryStatus::Invalid,
                 ConfigState::Loaded(config) => match pack_name {
                     "core" if config.packs.core => InventoryStatus::Installed,
-                    "caveman" if config.packs.caveman => InventoryStatus::Installed,
-                    "cavemem" if config.packs.cavemem => InventoryStatus::Installed,
-                    "rtk" if config.packs.rtk => InventoryStatus::Installed,
-                    "frontend-craft" if config.packs.frontend_craft => InventoryStatus::Installed,
+                    "caveman" if config.packs.caveman => InventoryStatus::Configured,
+                    "cavemem" if config.packs.cavemem => InventoryStatus::Configured,
+                    "rtk" if config.packs.rtk => InventoryStatus::Configured,
+                    "frontend-craft" if config.packs.frontend_craft => InventoryStatus::Configured,
                     _ => InventoryStatus::Disabled,
                 },
             },
@@ -2185,7 +2185,10 @@ fn inspect_pack_inventory(paths: &ProjectPaths) -> Vec<InventoryItem> {
             repair_hint: match &config_state {
                 ConfigState::Missing => Some("run `install`".to_string()),
                 ConfigState::Invalid => Some("repair config first".to_string()),
-                ConfigState::Loaded(_) => None,
+                ConfigState::Loaded(_) => match pack_name {
+                    "core" => None,
+                    _ => Some("managed install/export still deferred".to_string()),
+                },
             },
         })
         .collect()
@@ -2226,6 +2229,7 @@ fn doctor_status(item: &InventoryItem) -> String {
         "pack-core" | "pack-caveman" | "pack-cavemem" | "pack-rtk" | "pack-frontend-craft" => {
             match item.status {
                 InventoryStatus::Installed => "enabled".to_string(),
+                InventoryStatus::Configured => "enabled (config only)".to_string(),
                 InventoryStatus::Disabled => "disabled".to_string(),
                 InventoryStatus::Missing => "missing config (run `install`)".to_string(),
                 InventoryStatus::Invalid => "invalid config (repair config first)".to_string(),
@@ -3710,6 +3714,27 @@ mod tests {
                 .iter()
                 .any(|line| line == "packs: core, caveman, rtk")
         );
+    }
+
+    #[test]
+    fn status_reports_enabled_optional_packs_as_configured() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+
+        let paths = sane_platform::ProjectPaths::discover(project.path()).unwrap();
+        let mut config = sane_config::LocalConfig::default();
+        config.packs.caveman = true;
+        config.packs.rtk = true;
+        let _ = super::save_config(&paths, &config).unwrap();
+
+        let output = run_with_home(&["status"], project.path(), home.path()).unwrap();
+        let doctor = run_with_home(&["doctor"], project.path(), home.path()).unwrap();
+
+        assert!(output.contains("pack-caveman: configured"));
+        assert!(output.contains("pack-rtk: configured"));
+        assert!(doctor.contains("pack-caveman: enabled (config only)"));
+        assert!(doctor.contains("pack-rtk: enabled (config only)"));
     }
 
     #[test]

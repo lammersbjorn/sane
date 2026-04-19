@@ -57,6 +57,7 @@ Implemented:
 - explicit opt-in Cloudflare provider profile for Cloudflare MCP tooling
 - built-in pack editor in the TUI with local-only optional pack toggles
 - built-in pack state exposed in status / doctor inventory
+- optional packs currently show configured vs disabled truthfully; managed pack installation still deferred
 - `export all` / `uninstall all` for current managed targets
 
 Current gate:

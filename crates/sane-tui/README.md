@@ -19,6 +19,7 @@ Current responsibility:
 - action list, status summary, output panel, and quit flow
 - grouped status inventory for local runtime vs Codex-native assets
 - built-in pack status surfaced through local runtime inventory
+- optional packs currently report config state separately from real managed install state
 - user-facing operational output
 - thin orchestration over managed Codex-native targets
 - doctor/reporting for managed local and Codex-native surfaces
