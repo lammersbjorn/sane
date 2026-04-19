@@ -46,6 +46,29 @@ impl ProjectPaths {
         }
     }
 
+    pub fn discover(start: impl AsRef<Path>) -> std::io::Result<Self> {
+        let start = start.as_ref();
+        let start_dir = if start.is_dir() {
+            start.to_path_buf()
+        } else {
+            start
+                .parent()
+                .map(Path::to_path_buf)
+                .unwrap_or_else(|| PathBuf::from("."))
+        };
+
+        for candidate in start_dir.ancestors() {
+            if candidate.join("Cargo.toml").exists()
+                || candidate.join(".git").exists()
+                || candidate.join(".sane").exists()
+            {
+                return Ok(Self::new(candidate));
+            }
+        }
+
+        Ok(Self::new(start_dir))
+    }
+
     pub fn ensure_runtime_dirs(&self) -> std::io::Result<()> {
         std::fs::create_dir_all(&self.state_dir)?;
         std::fs::create_dir_all(&self.cache_dir)?;

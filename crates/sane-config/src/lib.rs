@@ -7,11 +7,68 @@ use thiserror::Error;
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct LocalConfig {
     pub version: u32,
+    #[serde(default)]
+    pub models: ModelRolePresets,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ModelRolePresets {
+    pub coordinator: ModelPreset,
+    pub sidecar: ModelPreset,
+    pub verifier: ModelPreset,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ModelPreset {
+    pub model: String,
+    pub reasoning_effort: ReasoningEffort,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum ReasoningEffort {
+    Minimal,
+    Low,
+    Medium,
+    High,
+}
+
+impl ReasoningEffort {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Minimal => "minimal",
+            Self::Low => "low",
+            Self::Medium => "medium",
+            Self::High => "high",
+        }
+    }
+}
+
+impl Default for ModelRolePresets {
+    fn default() -> Self {
+        Self {
+            coordinator: ModelPreset {
+                model: "gpt-5.4".to_string(),
+                reasoning_effort: ReasoningEffort::High,
+            },
+            sidecar: ModelPreset {
+                model: "gpt-5.4-mini".to_string(),
+                reasoning_effort: ReasoningEffort::Medium,
+            },
+            verifier: ModelPreset {
+                model: "gpt-5.4".to_string(),
+                reasoning_effort: ReasoningEffort::Medium,
+            },
+        }
+    }
 }
 
 impl Default for LocalConfig {
     fn default() -> Self {
-        Self { version: 1 }
+        Self {
+            version: 1,
+            models: ModelRolePresets::default(),
+        }
     }
 }
 

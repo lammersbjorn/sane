@@ -31,7 +31,7 @@ fn main() -> ExitCode {
 
 fn run(args: &[&str], cwd: &Path) -> Result<String, String> {
     let command = Command::from_args(args)?;
-    let paths = ProjectPaths::new(cwd);
+    let paths = ProjectPaths::discover(cwd).map_err(|error| error.to_string())?;
 
     match command {
         Command::Summary => Ok(render_summary()),
@@ -112,9 +112,15 @@ fn show_config(paths: &ProjectPaths) -> Result<String, String> {
     let config =
         LocalConfig::read_from_path(&paths.config_path).map_err(|error| error.to_string())?;
     Ok(format!(
-        "config: ok at {}\nversion: {}",
+        "config: ok at {}\nversion: {}\ncoordinator: {} ({})\nsidecar: {} ({})\nverifier: {} ({})",
         paths.config_path.display(),
-        config.version
+        config.version,
+        config.models.coordinator.model,
+        config.models.coordinator.reasoning_effort.as_str(),
+        config.models.sidecar.model,
+        config.models.sidecar.reasoning_effort.as_str(),
+        config.models.verifier.model,
+        config.models.verifier.reasoning_effort.as_str()
     ))
 }
 
@@ -178,5 +184,18 @@ mod tests {
         assert!(output.contains("install"));
         assert!(output.contains("config"));
         assert!(output.contains("doctor"));
+    }
+
+    #[test]
+    fn install_from_nested_directory_uses_discovered_project_root() {
+        let dir = tempdir().unwrap();
+        std::fs::write(dir.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        let nested = dir.path().join("crates").join("sane-tui").join("src");
+        std::fs::create_dir_all(&nested).unwrap();
+
+        let output = run(&["install"], &nested).unwrap();
+
+        assert!(output.contains(dir.path().join(".sane").to_string_lossy().as_ref()));
+        assert!(dir.path().join(".sane").join("config.local.toml").exists());
     }
 }
