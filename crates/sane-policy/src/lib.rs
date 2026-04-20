@@ -184,6 +184,15 @@ pub enum SubagentStrategy {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SubagentReadinessReason {
+    TaskTooSmall,
+    NoIndependentSlicesIdentified,
+    IndependentSlicesNotClear,
+    RunStateDisallowsDelegation,
+    IndependentSlicesReady,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReviewPosture {
     None,
     Light,
@@ -202,6 +211,7 @@ pub enum VerifierTiming {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct OrchestrationGuidance {
     pub subagents: SubagentStrategy,
+    pub subagent_readiness: SubagentReadinessReason,
     pub review_posture: ReviewPosture,
     pub verifier_timing: VerifierTiming,
 }
@@ -395,24 +405,7 @@ pub fn recommend_orchestration(
     input: PolicyInput,
     decision: &PolicyDecision,
 ) -> OrchestrationGuidance {
-    let complex_parallel_shape = matches!(
-        input.task_shape,
-        TaskShape::MultiFile | TaskShape::Architectural | TaskShape::LongRunning
-    );
-
-    let subagents = if decision.has(Obligation::SubagentEligible) {
-        SubagentStrategy::AllowIndependentSlices
-    } else if input.parallelism == Parallelism::Possible
-        && complex_parallel_shape
-        && matches!(
-            input.run_state,
-            RunState::Exploring | RunState::Executing | RunState::Blocked
-        )
-    {
-        SubagentStrategy::WaitForIndependentSlices
-    } else {
-        SubagentStrategy::SoloOnly
-    };
+    let (subagents, subagent_readiness) = classify_subagent_readiness(input, decision);
 
     let review_posture = if decision.has(Obligation::Review) {
         ReviewPosture::Independent
@@ -441,9 +434,56 @@ pub fn recommend_orchestration(
 
     OrchestrationGuidance {
         subagents,
+        subagent_readiness,
         review_posture,
         verifier_timing,
     }
+}
+
+fn classify_subagent_readiness(
+    input: PolicyInput,
+    decision: &PolicyDecision,
+) -> (SubagentStrategy, SubagentReadinessReason) {
+    let complex_parallel_shape = matches!(
+        input.task_shape,
+        TaskShape::MultiFile | TaskShape::Architectural | TaskShape::LongRunning
+    );
+
+    if decision.has(Obligation::SubagentEligible) {
+        return (
+            SubagentStrategy::AllowIndependentSlices,
+            SubagentReadinessReason::IndependentSlicesReady,
+        );
+    }
+
+    if !complex_parallel_shape {
+        return (
+            SubagentStrategy::SoloOnly,
+            SubagentReadinessReason::TaskTooSmall,
+        );
+    }
+
+    if !matches!(
+        input.run_state,
+        RunState::Exploring | RunState::Executing | RunState::Blocked
+    ) {
+        return (
+            SubagentStrategy::SoloOnly,
+            SubagentReadinessReason::RunStateDisallowsDelegation,
+        );
+    }
+
+    if input.parallelism == Parallelism::Possible {
+        return (
+            SubagentStrategy::WaitForIndependentSlices,
+            SubagentReadinessReason::IndependentSlicesNotClear,
+        );
+    }
+
+    (
+        SubagentStrategy::SoloOnly,
+        SubagentReadinessReason::NoIndependentSlicesIdentified,
+    )
 }
 
 const CANONICAL_SCENARIOS: [PolicyScenario; 5] = [
@@ -672,6 +712,10 @@ mod tests {
         let orchestration = recommend_orchestration(input, &decision);
 
         assert_eq!(orchestration.subagents, SubagentStrategy::SoloOnly);
+        assert_eq!(
+            orchestration.subagent_readiness,
+            SubagentReadinessReason::TaskTooSmall
+        );
         assert_eq!(orchestration.review_posture, ReviewPosture::Light);
         assert_eq!(
             orchestration.verifier_timing,
@@ -699,7 +743,39 @@ mod tests {
             orchestration.subagents,
             SubagentStrategy::WaitForIndependentSlices
         );
+        assert_eq!(
+            orchestration.subagent_readiness,
+            SubagentReadinessReason::IndependentSlicesNotClear
+        );
         assert_eq!(orchestration.review_posture, ReviewPosture::Independent);
         assert_eq!(orchestration.verifier_timing, VerifierTiming::ClosingGate);
+    }
+
+    #[test]
+    fn validating_phase_blocks_subagents_even_when_slices_are_clear() {
+        let input = PolicyInput {
+            intent: Intent::Edit,
+            task_shape: TaskShape::Architectural,
+            risk: Level::Medium,
+            ambiguity: Level::Low,
+            parallelism: Parallelism::Clear,
+            context_pressure: Level::Low,
+            run_state: RunState::Validating,
+        };
+        let decision = evaluate(input);
+
+        let orchestration = recommend_orchestration(input, &decision);
+
+        assert!(!decision.has(Obligation::SubagentEligible));
+        assert_eq!(orchestration.subagents, SubagentStrategy::SoloOnly);
+        assert_eq!(
+            orchestration.subagent_readiness,
+            SubagentReadinessReason::RunStateDisallowsDelegation
+        );
+        assert_eq!(orchestration.review_posture, ReviewPosture::Independent);
+        assert_eq!(
+            orchestration.verifier_timing,
+            VerifierTiming::ThroughoutExecution
+        );
     }
 }

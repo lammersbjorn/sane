@@ -1,6 +1,6 @@
 use sane_policy::{
-    Level, Obligation, Parallelism, PolicyRule, ReviewPosture, RunState, SubagentStrategy,
-    TaskShape, VerifierTiming, canonical_scenarios, explain,
+    Level, Obligation, Parallelism, PolicyRule, ReviewPosture, RunState, SubagentReadinessReason,
+    SubagentStrategy, TaskShape, VerifierTiming, canonical_scenarios, explain,
 };
 
 #[test]
@@ -60,6 +60,10 @@ fn explain_traces_why_a_complex_feature_gets_heavy_obligations() {
         SubagentStrategy::AllowIndependentSlices
     );
     assert_eq!(
+        explanation.orchestration.subagent_readiness,
+        SubagentReadinessReason::IndependentSlicesReady
+    );
+    assert_eq!(
         explanation.orchestration.review_posture,
         ReviewPosture::Independent
     );
@@ -97,6 +101,10 @@ fn blocked_long_run_keeps_subagents_disallowed_until_parallel_slices_are_clear()
         SubagentStrategy::WaitForIndependentSlices
     );
     assert_eq!(
+        explanation.orchestration.subagent_readiness,
+        SubagentReadinessReason::IndependentSlicesNotClear
+    );
+    assert_eq!(
         explanation.orchestration.review_posture,
         ReviewPosture::Independent
     );
@@ -120,6 +128,10 @@ fn simple_question_stays_single_agent_without_review_posture() {
         SubagentStrategy::SoloOnly
     );
     assert_eq!(
+        explanation.orchestration.subagent_readiness,
+        SubagentReadinessReason::TaskTooSmall
+    );
+    assert_eq!(
         explanation.orchestration.review_posture,
         ReviewPosture::None
     );
@@ -140,4 +152,26 @@ fn obligation_labels_are_stable_and_backend_owned() {
     assert_eq!(Obligation::SubagentEligible.as_str(), "subagent_eligible");
     assert_eq!(Obligation::ContextCompaction.as_str(), "context_compaction");
     assert_eq!(Obligation::SelfRepair.as_str(), "self_repair");
+}
+
+#[test]
+fn validating_phase_blocks_subagents_even_for_clear_parallel_work() {
+    let explanation = explain(sane_policy::PolicyInput {
+        intent: sane_policy::Intent::Edit,
+        task_shape: TaskShape::Architectural,
+        risk: Level::Medium,
+        ambiguity: Level::Low,
+        parallelism: Parallelism::Clear,
+        context_pressure: Level::Low,
+        run_state: RunState::Validating,
+    });
+
+    assert_eq!(
+        explanation.orchestration.subagents,
+        SubagentStrategy::SoloOnly
+    );
+    assert_eq!(
+        explanation.orchestration.subagent_readiness,
+        SubagentReadinessReason::RunStateDisallowsDelegation
+    );
 }

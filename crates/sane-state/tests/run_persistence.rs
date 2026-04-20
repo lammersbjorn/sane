@@ -1,7 +1,7 @@
 use sane_state::{
-    ArtifactRecord, CanonicalStatePaths, CurrentRunState, DecisionRecord, EventRecord,
-    LayeredStateBundle, LocalStateConfig, RunSnapshot, RunSnapshotError, RunSummary,
-    SummaryPromotion, read_jsonl_records, read_jsonl_records_slice,
+    ArtifactRecord, CanonicalStateFormat, CanonicalStatePaths, CurrentRunState, DecisionRecord,
+    EventRecord, LayeredStateBundle, LocalStateConfig, RunSnapshot, RunSnapshotError, RunSummary,
+    SummaryPromotion, read_jsonl_records, read_jsonl_records_slice, write_canonical_with_backup,
 };
 use tempfile::tempdir;
 
@@ -347,6 +347,69 @@ telemetry = "off"
     let body = std::fs::read_to_string(path).unwrap();
     assert!(body.contains("version = 1"));
     assert!(body.contains("telemetry = \"off\""));
+}
+
+#[test]
+fn canonical_json_rewrite_creates_backup_before_replacement() {
+    let dir = tempdir().unwrap();
+    let path = dir.path().join("summary.json");
+
+    let previous = RunSummary {
+        version: 2,
+        accepted_decisions: vec!["old decision".to_string()],
+        completed_milestones: vec!["old milestone".to_string()],
+        constraints: vec![],
+        last_verified_outputs: vec![],
+        files_touched: vec![],
+        extra: Default::default(),
+    };
+    previous.write_to_path(&path).unwrap();
+
+    let replacement = RunSummary {
+        version: 2,
+        accepted_decisions: vec!["new decision".to_string()],
+        completed_milestones: vec!["new milestone".to_string()],
+        constraints: vec![],
+        last_verified_outputs: vec![],
+        files_touched: vec![],
+        extra: Default::default(),
+    };
+
+    let backup_path = write_canonical_with_backup(&path, &replacement, CanonicalStateFormat::Json)
+        .unwrap()
+        .expect("expected backup file for rewrite");
+
+    let rewritten = RunSummary::read_from_path(&path).unwrap();
+    let backup = RunSummary::read_from_path(&backup_path).unwrap();
+
+    assert_eq!(rewritten, replacement);
+    assert_eq!(backup, previous);
+    assert!(backup_path.exists());
+    assert!(
+        backup_path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or_default()
+            .starts_with("summary.json.bak.")
+    );
+}
+
+#[test]
+fn canonical_toml_first_write_skips_backup() {
+    let dir = tempdir().unwrap();
+    let path = dir.path().join("config.local.toml");
+
+    let mut config = LocalStateConfig::default();
+    config.extra.insert(
+        "telemetry".to_string(),
+        toml::Value::String("off".to_string()),
+    );
+
+    let backup = write_canonical_with_backup(&path, &config, CanonicalStateFormat::Toml).unwrap();
+    let decoded = LocalStateConfig::read_from_path(&path).unwrap();
+
+    assert!(backup.is_none());
+    assert_eq!(decoded, config);
 }
 
 #[test]

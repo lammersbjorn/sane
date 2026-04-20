@@ -69,6 +69,12 @@ pub struct LayeredStateBundle {
     pub brief: Option<String>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CanonicalStateFormat {
+    Json,
+    Toml,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct VerificationStatus {
     pub status: String,
@@ -753,6 +759,27 @@ where
     Ok(records)
 }
 
+/// Writes a canonical state file by first snapshotting the current file to a
+/// timestamped `.bak` sibling before replacing it.
+///
+/// Intended for explicit migration/upgrade rewrites where old on-disk state
+/// must remain inspectable.
+pub fn write_canonical_with_backup<T>(
+    path: impl AsRef<Path>,
+    value: &T,
+    format: CanonicalStateFormat,
+) -> Result<Option<PathBuf>, RunSnapshotError>
+where
+    T: Serialize,
+{
+    let encoded = match format {
+        CanonicalStateFormat::Json => serde_json::to_string_pretty(value)?,
+        CanonicalStateFormat::Toml => toml::to_string_pretty(value)?,
+    };
+
+    write_canonical_encoded_with_backup(path.as_ref(), &encoded)
+}
+
 fn read_json<T>(path: impl AsRef<Path>) -> Result<T, RunSnapshotError>
 where
     T: for<'de> Deserialize<'de>,
@@ -886,6 +913,99 @@ where
         path: path.display().to_string(),
         source,
     })
+}
+
+fn write_canonical_encoded_with_backup(
+    path: &Path,
+    encoded: &str,
+) -> Result<Option<PathBuf>, RunSnapshotError> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|source| RunSnapshotError::Write {
+            path: parent.display().to_string(),
+            source,
+        })?;
+    }
+
+    let backup_path = backup_existing_canonical(path)?;
+    let tmp_path = tmp_replacement_path(path);
+
+    {
+        let mut file = fs::OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .open(&tmp_path)
+            .map_err(|source| RunSnapshotError::Write {
+                path: tmp_path.display().to_string(),
+                source,
+            })?;
+        file.write_all(encoded.as_bytes())
+            .map_err(|source| RunSnapshotError::Write {
+                path: tmp_path.display().to_string(),
+                source,
+            })?;
+        file.sync_all().map_err(|source| RunSnapshotError::Write {
+            path: tmp_path.display().to_string(),
+            source,
+        })?;
+    }
+
+    if let Err(source) = fs::rename(&tmp_path, path) {
+        let _ = fs::remove_file(&tmp_path);
+        return Err(RunSnapshotError::Write {
+            path: path.display().to_string(),
+            source,
+        });
+    }
+
+    Ok(backup_path)
+}
+
+fn backup_existing_canonical(path: &Path) -> Result<Option<PathBuf>, RunSnapshotError> {
+    if !path.exists() {
+        return Ok(None);
+    }
+
+    let ts = now_unix();
+    let mut attempt = 0u32;
+    let backup_path = loop {
+        let candidate = backup_candidate_path(path, ts, attempt);
+        if !candidate.exists() {
+            break candidate;
+        }
+        attempt += 1;
+    };
+
+    fs::copy(path, &backup_path).map_err(|source| RunSnapshotError::Write {
+        path: backup_path.display().to_string(),
+        source,
+    })?;
+    Ok(Some(backup_path))
+}
+
+fn backup_candidate_path(path: &Path, ts: u64, attempt: u32) -> PathBuf {
+    let filename = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("canonical-state");
+
+    let backup_name = if attempt == 0 {
+        format!("{filename}.bak.{ts}")
+    } else {
+        format!("{filename}.bak.{ts}.{attempt}")
+    };
+    path.with_file_name(backup_name)
+}
+
+fn tmp_replacement_path(path: &Path) -> PathBuf {
+    let filename = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("canonical-state");
+    let ts = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_nanos();
+    path.with_file_name(format!("{filename}.tmp.{ts}"))
 }
 
 fn upgraded_version(version: Option<u32>) -> u32 {
