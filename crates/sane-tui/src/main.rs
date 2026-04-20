@@ -128,59 +128,7 @@ fn run_with_home(args: &[&str], cwd: &Path, home: &Path) -> Result<String, Strin
     let command = Command::from_args(args)?;
     let paths = ProjectPaths::discover(cwd).map_err(|error| error.to_string())?;
     let codex_paths = CodexPaths::new(home);
-
-    match command {
-        Command::Summary => Ok(render_summary()),
-        Command::HookSessionStart => Ok(render_session_start_hook()),
-        Command::DebugPolicyPreview => execute_backend_command(command, &paths, &codex_paths)
-            .map(|result| result.render_text()),
-        Command::Debug => Ok("debug: available targets: policy-preview".to_string()),
-        Command::Install
-        | Command::Config
-        | Command::CodexConfig
-        | Command::BackupCodexConfig
-        | Command::PreviewCodexProfile
-        | Command::PreviewIntegrationsProfile
-        | Command::PreviewCloudflareProfile
-        | Command::ApplyCodexProfile
-        | Command::ApplyIntegrationsProfile
-        | Command::ApplyCloudflareProfile
-        | Command::RestoreCodexConfig
-        | Command::Status
-        | Command::Doctor
-        | Command::ExportAll
-        | Command::ExportUserSkills
-        | Command::ExportRepoSkills
-        | Command::ExportRepoAgents
-        | Command::ExportGlobalAgents
-        | Command::ExportHooks
-        | Command::ExportCustomAgents
-        | Command::UninstallAll
-        | Command::UninstallUserSkills
-        | Command::UninstallRepoSkills
-        | Command::UninstallRepoAgents
-        | Command::UninstallGlobalAgents
-        | Command::UninstallHooks
-        | Command::UninstallCustomAgents => execute_backend_command(command, &paths, &codex_paths)
-            .map(|result| result.render_text()),
-        Command::Export => Ok(
-            "export: available targets: all, user-skills, repo-skills, repo-agents, global-agents, hooks, custom-agents"
-                .to_string(),
-        ),
-        Command::Preview => Ok(
-            "preview: available targets: codex-profile, integrations-profile, cloudflare-profile"
-                .to_string(),
-        ),
-        Command::Apply => Ok(
-            "apply: available targets: codex-profile, integrations-profile, cloudflare-profile"
-                .to_string(),
-        ),
-        Command::Restore => Ok("restore: available targets: codex-config".to_string()),
-        Command::Uninstall => Ok(
-            "uninstall: available targets: all, user-skills, repo-skills, repo-agents, global-agents, hooks, custom-agents"
-                .to_string(),
-        ),
-    }
+    run_command(command, &paths, &codex_paths)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -265,6 +213,89 @@ impl Command {
             (Some(other), _) => Err(format!("unknown command: {other}")),
         }
     }
+
+    fn static_output(self) -> Option<&'static str> {
+        match self {
+            Command::Debug => Some("debug: available targets: policy-preview"),
+            Command::Export => Some(
+                "export: available targets: all, user-skills, repo-skills, repo-agents, global-agents, hooks, custom-agents",
+            ),
+            Command::Preview => Some(
+                "preview: available targets: codex-profile, integrations-profile, cloudflare-profile",
+            ),
+            Command::Apply => Some(
+                "apply: available targets: codex-profile, integrations-profile, cloudflare-profile",
+            ),
+            Command::Restore => Some("restore: available targets: codex-config"),
+            Command::Uninstall => Some(
+                "uninstall: available targets: all, user-skills, repo-skills, repo-agents, global-agents, hooks, custom-agents",
+            ),
+            _ => None,
+        }
+    }
+
+    fn execute_backend(
+        self,
+        paths: &ProjectPaths,
+        codex_paths: &CodexPaths,
+    ) -> Result<OperationResult, String> {
+        match self {
+            Command::Install => install_runtime(paths, codex_paths),
+            Command::Config => show_config(paths),
+            Command::CodexConfig => show_codex_config(codex_paths),
+            Command::BackupCodexConfig => backup_codex_config(paths, codex_paths),
+            Command::DebugPolicyPreview => preview_policy(paths),
+            Command::PreviewCodexProfile => preview_codex_profile(codex_paths),
+            Command::PreviewIntegrationsProfile => preview_integrations_profile(codex_paths),
+            Command::PreviewCloudflareProfile => preview_cloudflare_profile(codex_paths),
+            Command::ApplyCodexProfile => apply_codex_profile(paths, codex_paths),
+            Command::ApplyIntegrationsProfile => apply_integrations_profile(paths, codex_paths),
+            Command::ApplyCloudflareProfile => apply_cloudflare_profile(paths, codex_paths),
+            Command::RestoreCodexConfig => restore_codex_config(paths, codex_paths),
+            Command::Status => inventory_status(paths, codex_paths),
+            Command::Doctor => doctor_runtime(paths, codex_paths),
+            Command::HookSessionStart => Err("hook event is not a backend operation".to_string()),
+            Command::ExportAll => export_all(paths, codex_paths),
+            Command::ExportUserSkills => export_user_skills(paths, codex_paths),
+            Command::ExportRepoSkills => export_repo_skills(paths, codex_paths),
+            Command::ExportRepoAgents => export_repo_agents(paths, codex_paths),
+            Command::ExportGlobalAgents => export_global_agents(paths, codex_paths),
+            Command::ExportHooks => export_hooks(codex_paths),
+            Command::ExportCustomAgents => export_custom_agents(paths, codex_paths),
+            Command::UninstallAll => uninstall_all(codex_paths),
+            Command::UninstallUserSkills => uninstall_user_skills(codex_paths),
+            Command::UninstallRepoSkills => uninstall_repo_skills(paths),
+            Command::UninstallRepoAgents => uninstall_repo_agents(paths),
+            Command::UninstallGlobalAgents => uninstall_global_agents(codex_paths),
+            Command::UninstallHooks => uninstall_hooks(codex_paths),
+            Command::UninstallCustomAgents => uninstall_custom_agents(codex_paths),
+            Command::Summary
+            | Command::Debug
+            | Command::Preview
+            | Command::Apply
+            | Command::Restore
+            | Command::Export
+            | Command::Uninstall => Err("backend command not executable".to_string()),
+        }
+    }
+}
+
+fn run_command(
+    command: Command,
+    paths: &ProjectPaths,
+    codex_paths: &CodexPaths,
+) -> Result<String, String> {
+    if let Some(output) = command.static_output() {
+        return Ok(output.to_string());
+    }
+
+    match command {
+        Command::Summary => Ok(render_summary()),
+        Command::HookSessionStart => Ok(render_session_start_hook()),
+        _ => {
+            execute_backend_command(command, paths, codex_paths).map(|result| result.render_text())
+        }
+    }
 }
 
 fn execute_backend_command(
@@ -272,44 +303,7 @@ fn execute_backend_command(
     paths: &ProjectPaths,
     codex_paths: &CodexPaths,
 ) -> Result<OperationResult, String> {
-    let result = match command {
-        Command::Install => install_runtime(paths, codex_paths),
-        Command::Config => show_config(paths),
-        Command::CodexConfig => show_codex_config(codex_paths),
-        Command::BackupCodexConfig => backup_codex_config(paths, codex_paths),
-        Command::DebugPolicyPreview => preview_policy(paths),
-        Command::PreviewCodexProfile => preview_codex_profile(codex_paths),
-        Command::PreviewIntegrationsProfile => preview_integrations_profile(codex_paths),
-        Command::PreviewCloudflareProfile => preview_cloudflare_profile(codex_paths),
-        Command::ApplyCodexProfile => apply_codex_profile(paths, codex_paths),
-        Command::ApplyIntegrationsProfile => apply_integrations_profile(paths, codex_paths),
-        Command::ApplyCloudflareProfile => apply_cloudflare_profile(paths, codex_paths),
-        Command::RestoreCodexConfig => restore_codex_config(paths, codex_paths),
-        Command::Status => inventory_status(paths, codex_paths),
-        Command::Doctor => doctor_runtime(paths, codex_paths),
-        Command::HookSessionStart => Err("hook event is not a backend operation".to_string()),
-        Command::ExportAll => export_all(paths, codex_paths),
-        Command::ExportUserSkills => export_user_skills(paths, codex_paths),
-        Command::ExportRepoSkills => export_repo_skills(paths, codex_paths),
-        Command::ExportRepoAgents => export_repo_agents(paths, codex_paths),
-        Command::ExportGlobalAgents => export_global_agents(paths, codex_paths),
-        Command::ExportHooks => export_hooks(codex_paths),
-        Command::ExportCustomAgents => export_custom_agents(paths, codex_paths),
-        Command::UninstallAll => uninstall_all(codex_paths),
-        Command::UninstallUserSkills => uninstall_user_skills(codex_paths),
-        Command::UninstallRepoSkills => uninstall_repo_skills(paths),
-        Command::UninstallRepoAgents => uninstall_repo_agents(paths),
-        Command::UninstallGlobalAgents => uninstall_global_agents(codex_paths),
-        Command::UninstallHooks => uninstall_hooks(codex_paths),
-        Command::UninstallCustomAgents => uninstall_custom_agents(codex_paths),
-        Command::Summary
-        | Command::Debug
-        | Command::Preview
-        | Command::Apply
-        | Command::Restore
-        | Command::Export
-        | Command::Uninstall => Err("backend command not executable".to_string()),
-    }?;
+    let result = command.execute_backend(paths, codex_paths)?;
     append_operation_event(paths, &result)?;
     Ok(result)
 }
@@ -2200,20 +2194,34 @@ fn ensure_file_with_default(path: &Path, default_contents: &str) -> Result<(), S
 
 fn append_operation_event(paths: &ProjectPaths, result: &OperationResult) -> Result<(), String> {
     let current = current_run_state(paths);
-    let event = EventRecord::new(
+    let summary = persist_operation_state(paths, result)?;
+    refresh_brief(paths, &current, &summary)
+}
+
+fn persist_operation_state(
+    paths: &ProjectPaths,
+    result: &OperationResult,
+) -> Result<RunSummary, String> {
+    append_operation_record(paths, result)?;
+    append_decision_record(paths, result)?;
+    append_artifact_records(paths, result)?;
+    promote_operation_summary(paths, result)
+}
+
+fn append_operation_record(paths: &ProjectPaths, result: &OperationResult) -> Result<(), String> {
+    operation_event_record(result)
+        .append_jsonl(&paths.events_path)
+        .map_err(|error| error.to_string())
+}
+
+fn operation_event_record(result: &OperationResult) -> EventRecord {
+    EventRecord::new(
         "operation",
         operation_kind_label(result.kind),
         "ok",
         result.summary.clone(),
         result.paths_touched.clone(),
-    );
-    event
-        .append_jsonl(&paths.events_path)
-        .map_err(|error| error.to_string())?;
-    append_decision_record(paths, result)?;
-    append_artifact_records(paths, result)?;
-    let summary = promote_operation_summary(paths, result)?;
-    refresh_brief(paths, &current, &summary)
+    )
 }
 
 fn operation_kind_label(kind: OperationKind) -> &'static str {
@@ -2252,7 +2260,22 @@ fn operation_kind_label(kind: OperationKind) -> &'static str {
 
 fn preview_policy(paths: &ProjectPaths) -> Result<OperationResult, String> {
     let config = LocalConfig::read_from_path(&paths.config_path).unwrap_or_default();
-    let scenarios = [
+    let details = policy_preview_scenarios()
+        .into_iter()
+        .map(|(label, input)| render_policy_preview_line(&config, label, input))
+        .collect::<Vec<_>>();
+
+    Ok(OperationResult {
+        kind: OperationKind::PreviewPolicy,
+        summary: "policy preview: rendered adaptive obligation scenarios".to_string(),
+        details,
+        paths_touched: Vec::new(),
+        inventory: Vec::new(),
+    })
+}
+
+fn policy_preview_scenarios() -> [(&'static str, PolicyInput); 5] {
+    [
         (
             "simple-question",
             PolicyInput {
@@ -2313,33 +2336,22 @@ fn preview_policy(paths: &ProjectPaths) -> Result<OperationResult, String> {
                 run_state: RunState::Blocked,
             },
         ),
-    ];
+    ]
+}
 
-    let details = scenarios
+fn render_policy_preview_line(config: &LocalConfig, label: &str, input: PolicyInput) -> String {
+    let decision = evaluate(input);
+    let roles = recommend_roles(&decision);
+    let obligations = decision
+        .obligations
         .into_iter()
-        .map(|(label, input)| {
-            let decision = evaluate(input);
-            let roles = recommend_roles(&decision);
-            let obligations = decision
-                .obligations
-                .into_iter()
-                .map(obligation_label)
-                .collect::<Vec<_>>();
-            format!(
-                "{label}: {} | {}",
-                obligations.join(", "),
-                render_role_plan(&config, roles)
-            )
-        })
+        .map(obligation_label)
         .collect::<Vec<_>>();
-
-    Ok(OperationResult {
-        kind: OperationKind::PreviewPolicy,
-        summary: "policy preview: rendered adaptive obligation scenarios".to_string(),
-        details,
-        paths_touched: Vec::new(),
-        inventory: Vec::new(),
-    })
+    format!(
+        "{label}: {} | {}",
+        obligations.join(", "),
+        render_role_plan(config, roles)
+    )
 }
 
 fn obligation_label(obligation: Obligation) -> &'static str {
@@ -2494,9 +2506,13 @@ fn refresh_brief(
     current: &CurrentRunState,
     summary: &RunSummary,
 ) -> Result<(), String> {
-    let body = summary.build_brief(current);
+    let body = build_brief_body(summary, current);
     ensure_file_with_default(&paths.brief_path, "")?;
     fs::write(&paths.brief_path, body).map_err(|error| error.to_string())
+}
+
+fn build_brief_body(summary: &RunSummary, current: &CurrentRunState) -> String {
+    summary.build_brief(current)
 }
 
 fn install_runtime(
@@ -2506,36 +2522,7 @@ fn install_runtime(
     paths
         .ensure_runtime_dirs()
         .map_err(|error| error.to_string())?;
-
-    if !paths.config_path.exists() {
-        recommended_local_config(codex_paths)
-            .write_to_path(&paths.config_path)
-            .map_err(|error| error.to_string())?;
-    }
-
-    if !paths.current_run_path.exists() {
-        let mut state = fallback_current_run_state("initialize sane runtime");
-        state.phase = "setup".to_string();
-        state.active_tasks = vec!["install sane runtime".to_string()];
-        state.verification = VerificationStatus {
-            status: "pending".to_string(),
-            summary: Some("runtime scaffolding created".to_string()),
-        };
-        state
-            .write_to_path(&paths.current_run_path)
-            .map_err(|error| error.to_string())?;
-    }
-
-    if !paths.summary_path.exists() {
-        let summary = RunSummary::default();
-        summary
-            .write_to_path(&paths.summary_path)
-            .map_err(|error| error.to_string())?;
-    }
-
-    ensure_file_with_default(&paths.events_path, "")?;
-    ensure_file_with_default(&paths.decisions_path, "")?;
-    ensure_file_with_default(&paths.artifacts_path, "")?;
+    ensure_install_runtime_baseline(paths, codex_paths)?;
 
     let current = CurrentRunState::read_from_path(&paths.current_run_path)
         .map_err(|error| error.to_string())?;
@@ -2551,18 +2538,74 @@ fn install_runtime(
             format!("summary: {}", paths.summary_path.display()),
             format!("brief: {}", paths.brief_path.display()),
         ],
-        paths_touched: vec![
-            paths.runtime_root.display().to_string(),
-            paths.config_path.display().to_string(),
-            paths.current_run_path.display().to_string(),
-            paths.summary_path.display().to_string(),
-            paths.events_path.display().to_string(),
-            paths.decisions_path.display().to_string(),
-            paths.artifacts_path.display().to_string(),
-            paths.brief_path.display().to_string(),
-        ],
+        paths_touched: install_paths_touched(paths),
         inventory: vec![],
     })
+}
+
+fn ensure_install_runtime_baseline(
+    paths: &ProjectPaths,
+    codex_paths: &CodexPaths,
+) -> Result<(), String> {
+    ensure_install_config(paths, codex_paths)?;
+    ensure_install_current_run(paths)?;
+    ensure_install_summary(paths)?;
+    ensure_file_with_default(&paths.events_path, "")?;
+    ensure_file_with_default(&paths.decisions_path, "")?;
+    ensure_file_with_default(&paths.artifacts_path, "")?;
+    Ok(())
+}
+
+fn ensure_install_config(paths: &ProjectPaths, codex_paths: &CodexPaths) -> Result<(), String> {
+    if !paths.config_path.exists() {
+        recommended_local_config(codex_paths)
+            .write_to_path(&paths.config_path)
+            .map_err(|error| error.to_string())?;
+    }
+    Ok(())
+}
+
+fn ensure_install_current_run(paths: &ProjectPaths) -> Result<(), String> {
+    if !paths.current_run_path.exists() {
+        install_current_run_state()
+            .write_to_path(&paths.current_run_path)
+            .map_err(|error| error.to_string())?;
+    }
+    Ok(())
+}
+
+fn install_current_run_state() -> CurrentRunState {
+    let mut state = fallback_current_run_state("initialize sane runtime");
+    state.phase = "setup".to_string();
+    state.active_tasks = vec!["install sane runtime".to_string()];
+    state.verification = VerificationStatus {
+        status: "pending".to_string(),
+        summary: Some("runtime scaffolding created".to_string()),
+    };
+    state
+}
+
+fn ensure_install_summary(paths: &ProjectPaths) -> Result<(), String> {
+    if !paths.summary_path.exists() {
+        let summary = RunSummary::default();
+        summary
+            .write_to_path(&paths.summary_path)
+            .map_err(|error| error.to_string())?;
+    }
+    Ok(())
+}
+
+fn install_paths_touched(paths: &ProjectPaths) -> Vec<String> {
+    vec![
+        paths.runtime_root.display().to_string(),
+        paths.config_path.display().to_string(),
+        paths.current_run_path.display().to_string(),
+        paths.summary_path.display().to_string(),
+        paths.events_path.display().to_string(),
+        paths.decisions_path.display().to_string(),
+        paths.artifacts_path.display().to_string(),
+        paths.brief_path.display().to_string(),
+    ]
 }
 
 fn show_config(paths: &ProjectPaths) -> Result<OperationResult, String> {
