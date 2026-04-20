@@ -179,7 +179,7 @@ fn recommended_presets_use_detected_model_mix_when_available() {
     assert_eq!(presets.coordinator.reasoning_effort, ReasoningEffort::High);
     assert_eq!(presets.sidecar.model, "gpt-5.4-mini");
     assert_eq!(presets.sidecar.reasoning_effort, ReasoningEffort::Medium);
-    assert_eq!(presets.verifier.model, "gpt-5.2-codex");
+    assert_eq!(presets.verifier.model, "gpt-5.4");
     assert_eq!(presets.verifier.reasoning_effort, ReasoningEffort::XHigh);
 }
 

@@ -699,6 +699,60 @@ impl ArtifactRecord {
     }
 }
 
+pub fn read_jsonl_records<T>(path: impl AsRef<Path>) -> Result<Vec<T>, RunSnapshotError>
+where
+    T: for<'de> Deserialize<'de>,
+{
+    read_jsonl_records_slice(path, 0, None)
+}
+
+pub fn read_jsonl_records_slice<T>(
+    path: impl AsRef<Path>,
+    offset: usize,
+    limit: Option<usize>,
+) -> Result<Vec<T>, RunSnapshotError>
+where
+    T: for<'de> Deserialize<'de>,
+{
+    let path = path.as_ref();
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+
+    let raw = fs::read_to_string(path).map_err(|source| RunSnapshotError::Read {
+        path: path.display().to_string(),
+        source,
+    })?;
+
+    let mut records = Vec::new();
+    let mut seen = 0usize;
+    for (line_index, line) in raw.lines().enumerate() {
+        if line.trim().is_empty() {
+            continue;
+        }
+
+        if seen < offset {
+            seen += 1;
+            continue;
+        }
+
+        if let Some(max) = limit {
+            if records.len() >= max {
+                break;
+            }
+        }
+
+        let decoded = serde_json::from_str(line).map_err(|source| RunSnapshotError::Parse {
+            path: format!("{}:{}", path.display(), line_index + 1),
+            source,
+        })?;
+        records.push(decoded);
+        seen += 1;
+    }
+
+    Ok(records)
+}
+
 fn read_json<T>(path: impl AsRef<Path>) -> Result<T, RunSnapshotError>
 where
     T: for<'de> Deserialize<'de>,

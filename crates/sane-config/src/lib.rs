@@ -18,37 +18,101 @@ pub const AVAILABLE_MODELS: &[&str] = &[
     "gpt-5.1-codex-mini",
 ];
 
-const COORDINATOR_PRIORITY: &[&str] = &[
+const PREMIUM_COORDINATOR_PRIORITY: &[&str] = &[
     "gpt-5.4",
+    "gpt-5.3-codex",
     "gpt-5.2",
     "gpt-5.2-codex",
-    "gpt-5.1-codex-max",
-    "gpt-5.3-codex",
     "gpt-5.4-mini",
     "gpt-5.3-codex-spark",
+    "gpt-5.1-codex-max",
     "gpt-5.1-codex-mini",
+];
+
+const LIMITED_COORDINATOR_PRIORITY: &[&str] = &[
+    "gpt-5.4",
+    "gpt-5.4-mini",
+    "gpt-5.3-codex",
+    "gpt-5.3-codex-spark",
+    "gpt-5.2",
+    "gpt-5.2-codex",
+    "gpt-5.1-codex-mini",
+    "gpt-5.1-codex-max",
 ];
 
 const SIDECAR_PRIORITY: &[&str] = &[
     "gpt-5.4-mini",
     "gpt-5.3-codex-spark",
     "gpt-5.1-codex-mini",
+    "gpt-5.4",
+    "gpt-5.2",
     "gpt-5.3-codex",
     "gpt-5.2-codex",
-    "gpt-5.2",
-    "gpt-5.4",
     "gpt-5.1-codex-max",
 ];
 
-const VERIFIER_PRIORITY: &[&str] = &[
-    "gpt-5.2-codex",
-    "gpt-5.1-codex-max",
+const PREMIUM_VERIFIER_PRIORITY: &[&str] = &[
     "gpt-5.4",
-    "gpt-5.2",
     "gpt-5.3-codex",
+    "gpt-5.2",
+    "gpt-5.2-codex",
     "gpt-5.4-mini",
     "gpt-5.3-codex-spark",
+    "gpt-5.1-codex-max",
     "gpt-5.1-codex-mini",
+];
+
+const LIMITED_VERIFIER_PRIORITY: &[&str] = &[
+    "gpt-5.4",
+    "gpt-5.3-codex",
+    "gpt-5.4-mini",
+    "gpt-5.2",
+    "gpt-5.3-codex-spark",
+    "gpt-5.2-codex",
+    "gpt-5.1-codex-mini",
+    "gpt-5.1-codex-max",
+];
+
+const PREMIUM_COORDINATOR_REASONING: &[ReasoningEffort] = &[
+    ReasoningEffort::High,
+    ReasoningEffort::Medium,
+    ReasoningEffort::XHigh,
+    ReasoningEffort::Low,
+];
+
+const LIMITED_COORDINATOR_REASONING: &[ReasoningEffort] = &[
+    ReasoningEffort::Medium,
+    ReasoningEffort::High,
+    ReasoningEffort::Low,
+    ReasoningEffort::XHigh,
+];
+
+const PREMIUM_SIDECAR_REASONING: &[ReasoningEffort] = &[
+    ReasoningEffort::Medium,
+    ReasoningEffort::Low,
+    ReasoningEffort::High,
+    ReasoningEffort::XHigh,
+];
+
+const LIMITED_SIDECAR_REASONING: &[ReasoningEffort] = &[
+    ReasoningEffort::Low,
+    ReasoningEffort::Medium,
+    ReasoningEffort::High,
+    ReasoningEffort::XHigh,
+];
+
+const PREMIUM_VERIFIER_REASONING: &[ReasoningEffort] = &[
+    ReasoningEffort::XHigh,
+    ReasoningEffort::High,
+    ReasoningEffort::Medium,
+    ReasoningEffort::Low,
+];
+
+const LIMITED_VERIFIER_REASONING: &[ReasoningEffort] = &[
+    ReasoningEffort::High,
+    ReasoningEffort::Medium,
+    ReasoningEffort::Low,
+    ReasoningEffort::XHigh,
 ];
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -251,25 +315,42 @@ impl ModelRolePresets {
             .plan_type
             .as_deref()
             .is_some_and(is_premium_plan_type);
+        let coordinator_priority = if premium_plan {
+            PREMIUM_COORDINATOR_PRIORITY
+        } else {
+            LIMITED_COORDINATOR_PRIORITY
+        };
+        let coordinator_reasoning = if premium_plan {
+            PREMIUM_COORDINATOR_REASONING
+        } else {
+            LIMITED_COORDINATOR_REASONING
+        };
+        let sidecar_reasoning = if premium_plan {
+            PREMIUM_SIDECAR_REASONING
+        } else {
+            LIMITED_SIDECAR_REASONING
+        };
+        let verifier_priority = if premium_plan {
+            PREMIUM_VERIFIER_PRIORITY
+        } else {
+            LIMITED_VERIFIER_PRIORITY
+        };
+        let verifier_reasoning = if premium_plan {
+            PREMIUM_VERIFIER_REASONING
+        } else {
+            LIMITED_VERIFIER_REASONING
+        };
 
         let coordinator = pick_model_preset(
             &environment.available_models,
-            COORDINATOR_PRIORITY,
-            &[
-                ReasoningEffort::High,
-                ReasoningEffort::Medium,
-                ReasoningEffort::Low,
-            ],
+            coordinator_priority,
+            coordinator_reasoning,
         )
         .unwrap_or_else(|| {
             select_available_model_preset(
                 &environment.available_models,
                 true,
-                &[
-                    ReasoningEffort::High,
-                    ReasoningEffort::Medium,
-                    ReasoningEffort::Low,
-                ],
+                coordinator_reasoning,
             )
             .expect("non-empty available model list")
         });
@@ -277,64 +358,21 @@ impl ModelRolePresets {
         let sidecar = pick_model_preset(
             &environment.available_models,
             SIDECAR_PRIORITY,
-            &[
-                ReasoningEffort::Medium,
-                ReasoningEffort::Low,
-                ReasoningEffort::High,
-            ],
+            sidecar_reasoning,
         )
         .unwrap_or_else(|| {
-            select_available_model_preset(
-                &environment.available_models,
-                false,
-                &[
-                    ReasoningEffort::Medium,
-                    ReasoningEffort::Low,
-                    ReasoningEffort::High,
-                ],
-            )
-            .expect("non-empty available model list")
+            select_available_model_preset(&environment.available_models, false, sidecar_reasoning)
+                .expect("non-empty available model list")
         });
 
         let verifier = pick_model_preset(
             &environment.available_models,
-            VERIFIER_PRIORITY,
-            if premium_plan {
-                &[
-                    ReasoningEffort::XHigh,
-                    ReasoningEffort::High,
-                    ReasoningEffort::Medium,
-                    ReasoningEffort::Low,
-                ]
-            } else {
-                &[
-                    ReasoningEffort::High,
-                    ReasoningEffort::Medium,
-                    ReasoningEffort::Low,
-                    ReasoningEffort::XHigh,
-                ]
-            },
+            verifier_priority,
+            verifier_reasoning,
         )
         .unwrap_or_else(|| {
-            select_available_model_preset(
-                &environment.available_models,
-                true,
-                if premium_plan {
-                    &[
-                        ReasoningEffort::XHigh,
-                        ReasoningEffort::High,
-                        ReasoningEffort::Medium,
-                        ReasoningEffort::Low,
-                    ]
-                } else {
-                    &[
-                        ReasoningEffort::High,
-                        ReasoningEffort::Medium,
-                        ReasoningEffort::Low,
-                    ]
-                },
-            )
-            .expect("non-empty available model list")
+            select_available_model_preset(&environment.available_models, true, verifier_reasoning)
+                .expect("non-empty available model list")
         });
 
         Self {

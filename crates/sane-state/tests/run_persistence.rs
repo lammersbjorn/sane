@@ -1,7 +1,7 @@
 use sane_state::{
     ArtifactRecord, CanonicalStatePaths, CurrentRunState, DecisionRecord, EventRecord,
     LayeredStateBundle, LocalStateConfig, RunSnapshot, RunSnapshotError, RunSummary,
-    SummaryPromotion,
+    SummaryPromotion, read_jsonl_records, read_jsonl_records_slice,
 };
 use tempfile::tempdir;
 
@@ -185,6 +185,52 @@ fn decision_record_appends_jsonl() {
     assert_eq!(decoded.version, 1);
     assert_eq!(decoded.summary, "runtime installed");
     assert_eq!(decoded.rationale, "keep repair paths reversible");
+}
+
+#[test]
+fn jsonl_reader_preserves_order_for_multi_record_file() {
+    let dir = tempdir().unwrap();
+    let path = dir.path().join("decisions.jsonl");
+
+    DecisionRecord::new("first", "r1", vec![])
+        .append_jsonl(&path)
+        .unwrap();
+    DecisionRecord::new("second", "r2", vec![])
+        .append_jsonl(&path)
+        .unwrap();
+    DecisionRecord::new("third", "r3", vec![])
+        .append_jsonl(&path)
+        .unwrap();
+
+    let decoded = read_jsonl_records::<DecisionRecord>(&path).unwrap();
+    let summaries = decoded
+        .iter()
+        .map(|record| record.summary.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(summaries, vec!["first", "second", "third"]);
+}
+
+#[test]
+fn jsonl_reader_slice_returns_ordered_window() {
+    let dir = tempdir().unwrap();
+    let path = dir.path().join("events.jsonl");
+
+    EventRecord::new("operation", "first", "ok", "first", vec![])
+        .append_jsonl(&path)
+        .unwrap();
+    EventRecord::new("operation", "second", "ok", "second", vec![])
+        .append_jsonl(&path)
+        .unwrap();
+    EventRecord::new("operation", "third", "ok", "third", vec![])
+        .append_jsonl(&path)
+        .unwrap();
+
+    let decoded = read_jsonl_records_slice::<EventRecord>(&path, 1, Some(2)).unwrap();
+    let actions = decoded
+        .iter()
+        .map(|record| record.action.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(actions, vec!["second", "third"]);
 }
 
 #[test]

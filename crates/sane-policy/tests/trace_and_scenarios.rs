@@ -59,7 +59,10 @@ fn explain_traces_why_a_complex_feature_gets_heavy_obligations() {
         explanation.orchestration.subagents,
         SubagentStrategy::AllowIndependentSlices
     );
-    assert_eq!(explanation.orchestration.review_posture, ReviewPosture::Independent);
+    assert_eq!(
+        explanation.orchestration.review_posture,
+        ReviewPosture::Independent
+    );
     assert_eq!(
         explanation.orchestration.verifier_timing,
         VerifierTiming::ThroughoutExecution
@@ -93,7 +96,10 @@ fn blocked_long_run_keeps_subagents_disallowed_until_parallel_slices_are_clear()
         explanation.orchestration.subagents,
         SubagentStrategy::WaitForIndependentSlices
     );
-    assert_eq!(explanation.orchestration.review_posture, ReviewPosture::Independent);
+    assert_eq!(
+        explanation.orchestration.review_posture,
+        ReviewPosture::Independent
+    );
     assert_eq!(
         explanation.orchestration.verifier_timing,
         VerifierTiming::ThroughoutExecution
@@ -109,9 +115,18 @@ fn simple_question_stays_single_agent_without_review_posture() {
 
     let explanation = explain(scenario.input);
 
-    assert_eq!(explanation.orchestration.subagents, SubagentStrategy::SoloOnly);
-    assert_eq!(explanation.orchestration.review_posture, ReviewPosture::None);
-    assert_eq!(explanation.orchestration.verifier_timing, VerifierTiming::None);
+    assert_eq!(
+        explanation.orchestration.subagents,
+        SubagentStrategy::SoloOnly
+    );
+    assert_eq!(
+        explanation.orchestration.review_posture,
+        ReviewPosture::None
+    );
+    assert_eq!(
+        explanation.orchestration.verifier_timing,
+        VerifierTiming::None
+    );
 }
 
 #[test]

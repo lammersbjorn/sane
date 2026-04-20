@@ -5365,7 +5365,7 @@ mod tests {
             config.models.sidecar.reasoning_effort,
             sane_config::ReasoningEffort::Medium
         );
-        assert_eq!(config.models.verifier.model, "gpt-5.2-codex");
+        assert_eq!(config.models.verifier.model, "gpt-5.4");
         assert_eq!(
             config.models.verifier.reasoning_effort,
             sane_config::ReasoningEffort::XHigh
@@ -6635,8 +6635,8 @@ codex_hooks = false
         let _ = run_with_home(&["apply", "codex-profile"], project.path(), home.path()).unwrap();
         let body = std::fs::read_to_string(codex_dir.join("config.toml")).unwrap();
 
-        assert!(body.contains("model = \"gpt-5.2\""));
-        assert!(body.contains("model_reasoning_effort = \"high\""));
+        assert!(body.contains("model = \"gpt-5.3-codex-spark\""));
+        assert!(body.contains("model_reasoning_effort = \"medium\""));
         assert!(body.contains("codex_hooks = true"));
     }
 

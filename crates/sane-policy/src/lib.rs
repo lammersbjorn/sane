@@ -673,7 +673,10 @@ mod tests {
 
         assert_eq!(orchestration.subagents, SubagentStrategy::SoloOnly);
         assert_eq!(orchestration.review_posture, ReviewPosture::Light);
-        assert_eq!(orchestration.verifier_timing, VerifierTiming::AfterChangeSet);
+        assert_eq!(
+            orchestration.verifier_timing,
+            VerifierTiming::AfterChangeSet
+        );
     }
 
     #[test]
