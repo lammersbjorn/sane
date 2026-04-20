@@ -376,7 +376,7 @@ impl HomeOption {
 fn section_actions(section: TuiSection) -> Vec<TuiAction> {
     match section {
         TuiSection::StartHere => vec![
-            TuiAction::backend("1. Create the .sane project folder", Command::Install),
+            TuiAction::backend("1. Create Sane's local files", Command::Install),
             TuiAction::backend("2. View your current Codex settings", Command::CodexConfig),
             TuiAction::backend(
                 "3. Preview Sane's recommended Codex settings",
@@ -411,10 +411,10 @@ fn section_actions(section: TuiSection) -> Vec<TuiAction> {
             ),
             TuiAction::backend("Install Sane hooks", Command::ExportHooks),
             TuiAction::backend("Install Sane custom agents", Command::ExportCustomAgents),
-            TuiAction::backend("Install all Sane items", Command::ExportAll),
+            TuiAction::backend("Install everything Sane manages", Command::ExportAll),
         ],
         TuiSection::Inspect => vec![
-            TuiAction::backend("See installed Sane items", Command::Status),
+            TuiAction::backend("See what Sane manages", Command::Status),
             TuiAction::backend("Check for Sane problems", Command::Doctor),
             TuiAction::backend("View Sane config", Command::Config),
             TuiAction::backend("View your current Codex settings", Command::CodexConfig),
@@ -425,7 +425,7 @@ fn section_actions(section: TuiSection) -> Vec<TuiAction> {
             TuiAction::backend("Explain routing policy", Command::DebugPolicyPreview),
         ],
         TuiSection::Repair => vec![
-            TuiAction::backend("Repair the .sane project folder", Command::Install),
+            TuiAction::backend("Repair Sane's local files", Command::Install),
             TuiAction::backend("Back up your Codex settings", Command::BackupCodexConfig),
             TuiAction::backend(
                 "Restore your last Codex backup",
@@ -436,7 +436,7 @@ fn section_actions(section: TuiSection) -> Vec<TuiAction> {
                 "Uninstall repo AGENTS.md block",
                 Command::UninstallRepoAgents,
             ),
-            TuiAction::backend("Uninstall all Sane items", Command::UninstallAll),
+            TuiAction::backend("Remove everything Sane manages", Command::UninstallAll),
         ],
     }
 }
@@ -686,16 +686,16 @@ impl TuiApp {
             paths: paths.clone(),
             codex_paths: codex_paths.clone(),
             sections: vec![
-                HomeOption::new("Get started", TuiSection::StartHere),
-                HomeOption::new("Preferences", TuiSection::Configure),
-                HomeOption::new("Install", TuiSection::Exports),
+                HomeOption::new("Start here", TuiSection::StartHere),
+                HomeOption::new("Set up", TuiSection::Configure),
+                HomeOption::new("Install Codex pieces", TuiSection::Exports),
                 HomeOption::new("Inspect", TuiSection::Inspect),
-                HomeOption::new("Repair", TuiSection::Repair),
+                HomeOption::new("Repair or remove", TuiSection::Repair),
             ],
             section_selected: 0,
             action_selected: 0,
             status,
-            output: "Ready. Start in `Get started`. Left/right changes section. Up/down changes option. Enter runs the selected step."
+            output: "Ready. Start in `Start here`. Left/right changes section. Up/down changes option. Enter runs the selected step."
                 .to_string(),
             screen: TuiScreen::Dashboard,
         };
@@ -1625,11 +1625,11 @@ fn home_option_lines(section: TuiSection, status: &OperationResult) -> Vec<Line<
                 )),
                 Line::from(""),
                 Line::from("Suggested flow"),
-                Line::from("1. Create the .sane project folder"),
+                Line::from("1. Create Sane's local project files"),
                 Line::from("2. Review and back up Codex settings"),
-                Line::from("3. Apply Sane's recommended settings"),
+                Line::from("3. Apply Sane's recommended Codex settings"),
                 Line::from("4. Install Sane into Codex"),
-                Line::from("Optional tools live in Preferences and Install."),
+                Line::from("More setup lives in Set up and Install Codex pieces."),
             ];
 
             if has_attention_items(status) {
@@ -1639,15 +1639,15 @@ fn home_option_lines(section: TuiSection, status: &OperationResult) -> Vec<Line<
             lines
         }
         TuiSection::Configure => vec![
-            Line::from("Change how Sane behaves before installing it into Codex."),
+            Line::from("Change how Sane behaves before it writes anything."),
             Line::from(""),
-            Line::from("Change model and reasoning defaults."),
+            Line::from("Choose model and reasoning defaults."),
             Line::from("Turn built-in packs on or off."),
             Line::from("Choose telemetry and privacy level."),
             Line::from("Open with `sane settings` if you want to land here directly."),
         ],
         TuiSection::Exports => vec![
-            Line::from("Install Sane into Codex on purpose."),
+            Line::from("Install the Codex pieces Sane manages."),
             Line::from(""),
             Line::from("User-level install changes your own Codex setup."),
             Line::from("Repo-level install is explicit and optional."),
@@ -1662,7 +1662,7 @@ fn home_option_lines(section: TuiSection, status: &OperationResult) -> Vec<Line<
             Line::from("View Sane config and Codex settings before applying changes."),
         ],
         TuiSection::Repair => vec![
-            Line::from("Repair, restore, and uninstall tools."),
+            Line::from("Repair, restore, and remove what Sane manages."),
             Line::from(""),
             Line::from("Use backup and restore when settings changes went wrong."),
             Line::from("Use uninstall when you want Sane removed cleanly."),
@@ -1683,7 +1683,7 @@ fn recommended_next_step(status: &OperationResult) -> &'static str {
         config.status,
         InventoryStatus::Missing | InventoryStatus::Invalid
     ) {
-        "Create the .sane project folder first."
+        "Create Sane's local project files first."
     } else if matches!(
         codex_config.status,
         InventoryStatus::Missing | InventoryStatus::Invalid
@@ -1755,10 +1755,10 @@ fn action_help_lines(action: &TuiAction) -> Vec<Line<'static>> {
 fn command_help_lines(command: Command) -> Vec<Line<'static>> {
     match command {
         Command::Install => vec![
-            Line::from("Create or repair the `.sane` project folder in this repo."),
+            Line::from("Create or repair Sane's local project files in this repo."),
             Line::from(""),
-            Line::from("This creates Sane's project config and state files in `.sane/`."),
-            Line::from("Use this first in a new repo or if the `.sane/` folder is missing."),
+            Line::from("This creates Sane's local config and state files in `.sane/`."),
+            Line::from("Use this first in a new repo or if the local files are missing."),
         ],
         Command::Config => vec![
             Line::from("Show the current local Sane config."),
@@ -1815,7 +1815,7 @@ fn command_help_lines(command: Command) -> Vec<Line<'static>> {
             ),
         ],
         Command::ApplyIntegrationsProfile => vec![
-            Line::from("Write Sane's recommended extra Codex tools into `~/.codex/config.toml`."),
+            Line::from("Write Sane's recommended Codex tools into `~/.codex/config.toml`."),
             Line::from(""),
             Line::from("Today this adds Context7, Playwright, and grep.app."),
             Line::from("Use preview first if you want to inspect exactly what will be added."),
@@ -1841,7 +1841,7 @@ fn command_help_lines(command: Command) -> Vec<Line<'static>> {
             ),
         ],
         Command::Doctor => vec![
-            Line::from("Check the `.sane` project folder and Sane's Codex installs."),
+            Line::from("Check Sane's local files and Codex installs."),
             Line::from(""),
             Line::from("Use this when something feels broken, stale, or only partly installed."),
             Line::from("Doctor points at missing, invalid, or drifted Sane-managed pieces."),
@@ -1862,7 +1862,7 @@ fn command_help_lines(command: Command) -> Vec<Line<'static>> {
             ),
         ],
         Command::ExportRepoAgents => vec![
-            Line::from("Install a Sane block into this repo's root `AGENTS.md`."),
+            Line::from("Add a Sane block to this repo's root `AGENTS.md`."),
             Line::from(""),
             Line::from("Use this only when you want repo-local shared AGENTS guidance."),
             Line::from(
@@ -1870,22 +1870,22 @@ fn command_help_lines(command: Command) -> Vec<Line<'static>> {
             ),
         ],
         Command::ExportGlobalAgents => vec![
-            Line::from("Install or refresh the Sane block in global `AGENTS.md`."),
+            Line::from("Add or refresh the Sane block in global `AGENTS.md`."),
             Line::from(""),
             Line::from("This is additive: Sane touches only its own marked block."),
         ],
         Command::ExportHooks => vec![
-            Line::from("Install or refresh Sane's entries in `~/.codex/hooks.json`."),
+            Line::from("Add or refresh Sane's entries in `~/.codex/hooks.json`."),
             Line::from(""),
             Line::from("Use this if you want Sane's optional Codex hook behavior enabled."),
         ],
         Command::ExportCustomAgents => vec![
-            Line::from("Install or refresh Sane's custom agent files."),
+            Line::from("Add or refresh Sane's custom agent files."),
             Line::from(""),
             Line::from("These files support Sane's coordinator, sidecar, and verifier roles."),
         ],
         Command::ExportAll => vec![
-            Line::from("Install or refresh everything Sane manages in Codex."),
+            Line::from("Add or refresh everything Sane manages in Codex."),
             Line::from(""),
             Line::from(
                 "This installs the Sane user skill, global AGENTS block, hooks, and custom agents.",
@@ -5869,7 +5869,13 @@ mod tests {
 
         assert_eq!(
             home_labels,
-            vec!["Get started", "Preferences", "Install", "Inspect", "Repair",]
+            vec![
+                "Start here",
+                "Set up",
+                "Install Codex pieces",
+                "Inspect",
+                "Repair or remove",
+            ]
         );
 
         let start_here = super::section_actions(super::TuiSection::StartHere)
@@ -5879,7 +5885,7 @@ mod tests {
         assert_eq!(
             start_here,
             vec![
-                "1. Create the .sane project folder",
+                "1. Create Sane's local files",
                 "2. View your current Codex settings",
                 "3. Preview Sane's recommended Codex settings",
                 "4. Back up your Codex settings",

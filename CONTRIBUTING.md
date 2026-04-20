@@ -28,6 +28,11 @@ In practice that means:
 - the real effect lands in Codex-native assets and narrow config changes
 - `.sane/` exists to keep local config, state, and backups inspectable
 
+If you need the product story first, read:
+
+- [README.md](./README.md)
+- [docs/what-sane-does.md](./docs/what-sane-does.md)
+
 If your change affects user behavior, think in terms of these surfaces:
 
 - local `.sane/` runtime and state
@@ -66,6 +71,8 @@ That sets:
 ```bash
 git config core.hooksPath .githooks
 ```
+
+The hook is there to keep history readable, not to slow you down.
 
 ## Normal Dev Loop
 
@@ -111,6 +118,7 @@ The root docs should answer:
 - how it stays safe and reversible
 
 Do not turn internal crate structure into the product pitch.
+If the change affects users, the user docs should explain it in plain language.
 
 ### Do not turn open decisions into facts
 

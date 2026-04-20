@@ -4,7 +4,7 @@ The onboarding-first installer, configurator, diagnostic, and recovery interface
 
 ## What This Crate Is
 
-If someone opens `Sane`, this crate is the primary interface.
+If someone runs `sane`, this crate is the first thing they see.
 
 It owns the user-facing flows for:
 
@@ -14,7 +14,7 @@ It owns the user-facing flows for:
 - inspect
 - repair/recovery
 
-It is the bridge between local config and the Codex-native assets `Sane` manages.
+It is the bridge between what the user wants to do and the Codex-native pieces `Sane` manages.
 
 ## Why It Exists
 

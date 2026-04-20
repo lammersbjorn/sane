@@ -4,7 +4,7 @@ Shared names, contracts, and generated content for `Sane`.
 
 ## What This Crate Is
 
-This crate holds the pieces that need to stay stable across the workspace.
+This crate holds the names and generated content that need to stay stable across the workspace.
 
 That includes things like:
 
@@ -23,7 +23,7 @@ Without a shared core, the workspace drifts fast:
 - generated content no longer matches what the UI claims
 - uninstall boundaries stop lining up with export boundaries
 
-This crate keeps the shared vocabulary in one place.
+This crate keeps the shared vocabulary in one place so the UI, docs, export logic, and uninstall paths stay in sync.
 
 ## What It Owns
 

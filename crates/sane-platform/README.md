@@ -4,7 +4,7 @@ Path discovery and platform layout rules for `Sane`.
 
 ## What This Crate Is
 
-This crate answers one question:
+This crate answers one question for the rest of `Sane`:
 
 > where does this belong?
 
@@ -21,7 +21,7 @@ It finds:
 `Sane` is meant to work on macOS, Linux, and Windows.
 Users should not have to memorize path differences or special cases.
 
-Keeping that logic here makes the rest of the workspace simpler and safer.
+Keeping that logic here makes the rest of the workspace simpler and safer, especially when the same project has to work on macOS, Linux, and Windows.
 
 ## What It Owns
 

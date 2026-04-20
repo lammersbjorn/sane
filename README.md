@@ -18,8 +18,8 @@
 <p align="center">
   <a href="#why-sane">Why Sane</a> •
   <a href="#immediate-impact">Immediate Impact</a> •
+  <a href="#how-it-works">How It Works</a> •
   <a href="#install">Install</a> •
-  <a href="#how-sane-works">How It Works</a> •
   <a href="#what-ships-today">What Ships Today</a> •
   <a href="#safety-and-reversibility">Safety</a> •
   <a href="#community">Community</a>
@@ -61,6 +61,8 @@ What often feels bad is everything around it:
 - a manager for Codex-native skills, hooks, custom agents, and optional config profiles
 - a local-first layer that keeps just enough project state for repair, inspection, and handoff
 - a way to add stronger defaults without forcing a command-first workflow
+
+If you want the plain-English version of the product story, read [What Sane Does](./docs/what-sane-does.md).
 
 ## What Sane Is Not
 
@@ -114,43 +116,28 @@ If no local config exists yet, `Sane` starts from the Codex models it can see on
 2. Run `doctor`
 3. Restore or uninstall if needed
 
-## How Sane Works
+## How It Works
 
-`Sane` has three layers.
+Short version:
 
-### 1. The TUI
+1. `Sane` opens in a guided TUI.
+2. You preview what it wants to change.
+3. `Sane` writes only the parts you explicitly choose.
+4. Codex keeps working normally after that.
 
-This is the control surface.
-It opens in guided onboarding first, then splits into configure, exports, inspect, and repair sections.
-It is where you install, preview, apply, export, back up, restore, diagnose, and uninstall.
+The deeper version lives in [What Sane Does](./docs/what-sane-does.md).
 
-### 2. Local project state
+At a high level, `Sane` has three layers:
 
-`Sane` keeps a small local `.sane/` directory so it can remember what it configured, what happened recently, and how to repair or roll back managed changes.
-
-This is not meant to become a second runtime you have to live inside.
-It is there so `Sane` can stay inspectable and reversible.
-
-### 3. Codex-native assets
-
-This is the part that actually changes Codex behavior.
-
-`Sane` can manage:
-
-- a router skill that keeps the workflow plain-language first
-- optional built-in packs that optimize model behavior for specific tasks
-- optional hooks
-- optional custom agents
-- narrow Codex config profiles
-
-So the TUI is the place you configure things.
-The actual effect shows up in normal Codex sessions.
+- the TUI, which is the control surface
+- a tiny local `.sane/` record of what happened
+- Codex-native surfaces, which are the part that actually changes Codex behavior
 
 ## What Ships Today
 
 ### Current built-in packs
 
-These are current built-in packs, not a frozen long-term public API:
+These are the built-in packs `Sane` ships with today:
 
 - `core`
   Base Sane guidance. Always on.
@@ -164,6 +151,8 @@ These are current built-in packs, not a frozen long-term public API:
   Stronger frontend quality and anti-generic-UI bias.
 
 ### Current Codex-facing surfaces
+
+`Sane` can manage these Codex-facing pieces today:
 
 - router skill export
 - optional repo-local skill export into `.agents/skills/`
@@ -249,6 +238,8 @@ By design:
 | `doctor` | Inspect local runtime and managed Codex surfaces for missing, invalid, or stale state. |
 | `restore` | Roll Codex config back to a previous backup. |
 | `uninstall` | Remove Sane-managed assets while leaving unrelated user content alone. |
+
+For a user-first explanation of why these actions exist, see [What Sane Does](./docs/what-sane-does.md).
 
 ## What Is Still Moving
 

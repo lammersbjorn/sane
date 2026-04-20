@@ -4,7 +4,7 @@ The local config model for `Sane`.
 
 ## What This Crate Is
 
-This crate defines what the saved `Sane` settings mean.
+This crate defines what the saved `Sane` settings mean and what a user can expect after they click apply.
 
 When users change things like:
 
@@ -13,7 +13,7 @@ When users change things like:
 - built-in packs
 - privacy choices
 
-this crate is where those settings are parsed, assigned defaults, and validated.
+this crate is where those settings are parsed, assigned defaults, and validated before anything gets written out.
 
 ## Why It Exists
 

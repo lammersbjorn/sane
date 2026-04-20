@@ -4,7 +4,7 @@ Local state and persistence helpers for `Sane`.
 
 ## What This Crate Is
 
-This crate defines the small amount of project-local state `Sane` keeps so it can inspect, repair, and summarize its own behavior.
+This crate defines the small amount of project-local state `Sane` keeps so it can inspect, repair, and summarize its own behavior without turning `.sane/` into a second runtime.
 
 It covers files like:
 
