@@ -2450,12 +2450,7 @@ fn append_decision_record(paths: &ProjectPaths, result: &OperationResult) -> Res
 }
 
 fn append_artifact_records(paths: &ProjectPaths, result: &OperationResult) -> Result<(), String> {
-    let artifact_paths = match result.kind {
-        OperationKind::InstallRuntime => vec![paths.config_path.display().to_string()],
-        _ => vec![],
-    };
-
-    for artifact_path in artifact_paths {
+    for artifact_path in &result.paths_touched {
         ArtifactRecord::new(
             operation_kind_label(result.kind),
             artifact_path.clone(),
