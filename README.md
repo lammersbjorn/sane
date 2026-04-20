@@ -88,10 +88,12 @@ That opens the onboarding TUI. If you already know you want the settings/config 
 ### I want better defaults
 
 1. Open `Sane`
-2. Preview the core Codex profile
+2. Preview the recommended profile
 3. Back up config
 4. Apply the profile
 5. Keep using Codex normally
+
+If no local config exists yet, `Sane` starts from the Codex models it can see on that machine and falls back to stable defaults when it cannot detect enough.
 
 ### I want useful integrations without editing config by hand
 

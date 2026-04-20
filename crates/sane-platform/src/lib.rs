@@ -1,5 +1,41 @@
 use std::path::{Path, PathBuf};
 
+fn start_dir_for_discovery(start: &Path) -> PathBuf {
+    if start.is_dir() {
+        start.to_path_buf()
+    } else {
+        start
+            .parent()
+            .map(Path::to_path_buf)
+            .unwrap_or_else(|| PathBuf::from("."))
+    }
+}
+
+fn is_project_root(candidate: &Path) -> bool {
+    candidate.join("Cargo.toml").exists()
+        || candidate.join(".git").exists()
+        || candidate.join(".sane").exists()
+}
+
+fn resolve_home_dir(
+    home: Option<&str>,
+    userprofile: Option<&str>,
+    homedrive: Option<&str>,
+    homepath: Option<&str>,
+) -> Option<PathBuf> {
+    fn non_empty(value: Option<&str>) -> Option<&str> {
+        value.filter(|value| !value.is_empty())
+    }
+
+    non_empty(home)
+        .or_else(|| non_empty(userprofile))
+        .map(PathBuf::from)
+        .or_else(|| match (non_empty(homedrive), non_empty(homepath)) {
+            (Some(drive), Some(path)) => Some(PathBuf::from(format!("{drive}{path}"))),
+            _ => None,
+        })
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HostPlatform {
     MacOs,
@@ -38,6 +74,8 @@ pub struct CodexPaths {
     pub home_dir: PathBuf,
     pub codex_home: PathBuf,
     pub config_toml: PathBuf,
+    pub models_cache_json: PathBuf,
+    pub auth_json: PathBuf,
     pub user_agents_dir: PathBuf,
     pub user_skills_dir: PathBuf,
     pub custom_agents_dir: PathBuf,
@@ -104,21 +142,10 @@ impl ProjectPaths {
     }
 
     pub fn discover(start: impl AsRef<Path>) -> std::io::Result<Self> {
-        let start = start.as_ref();
-        let start_dir = if start.is_dir() {
-            start.to_path_buf()
-        } else {
-            start
-                .parent()
-                .map(Path::to_path_buf)
-                .unwrap_or_else(|| PathBuf::from("."))
-        };
+        let start_dir = start_dir_for_discovery(start.as_ref());
 
         for candidate in start_dir.ancestors() {
-            if candidate.join("Cargo.toml").exists()
-                || candidate.join(".git").exists()
-                || candidate.join(".sane").exists()
-            {
+            if is_project_root(candidate) {
                 return Ok(Self::new(candidate));
             }
         }
@@ -127,14 +154,18 @@ impl ProjectPaths {
     }
 
     pub fn ensure_runtime_dirs(&self) -> std::io::Result<()> {
-        std::fs::create_dir_all(&self.runtime_root)?;
-        std::fs::create_dir_all(&self.state_dir)?;
-        std::fs::create_dir_all(&self.cache_dir)?;
-        std::fs::create_dir_all(&self.backups_dir)?;
-        std::fs::create_dir_all(&self.codex_config_backups_dir)?;
-        std::fs::create_dir_all(&self.logs_dir)?;
-        std::fs::create_dir_all(&self.sessions_dir)?;
-        std::fs::create_dir_all(&self.telemetry_dir)?;
+        for dir in [
+            &self.runtime_root,
+            &self.state_dir,
+            &self.cache_dir,
+            &self.backups_dir,
+            &self.codex_config_backups_dir,
+            &self.logs_dir,
+            &self.sessions_dir,
+            &self.telemetry_dir,
+        ] {
+            std::fs::create_dir_all(dir)?;
+        }
         Ok(())
     }
 }
@@ -151,6 +182,8 @@ impl CodexPaths {
             home_dir,
             codex_home: codex_home.clone(),
             config_toml: codex_home.join("config.toml"),
+            models_cache_json: codex_home.join("models_cache.json"),
+            auth_json: codex_home.join("auth.json"),
             user_agents_dir,
             user_skills_dir,
             custom_agents_dir,
@@ -160,16 +193,51 @@ impl CodexPaths {
     }
 
     pub fn discover() -> std::io::Result<Self> {
-        let home = std::env::var_os("HOME")
-            .or_else(|| std::env::var_os("USERPROFILE"))
-            .map(PathBuf::from)
-            .ok_or_else(|| {
-                std::io::Error::new(
-                    std::io::ErrorKind::NotFound,
-                    "could not resolve HOME or USERPROFILE",
-                )
-            })?;
+        let home = resolve_home_dir(
+            std::env::var("HOME").ok().as_deref(),
+            std::env::var("USERPROFILE").ok().as_deref(),
+            std::env::var("HOMEDRIVE").ok().as_deref(),
+            std::env::var("HOMEPATH").ok().as_deref(),
+        )
+        .ok_or_else(|| {
+            std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "could not resolve HOME, USERPROFILE, or HOMEDRIVE/HOMEPATH",
+            )
+        })?;
 
         Ok(Self::new(home))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::resolve_home_dir;
+    use std::path::PathBuf;
+
+    #[test]
+    fn resolve_home_dir_supports_home_drive_and_home_path_fallback() {
+        let resolved = resolve_home_dir(None, None, Some("C:\\Users\\bjorn"), Some("\\profile"));
+
+        assert_eq!(resolved, Some(PathBuf::from("C:\\Users\\bjorn\\profile")));
+    }
+
+    #[test]
+    fn resolve_home_dir_prefers_home_over_other_sources() {
+        let resolved = resolve_home_dir(
+            Some("/Users/bjorn"),
+            Some("/tmp/userprofile"),
+            Some("C:\\Users\\bjorn"),
+            Some("\\profile"),
+        );
+
+        assert_eq!(resolved, Some(PathBuf::from("/Users/bjorn")));
+    }
+
+    #[test]
+    fn resolve_home_dir_skips_empty_values() {
+        let resolved = resolve_home_dir(Some(""), Some("/Users/bjorn"), None, None);
+
+        assert_eq!(resolved, Some(PathBuf::from("/Users/bjorn")));
     }
 }

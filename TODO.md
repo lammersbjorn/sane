@@ -71,6 +71,7 @@ Implemented:
 - pure adaptive policy crate with typed obligations and tests
 - internal backend policy preview for canonical adaptive scenarios
 - internal backend policy preview now shows configured coordinator / sidecar / verifier roles per scenario
+- recommended model defaults now derive from local Codex model cache plus auth plan when available; saved config still wins, and static fallback remains when detection fails
 - TUI now exposes adaptive policy inspection directly instead of leaving it command-only
 - TUI now requires confirmation for risky apply/restore/uninstall actions
 - no-args TUI now opens into section-based onboarding instead of a flat settings/action wall

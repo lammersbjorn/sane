@@ -1,7 +1,10 @@
+use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
 
+use base64::Engine;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use thiserror::Error;
 
 pub const AVAILABLE_MODELS: &[&str] = &[
@@ -14,6 +17,51 @@ pub const AVAILABLE_MODELS: &[&str] = &[
     "gpt-5.2",
     "gpt-5.1-codex-mini",
 ];
+
+const COORDINATOR_PRIORITY: &[&str] = &[
+    "gpt-5.4",
+    "gpt-5.2",
+    "gpt-5.2-codex",
+    "gpt-5.1-codex-max",
+    "gpt-5.3-codex",
+    "gpt-5.4-mini",
+    "gpt-5.3-codex-spark",
+    "gpt-5.1-codex-mini",
+];
+
+const SIDECAR_PRIORITY: &[&str] = &[
+    "gpt-5.4-mini",
+    "gpt-5.3-codex-spark",
+    "gpt-5.1-codex-mini",
+    "gpt-5.3-codex",
+    "gpt-5.2-codex",
+    "gpt-5.2",
+    "gpt-5.4",
+    "gpt-5.1-codex-max",
+];
+
+const VERIFIER_PRIORITY: &[&str] = &[
+    "gpt-5.2-codex",
+    "gpt-5.1-codex-max",
+    "gpt-5.4",
+    "gpt-5.2",
+    "gpt-5.3-codex",
+    "gpt-5.4-mini",
+    "gpt-5.3-codex-spark",
+    "gpt-5.1-codex-mini",
+];
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct CodexEnvironment {
+    pub plan_type: Option<String>,
+    pub available_models: Vec<AvailableModel>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AvailableModel {
+    pub slug: String,
+    pub reasoning_efforts: Vec<ReasoningEffort>,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct LocalConfig {
@@ -57,7 +105,7 @@ pub struct ModelPreset {
     pub reasoning_effort: ReasoningEffort,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "kebab-case")]
 pub enum ReasoningEffort {
     Low,
@@ -96,6 +144,17 @@ impl ReasoningEffort {
 
     pub const fn all() -> &'static [Self] {
         &[Self::Low, Self::Medium, Self::High, Self::XHigh]
+    }
+
+    pub fn from_api_str(value: &str) -> Option<Self> {
+        let value = value.to_ascii_lowercase();
+        match value.as_str() {
+            "low" => Some(Self::Low),
+            "medium" => Some(Self::Medium),
+            "high" => Some(Self::High),
+            "xhigh" => Some(Self::XHigh),
+            _ => None,
+        }
     }
 }
 
@@ -151,10 +210,137 @@ impl Default for LocalConfig {
     }
 }
 
+impl LocalConfig {
+    pub fn recommended_for_environment(environment: &CodexEnvironment) -> Self {
+        Self {
+            version: 1,
+            models: ModelRolePresets::recommended_for_environment(environment),
+            privacy: PrivacyConfig::default(),
+            packs: PackConfig::default(),
+        }
+    }
+}
+
 impl Default for PrivacyConfig {
     fn default() -> Self {
         Self {
             telemetry: TelemetryLevel::Off,
+        }
+    }
+}
+
+impl CodexEnvironment {
+    pub fn detect(
+        models_cache_path: impl AsRef<Path>,
+        auth_path: impl AsRef<Path>,
+    ) -> Result<Self, CodexEnvironmentError> {
+        Ok(Self {
+            plan_type: detect_plan_type(auth_path.as_ref())?,
+            available_models: detect_available_models(models_cache_path.as_ref())?,
+        })
+    }
+}
+
+impl ModelRolePresets {
+    pub fn recommended_for_environment(environment: &CodexEnvironment) -> Self {
+        if environment.available_models.is_empty() {
+            return Self::default();
+        }
+
+        let premium_plan = environment
+            .plan_type
+            .as_deref()
+            .is_some_and(is_premium_plan_type);
+
+        let coordinator = pick_model_preset(
+            &environment.available_models,
+            COORDINATOR_PRIORITY,
+            &[
+                ReasoningEffort::High,
+                ReasoningEffort::Medium,
+                ReasoningEffort::Low,
+            ],
+        )
+        .unwrap_or_else(|| {
+            select_available_model_preset(
+                &environment.available_models,
+                true,
+                &[
+                    ReasoningEffort::High,
+                    ReasoningEffort::Medium,
+                    ReasoningEffort::Low,
+                ],
+            )
+            .expect("non-empty available model list")
+        });
+
+        let sidecar = pick_model_preset(
+            &environment.available_models,
+            SIDECAR_PRIORITY,
+            &[
+                ReasoningEffort::Medium,
+                ReasoningEffort::Low,
+                ReasoningEffort::High,
+            ],
+        )
+        .unwrap_or_else(|| {
+            select_available_model_preset(
+                &environment.available_models,
+                false,
+                &[
+                    ReasoningEffort::Medium,
+                    ReasoningEffort::Low,
+                    ReasoningEffort::High,
+                ],
+            )
+            .expect("non-empty available model list")
+        });
+
+        let verifier = pick_model_preset(
+            &environment.available_models,
+            VERIFIER_PRIORITY,
+            if premium_plan {
+                &[
+                    ReasoningEffort::XHigh,
+                    ReasoningEffort::High,
+                    ReasoningEffort::Medium,
+                    ReasoningEffort::Low,
+                ]
+            } else {
+                &[
+                    ReasoningEffort::High,
+                    ReasoningEffort::Medium,
+                    ReasoningEffort::Low,
+                    ReasoningEffort::XHigh,
+                ]
+            },
+        )
+        .unwrap_or_else(|| {
+            select_available_model_preset(
+                &environment.available_models,
+                true,
+                if premium_plan {
+                    &[
+                        ReasoningEffort::XHigh,
+                        ReasoningEffort::High,
+                        ReasoningEffort::Medium,
+                        ReasoningEffort::Low,
+                    ]
+                } else {
+                    &[
+                        ReasoningEffort::High,
+                        ReasoningEffort::Medium,
+                        ReasoningEffort::Low,
+                    ]
+                },
+            )
+            .expect("non-empty available model list")
+        });
+
+        Self {
+            coordinator,
+            sidecar,
+            verifier,
         }
     }
 }
@@ -169,6 +355,34 @@ impl Default for PackConfig {
             frontend_craft: false,
         }
     }
+}
+
+#[derive(Debug, Error)]
+pub enum CodexEnvironmentError {
+    #[error("failed to read models cache from {path}: {source}")]
+    ReadModelsCache {
+        path: String,
+        #[source]
+        source: std::io::Error,
+    },
+    #[error("failed to parse models cache from {path}: {source}")]
+    ParseModelsCache {
+        path: String,
+        #[source]
+        source: serde_json::Error,
+    },
+    #[error("failed to read auth file from {path}: {source}")]
+    ReadAuth {
+        path: String,
+        #[source]
+        source: std::io::Error,
+    },
+    #[error("failed to parse auth file from {path}: {source}")]
+    ParseAuth {
+        path: String,
+        #[source]
+        source: serde_json::Error,
+    },
 }
 
 #[derive(Debug, Error)]
@@ -300,4 +514,244 @@ impl PackConfig {
             Err("core pack must stay enabled".to_string())
         }
     }
+}
+
+pub fn detect_available_models_from_json(json: &Value) -> Vec<AvailableModel> {
+    let models = json
+        .get("models")
+        .and_then(Value::as_array)
+        .or_else(|| json.as_array())
+        .cloned()
+        .unwrap_or_default();
+
+    let mut detected = vec![];
+    for (index, entry) in models.into_iter().enumerate() {
+        let Some(slug) = entry
+            .get("slug")
+            .and_then(Value::as_str)
+            .or_else(|| entry.get("id").and_then(Value::as_str))
+            .or_else(|| entry.get("name").and_then(Value::as_str))
+        else {
+            continue;
+        };
+
+        if !AVAILABLE_MODELS.contains(&slug) {
+            continue;
+        }
+
+        let mut reasoning = BTreeSet::new();
+        collect_reasoning_efforts(entry.get("supported_reasoning_levels"), &mut reasoning);
+        collect_reasoning_efforts(entry.get("supported_reasoning_efforts"), &mut reasoning);
+        collect_reasoning_efforts(entry.get("reasoning_efforts"), &mut reasoning);
+        if reasoning.is_empty()
+            && let Some(default_level) = entry
+                .get("default_reasoning_level")
+                .and_then(Value::as_str)
+                .and_then(ReasoningEffort::from_api_str)
+        {
+            reasoning.insert(default_level);
+        }
+        if reasoning.is_empty() {
+            reasoning.insert(ReasoningEffort::Medium);
+        }
+
+        let priority = entry
+            .get("priority")
+            .and_then(parse_model_priority)
+            .unwrap_or(u64::MAX);
+
+        detected.push(DetectedModel {
+            slug: slug.to_string(),
+            reasoning_efforts: ReasoningEffort::all()
+                .iter()
+                .copied()
+                .filter(|candidate| reasoning.contains(candidate))
+                .collect(),
+            priority,
+            index,
+        });
+    }
+
+    detected.sort_by(|left, right| {
+        left.priority
+            .cmp(&right.priority)
+            .then(left.index.cmp(&right.index))
+            .then(left.slug.cmp(&right.slug))
+    });
+    detected.dedup_by(|left, right| left.slug == right.slug);
+
+    detected
+        .into_iter()
+        .map(|model| AvailableModel {
+            slug: model.slug,
+            reasoning_efforts: model.reasoning_efforts,
+        })
+        .collect()
+}
+
+fn detect_available_models(path: &Path) -> Result<Vec<AvailableModel>, CodexEnvironmentError> {
+    if !path.exists() {
+        return Ok(vec![]);
+    }
+
+    let raw =
+        fs::read_to_string(path).map_err(|source| CodexEnvironmentError::ReadModelsCache {
+            path: path.display().to_string(),
+            source,
+        })?;
+    let json: Value =
+        serde_json::from_str(&raw).map_err(|source| CodexEnvironmentError::ParseModelsCache {
+            path: path.display().to_string(),
+            source,
+        })?;
+
+    Ok(detect_available_models_from_json(&json))
+}
+
+pub fn detect_plan_type_from_json(json: &Value) -> Option<String> {
+    detect_plan_type_in_object(json).or_else(|| {
+        json.get("https://api.openai.com/auth")
+            .and_then(detect_plan_type_in_object)
+    })
+}
+
+fn detect_plan_type(path: &Path) -> Result<Option<String>, CodexEnvironmentError> {
+    if !path.exists() {
+        return Ok(None);
+    }
+
+    let raw = fs::read_to_string(path).map_err(|source| CodexEnvironmentError::ReadAuth {
+        path: path.display().to_string(),
+        source,
+    })?;
+    let json: Value =
+        serde_json::from_str(&raw).map_err(|source| CodexEnvironmentError::ParseAuth {
+            path: path.display().to_string(),
+            source,
+        })?;
+
+    Ok(detect_plan_type_from_json(&json))
+}
+
+fn pick_model_preset(
+    available_models: &[AvailableModel],
+    priority: &[&str],
+    reasoning_priority: &[ReasoningEffort],
+) -> Option<ModelPreset> {
+    priority.iter().find_map(|slug| {
+        let model = available_models.iter().find(|model| model.slug == *slug)?;
+        let reasoning_effort = reasoning_priority
+            .iter()
+            .copied()
+            .find(|candidate| model.reasoning_efforts.contains(candidate))
+            .or_else(|| model.reasoning_efforts.first().copied())?;
+
+        Some(ModelPreset {
+            model: model.slug.clone(),
+            reasoning_effort,
+        })
+    })
+}
+
+fn select_available_model_preset(
+    available_models: &[AvailableModel],
+    strongest: bool,
+    reasoning_priority: &[ReasoningEffort],
+) -> Option<ModelPreset> {
+    let model = if strongest {
+        available_models.first()?
+    } else {
+        available_models.last()?
+    };
+
+    let reasoning_effort = reasoning_priority
+        .iter()
+        .copied()
+        .find(|candidate| model.reasoning_efforts.contains(candidate))
+        .or_else(|| model.reasoning_efforts.first().copied())?;
+
+    Some(ModelPreset {
+        model: model.slug.clone(),
+        reasoning_effort,
+    })
+}
+
+fn collect_reasoning_efforts(value: Option<&Value>, reasoning: &mut BTreeSet<ReasoningEffort>) {
+    let Some(levels) = value.and_then(Value::as_array) else {
+        return;
+    };
+
+    for level in levels {
+        let effort = level
+            .get("effort")
+            .and_then(Value::as_str)
+            .or_else(|| level.get("reasoning_effort").and_then(Value::as_str))
+            .or_else(|| level.as_str());
+        if let Some(effort) = effort
+            && let Some(reasoning_effort) = ReasoningEffort::from_api_str(effort)
+        {
+            reasoning.insert(reasoning_effort);
+        }
+    }
+}
+
+fn parse_model_priority(value: &Value) -> Option<u64> {
+    value
+        .as_u64()
+        .or_else(|| value.as_i64().map(|priority| priority.max(0) as u64))
+        .or_else(|| value.as_str().and_then(|priority| priority.parse().ok()))
+}
+
+fn detect_plan_type_in_object(value: &Value) -> Option<String> {
+    if let Some(plan_type) = value
+        .get("chatgpt_plan_type")
+        .and_then(Value::as_str)
+        .or_else(|| value.get("plan_type").and_then(Value::as_str))
+    {
+        return Some(plan_type.to_string());
+    }
+
+    let token = value
+        .get("tokens")
+        .and_then(Value::as_object)
+        .and_then(|tokens| {
+            tokens
+                .get("id_token")
+                .and_then(Value::as_str)
+                .or_else(|| tokens.get("access_token").and_then(Value::as_str))
+        })
+        .or_else(|| value.get("id_token").and_then(Value::as_str))
+        .or_else(|| value.get("access_token").and_then(Value::as_str));
+
+    let token = token?;
+    let payload = token.split('.').nth(1)?;
+
+    let decoded = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .decode(payload)
+        .or_else(|_| base64::engine::general_purpose::URL_SAFE.decode(payload))
+        .ok()?;
+    let claims: Value = serde_json::from_slice(&decoded).ok()?;
+
+    detect_plan_type_in_object(&claims).or_else(|| {
+        claims
+            .get("https://api.openai.com/auth")
+            .and_then(detect_plan_type_in_object)
+    })
+}
+
+fn is_premium_plan_type(plan_type: &str) -> bool {
+    let normalized = plan_type.to_ascii_lowercase();
+    normalized.contains("pro")
+        || normalized.contains("plus")
+        || normalized.contains("team")
+        || normalized.contains("enterprise")
+        || normalized.contains("edu")
+}
+
+#[derive(Debug)]
+struct DetectedModel {
+    slug: String,
+    reasoning_efforts: Vec<ReasoningEffort>,
+    priority: u64,
+    index: usize,
 }

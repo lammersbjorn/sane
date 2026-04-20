@@ -71,6 +71,7 @@ Primary source:
 - `Sane` should auto-pick the best available models, reasoning settings, and subagent configurations for the task
 - Selection should respect the user's subscription and available Codex capabilities
 - Fast / cheap sidecar tasks and heavier coordinator tasks may use different model presets
+- When no saved config exists, recommended defaults should come from local Codex model availability and plan data when present; static presets stay as fallback only
 
 ### State / Persistence
 

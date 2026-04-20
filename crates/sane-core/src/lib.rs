@@ -12,6 +12,71 @@ pub const SANE_GLOBAL_AGENTS_END: &str = "<!-- sane:global-agents:end -->";
 pub const SANE_REPO_AGENTS_BEGIN: &str = "<!-- sane:repo-agents:start -->";
 pub const SANE_REPO_AGENTS_END: &str = "<!-- sane:repo-agents:end -->";
 
+struct OptionalPackSpec {
+    key: &'static str,
+    skill_name: &'static str,
+    heading: &'static str,
+    description: &'static str,
+    bullets: &'static [&'static str],
+    router_note: &'static str,
+    overlay_note: &'static str,
+}
+
+const OPTIONAL_PACKS: &[OptionalPackSpec] = &[
+    OptionalPackSpec {
+        key: "caveman",
+        skill_name: SANE_CAVEMAN_PACK_SKILL_NAME,
+        heading: "Sane caveman",
+        description: "Token-efficiency guidance pack for Sane. Keep prose terse and high-signal without losing technical correctness.",
+        bullets: &[
+            "- prefer terse, token-efficient prose when clarity survives",
+            "- cut filler, hedging, and repeated framing",
+            "- keep commands, paths, code, and errors exact",
+        ],
+        router_note: "- caveman pack active: prefer terse, token-efficient prose when normal clarity still holds",
+        overlay_note: "- caveman pack active: default to terse, token-aware prose when it does not reduce correctness",
+    },
+    OptionalPackSpec {
+        key: "cavemem",
+        skill_name: SANE_CAVEMEM_PACK_SKILL_NAME,
+        heading: "Sane cavemem",
+        description: "Durable memory guidance pack for Sane. Keep long-session summaries compact, high-signal, and handoff-friendly.",
+        bullets: &[
+            "- prefer compact durable summaries over long narrative logs",
+            "- preserve decisions, risks, and next actions",
+            "- keep memory files short enough to stay token-efficient",
+        ],
+        router_note: "- cavemem pack active: keep durable summaries compact and high-signal during long sessions",
+        overlay_note: "- cavemem pack active: prefer compact durable memory and handoff summaries",
+    },
+    OptionalPackSpec {
+        key: "rtk",
+        skill_name: SANE_RTK_PACK_SKILL_NAME,
+        heading: "Sane rtk",
+        description: "Shell-discipline guidance pack for Sane. Prefer RTK-routed command execution when RTK policy is available.",
+        bullets: &[
+            "- if RTK policy is present, route shell work through RTK",
+            "- avoid raw shell when RTK policy expects mediation",
+            "- keep command execution auditable and policy-aware",
+        ],
+        router_note: "- rtk pack active: if RTK policy is present, route shell work through RTK instead of raw shell",
+        overlay_note: "- rtk pack active: when RTK policy exists, prefer RTK-routed shell execution",
+    },
+    OptionalPackSpec {
+        key: "frontend-craft",
+        skill_name: SANE_FRONTEND_CRAFT_PACK_SKILL_NAME,
+        heading: "Sane frontend craft",
+        description: "Frontend quality guidance pack for Sane. Push for stronger craft and avoid generic AI frontend output.",
+        bullets: &[
+            "- avoid generic AI frontend aesthetics",
+            "- prefer distinctive, production-grade interface craft",
+            "- keep frontend output intentional, polished, and high-signal",
+        ],
+        router_note: "- frontend-craft pack active: avoid generic AI frontend output; prefer distinctive, production-grade interface craft",
+        overlay_note: "- frontend-craft pack active: for frontend work, avoid generic AI aesthetics and push for stronger craft",
+    },
+];
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct GuidancePacks {
     pub caveman: bool,
@@ -176,22 +241,94 @@ impl OperationResult {
     }
 }
 
+fn optional_pack_spec(pack: &str) -> Option<&'static OptionalPackSpec> {
+    OPTIONAL_PACKS.iter().find(|spec| spec.key == pack)
+}
+
+fn enabled_pack_specs(packs: GuidancePacks) -> Vec<&'static OptionalPackSpec> {
+    OPTIONAL_PACKS
+        .iter()
+        .filter(|spec| spec.enabled(packs))
+        .collect()
+}
+
+impl OptionalPackSpec {
+    fn enabled(&self, packs: GuidancePacks) -> bool {
+        match self.key {
+            "caveman" => packs.caveman,
+            "cavemem" => packs.cavemem,
+            "rtk" => packs.rtk,
+            "frontend-craft" => packs.frontend_craft,
+            _ => false,
+        }
+    }
+
+    fn skill_body(&self) -> String {
+        let mut body = vec![
+            "---".to_string(),
+            format!("name: {}", self.skill_name),
+            format!("description: {}", self.description),
+            "---".to_string(),
+            "".to_string(),
+            format!("# {}", self.heading),
+            "".to_string(),
+            "This managed skill is installed by Sane when the matching built-in pack is enabled."
+                .to_string(),
+            "".to_string(),
+        ];
+        body.extend(self.bullets.iter().map(|bullet| bullet.to_string()));
+        body.push(String::new());
+        body.join("\n")
+    }
+}
+
+fn push_router_role_defaults(body: &mut Vec<String>, roles: &ModelRoleGuidance) {
+    body.push("Current managed role defaults:".to_string());
+    body.push(format!(
+        "- coordinator: {} ({})",
+        roles.coordinator_model, roles.coordinator_reasoning
+    ));
+    body.push(format!(
+        "- sidecar: {} ({})",
+        roles.sidecar_model, roles.sidecar_reasoning
+    ));
+    body.push(format!(
+        "- verifier: {} ({})",
+        roles.verifier_model, roles.verifier_reasoning
+    ));
+}
+
+fn push_overlay_role_defaults(body: &mut Vec<String>, roles: &ModelRoleGuidance) {
+    body.push(format!(
+        "- Current coordinator default: {} ({})",
+        roles.coordinator_model, roles.coordinator_reasoning
+    ));
+    body.push(format!(
+        "- Current sidecar default: {} ({})",
+        roles.sidecar_model, roles.sidecar_reasoning
+    ));
+    body.push(format!(
+        "- Current verifier default: {} ({})",
+        roles.verifier_model, roles.verifier_reasoning
+    ));
+}
+
 pub fn sane_router_skill(packs: GuidancePacks, roles: &ModelRoleGuidance) -> String {
     let mut body = vec![
         "---".to_string(),
         "name: sane-router".to_string(),
-        "description: Install and manage Sane's Codex-native guidance, model routing defaults, subagent selection policy, and optional hooks without forcing repo mutation.".to_string(),
+        "description: Install and update Sane-managed Codex assets, routing defaults, and optional hooks without forcing repo mutation.".to_string(),
         "---".to_string(),
         "".to_string(),
         "# Sane Router".to_string(),
         "".to_string(),
-        "Use this managed skill when work touches Sane itself, its Codex-native install surfaces, or its plain-language adaptive workflow rules.".to_string(),
+        "Use this managed skill when work touches Sane's installed Codex assets, adaptive workflow rules, or config-backed routing defaults.".to_string(),
         "".to_string(),
         "Prefer this skill for:".to_string(),
-        "- installing or uninstalling Sane-managed Codex changes".to_string(),
-        "- adjusting plain-language routing and model-role defaults".to_string(),
-        "- maintaining user-level skills, hooks, and optional AGENTS overlays".to_string(),
-        "- keeping Sane thin, Codex-native, and low-ceremony".to_string(),
+        "- installing or uninstalling Sane-managed Codex assets".to_string(),
+        "- adjusting config-backed routing and model-role defaults".to_string(),
+        "- maintaining Sane-managed skills, hooks, custom agents, and optional AGENTS overlays".to_string(),
+        "- keeping Sane additive, low-ceremony, and easy to undo".to_string(),
         "".to_string(),
         "Keep behavior aligned with Sane philosophy:".to_string(),
         "- plain-language first".to_string(),
@@ -200,30 +337,13 @@ pub fn sane_router_skill(packs: GuidancePacks, roles: &ModelRoleGuidance) -> Str
         "- no workflow lock-in".to_string(),
         "- model and subagent choice should adapt to task shape".to_string(),
         "".to_string(),
-        "Current managed role defaults:".to_string(),
-        format!(
-            "- coordinator: {} ({})",
-            roles.coordinator_model, roles.coordinator_reasoning
-        ),
-        format!("- sidecar: {} ({})", roles.sidecar_model, roles.sidecar_reasoning),
-        format!(
-            "- verifier: {} ({})",
-            roles.verifier_model, roles.verifier_reasoning
-        ),
     ];
-
-    if packs.caveman {
-        body.push("- caveman pack active: prefer terse, token-efficient prose when normal clarity still holds".to_string());
-    }
-    if packs.cavemem {
-        body.push("- cavemem pack active: keep durable summaries compact and high-signal during long sessions".to_string());
-    }
-    if packs.rtk {
-        body.push("- rtk pack active: if RTK policy is present, route shell work through RTK instead of raw shell".to_string());
-    }
-    if packs.frontend_craft {
-        body.push("- frontend-craft pack active: avoid generic AI frontend output; prefer distinctive, production-grade interface craft".to_string());
-    }
+    push_router_role_defaults(&mut body, roles);
+    body.extend(
+        enabled_pack_specs(packs)
+            .into_iter()
+            .map(|spec| spec.router_note.to_string()),
+    );
 
     body.push(String::new());
     body.join("\n")
@@ -234,119 +354,37 @@ pub fn sane_global_agents_overlay(packs: GuidancePacks, roles: &ModelRoleGuidanc
         "# Sane".to_string(),
         "".to_string(),
         "- Plain-language first".to_string(),
-        "- Commands and skills are optional, not required".to_string(),
+        "- Commands and skills stay optional".to_string(),
         "- Prefer adaptive process over rigid visible modes".to_string(),
-        "- Keep repo mutation optional".to_string(),
-        "- Use subagents only when the work decomposes cleanly".to_string(),
-        "- Choose model and reasoning settings per task when available".to_string(),
-        format!(
-            "- Current coordinator default: {} ({})",
-            roles.coordinator_model, roles.coordinator_reasoning
-        ),
-        format!(
-            "- Current sidecar default: {} ({})",
-            roles.sidecar_model, roles.sidecar_reasoning
-        ),
-        format!(
-            "- Current verifier default: {} ({})",
-            roles.verifier_model, roles.verifier_reasoning
-        ),
+        "- Keep repo mutation explicit and optional".to_string(),
+        "- Use subagents only when the work splits cleanly".to_string(),
+        "- Prefer task-shaped model and reasoning choices when available".to_string(),
     ];
-
-    if packs.caveman {
-        body.push("- caveman pack active: default to terse, token-aware prose when it does not reduce correctness".to_string());
-    }
-    if packs.cavemem {
-        body.push(
-            "- cavemem pack active: prefer compact durable memory and handoff summaries"
-                .to_string(),
-        );
-    }
-    if packs.rtk {
-        body.push(
-            "- rtk pack active: when RTK policy exists, prefer RTK-routed shell execution"
-                .to_string(),
-        );
-    }
-    if packs.frontend_craft {
-        body.push("- frontend-craft pack active: for frontend work, avoid generic AI aesthetics and push for stronger craft".to_string());
-    }
+    push_overlay_role_defaults(&mut body, roles);
+    body.extend(
+        enabled_pack_specs(packs)
+            .into_iter()
+            .map(|spec| spec.overlay_note.to_string()),
+    );
 
     body.push(String::new());
     body.join("\n")
 }
 
 pub fn sane_optional_pack_skill_name(pack: &str) -> Option<&'static str> {
-    match pack {
-        "caveman" => Some(SANE_CAVEMAN_PACK_SKILL_NAME),
-        "cavemem" => Some(SANE_CAVEMEM_PACK_SKILL_NAME),
-        "rtk" => Some(SANE_RTK_PACK_SKILL_NAME),
-        "frontend-craft" => Some(SANE_FRONTEND_CRAFT_PACK_SKILL_NAME),
-        _ => None,
-    }
+    optional_pack_spec(pack).map(|spec| spec.skill_name)
 }
 
 pub fn sane_optional_pack_skill(pack: &str) -> Option<String> {
-    let (name, description, bullets) = match pack {
-        "caveman" => (
-            SANE_CAVEMAN_PACK_SKILL_NAME,
-            "Token-efficiency guidance pack for Sane. Keep prose terse and high-signal without losing technical correctness.",
-            vec![
-                "- prefer terse, token-efficient prose when clarity survives",
-                "- cut filler, hedging, and repeated framing",
-                "- keep commands, paths, code, and errors exact",
-            ],
-        ),
-        "cavemem" => (
-            SANE_CAVEMEM_PACK_SKILL_NAME,
-            "Durable memory guidance pack for Sane. Keep long-session summaries compact, high-signal, and handoff-friendly.",
-            vec![
-                "- prefer compact durable summaries over long narrative logs",
-                "- preserve decisions, risks, and next actions",
-                "- keep memory files short enough to stay token-efficient",
-            ],
-        ),
-        "rtk" => (
-            SANE_RTK_PACK_SKILL_NAME,
-            "Shell-discipline guidance pack for Sane. Prefer RTK-routed command execution when RTK policy is available.",
-            vec![
-                "- if RTK policy is present, route shell work through RTK",
-                "- avoid raw shell when RTK policy expects mediation",
-                "- keep command execution auditable and policy-aware",
-            ],
-        ),
-        "frontend-craft" => (
-            SANE_FRONTEND_CRAFT_PACK_SKILL_NAME,
-            "Frontend quality guidance pack for Sane. Push for stronger craft and avoid generic AI frontend output.",
-            vec![
-                "- avoid generic AI frontend aesthetics",
-                "- prefer distinctive, production-grade interface craft",
-                "- keep frontend output intentional, polished, and high-signal",
-            ],
-        ),
-        _ => return None,
-    };
-
-    let mut body = vec![
-        "---".to_string(),
-        format!("name: {name}"),
-        format!("description: {description}"),
-        "---".to_string(),
-        "".to_string(),
-        format!("# {}", name.replace("sane-", "Sane ").replace('-', " ")),
-        "".to_string(),
-        "This managed skill is installed by Sane when the matching built-in pack is enabled."
-            .to_string(),
-        "".to_string(),
-    ];
-    body.extend(bullets.into_iter().map(str::to_string));
-    body.push(String::new());
-    Some(body.join("\n"))
+    optional_pack_spec(pack).map(OptionalPackSpec::skill_body)
 }
 
-pub fn sane_reviewer_agent() -> &'static str {
-    r#"name = "sane_reviewer"
-description = "Read-only reviewer for Sane. Focus on correctness, regressions, missing tests, and risky assumptions."
+pub fn sane_reviewer_agent(roles: &ModelRoleGuidance) -> String {
+    format!(
+        r#"name = "sane_reviewer"
+description = "Read-only reviewer for Sane. Inspect correctness, regressions, missing tests, and risky assumptions."
+model = "{model}"
+model_reasoning_effort = "{reasoning}"
 sandbox_mode = "read-only"
 
 developer_instructions = """
@@ -357,12 +395,18 @@ Review with Sane philosophy:
 - cite concrete files and behavior
 - do not propose speculative churn
 """
-"#
+"#,
+        model = roles.verifier_model,
+        reasoning = roles.verifier_reasoning,
+    )
 }
 
-pub fn sane_agent() -> &'static str {
-    r#"name = "sane_agent"
-description = "Main Sane agent for Codex. Plain-language first, adaptive, low-ceremony, and focused on getting the requested result all the way done."
+pub fn sane_agent(roles: &ModelRoleGuidance) -> String {
+    format!(
+        r#"name = "sane_agent"
+description = "Primary Sane agent for Codex. Plain-language first, adaptive, low-ceremony, and expected to carry work through to a verified result."
+model = "{model}"
+model_reasoning_effort = "{reasoning}"
 sandbox_mode = "workspace-write"
 
 developer_instructions = """
@@ -374,12 +418,18 @@ Work with Sane philosophy:
 - keep repo mutation explicit
 - verify meaningful changes before claiming success
 """
-"#
+"#,
+        model = roles.coordinator_model,
+        reasoning = roles.coordinator_reasoning,
+    )
 }
 
-pub fn sane_explorer_agent() -> &'static str {
-    r#"name = "sane_explorer"
-description = "Read-only codebase explorer for Sane. Map systems, trace flows, and hand back exact file anchors without changing code."
+pub fn sane_explorer_agent(roles: &ModelRoleGuidance) -> String {
+    format!(
+        r#"name = "sane_explorer"
+description = "Read-only codebase explorer for Sane. Trace the relevant paths and return exact file anchors without editing code."
+model = "{model}"
+model_reasoning_effort = "{reasoning}"
 sandbox_mode = "read-only"
 
 developer_instructions = """
@@ -390,5 +440,66 @@ Explore with Sane philosophy:
 - do not edit files
 - keep context tight
 """
-"#
+"#,
+        model = roles.sidecar_model,
+        reasoning = roles.sidecar_reasoning,
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        GuidancePacks, ModelRoleGuidance, OPTIONAL_PACKS, sane_global_agents_overlay,
+        sane_optional_pack_skill, sane_optional_pack_skill_name, sane_router_skill,
+    };
+
+    fn role_guidance() -> ModelRoleGuidance {
+        ModelRoleGuidance {
+            coordinator_model: "gpt-5.4".into(),
+            coordinator_reasoning: "high".into(),
+            sidecar_model: "gpt-5.4-mini".into(),
+            sidecar_reasoning: "medium".into(),
+            verifier_model: "gpt-5.4".into(),
+            verifier_reasoning: "medium".into(),
+        }
+    }
+
+    #[test]
+    fn router_skill_mentions_custom_agents_in_managed_surfaces() {
+        let body = sane_router_skill(GuidancePacks::default(), &role_guidance());
+
+        assert!(body.contains("custom agents"));
+    }
+
+    #[test]
+    fn global_overlay_only_lists_enabled_packs() {
+        let body = sane_global_agents_overlay(
+            GuidancePacks {
+                cavemem: true,
+                frontend_craft: true,
+                ..GuidancePacks::default()
+            },
+            &role_guidance(),
+        );
+
+        assert!(body.contains("cavemem pack active"));
+        assert!(body.contains("frontend-craft pack active"));
+        assert!(!body.contains("caveman pack active"));
+        assert!(!body.contains("rtk pack active"));
+    }
+
+    #[test]
+    fn optional_pack_skill_uses_stable_heading() {
+        for spec in OPTIONAL_PACKS {
+            let body = sane_optional_pack_skill(spec.key).expect("known pack");
+
+            assert_eq!(
+                sane_optional_pack_skill_name(spec.key),
+                Some(spec.skill_name)
+            );
+            assert!(body.contains(&format!("# {}", spec.heading)));
+            assert!(body.contains(spec.description));
+            assert!(body.contains(spec.bullets[0]));
+        }
+    }
 }

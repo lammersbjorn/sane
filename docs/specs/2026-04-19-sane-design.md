@@ -190,7 +190,7 @@ Example classes:
 - review / verification
 - long-running sidecar analysis
 
-Exact presets remain an open implementation task, but the design principle is fixed: choose the best available configuration for the task rather than forcing one global model.
+Exact presets remain an open implementation task, but the design principle is fixed: choose the best available configuration for the task rather than forcing one global model. When no saved local config exists, derive the starting defaults from local Codex model availability and plan data if present, then fall back to static presets only if detection fails.
 
 ## TUI
 

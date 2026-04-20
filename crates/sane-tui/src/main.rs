@@ -16,7 +16,9 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::Line;
 use ratatui::widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph, Tabs, Wrap};
 use ratatui::{Frame, Terminal};
-use sane_config::{AVAILABLE_MODELS, LocalConfig, ModelPreset, ReasoningEffort, TelemetryLevel};
+use sane_config::{
+    AVAILABLE_MODELS, CodexEnvironment, LocalConfig, ModelPreset, ReasoningEffort, TelemetryLevel,
+};
 use sane_core::{
     GuidancePacks, InventoryItem, InventoryScope, InventoryStatus, ModelRoleGuidance, NAME,
     OperationKind, OperationResult, SANE_AGENT_NAME, SANE_EXPLORER_AGENT_NAME,
@@ -269,7 +271,7 @@ fn execute_backend_command(
     codex_paths: &CodexPaths,
 ) -> Result<OperationResult, String> {
     let result = match command {
-        Command::Install => install_runtime(paths),
+        Command::Install => install_runtime(paths, codex_paths),
         Command::Config => show_config(paths),
         Command::CodexConfig => show_codex_config(codex_paths),
         Command::BackupCodexConfig => backup_codex_config(paths, codex_paths),
@@ -286,11 +288,11 @@ fn execute_backend_command(
         Command::HookSessionStart => Err("hook event is not a backend operation".to_string()),
         Command::ExportAll => export_all(paths, codex_paths),
         Command::ExportUserSkills => export_user_skills(paths, codex_paths),
-        Command::ExportRepoSkills => export_repo_skills(paths),
-        Command::ExportRepoAgents => export_repo_agents(paths),
+        Command::ExportRepoSkills => export_repo_skills(paths, codex_paths),
+        Command::ExportRepoAgents => export_repo_agents(paths, codex_paths),
         Command::ExportGlobalAgents => export_global_agents(paths, codex_paths),
         Command::ExportHooks => export_hooks(codex_paths),
-        Command::ExportCustomAgents => export_custom_agents(codex_paths),
+        Command::ExportCustomAgents => export_custom_agents(paths, codex_paths),
         Command::UninstallAll => uninstall_all(codex_paths),
         Command::UninstallUserSkills => uninstall_user_skills(codex_paths),
         Command::UninstallRepoSkills => uninstall_repo_skills(paths),
@@ -465,6 +467,7 @@ enum TuiScreen {
 
 struct ConfigEditor {
     config: LocalConfig,
+    defaults: LocalConfig,
     selected: usize,
 }
 
@@ -490,9 +493,10 @@ struct NoticeScreen {
 }
 
 impl ConfigEditor {
-    fn new(config: LocalConfig) -> Self {
+    fn new(config: LocalConfig, defaults: LocalConfig) -> Self {
         Self {
             config,
+            defaults,
             selected: 0,
         }
     }
@@ -514,7 +518,7 @@ impl ConfigEditor {
     }
 
     fn reset_defaults(&mut self) {
-        self.config = LocalConfig::default();
+        self.config = self.defaults.clone();
     }
 }
 
@@ -771,37 +775,44 @@ impl TuiApp {
                     execute_backend_action(self, command);
                 }
             }
-            TuiActionKind::OpenConfigEditor => match load_or_default_config(&self.paths) {
-                Ok(config) => {
-                    self.output =
-                        "Config editor open. Left/right cycles values. Enter saves. r resets."
-                            .to_string();
-                    self.screen = TuiScreen::ConfigEditor(ConfigEditor::new(config));
+            TuiActionKind::OpenConfigEditor => {
+                match load_or_default_config(&self.paths, &self.codex_paths) {
+                    Ok(config) => {
+                        let defaults = recommended_local_config(&self.codex_paths);
+                        self.output =
+                            "Config editor open. Left/right cycles values. Enter saves. r resets."
+                                .to_string();
+                        self.screen = TuiScreen::ConfigEditor(ConfigEditor::new(config, defaults));
+                    }
+                    Err(error) => {
+                        self.output = format!("action failed: {error}");
+                    }
                 }
-                Err(error) => {
-                    self.output = format!("action failed: {error}");
-                }
-            },
-            TuiActionKind::OpenPackEditor => match load_or_default_config(&self.paths) {
-                Ok(config) => {
-                    self.output = "Pack screen open. Up/down picks pack. Space toggles optional packs. Enter saves. r resets optional packs."
+            }
+            TuiActionKind::OpenPackEditor => {
+                match load_or_default_config(&self.paths, &self.codex_paths) {
+                    Ok(config) => {
+                        self.output = "Pack screen open. Up/down picks pack. Space toggles optional packs. Enter saves. r resets optional packs."
                         .to_string();
-                    self.screen = TuiScreen::PackEditor(PackEditor::new(config));
+                        self.screen = TuiScreen::PackEditor(PackEditor::new(config));
+                    }
+                    Err(error) => {
+                        self.output = format!("action failed: {error}");
+                    }
                 }
-                Err(error) => {
-                    self.output = format!("action failed: {error}");
-                }
-            },
-            TuiActionKind::OpenPrivacyEditor => match load_or_default_config(&self.paths) {
-                Ok(config) => {
-                    self.output = "Privacy screen open. Left/right cycles telemetry level. Enter saves. d deletes local telemetry data."
+            }
+            TuiActionKind::OpenPrivacyEditor => {
+                match load_or_default_config(&self.paths, &self.codex_paths) {
+                    Ok(config) => {
+                        self.output = "Privacy screen open. Left/right cycles telemetry level. Enter saves. d deletes local telemetry data."
                         .to_string();
-                    self.screen = TuiScreen::PrivacyEditor(PrivacyEditor::new(config));
+                        self.screen = TuiScreen::PrivacyEditor(PrivacyEditor::new(config));
+                    }
+                    Err(error) => {
+                        self.output = format!("action failed: {error}");
+                    }
                 }
-                Err(error) => {
-                    self.output = format!("action failed: {error}");
-                }
-            },
+            }
         }
     }
 }
@@ -1233,7 +1244,9 @@ fn render_config_editor(frame: &mut Frame, app: &TuiApp, editor: &ConfigEditor) 
 
     let header = Paragraph::new(vec![
         Line::from("Model Defaults"),
-        Line::from("Up/down picks field. Left/right cycles. Enter saves. r resets. Esc backs out."),
+        Line::from(
+            "Up/down picks field. Left/right cycles. Enter saves. r resets to this machine's recommended defaults. Esc backs out.",
+        ),
     ])
     .block(
         Block::default()
@@ -1777,7 +1790,7 @@ fn command_help_lines(command: Command) -> Vec<Line<'static>> {
             Line::from(""),
             Line::from("Preview only. No files are changed."),
             Line::from(
-                "This is the safest way to see the model, reasoning, and hook settings Sane recommends.",
+                "This shows the model, reasoning, and hook settings Sane recommends from the Codex models it can detect here, with stable fallback when detection is thin.",
             ),
         ],
         Command::PreviewIntegrationsProfile => vec![
@@ -1801,6 +1814,9 @@ fn command_help_lines(command: Command) -> Vec<Line<'static>> {
             Line::from(""),
             Line::from("This is a real config mutation."),
             Line::from("Use preview and backup first if you want to compare before writing."),
+            Line::from(
+                "The written model defaults come from local Codex availability when Sane can detect it.",
+            ),
         ],
         Command::ApplyIntegrationsProfile => vec![
             Line::from("Write Sane's recommended extra Codex tools into `~/.codex/config.toml`."),
@@ -2469,13 +2485,16 @@ fn refresh_brief(paths: &ProjectPaths, summary: &RunSummary) -> Result<(), Strin
     fs::write(&paths.brief_path, body).map_err(|error| error.to_string())
 }
 
-fn install_runtime(paths: &ProjectPaths) -> Result<OperationResult, String> {
+fn install_runtime(
+    paths: &ProjectPaths,
+    codex_paths: &CodexPaths,
+) -> Result<OperationResult, String> {
     paths
         .ensure_runtime_dirs()
         .map_err(|error| error.to_string())?;
 
     if !paths.config_path.exists() {
-        LocalConfig::default()
+        recommended_local_config(codex_paths)
             .write_to_path(&paths.config_path)
             .map_err(|error| error.to_string())?;
     }
@@ -2642,11 +2661,18 @@ fn backup_codex_config(
 }
 
 fn preview_codex_profile(codex_paths: &CodexPaths) -> Result<OperationResult, String> {
+    let recommended = recommended_local_config(codex_paths);
     let inventory = inspect_codex_config_inventory(codex_paths)?;
     let details = match inventory.status {
         InventoryStatus::Missing => vec![
-            "model: <missing> -> gpt-5.4".to_string(),
-            "reasoning: <missing> -> high".to_string(),
+            format!(
+                "model: <missing> -> {}",
+                recommended.models.coordinator.model
+            ),
+            format!(
+                "reasoning: <missing> -> {}",
+                recommended.models.coordinator.reasoning_effort.as_str()
+            ),
             "codex hooks: <missing> -> enabled".to_string(),
             "note: integrations stay outside bare core profile".to_string(),
         ],
@@ -2654,7 +2680,10 @@ fn preview_codex_profile(codex_paths: &CodexPaths) -> Result<OperationResult, St
             "cannot preview managed profile until ~/.codex/config.toml parses cleanly".to_string(),
             "repair current config first".to_string(),
         ],
-        _ => codex_profile_preview_details(&read_codex_config(&codex_paths.config_toml)?),
+        _ => codex_profile_preview_details(
+            &read_codex_config(&codex_paths.config_toml)?,
+            &recommended,
+        ),
     };
 
     let change_count = details.iter().filter(|line| line.contains("->")).count();
@@ -2728,6 +2757,7 @@ fn apply_codex_profile(
         .ensure_runtime_dirs()
         .map_err(|error| error.to_string())?;
 
+    let recommended = recommended_local_config(codex_paths);
     let inventory = inspect_codex_config_inventory(codex_paths)?;
     if inventory.status == InventoryStatus::Invalid {
         return Ok(OperationResult {
@@ -2755,15 +2785,21 @@ fn apply_codex_profile(
     };
 
     let before_details = if inventory.status == InventoryStatus::Installed {
-        codex_profile_preview_details(&config)
+        codex_profile_preview_details(&config, &recommended)
     } else {
         vec![
-            "model: <missing> -> gpt-5.4".to_string(),
-            "reasoning: <missing> -> high".to_string(),
+            format!(
+                "model: <missing> -> {}",
+                recommended.models.coordinator.model
+            ),
+            format!(
+                "reasoning: <missing> -> {}",
+                recommended.models.coordinator.reasoning_effort.as_str()
+            ),
             "codex hooks: <missing> -> enabled".to_string(),
         ]
     };
-    apply_core_codex_profile_to_value(&mut config)?;
+    apply_core_codex_profile_to_value(&mut config, &recommended)?;
     write_codex_config(&codex_paths.config_toml, &config)?;
 
     let mut details = before_details;
@@ -3035,8 +3071,11 @@ fn config_details(config: &LocalConfig) -> Vec<String> {
     ]
 }
 
-fn active_guidance_packs(paths: &ProjectPaths) -> Result<GuidancePacks, String> {
-    let config = load_or_default_config(paths)?;
+fn active_guidance_packs(
+    paths: &ProjectPaths,
+    codex_paths: &CodexPaths,
+) -> Result<GuidancePacks, String> {
+    let config = load_or_default_config(paths, codex_paths)?;
     Ok(GuidancePacks {
         caveman: config.packs.caveman,
         cavemem: config.packs.cavemem,
@@ -3045,8 +3084,11 @@ fn active_guidance_packs(paths: &ProjectPaths) -> Result<GuidancePacks, String> 
     })
 }
 
-fn active_model_role_guidance(paths: &ProjectPaths) -> Result<ModelRoleGuidance, String> {
-    let config = load_or_default_config(paths)?;
+fn active_model_role_guidance(
+    paths: &ProjectPaths,
+    codex_paths: &CodexPaths,
+) -> Result<ModelRoleGuidance, String> {
+    let config = load_or_default_config(paths, codex_paths)?;
     Ok(model_role_guidance_from_config(&config))
 }
 
@@ -3153,12 +3195,22 @@ fn ensure_telemetry_files(paths: &ProjectPaths, level: TelemetryLevel) -> Result
     Ok(())
 }
 
-fn load_or_default_config(paths: &ProjectPaths) -> Result<LocalConfig, String> {
+fn load_or_default_config(
+    paths: &ProjectPaths,
+    codex_paths: &CodexPaths,
+) -> Result<LocalConfig, String> {
     if paths.config_path.exists() {
         LocalConfig::read_from_path(&paths.config_path).map_err(|error| error.to_string())
     } else {
-        Ok(LocalConfig::default())
+        Ok(recommended_local_config(codex_paths))
     }
+}
+
+fn recommended_local_config(codex_paths: &CodexPaths) -> LocalConfig {
+    let environment =
+        CodexEnvironment::detect(&codex_paths.models_cache_json, &codex_paths.auth_json)
+            .unwrap_or_default();
+    LocalConfig::recommended_for_environment(&environment)
 }
 
 fn reset_telemetry_data(paths: &ProjectPaths) -> Result<OperationResult, String> {
@@ -3274,25 +3326,31 @@ fn inspect_inventory(
         .join("SKILL.md");
     let codex_config_inventory = inspect_codex_config_inventory(codex_paths)?;
     let hooks_inventory = inspect_hooks_inventory(codex_paths)?;
-    let custom_agents_inventory = inspect_custom_agents_inventory(codex_paths);
     let pack_inventory = inspect_pack_inventory(paths, codex_paths);
-    let expected_guidance = load_or_default_config(paths).ok().map(|config| {
-        (
-            GuidancePacks {
-                caveman: config.packs.caveman,
-                cavemem: config.packs.cavemem,
-                rtk: config.packs.rtk,
-                frontend_craft: config.packs.frontend_craft,
-            },
-            model_role_guidance_from_config(&config),
-        )
-    });
+    let expected_guidance = load_or_default_config(paths, codex_paths)
+        .ok()
+        .map(|config| {
+            (
+                GuidancePacks {
+                    caveman: config.packs.caveman,
+                    cavemem: config.packs.cavemem,
+                    rtk: config.packs.rtk,
+                    frontend_craft: config.packs.frontend_craft,
+                },
+                model_role_guidance_from_config(&config),
+            )
+        });
     let expected_user_skill = expected_guidance
         .as_ref()
         .map(|(packs, roles)| sane_router_skill(*packs, roles));
     let expected_global_agents = expected_guidance
         .as_ref()
         .map(|(packs, roles)| sane_global_agents_overlay(*packs, roles));
+    let expected_custom_agents = expected_guidance
+        .as_ref()
+        .map(|(_, roles)| expected_custom_agent_files(roles));
+    let custom_agents_inventory =
+        inspect_custom_agents_inventory(codex_paths, expected_custom_agents.as_ref());
 
     let repo_agents_inventory = inspect_agents_block(
         &paths.repo_agents_md,
@@ -3769,6 +3827,7 @@ fn export_user_skills(
 ) -> Result<OperationResult, String> {
     export_skills_target(
         paths,
+        codex_paths,
         &codex_paths.user_skills_dir,
         OperationKind::ExportUserSkills,
         "user-skills",
@@ -3776,9 +3835,13 @@ fn export_user_skills(
     )
 }
 
-fn export_repo_skills(paths: &ProjectPaths) -> Result<OperationResult, String> {
+fn export_repo_skills(
+    paths: &ProjectPaths,
+    codex_paths: &CodexPaths,
+) -> Result<OperationResult, String> {
     export_skills_target(
         paths,
+        codex_paths,
         &paths.repo_skills_dir,
         OperationKind::ExportRepoSkills,
         "repo-skills",
@@ -3788,6 +3851,7 @@ fn export_repo_skills(paths: &ProjectPaths) -> Result<OperationResult, String> {
 
 fn export_skills_target(
     paths: &ProjectPaths,
+    codex_paths: &CodexPaths,
     skills_root: &Path,
     kind: OperationKind,
     inventory_name: &str,
@@ -3796,8 +3860,8 @@ fn export_skills_target(
     let skill_dir = skills_root.join(SANE_ROUTER_SKILL_NAME);
     fs::create_dir_all(&skill_dir).map_err(|error| error.to_string())?;
     let skill_path = skill_dir.join("SKILL.md");
-    let packs = active_guidance_packs(paths)?;
-    let roles = active_model_role_guidance(paths)?;
+    let packs = active_guidance_packs(paths, codex_paths)?;
+    let roles = active_model_role_guidance(paths, codex_paths)?;
     fs::write(&skill_path, sane_router_skill(packs, &roles)).map_err(|error| error.to_string())?;
     let mut paths_touched = vec![skill_path.display().to_string()];
 
@@ -3837,9 +3901,13 @@ fn export_skills_target(
     })
 }
 
-fn export_repo_agents(paths: &ProjectPaths) -> Result<OperationResult, String> {
+fn export_repo_agents(
+    paths: &ProjectPaths,
+    codex_paths: &CodexPaths,
+) -> Result<OperationResult, String> {
     export_agents_target(
         paths,
+        codex_paths,
         &paths.repo_agents_md,
         SANE_REPO_AGENTS_BEGIN,
         SANE_REPO_AGENTS_END,
@@ -3853,7 +3921,7 @@ fn export_all(paths: &ProjectPaths, codex_paths: &CodexPaths) -> Result<Operatio
     let user_skills = export_user_skills(paths, codex_paths)?;
     let global_agents = export_global_agents(paths, codex_paths)?;
     let hooks = export_hooks(codex_paths)?;
-    let custom_agents = export_custom_agents(codex_paths)?;
+    let custom_agents = export_custom_agents(paths, codex_paths)?;
 
     Ok(merge_results(
         OperationKind::ExportAll,
@@ -3868,6 +3936,7 @@ fn export_global_agents(
 ) -> Result<OperationResult, String> {
     export_agents_target(
         paths,
+        codex_paths,
         &codex_paths.global_agents_md,
         SANE_GLOBAL_AGENTS_BEGIN,
         SANE_GLOBAL_AGENTS_END,
@@ -3879,6 +3948,7 @@ fn export_global_agents(
 
 fn export_agents_target(
     paths: &ProjectPaths,
+    codex_paths: &CodexPaths,
     agents_path: &Path,
     begin: &str,
     end: &str,
@@ -3896,8 +3966,8 @@ fn export_agents_target(
         String::new()
     };
 
-    let packs = active_guidance_packs(paths)?;
-    let roles = active_model_role_guidance(paths)?;
+    let packs = active_guidance_packs(paths, codex_paths)?;
+    let roles = active_model_role_guidance(paths, codex_paths)?;
     let updated = upsert_managed_block(
         &existing,
         begin,
@@ -4112,8 +4182,12 @@ fn uninstall_all(codex_paths: &CodexPaths) -> Result<OperationResult, String> {
     ))
 }
 
-fn export_custom_agents(codex_paths: &CodexPaths) -> Result<OperationResult, String> {
+fn export_custom_agents(
+    paths: &ProjectPaths,
+    codex_paths: &CodexPaths,
+) -> Result<OperationResult, String> {
     export_custom_agents_target(
+        &active_model_role_guidance(paths, codex_paths)?,
         &codex_paths.custom_agents_dir,
         OperationKind::ExportCustomAgents,
         "custom-agents",
@@ -4131,6 +4205,7 @@ fn uninstall_custom_agents(codex_paths: &CodexPaths) -> Result<OperationResult, 
 }
 
 fn export_custom_agents_target(
+    roles: &ModelRoleGuidance,
     agents_dir: &Path,
     kind: OperationKind,
     inventory_name: &str,
@@ -4141,9 +4216,9 @@ fn export_custom_agents_target(
     let reviewer_path = agents_dir.join(format!("{SANE_REVIEWER_AGENT_NAME}.toml"));
     let explorer_path = agents_dir.join(format!("{SANE_EXPLORER_AGENT_NAME}.toml"));
 
-    fs::write(&agent_path, sane_agent()).map_err(|error| error.to_string())?;
-    fs::write(&reviewer_path, sane_reviewer_agent()).map_err(|error| error.to_string())?;
-    fs::write(&explorer_path, sane_explorer_agent()).map_err(|error| error.to_string())?;
+    fs::write(&agent_path, sane_agent(roles)).map_err(|error| error.to_string())?;
+    fs::write(&reviewer_path, sane_reviewer_agent(roles)).map_err(|error| error.to_string())?;
+    fs::write(&explorer_path, sane_explorer_agent(roles)).map_err(|error| error.to_string())?;
 
     Ok(OperationResult {
         kind,
@@ -4428,19 +4503,57 @@ fn inspect_hooks_inventory(codex_paths: &CodexPaths) -> Result<InventoryItem, St
     })
 }
 
-fn inspect_custom_agents_inventory(codex_paths: &CodexPaths) -> InventoryItem {
+fn expected_custom_agent_files(roles: &ModelRoleGuidance) -> [(String, &'static str); 3] {
+    [
+        (sane_agent(roles), SANE_AGENT_NAME),
+        (sane_reviewer_agent(roles), SANE_REVIEWER_AGENT_NAME),
+        (sane_explorer_agent(roles), SANE_EXPLORER_AGENT_NAME),
+    ]
+}
+
+fn inspect_custom_agents_inventory(
+    codex_paths: &CodexPaths,
+    expected: Option<&[(String, &'static str); 3]>,
+) -> InventoryItem {
+    let agent_path = codex_paths
+        .custom_agents_dir
+        .join(format!("{SANE_AGENT_NAME}.toml"));
     let reviewer_path = codex_paths
         .custom_agents_dir
         .join(format!("{SANE_REVIEWER_AGENT_NAME}.toml"));
     let explorer_path = codex_paths
         .custom_agents_dir
         .join(format!("{SANE_EXPLORER_AGENT_NAME}.toml"));
-    let reviewer_exists = reviewer_path.exists();
-    let explorer_exists = explorer_path.exists();
+    let managed_paths = [&agent_path, &reviewer_path, &explorer_path];
+    let missing_count = managed_paths.iter().filter(|path| !path.exists()).count();
 
-    let status = match (reviewer_exists, explorer_exists) {
-        (true, true) => InventoryStatus::Installed,
-        (false, false) => InventoryStatus::Missing,
+    let status = match missing_count {
+        3 => InventoryStatus::Missing,
+        0 => {
+            if let Some(expected) = expected {
+                let actual = [
+                    fs::read_to_string(&agent_path),
+                    fs::read_to_string(&reviewer_path),
+                    fs::read_to_string(&explorer_path),
+                ];
+                if actual
+                    .iter()
+                    .zip(expected.iter())
+                    .all(|(actual, (expected_body, _))| {
+                        actual
+                            .as_ref()
+                            .ok()
+                            .is_some_and(|body| body == expected_body)
+                    })
+                {
+                    InventoryStatus::Installed
+                } else {
+                    InventoryStatus::Invalid
+                }
+            } else {
+                InventoryStatus::Installed
+            }
+        }
         _ => InventoryStatus::Invalid,
     };
 
@@ -4527,17 +4640,27 @@ fn latest_codex_config_backup(paths: &ProjectPaths) -> Result<Option<std::path::
     Ok(backups.pop())
 }
 
-fn apply_core_codex_profile_to_value(config: &mut TomlValue) -> Result<(), String> {
+fn apply_core_codex_profile_to_value(
+    config: &mut TomlValue,
+    recommended: &LocalConfig,
+) -> Result<(), String> {
     let table = config
         .as_table_mut()
         .ok_or_else(|| "config.toml root must be a table".to_string())?;
     table.insert(
         "model".to_string(),
-        TomlValue::String("gpt-5.4".to_string()),
+        TomlValue::String(recommended.models.coordinator.model.clone()),
     );
     table.insert(
         "model_reasoning_effort".to_string(),
-        TomlValue::String("high".to_string()),
+        TomlValue::String(
+            recommended
+                .models
+                .coordinator
+                .reasoning_effort
+                .as_str()
+                .to_string(),
+        ),
     );
 
     let features = table
@@ -4709,7 +4832,7 @@ fn codex_config_details(config: &TomlValue) -> Vec<String> {
     ]
 }
 
-fn codex_profile_preview_details(config: &TomlValue) -> Vec<String> {
+fn codex_profile_preview_details(config: &TomlValue, recommended: &LocalConfig) -> Vec<String> {
     let current_model = config
         .get("model")
         .and_then(TomlValue::as_str)
@@ -4725,8 +4848,18 @@ fn codex_profile_preview_details(config: &TomlValue) -> Vec<String> {
         .and_then(TomlValue::as_bool);
 
     let mut details = Vec::new();
-    push_profile_change(&mut details, "model", current_model, "gpt-5.4");
-    push_profile_change(&mut details, "reasoning", current_reasoning, "high");
+    push_profile_change(
+        &mut details,
+        "model",
+        current_model,
+        &recommended.models.coordinator.model,
+    );
+    push_profile_change(
+        &mut details,
+        "reasoning",
+        current_reasoning,
+        recommended.models.coordinator.reasoning_effort.as_str(),
+    );
     push_profile_change(
         &mut details,
         "codex hooks",
@@ -4958,6 +5091,75 @@ mod tests {
 
         assert!(output.contains("missing"));
         assert!(output.contains(".sane/config.local.toml"));
+    }
+
+    #[test]
+    fn install_uses_detected_codex_models_for_initial_defaults() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        std::fs::create_dir_all(home.path().join(".codex")).unwrap();
+        std::fs::write(
+            home.path().join(".codex").join("models_cache.json"),
+            r#"{
+  "models": [
+    {
+      "slug": "gpt-5.4",
+      "supported_reasoning_levels": [
+        { "effort": "low" },
+        { "effort": "medium" },
+        { "effort": "high" },
+        { "effort": "xhigh" }
+      ]
+    },
+    {
+      "slug": "gpt-5.2-codex",
+      "supported_reasoning_levels": [
+        { "effort": "low" },
+        { "effort": "medium" },
+        { "effort": "high" },
+        { "effort": "xhigh" }
+      ]
+    },
+    {
+      "slug": "gpt-5.4-mini",
+      "supported_reasoning_levels": [
+        { "effort": "low" },
+        { "effort": "medium" },
+        { "effort": "high" },
+        { "effort": "xhigh" }
+      ]
+    }
+  ]
+}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            home.path().join(".codex").join("auth.json"),
+            r#"{ "chatgpt_plan_type": "prolite" }"#,
+        )
+        .unwrap();
+
+        let _ = run_with_home(&["install"], project.path(), home.path()).unwrap();
+        let config = sane_config::LocalConfig::read_from_path(
+            project.path().join(".sane").join("config.local.toml"),
+        )
+        .unwrap();
+
+        assert_eq!(config.models.coordinator.model, "gpt-5.4");
+        assert_eq!(
+            config.models.coordinator.reasoning_effort,
+            sane_config::ReasoningEffort::High
+        );
+        assert_eq!(config.models.sidecar.model, "gpt-5.4-mini");
+        assert_eq!(
+            config.models.sidecar.reasoning_effort,
+            sane_config::ReasoningEffort::Medium
+        );
+        assert_eq!(config.models.verifier.model, "gpt-5.2-codex");
+        assert_eq!(
+            config.models.verifier.reasoning_effort,
+            sane_config::ReasoningEffort::XHigh
+        );
     }
 
     #[test]
@@ -5566,6 +5768,7 @@ mod tests {
 
         assert!(body.contains("Preview only. No files are changed."));
         assert!(body.contains("model, reasoning, and hook settings"));
+        assert!(body.contains("Codex models it can detect here"));
     }
 
     #[test]
@@ -5601,7 +5804,10 @@ mod tests {
 
     #[test]
     fn config_field_help_explains_role_meaning() {
-        let editor = super::ConfigEditor::new(sane_config::LocalConfig::default());
+        let editor = super::ConfigEditor::new(
+            sane_config::LocalConfig::default(),
+            sane_config::LocalConfig::default(),
+        );
         let body = super::config_field_help_lines(&editor)
             .into_iter()
             .map(|line| line.to_string())
@@ -5972,6 +6178,57 @@ codex_hooks = false
     }
 
     #[test]
+    fn preview_codex_profile_uses_detected_recommendations_when_available() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        let codex_dir = home.path().join(".codex");
+        std::fs::create_dir_all(&codex_dir).unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        std::fs::write(
+            codex_dir.join("models_cache.json"),
+            r#"{
+  "models": [
+    {
+      "slug": "gpt-5.4",
+      "supported_reasoning_levels": [{ "effort": "high" }]
+    },
+    {
+      "slug": "gpt-5.2-codex",
+      "supported_reasoning_levels": [{ "effort": "xhigh" }]
+    },
+    {
+      "slug": "gpt-5.4-mini",
+      "supported_reasoning_levels": [{ "effort": "medium" }]
+    }
+  ]
+}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            codex_dir.join("auth.json"),
+            r#"{ "chatgpt_plan_type": "prolite" }"#,
+        )
+        .unwrap();
+        std::fs::write(
+            codex_dir.join("config.toml"),
+            r#"model = "gpt-5.3-codex"
+model_reasoning_effort = "medium"
+
+[features]
+codex_hooks = false
+"#,
+        )
+        .unwrap();
+
+        let output =
+            run_with_home(&["preview", "codex-profile"], project.path(), home.path()).unwrap();
+
+        assert!(output.contains("model: gpt-5.3-codex -> gpt-5.4"));
+        assert!(output.contains("reasoning: medium -> high"));
+        assert!(output.contains("codex hooks: disabled -> enabled"));
+    }
+
+    #[test]
     fn preview_integrations_profile_reports_recommended_integrations_only() {
         let project = tempdir().unwrap();
         let home = tempdir().unwrap();
@@ -6043,6 +6300,48 @@ url = "https://mcp.context7.com/mcp"
         assert!(body.contains("theme = \"zenburn\""));
         assert!(body.contains("[mcp_servers.context7]"));
         assert!(backup_dir.exists());
+    }
+
+    #[test]
+    fn apply_codex_profile_uses_detected_recommendations_when_available() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        let codex_dir = home.path().join(".codex");
+        std::fs::create_dir_all(&codex_dir).unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        std::fs::write(
+            codex_dir.join("models_cache.json"),
+            r#"{
+  "models": [
+    {
+      "slug": "gpt-5.2",
+      "supported_reasoning_levels": [{ "effort": "high" }]
+    },
+    {
+      "slug": "gpt-5.3-codex-spark",
+      "supported_reasoning_levels": [{ "effort": "medium" }]
+    }
+  ]
+}"#,
+        )
+        .unwrap();
+        std::fs::write(
+            codex_dir.join("config.toml"),
+            r#"model = "gpt-5.3-codex"
+model_reasoning_effort = "medium"
+
+[features]
+codex_hooks = false
+"#,
+        )
+        .unwrap();
+
+        let _ = run_with_home(&["apply", "codex-profile"], project.path(), home.path()).unwrap();
+        let body = std::fs::read_to_string(codex_dir.join("config.toml")).unwrap();
+
+        assert!(body.contains("model = \"gpt-5.2\""));
+        assert!(body.contains("model_reasoning_effort = \"high\""));
+        assert!(body.contains("codex_hooks = true"));
     }
 
     #[test]

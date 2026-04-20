@@ -99,6 +99,38 @@ fn discover_project_root_walks_up_to_cargo_manifest() {
 }
 
 #[test]
+fn discover_project_root_accepts_file_start_path() {
+    let dir = tempdir().unwrap();
+    std::fs::create_dir_all(dir.path().join(".git")).unwrap();
+    let file = dir
+        .path()
+        .join("crates")
+        .join("sane-platform")
+        .join("src")
+        .join("lib.rs");
+    std::fs::create_dir_all(file.parent().unwrap()).unwrap();
+    std::fs::write(&file, "// test\n").unwrap();
+
+    let discovered = ProjectPaths::discover(&file).unwrap();
+
+    assert_eq!(discovered.project_root, dir.path());
+}
+
+#[test]
+fn discover_project_root_uses_dot_sane_when_repo_markers_are_absent() {
+    let dir = tempdir().unwrap();
+    let nested = dir.path().join("workspace").join("deep").join("src");
+    let runtime_root = dir.path().join("workspace").join(".sane");
+    std::fs::create_dir_all(&nested).unwrap();
+    std::fs::create_dir_all(&runtime_root).unwrap();
+
+    let discovered = ProjectPaths::discover(&nested).unwrap();
+
+    assert_eq!(discovered.project_root, dir.path().join("workspace"));
+    assert_eq!(discovered.runtime_root, runtime_root);
+}
+
+#[test]
 fn codex_paths_use_user_skill_location_from_docs() {
     let home = tempdir().unwrap();
     let paths = CodexPaths::new(home.path());
@@ -124,10 +156,26 @@ fn codex_paths_use_user_skill_location_from_docs() {
 }
 
 #[test]
+fn codex_paths_include_local_model_metadata_files() {
+    let home = tempdir().unwrap();
+    let paths = CodexPaths::new(home.path());
+
+    assert_eq!(
+        paths.models_cache_json,
+        home.path().join(".codex").join("models_cache.json")
+    );
+    assert_eq!(
+        paths.auth_json,
+        home.path().join(".codex").join("auth.json")
+    );
+}
+
+#[test]
 fn ensure_runtime_dirs_creates_state_and_telemetry_layout() {
     let dir = tempdir().unwrap();
     let paths = ProjectPaths::new(dir.path());
 
+    paths.ensure_runtime_dirs().unwrap();
     paths.ensure_runtime_dirs().unwrap();
 
     assert!(paths.runtime_root.is_dir());
