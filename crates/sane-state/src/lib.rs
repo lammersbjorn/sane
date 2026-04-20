@@ -4,13 +4,16 @@ use std::io::Write;
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::de::{self, Deserializer};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use thiserror::Error;
 
 pub type ExtraMap = BTreeMap<String, Value>;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+/// Legacy compatibility snapshot for objective-only current-run files.
+/// Canonical live-run storage is `CurrentRunState`.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct RunSnapshot {
     pub version: u32,
     pub objective: String,
@@ -28,6 +31,7 @@ pub struct RunSummary {
     pub extra: ExtraMap,
 }
 
+/// Canonical live-run state.
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct CurrentRunState {
     pub version: u32,
@@ -57,7 +61,7 @@ pub struct EventRecord {
     pub paths: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct DecisionRecord {
     pub version: u32,
     pub ts_unix: u64,
@@ -66,7 +70,7 @@ pub struct DecisionRecord {
     pub paths: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct ArtifactRecord {
     pub version: u32,
     pub ts_unix: u64,
@@ -112,19 +116,95 @@ pub enum RunSnapshotError {
 #[derive(Debug, Deserialize)]
 struct RunSummaryWire {
     version: Option<u32>,
-    accepted_decisions: Option<Vec<String>>,
-    completed_milestones: Option<Vec<String>>,
-    constraints: Option<Vec<String>>,
-    last_verified_outputs: Option<Vec<String>>,
-    files_touched: Option<Vec<String>>,
+    accepted_decisions: Option<Vec<Value>>,
+    completed_milestones: Option<Vec<Value>>,
+    constraints: Option<Vec<Value>>,
+    last_verified_outputs: Option<Vec<Value>>,
+    files_touched: Option<Vec<Value>>,
     #[serde(flatten)]
     extra: ExtraMap,
 }
 
 #[derive(Debug, Deserialize)]
+struct RunSnapshotWire {
+    version: Option<u32>,
+    objective: Option<String>,
+    current_run: Option<RunSnapshotObjectiveWire>,
+    current: Option<RunSnapshotObjectiveWire>,
+    state: Option<RunSnapshotObjectiveWire>,
+    snapshot: Option<RunSnapshotObjectiveWire>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RunSnapshotObjectiveWire {
+    objective: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DecisionRecordTypedWire {
+    version: Option<u32>,
+    ts_unix: Option<u64>,
+    summary: String,
+    rationale: String,
+    paths: Option<Vec<String>>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DecisionRecordLegacyWire {
+    ts_unix: Option<u64>,
+    category: Option<String>,
+    action: Option<String>,
+    result: Option<String>,
+    summary: String,
+    paths: Option<Vec<String>>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum DecisionRecordWire {
+    Typed(DecisionRecordTypedWire),
+    LegacyEvent(DecisionRecordLegacyWire),
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ArtifactRecordTypedWire {
+    version: Option<u32>,
+    ts_unix: Option<u64>,
+    kind: String,
+    path: String,
+    summary: String,
+    paths: Option<Vec<String>>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ArtifactRecordLegacyWire {
+    ts_unix: Option<u64>,
+    category: Option<String>,
+    action: Option<String>,
+    result: Option<String>,
+    summary: String,
+    paths: Option<Vec<String>>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum ArtifactRecordWire {
+    Typed(ArtifactRecordTypedWire),
+    LegacyEvent(ArtifactRecordLegacyWire),
+}
+
+#[derive(Debug, Deserialize)]
 struct CurrentRunStateWire {
     version: Option<u32>,
-    objective: String,
+    objective: Option<String>,
+    current_run: Option<RunSnapshotObjectiveWire>,
+    current: Option<RunSnapshotObjectiveWire>,
+    state: Option<RunSnapshotObjectiveWire>,
+    snapshot: Option<RunSnapshotObjectiveWire>,
     phase: Option<String>,
     active_tasks: Option<Vec<String>>,
     blocking_questions: Option<Vec<String>>,
@@ -132,6 +212,27 @@ struct CurrentRunStateWire {
     last_compaction_ts_unix: Option<u64>,
     #[serde(flatten)]
     extra: ExtraMap,
+}
+
+impl<'de> Deserialize<'de> for RunSnapshot {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let wire = RunSnapshotWire::deserialize(deserializer)?;
+        let objective = wire
+            .objective
+            .or_else(|| wire.current_run.and_then(|item| item.objective))
+            .or_else(|| wire.current.and_then(|item| item.objective))
+            .or_else(|| wire.state.and_then(|item| item.objective))
+            .or_else(|| wire.snapshot.and_then(|item| item.objective))
+            .ok_or_else(|| de::Error::missing_field("objective"))?;
+
+        Ok(Self {
+            version: wire.version.unwrap_or(1),
+            objective,
+        })
+    }
 }
 
 impl<'de> Deserialize<'de> for RunSummary {
@@ -142,13 +243,105 @@ impl<'de> Deserialize<'de> for RunSummary {
         let wire = RunSummaryWire::deserialize(deserializer)?;
         Ok(Self {
             version: upgraded_version(wire.version),
-            accepted_decisions: wire.accepted_decisions.unwrap_or_default(),
-            completed_milestones: wire.completed_milestones.unwrap_or_default(),
-            constraints: wire.constraints.unwrap_or_default(),
-            last_verified_outputs: wire.last_verified_outputs.unwrap_or_default(),
-            files_touched: wire.files_touched.unwrap_or_default(),
+            accepted_decisions: coerce_string_list(wire.accepted_decisions)?,
+            completed_milestones: coerce_string_list(wire.completed_milestones)?,
+            constraints: coerce_string_list(wire.constraints)?,
+            last_verified_outputs: coerce_string_list(wire.last_verified_outputs)?,
+            files_touched: coerce_string_list(wire.files_touched)?,
             extra: wire.extra,
         })
+    }
+}
+
+impl<'de> Deserialize<'de> for DecisionRecord {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        match DecisionRecordWire::deserialize(deserializer)? {
+            DecisionRecordWire::Typed(wire) => Ok(Self {
+                version: wire.version.unwrap_or(1),
+                ts_unix: wire.ts_unix.unwrap_or_else(now_unix),
+                summary: wire.summary,
+                rationale: wire.rationale,
+                paths: wire.paths.unwrap_or_default(),
+            }),
+            DecisionRecordWire::LegacyEvent(wire) => {
+                require_legacy_event_identity::<D::Error>(
+                    &wire.category,
+                    &wire.action,
+                    &wire.result,
+                    "decision",
+                )?;
+
+                let mut rationale = wire
+                    .action
+                    .unwrap_or_else(|| "legacy decision event".to_string());
+                if let Some(result) = wire.result {
+                    rationale = format!("{rationale} ({result})");
+                }
+                if let Some(category) = wire.category {
+                    rationale = format!("{category}: {rationale}");
+                }
+
+                Ok(Self {
+                    version: 1,
+                    ts_unix: wire.ts_unix.unwrap_or_else(now_unix),
+                    summary: wire.summary,
+                    rationale,
+                    paths: wire.paths.unwrap_or_default(),
+                })
+            }
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for ArtifactRecord {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        match ArtifactRecordWire::deserialize(deserializer)? {
+            ArtifactRecordWire::Typed(wire) => Ok(Self {
+                version: wire.version.unwrap_or(1),
+                ts_unix: wire.ts_unix.unwrap_or_else(now_unix),
+                kind: wire.kind,
+                path: wire.path,
+                summary: wire.summary,
+                paths: wire.paths.unwrap_or_default(),
+            }),
+            ArtifactRecordWire::LegacyEvent(wire) => {
+                require_legacy_event_identity::<D::Error>(
+                    &wire.category,
+                    &wire.action,
+                    &wire.result,
+                    "artifact",
+                )?;
+
+                let paths = wire.paths.unwrap_or_default();
+                let path = paths
+                    .first()
+                    .cloned()
+                    .unwrap_or_else(|| wire.summary.clone());
+                let kind = wire
+                    .action
+                    .or(wire.category)
+                    .unwrap_or_else(|| "artifact".to_string());
+                let summary = wire
+                    .result
+                    .map(|result| format!("{} ({result})", wire.summary))
+                    .unwrap_or(wire.summary);
+
+                Ok(Self {
+                    version: 1,
+                    ts_unix: wire.ts_unix.unwrap_or_else(now_unix),
+                    kind,
+                    path,
+                    summary,
+                    paths,
+                })
+            }
+        }
     }
 }
 
@@ -158,16 +351,22 @@ impl<'de> Deserialize<'de> for CurrentRunState {
         D: Deserializer<'de>,
     {
         let wire = CurrentRunStateWire::deserialize(deserializer)?;
+        let objective = wire
+            .objective
+            .or_else(|| wire.current_run.and_then(|item| item.objective))
+            .or_else(|| wire.current.and_then(|item| item.objective))
+            .or_else(|| wire.state.and_then(|item| item.objective))
+            .or_else(|| wire.snapshot.and_then(|item| item.objective))
+            .ok_or_else(|| de::Error::missing_field("objective"))?;
         Ok(Self {
             version: upgraded_version(wire.version),
-            objective: wire.objective,
+            objective,
             phase: wire.phase.unwrap_or_else(|| "unknown".to_string()),
             active_tasks: wire.active_tasks.unwrap_or_default(),
             blocking_questions: wire.blocking_questions.unwrap_or_default(),
-            verification: wire.verification.unwrap_or_else(|| VerificationStatus {
-                status: "unknown".to_string(),
-                summary: None,
-            }),
+            verification: wire
+                .verification
+                .unwrap_or_else(default_verification_status),
             last_compaction_ts_unix: wire.last_compaction_ts_unix,
             extra: wire.extra,
         })
@@ -176,11 +375,20 @@ impl<'de> Deserialize<'de> for CurrentRunState {
 
 impl RunSnapshot {
     pub fn read_from_path(path: impl AsRef<Path>) -> Result<Self, RunSnapshotError> {
-        read_json(path)
+        let path = path.as_ref();
+        match CurrentRunState::read_from_path(path) {
+            Ok(state) => Ok(state.snapshot()),
+            Err(_) => read_json(path),
+        }
     }
 
     pub fn write_to_path(&self, path: impl AsRef<Path>) -> Result<(), RunSnapshotError> {
-        write_json(path, self)
+        let state = self.clone().into_current_run_state();
+        write_json(path, &state)
+    }
+
+    pub fn into_current_run_state(self) -> CurrentRunState {
+        self.into()
     }
 }
 
@@ -207,24 +415,42 @@ impl RunSummary {
         merge_unique(&mut self.files_touched, promotion.files_touched);
     }
 
-    pub fn render_brief(&self, current: &CurrentRunState) -> String {
+    pub fn apply_decision_record(&mut self, decision: &DecisionRecord) {
+        self.apply_promotion(SummaryPromotion::from_decision_record(decision));
+    }
+
+    pub fn apply_artifact_record(&mut self, artifact: &ArtifactRecord) {
+        self.apply_promotion(SummaryPromotion::from_artifact_record(artifact));
+    }
+
+    pub fn build_brief(&self, current: &CurrentRunState) -> String {
         let accepted = render_bullets(&self.accepted_decisions);
         let milestones = render_bullets(&self.completed_milestones);
         let verified = render_bullets(&self.last_verified_outputs);
         let files = render_bullets(&self.files_touched);
         let tasks = render_bullets(&current.active_tasks);
+        let blockers = render_bullets(&current.blocking_questions);
 
         format!(
-            "# Sane Brief\n\n## Current Run\n- Objective: {}\n- Phase: {}\n- Verification: {}\n\n## Active Tasks\n{}\n\n## Accepted Decisions\n{}\n\n## Completed Milestones\n{}\n\n## Last Verified Outputs\n{}\n\n## Files Touched\n{}\n",
+            "# Sane Brief\n\n## Current Run\n- Objective: {}\n- Phase: {}\n- Verification: {}\n- Last compaction: {}\n\n## Active Tasks\n{}\n\n## Blocking Questions\n{}\n\n## Accepted Decisions\n{}\n\n## Completed Milestones\n{}\n\n## Last Verified Outputs\n{}\n\n## Files Touched\n{}\n",
             current.objective,
             current.phase,
             current.verification.status,
+            current
+                .last_compaction_ts_unix
+                .map(|ts| ts.to_string())
+                .unwrap_or_else(|| "none".to_string()),
             tasks,
+            blockers,
             accepted,
             milestones,
             verified,
             files
         )
+    }
+
+    pub fn render_brief(&self, current: &CurrentRunState) -> String {
+        self.build_brief(current)
     }
 }
 
@@ -249,6 +475,38 @@ impl CurrentRunState {
 
     pub fn write_to_path(&self, path: impl AsRef<Path>) -> Result<(), RunSnapshotError> {
         write_json(path, self)
+    }
+
+    pub fn from_snapshot(snapshot: RunSnapshot) -> Self {
+        snapshot.into()
+    }
+
+    pub fn snapshot(&self) -> RunSnapshot {
+        self.into()
+    }
+}
+
+impl From<RunSnapshot> for CurrentRunState {
+    fn from(snapshot: RunSnapshot) -> Self {
+        Self {
+            version: upgraded_version(Some(snapshot.version)),
+            objective: snapshot.objective,
+            phase: "unknown".to_string(),
+            active_tasks: Vec::new(),
+            blocking_questions: Vec::new(),
+            verification: default_verification_status(),
+            last_compaction_ts_unix: None,
+            extra: ExtraMap::default(),
+        }
+    }
+}
+
+impl From<&CurrentRunState> for RunSnapshot {
+    fn from(state: &CurrentRunState) -> Self {
+        Self {
+            version: state.version,
+            objective: state.objective.clone(),
+        }
     }
 }
 
@@ -293,6 +551,10 @@ impl DecisionRecord {
     pub fn append_jsonl(&self, path: impl AsRef<Path>) -> Result<(), RunSnapshotError> {
         append_jsonl(path, self)
     }
+
+    pub fn promotion(&self) -> SummaryPromotion {
+        SummaryPromotion::from_decision_record(self)
+    }
 }
 
 impl ArtifactRecord {
@@ -314,6 +576,10 @@ impl ArtifactRecord {
 
     pub fn append_jsonl(&self, output: impl AsRef<Path>) -> Result<(), RunSnapshotError> {
         append_jsonl(output, self)
+    }
+
+    pub fn promotion(&self) -> SummaryPromotion {
+        SummaryPromotion::from_artifact_record(self)
     }
 }
 
@@ -386,6 +652,31 @@ fn upgraded_version(version: Option<u32>) -> u32 {
     }
 }
 
+fn default_verification_status() -> VerificationStatus {
+    VerificationStatus {
+        status: "unknown".to_string(),
+        summary: None,
+    }
+}
+
+fn require_legacy_event_identity<E>(
+    category: &Option<String>,
+    action: &Option<String>,
+    result: &Option<String>,
+    record_kind: &str,
+) -> Result<(), E>
+where
+    E: de::Error,
+{
+    if category.is_none() && action.is_none() && result.is_none() {
+        return Err(E::custom(format!(
+            "invalid {record_kind} record: expected typed fields or legacy event identity"
+        )));
+    }
+
+    Ok(())
+}
+
 fn now_unix() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -398,6 +689,80 @@ fn merge_unique(target: &mut Vec<String>, additions: Vec<String>) {
         if !target.contains(&item) {
             target.push(item);
         }
+    }
+}
+
+fn coerce_string_list<E>(values: Option<Vec<Value>>) -> Result<Vec<String>, E>
+where
+    E: de::Error,
+{
+    values
+        .unwrap_or_default()
+        .into_iter()
+        .map(coerce_string_value::<E>)
+        .collect()
+}
+
+fn coerce_string_value<E>(value: Value) -> Result<String, E>
+where
+    E: de::Error,
+{
+    match value {
+        Value::String(value) => Ok(value),
+        Value::Object(mut map) => {
+            for key in ["summary", "text", "value", "name", "label", "path"] {
+                if let Some(Value::String(value)) = map.remove(key) {
+                    return Ok(value);
+                }
+            }
+
+            if let Some(Value::Array(values)) = map.remove("paths") {
+                if let Some(Value::String(value)) = values
+                    .into_iter()
+                    .find(|item| matches!(item, Value::String(_)))
+                {
+                    return Ok(value);
+                }
+            }
+
+            Err(E::custom(
+                "expected string or object with summary/text/value/name/label/path",
+            ))
+        }
+        other => Err(E::custom(format!("expected string value, found {other}"))),
+    }
+}
+
+impl SummaryPromotion {
+    pub fn from_decision_record(decision: &DecisionRecord) -> Self {
+        Self {
+            accepted_decisions: vec![decision.summary.clone()],
+            completed_milestones: Vec::new(),
+            constraints: Vec::new(),
+            last_verified_outputs: Vec::new(),
+            files_touched: decision.paths.clone(),
+        }
+    }
+
+    pub fn from_artifact_record(artifact: &ArtifactRecord) -> Self {
+        let mut files_touched = vec![artifact.path.clone()];
+        merge_unique(&mut files_touched, artifact.paths.clone());
+
+        Self {
+            accepted_decisions: Vec::new(),
+            completed_milestones: Vec::new(),
+            constraints: Vec::new(),
+            last_verified_outputs: Vec::new(),
+            files_touched,
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.accepted_decisions.is_empty()
+            && self.completed_milestones.is_empty()
+            && self.constraints.is_empty()
+            && self.last_verified_outputs.is_empty()
+            && self.files_touched.is_empty()
     }
 }
 

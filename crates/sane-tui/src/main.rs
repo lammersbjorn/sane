@@ -32,7 +32,9 @@ use sane_policy::{
     Intent, Level, Obligation, Parallelism, PolicyInput, RunState, TaskShape, evaluate,
     recommend_roles,
 };
-use sane_state::{EventRecord, RunSnapshot, RunSummary};
+use sane_state::{
+    ArtifactRecord, CurrentRunState, DecisionRecord, EventRecord, RunSummary, VerificationStatus,
+};
 use serde_json::{Map, Value, json};
 use toml::Value as TomlValue;
 
@@ -2197,6 +2199,7 @@ fn ensure_file_with_default(path: &Path, default_contents: &str) -> Result<(), S
 }
 
 fn append_operation_event(paths: &ProjectPaths, result: &OperationResult) -> Result<(), String> {
+    let current = current_run_state(paths);
     let event = EventRecord::new(
         "operation",
         operation_kind_label(result.kind),
@@ -2209,7 +2212,8 @@ fn append_operation_event(paths: &ProjectPaths, result: &OperationResult) -> Res
         .map_err(|error| error.to_string())?;
     append_decision_record(paths, result)?;
     append_artifact_records(paths, result)?;
-    promote_operation_summary(paths, result)
+    let summary = promote_operation_summary(paths, result)?;
+    refresh_brief(paths, &current, &summary)
 }
 
 fn operation_kind_label(kind: OperationKind) -> &'static str {
@@ -2380,7 +2384,10 @@ fn render_role_plan(config: &LocalConfig, roles: sane_policy::RolePlan) -> Strin
     parts.join(", ")
 }
 
-fn promote_operation_summary(paths: &ProjectPaths, result: &OperationResult) -> Result<(), String> {
+fn promote_operation_summary(
+    paths: &ProjectPaths,
+    result: &OperationResult,
+) -> Result<RunSummary, String> {
     let mut summary = if paths.summary_path.exists() {
         RunSummary::read_from_path(&paths.summary_path).unwrap_or_default()
     } else {
@@ -2406,7 +2413,7 @@ fn promote_operation_summary(paths: &ProjectPaths, result: &OperationResult) -> 
     summary
         .write_to_path(&paths.summary_path)
         .map_err(|error| error.to_string())?;
-    refresh_brief(paths, &summary)
+    Ok(summary)
 }
 
 fn operation_milestone(kind: OperationKind) -> Option<&'static str> {
@@ -2431,25 +2438,29 @@ fn append_decision_record(paths: &ProjectPaths, result: &OperationResult) -> Res
         return Ok(());
     };
 
-    EventRecord::new(
-        "decision",
-        operation_kind_label(result.kind),
-        "accepted",
-        milestone,
-        result.paths_touched.clone(),
-    )
-    .append_jsonl(&paths.decisions_path)
-    .map_err(|error| error.to_string())
+    let rationale = result
+        .details
+        .first()
+        .cloned()
+        .unwrap_or_else(|| operation_kind_label(result.kind).to_string());
+
+    DecisionRecord::new(milestone, rationale, result.paths_touched.clone())
+        .append_jsonl(&paths.decisions_path)
+        .map_err(|error| error.to_string())
 }
 
 fn append_artifact_records(paths: &ProjectPaths, result: &OperationResult) -> Result<(), String> {
-    for artifact_path in &result.paths_touched {
-        EventRecord::new(
-            "artifact",
+    let artifact_paths = match result.kind {
+        OperationKind::InstallRuntime => vec![paths.config_path.display().to_string()],
+        _ => vec![],
+    };
+
+    for artifact_path in artifact_paths {
+        ArtifactRecord::new(
             operation_kind_label(result.kind),
-            "touched",
             artifact_path.clone(),
-            vec![artifact_path.clone()],
+            result.summary.clone(),
+            result.paths_touched.clone(),
         )
         .append_jsonl(&paths.artifacts_path)
         .map_err(|error| error.to_string())?;
@@ -2458,29 +2469,37 @@ fn append_artifact_records(paths: &ProjectPaths, result: &OperationResult) -> Re
     Ok(())
 }
 
-fn refresh_brief(paths: &ProjectPaths, summary: &RunSummary) -> Result<(), String> {
-    let objective = if paths.current_run_path.exists() {
-        RunSnapshot::read_from_path(&paths.current_run_path)
-            .map(|snapshot| snapshot.objective)
-            .unwrap_or_else(|_| "unknown".to_string())
+fn current_run_state(paths: &ProjectPaths) -> CurrentRunState {
+    if paths.current_run_path.exists() {
+        CurrentRunState::read_from_path(&paths.current_run_path)
+            .unwrap_or_else(|_| fallback_current_run_state("unknown"))
     } else {
-        "unknown".to_string()
-    };
+        fallback_current_run_state("unknown")
+    }
+}
 
-    let milestone = summary
-        .completed_milestones
-        .last()
-        .cloned()
-        .unwrap_or_else(|| "none".to_string());
-    let touched = summary
-        .files_touched
-        .last()
-        .cloned()
-        .unwrap_or_else(|| "none".to_string());
+fn fallback_current_run_state(objective: impl Into<String>) -> CurrentRunState {
+    CurrentRunState {
+        version: 2,
+        objective: objective.into(),
+        phase: "unknown".to_string(),
+        active_tasks: vec![],
+        blocking_questions: vec![],
+        verification: VerificationStatus {
+            status: "unknown".to_string(),
+            summary: None,
+        },
+        last_compaction_ts_unix: None,
+        extra: Default::default(),
+    }
+}
 
-    let body = format!(
-        "# Sane Brief\n\n- Current goal: {objective}\n- Last milestone: {milestone}\n- Last touched path: {touched}\n"
-    );
+fn refresh_brief(
+    paths: &ProjectPaths,
+    current: &CurrentRunState,
+    summary: &RunSummary,
+) -> Result<(), String> {
+    let body = summary.build_brief(current);
     ensure_file_with_default(&paths.brief_path, "")?;
     fs::write(&paths.brief_path, body).map_err(|error| error.to_string())
 }
@@ -2500,11 +2519,14 @@ fn install_runtime(
     }
 
     if !paths.current_run_path.exists() {
-        let snapshot = RunSnapshot {
-            version: 1,
-            objective: "initialize sane runtime".to_string(),
+        let mut state = fallback_current_run_state("initialize sane runtime");
+        state.phase = "setup".to_string();
+        state.active_tasks = vec!["install sane runtime".to_string()];
+        state.verification = VerificationStatus {
+            status: "pending".to_string(),
+            summary: Some("runtime scaffolding created".to_string()),
         };
-        snapshot
+        state
             .write_to_path(&paths.current_run_path)
             .map_err(|error| error.to_string())?;
     }
@@ -2519,10 +2541,11 @@ fn install_runtime(
     ensure_file_with_default(&paths.events_path, "")?;
     ensure_file_with_default(&paths.decisions_path, "")?;
     ensure_file_with_default(&paths.artifacts_path, "")?;
-    ensure_file_with_default(
-        &paths.brief_path,
-        "# Sane Brief\n\n- Current goal: initialize sane runtime\n- Continue from: TUI home\n",
-    )?;
+
+    let current = CurrentRunState::read_from_path(&paths.current_run_path)
+        .map_err(|error| error.to_string())?;
+    let summary = RunSummary::read_from_path(&paths.summary_path).unwrap_or_default();
+    ensure_file_with_default(&paths.brief_path, &summary.build_brief(&current))?;
 
     Ok(OperationResult {
         kind: OperationKind::InstallRuntime,
@@ -3413,7 +3436,7 @@ fn inspect_inventory(
             scope: InventoryScope::LocalRuntime,
             status: if !paths.state_dir.exists() || !paths.current_run_path.exists() {
                 InventoryStatus::Missing
-            } else if RunSnapshot::read_from_path(&paths.current_run_path).is_ok() {
+            } else if CurrentRunState::read_from_path(&paths.current_run_path).is_ok() {
                 InventoryStatus::Installed
             } else {
                 InventoryStatus::Invalid
@@ -3421,7 +3444,7 @@ fn inspect_inventory(
             path: paths.current_run_path.display().to_string(),
             repair_hint: if !paths.state_dir.exists() || !paths.current_run_path.exists() {
                 Some("rerun `install`".to_string())
-            } else if RunSnapshot::read_from_path(&paths.current_run_path).is_ok() {
+            } else if CurrentRunState::read_from_path(&paths.current_run_path).is_ok() {
                 None
             } else {
                 Some("rerun `install`".to_string())
@@ -5047,6 +5070,7 @@ fn remove_managed_block(existing: &str, begin: &str, end: &str) -> String {
 mod tests {
     use std::path::Path;
 
+    use sane_state::CurrentRunState;
     use tempfile::tempdir;
 
     use super::{run, run_with_home};
@@ -5082,6 +5106,32 @@ mod tests {
                 .exists()
         );
         assert!(dir.path().join(".sane").join("BRIEF.md").exists());
+    }
+
+    #[test]
+    fn install_writes_current_run_state() {
+        let dir = tempdir().unwrap();
+        let _ = run(&["install"], dir.path()).unwrap();
+
+        let body = std::fs::read_to_string(
+            dir.path()
+                .join(".sane")
+                .join("state")
+                .join("current-run.json"),
+        )
+        .unwrap();
+
+        assert!(body.contains("\"phase\""));
+        assert!(body.contains("\"verification\""));
+
+        let state = CurrentRunState::read_from_path(
+            dir.path()
+                .join(".sane")
+                .join("state")
+                .join("current-run.json"),
+        )
+        .unwrap();
+        assert_eq!(state.objective, "initialize sane runtime");
     }
 
     #[test]
@@ -5278,8 +5328,9 @@ mod tests {
 
         let brief = std::fs::read_to_string(dir.path().join(".sane").join("BRIEF.md")).unwrap();
 
-        assert!(brief.contains("Current goal: initialize sane runtime"));
-        assert!(brief.contains("Last milestone: user skills exported"));
+        assert!(brief.contains("Objective:"), "brief was:\n{brief}");
+        assert!(brief.contains("Phase: setup"));
+        assert!(brief.contains("user skills exported"));
     }
 
     #[test]
@@ -5305,10 +5356,52 @@ mod tests {
         )
         .unwrap();
 
-        assert!(decisions.contains("\"category\":\"decision\""));
+        assert!(decisions.contains("\"version\":1"));
         assert!(decisions.contains("user skills exported"));
-        assert!(artifacts.contains("\"category\":\"artifact\""));
+        assert!(artifacts.contains("\"version\":1"));
         assert!(artifacts.contains("config.local.toml"));
+    }
+
+    #[test]
+    fn backend_operations_write_typed_decision_and_artifact_records() {
+        let dir = tempdir().unwrap();
+        let home = tempdir().unwrap();
+
+        let _ = run_with_home(&["install"], dir.path(), home.path()).unwrap();
+        let _ = run_with_home(&["export", "user-skills"], dir.path(), home.path()).unwrap();
+
+        let decisions = std::fs::read_to_string(
+            dir.path()
+                .join(".sane")
+                .join("state")
+                .join("decisions.jsonl"),
+        )
+        .unwrap();
+        let artifacts = std::fs::read_to_string(
+            dir.path()
+                .join(".sane")
+                .join("state")
+                .join("artifacts.jsonl"),
+        )
+        .unwrap();
+
+        let decision_line = decisions.lines().last().unwrap();
+        let artifact_line = artifacts.lines().last().unwrap();
+
+        assert!(decision_line.contains("\"version\":1"));
+        assert!(decision_line.contains("\"summary\":\"user skills exported\""));
+        assert!(decision_line.contains("\"rationale\""));
+        assert!(!decision_line.contains("\"category\""));
+        assert!(!decision_line.contains("\"action\""));
+        assert!(!decision_line.contains("\"result\""));
+
+        assert!(artifact_line.contains("\"version\":1"));
+        assert!(artifact_line.contains("\"kind\""));
+        assert!(artifact_line.contains("\"path\""));
+        assert!(artifact_line.contains("SKILL.md"));
+        assert!(!artifact_line.contains("\"category\""));
+        assert!(!artifact_line.contains("\"action\""));
+        assert!(!artifact_line.contains("\"result\""));
     }
 
     #[test]

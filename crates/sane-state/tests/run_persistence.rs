@@ -16,8 +16,16 @@ fn run_snapshot_persists_to_disk() {
 
     snapshot.write_to_path(&path).unwrap();
     let decoded = RunSnapshot::read_from_path(&path).unwrap();
+    let current = CurrentRunState::read_from_path(&path).unwrap();
 
-    assert_eq!(decoded, snapshot);
+    assert_eq!(decoded.version, 2);
+    assert_eq!(decoded.objective, snapshot.objective);
+    assert_eq!(current.version, 2);
+    assert_eq!(current.objective, snapshot.objective);
+    assert_eq!(current.phase, "unknown");
+    assert!(current.active_tasks.is_empty());
+    assert!(current.blocking_questions.is_empty());
+    assert_eq!(current.verification.status, "unknown");
 }
 
 #[test]
@@ -179,6 +187,37 @@ fn decision_record_appends_jsonl() {
 }
 
 #[test]
+fn decision_record_rejects_ambiguous_payload_without_typed_or_legacy_shape() {
+    let decoded = serde_json::from_str::<DecisionRecord>(
+        r#"{
+  "summary": "runtime installed",
+  "paths": [".sane/config.local.toml"]
+}"#,
+    );
+
+    assert!(decoded.is_err());
+}
+
+#[test]
+fn decision_record_reads_legacy_event_shape() {
+    let decoded = serde_json::from_str::<DecisionRecord>(
+        r#"{
+  "ts_unix": 42,
+  "category": "decision",
+  "action": "install_runtime",
+  "result": "ok",
+  "summary": "runtime installed",
+  "paths": [".sane/config.local.toml"]
+}"#,
+    )
+    .unwrap();
+
+    assert_eq!(decoded.ts_unix, 42);
+    assert_eq!(decoded.summary, "runtime installed");
+    assert_eq!(decoded.rationale, "decision: install_runtime (ok)");
+}
+
+#[test]
 fn artifact_record_appends_jsonl() {
     let dir = tempdir().unwrap();
     let path = dir.path().join("artifacts.jsonl");
@@ -199,4 +238,36 @@ fn artifact_record_appends_jsonl() {
     assert_eq!(decoded.kind, "report");
     assert_eq!(decoded.path, "docs/report.md");
     assert_eq!(decoded.summary, "state audit report");
+}
+
+#[test]
+fn artifact_record_rejects_ambiguous_payload_without_typed_or_legacy_shape() {
+    let decoded = serde_json::from_str::<ArtifactRecord>(
+        r#"{
+  "summary": "state audit report",
+  "paths": ["docs/report.md"]
+}"#,
+    );
+
+    assert!(decoded.is_err());
+}
+
+#[test]
+fn artifact_record_reads_legacy_event_shape() {
+    let decoded = serde_json::from_str::<ArtifactRecord>(
+        r#"{
+  "ts_unix": 99,
+  "category": "artifact",
+  "action": "report",
+  "result": "ok",
+  "summary": "state audit report",
+  "paths": ["docs/report.md"]
+}"#,
+    )
+    .unwrap();
+
+    assert_eq!(decoded.ts_unix, 99);
+    assert_eq!(decoded.kind, "report");
+    assert_eq!(decoded.path, "docs/report.md");
+    assert_eq!(decoded.summary, "state audit report (ok)");
 }

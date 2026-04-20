@@ -13,6 +13,24 @@ fn run_snapshot_round_trips_through_json() {
 }
 
 #[test]
+fn run_snapshot_converts_to_canonical_current_run_state_defaults() {
+    let snapshot = RunSnapshot {
+        version: 1,
+        objective: "bootstrap sane".to_string(),
+    };
+
+    let current = snapshot.into_current_run_state();
+
+    assert_eq!(current.version, 2);
+    assert_eq!(current.objective, "bootstrap sane");
+    assert_eq!(current.phase, "unknown");
+    assert!(current.active_tasks.is_empty());
+    assert!(current.blocking_questions.is_empty());
+    assert_eq!(current.verification.status, "unknown");
+    assert_eq!(current.last_compaction_ts_unix, None);
+}
+
+#[test]
 fn event_record_round_trips_through_json() {
     let event = EventRecord::new("operation", "doctor", "ok", "doctor run", vec![]);
     let encoded = serde_json::to_string(&event).unwrap();
