@@ -798,6 +798,71 @@ where
     write_canonical_encoded_with_backup_result(path.as_ref(), &encoded)
 }
 
+/// Lists canonical `.bak` sibling files for `canonical_path`, newest first.
+///
+/// Matches filenames emitted by `write_canonical_with_backup_result`:
+/// `<name>.bak.<ts>` and `<name>.bak.<ts>.<attempt>`.
+pub fn list_canonical_backup_siblings(
+    canonical_path: impl AsRef<Path>,
+) -> Result<Vec<PathBuf>, RunSnapshotError> {
+    let canonical_path = canonical_path.as_ref();
+    let parent = canonical_path
+        .parent()
+        .filter(|candidate| !candidate.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
+    if !parent.exists() {
+        return Ok(Vec::new());
+    }
+
+    let Some(canonical_name) = canonical_path.file_name().and_then(|name| name.to_str()) else {
+        return Ok(Vec::new());
+    };
+    let backup_prefix = format!("{canonical_name}.bak.");
+
+    let mut backups = Vec::new();
+    let entries = fs::read_dir(parent).map_err(|source| RunSnapshotError::Read {
+        path: parent.display().to_string(),
+        source,
+    })?;
+
+    for entry in entries {
+        let entry = entry.map_err(|source| RunSnapshotError::Read {
+            path: parent.display().to_string(),
+            source,
+        })?;
+        let entry_type = entry.file_type().map_err(|source| RunSnapshotError::Read {
+            path: entry.path().display().to_string(),
+            source,
+        })?;
+        if !entry_type.is_file() {
+            continue;
+        }
+
+        let name = entry.file_name();
+        let Some(name) = name.to_str() else {
+            continue;
+        };
+        let Some((ts_unix, attempt)) = parse_backup_sibling_metadata(name, &backup_prefix) else {
+            continue;
+        };
+
+        backups.push((ts_unix, attempt, entry.path()));
+    }
+
+    backups.sort_by(|left, right| {
+        right
+            .0
+            .cmp(&left.0)
+            .then_with(|| right.1.cmp(&left.1))
+            .then_with(|| left.2.cmp(&right.2))
+    });
+
+    Ok(backups
+        .into_iter()
+        .map(|(_, _, backup_path)| backup_path)
+        .collect())
+}
+
 fn read_json<T>(path: impl AsRef<Path>) -> Result<T, RunSnapshotError>
 where
     T: for<'de> Deserialize<'de>,
@@ -1002,6 +1067,21 @@ fn backup_existing_canonical(path: &Path) -> Result<Option<PathBuf>, RunSnapshot
         source,
     })?;
     Ok(Some(backup_path))
+}
+
+fn parse_backup_sibling_metadata(file_name: &str, backup_prefix: &str) -> Option<(u64, u32)> {
+    let suffix = file_name.strip_prefix(backup_prefix)?;
+    let mut segments = suffix.split('.');
+    let ts_unix = segments.next()?.parse::<u64>().ok()?;
+    let attempt = match segments.next() {
+        Some(value) => value.parse::<u32>().ok()?,
+        None => 0,
+    };
+    if segments.next().is_some() {
+        return None;
+    }
+
+    Some((ts_unix, attempt))
 }
 
 fn backup_candidate_path(path: &Path, ts: u64, attempt: u32) -> PathBuf {

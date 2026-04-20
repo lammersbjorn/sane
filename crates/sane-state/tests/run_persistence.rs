@@ -1,8 +1,8 @@
 use sane_state::{
     ArtifactRecord, CanonicalStateFormat, CanonicalStatePaths, CurrentRunState, DecisionRecord,
     EventRecord, LayeredStateBundle, LocalStateConfig, RunSnapshot, RunSnapshotError, RunSummary,
-    SummaryPromotion, read_jsonl_records, read_jsonl_records_slice, write_canonical_with_backup,
-    write_canonical_with_backup_result,
+    SummaryPromotion, list_canonical_backup_siblings, read_jsonl_records, read_jsonl_records_slice,
+    write_canonical_with_backup, write_canonical_with_backup_result,
 };
 use tempfile::tempdir;
 
@@ -475,6 +475,105 @@ fn canonical_toml_first_write_metadata_reports_first_write() {
     assert!(result.backup_path.is_none());
     assert!(result.first_write);
     assert_eq!(decoded, config);
+}
+
+#[test]
+fn canonical_backup_siblings_are_sorted_newest_first() {
+    let dir = tempdir().unwrap();
+    let path = dir.path().join("summary.json");
+
+    std::fs::write(dir.path().join("summary.json.bak.1700000000"), "{}").unwrap();
+    std::fs::write(dir.path().join("summary.json.bak.1700000001"), "{}").unwrap();
+    std::fs::write(dir.path().join("summary.json.bak.1700000002"), "{}").unwrap();
+    std::fs::write(dir.path().join("summary.json.bak.1700000002.1"), "{}").unwrap();
+    std::fs::write(dir.path().join("summary.json.bak.not-a-ts"), "{}").unwrap();
+    std::fs::write(dir.path().join("summary.json.bak.1700000002.x"), "{}").unwrap();
+    std::fs::write(dir.path().join("summary.json.bak.1700000002.1.extra"), "{}").unwrap();
+    std::fs::write(dir.path().join("other.json.bak.1900000000"), "{}").unwrap();
+    std::fs::create_dir_all(dir.path().join("summary.json.bak.1900000000")).unwrap();
+
+    let backups = list_canonical_backup_siblings(&path).unwrap();
+    let names = backups
+        .iter()
+        .map(|candidate| {
+            candidate
+                .file_name()
+                .and_then(|name| name.to_str())
+                .unwrap()
+                .to_string()
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        names,
+        vec![
+            "summary.json.bak.1700000002.1",
+            "summary.json.bak.1700000002",
+            "summary.json.bak.1700000001",
+            "summary.json.bak.1700000000",
+        ]
+    );
+}
+
+#[test]
+fn canonical_backup_siblings_returns_empty_when_parent_dir_is_missing() {
+    let dir = tempdir().unwrap();
+    let path = dir.path().join("state").join("summary.json");
+
+    let backups = list_canonical_backup_siblings(&path).unwrap();
+    assert!(backups.is_empty());
+}
+
+#[test]
+fn canonical_backup_siblings_align_with_rewrite_metadata() {
+    let dir = tempdir().unwrap();
+    let path = dir.path().join("summary.json");
+
+    let previous = RunSummary {
+        version: 2,
+        accepted_decisions: vec!["old decision".to_string()],
+        completed_milestones: vec!["old milestone".to_string()],
+        constraints: vec![],
+        last_verified_outputs: vec![],
+        files_touched: vec![],
+        extra: Default::default(),
+    };
+    previous.write_to_path(&path).unwrap();
+
+    let replacement_a = RunSummary {
+        version: 2,
+        accepted_decisions: vec!["new decision a".to_string()],
+        completed_milestones: vec!["new milestone a".to_string()],
+        constraints: vec![],
+        last_verified_outputs: vec![],
+        files_touched: vec![],
+        extra: Default::default(),
+    };
+    let first =
+        write_canonical_with_backup_result(&path, &replacement_a, CanonicalStateFormat::Json)
+            .unwrap();
+    let first_backup = first.backup_path.clone().unwrap();
+    assert!(!first.first_write);
+
+    let replacement_b = RunSummary {
+        version: 2,
+        accepted_decisions: vec!["new decision b".to_string()],
+        completed_milestones: vec!["new milestone b".to_string()],
+        constraints: vec![],
+        last_verified_outputs: vec![],
+        files_touched: vec![],
+        extra: Default::default(),
+    };
+    let second =
+        write_canonical_with_backup_result(&path, &replacement_b, CanonicalStateFormat::Json)
+            .unwrap();
+    let second_backup = second.backup_path.clone().unwrap();
+    assert!(!second.first_write);
+
+    let backups = list_canonical_backup_siblings(&path).unwrap();
+    assert_eq!(backups.first(), Some(&second_backup));
+    assert!(backups.contains(&first_backup));
+    assert!(backups.contains(&second_backup));
 }
 
 #[test]
