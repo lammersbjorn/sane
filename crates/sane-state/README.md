@@ -23,15 +23,19 @@ Users feel this crate when `Sane` can answer:
 - what state looks stale or broken
 - what can be repaired
 - what happened during a longer run
+- what the current `.sane` layers say right now without hand-parsing each file
 
 It powers the local `.sane/` record without turning `.sane/` into a second product runtime.
 
 ## What It Owns
 
 - typed state records
+- layered state readers for config, summary, current-run, and brief files
 - JSON and JSONL persistence helpers
+- ordered JSONL slice/query helpers for history files
 - run snapshot and summary formats
 - event, decision, and artifact log formats
+- compatibility upgrades from older snapshot/event shapes into the typed state model
 
 ## What It Must Not Own
 
@@ -46,6 +50,8 @@ Update docs if you change:
 
 - local state file formats
 - what `.sane/` stores
+- canonical layered load behavior for `.sane/config.local.toml`, `summary.json`, `current-run.json`, or `BRIEF.md`
+- JSONL history read semantics
 - backward-compatibility expectations for state files
 - repair or summary behavior users will notice
 

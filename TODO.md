@@ -71,18 +71,22 @@ Implemented:
 - pure adaptive policy crate with typed obligations and tests
 - internal backend policy preview for canonical adaptive scenarios
 - internal backend policy preview now shows configured coordinator / sidecar / verifier roles per scenario
+- policy explanations now include typed orchestration guidance and stable rule traces for canonical scenarios
 - recommended model defaults now derive from local Codex model cache plus auth plan when available; saved config still wins, and static fallback remains when detection fails
+- plan-aware model-role recommendations now vary coordinator / sidecar / verifier priority and reasoning mixes by detected auth plan
 - TUI now exposes adaptive policy inspection directly instead of leaving it command-only
 - TUI now requires confirmation for risky apply/restore/uninstall actions
 - no-args TUI now opens into section-based onboarding instead of a flat settings/action wall
 - `sane settings` is the direct shortcut into configure mode
 - optional repo-local skill export now exists as an explicit separate target and is not part of `export all`
 - optional repo-local AGENTS export now exists as an explicit separate target and is not part of `export all`
+- canonical `.sane` layered-state helpers now load config, summary, current run, and brief files in one typed bundle
+- typed JSONL history helpers now support full reads plus ordered offset/limit slices for events, decisions, and artifacts
 
 Current gate:
 
 - `B4` managed Codex surfaces remain additive/reversible only
-- `B7` may proceed only as internal adaptive policy groundwork, not user-facing workflow ritual
+- `B7` may proceed only as internal adaptive policy/state groundwork and inspection surfaces, not user-facing workflow ritual or orchestration runtime
 
 Current command examples:
 
@@ -182,10 +186,10 @@ See:
 Current allowed next slice:
 
 1. finish `B4` only if adding another managed surface is clearly justified by the Codex surface map
-2. otherwise update the actual state files to match `R3`
+2. otherwise wire more backend/status flows through the existing layered `.sane` state shape instead of inventing new ad hoc readers or files
 3. keep TUI first, backend verbs escape hatch only
 4. keep merge/preserve/remove behavior additive and reversible
 5. keep Codex config writes narrow, explicit opt-in, and backup/restore guarded
 6. fold the MCP/default-tool audit into the integrations-profile implementation
-7. do not start adaptive orchestration before the `R3` state shape is real in code
+7. keep `B7` on typed policy/state plumbing, traces, and inspectable guidance; do not present it as shipped end-user orchestration
 8. keep the later end-to-end outcome runner plain-language first, not command-ritual-first

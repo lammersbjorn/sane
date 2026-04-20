@@ -23,12 +23,14 @@ It supports:
 
 - consistent explanations of why `Sane` recommends a path
 - internal previews of adaptive behavior
+- typed role and orchestration guidance that backend/TUI inspection can render directly
+- stable rule traces for canonical policy scenarios
 - future policy-driven decisions that stay understandable instead of becoming hidden magic
 
 Important current boundary:
 
 - this crate is groundwork
-- it is not a shipped user-facing orchestration runtime yet
+- it is not a shipped user-facing orchestration product or execution runtime yet
 
 ## What It Owns
 
@@ -37,6 +39,7 @@ Important current boundary:
 - typed rule and trace output
 - canonical scenarios for policy previews
 - role recommendation helpers
+- orchestration guidance types and recommendation helpers
 - pure evaluation logic
 
 ## What It Must Not Own
@@ -45,12 +48,14 @@ Important current boundary:
 - file writes
 - TUI code
 - path discovery
+- actual task execution or subagent runtime management
 
 ## When Docs Should Change
 
 Update docs if you change:
 
 - the meaning of policy outputs users can inspect
+- the meaning of role or orchestration guidance exposed to inspection surfaces
 - the current scope boundary between internal groundwork and shipped product behavior
 - any user-facing explanation of how `Sane` adapts rigor
 

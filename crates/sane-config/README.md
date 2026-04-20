@@ -18,6 +18,7 @@ That authority lives here.
 Users feel this crate whenever `Sane`:
 
 - shows stable defaults
+- derives first-pass role presets from the detected Codex environment
 - remembers model-role choices
 - tracks enabled built-in packs
 - stores privacy and telemetry choices
@@ -29,6 +30,7 @@ If config meaning drifts across the workspace, previews and installs stop being 
 
 - local config structs
 - defaults
+- environment-aware recommendation helpers for role presets
 - model and reasoning enums
 - pack settings
 - privacy and telemetry settings
@@ -48,6 +50,7 @@ Update docs if you change:
 
 - what a saved setting means
 - default model or reasoning behavior
+- how plan-aware role recommendations are derived from detected Codex auth/model data
 - pack configuration semantics
 - privacy or telemetry behavior users can select
 
