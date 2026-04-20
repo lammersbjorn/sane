@@ -1,14 +1,14 @@
 # ⚖️ sane-policy
 
-Logic for adaptive decision-making in `Sane`.
+Adaptive decision logic for `Sane`.
 
 ## What This Crate Is
 
-One of `Sane`'s core promises is that users should not need a fixed sequence of manual commands to get stronger behavior.
+This crate turns a plain-language task into the kinds of obligations `Sane` should follow.
 
-This crate is where that promise becomes testable logic.
+It is the “should I plan, verify, debug, compact, or use a sidecar?” brain.
 
-It models things like:
+It models:
 
 - task characteristics
 - risk
@@ -17,6 +17,14 @@ It models things like:
 - run state
 
 and turns them into recommendations or explicit requirements.
+
+## In Practice
+
+- “simple question” -> stay direct
+- “small local edit” -> answer + light verification
+- “unknown bug” -> debugging rigor + verification
+- “big multi-file feature” -> planning + TDD + review + sidecar eligibility
+- “blocked long run” -> compaction + self-repair
 
 ## Why It Exists
 
@@ -52,6 +60,8 @@ It should stay deterministic and explainable.
 - `evaluate`: compute obligations only
 - `explain`: compute obligations, role plan, and typed rule trace
 - `canonical_scenarios`: stable fixtures for backend/dev policy previews
+
+`explain` is what the UI and previews should use when they need to show the user why Sane picked a certain path.
 
 ## Contributor Note
 
