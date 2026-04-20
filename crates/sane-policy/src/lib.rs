@@ -158,6 +158,7 @@ pub struct PolicyTraceEntry {
 pub struct PolicyExplanation {
     pub decision: PolicyDecision,
     pub roles: RolePlan,
+    pub orchestration: OrchestrationGuidance,
     pub trace: Vec<PolicyTraceEntry>,
 }
 
@@ -175,6 +176,36 @@ pub struct RolePlan {
     pub verifier: bool,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SubagentStrategy {
+    SoloOnly,
+    WaitForIndependentSlices,
+    AllowIndependentSlices,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReviewPosture {
+    None,
+    Light,
+    Iterative,
+    Independent,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum VerifierTiming {
+    None,
+    AfterChangeSet,
+    ThroughoutExecution,
+    ClosingGate,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct OrchestrationGuidance {
+    pub subagents: SubagentStrategy,
+    pub review_posture: ReviewPosture,
+    pub verifier_timing: VerifierTiming,
+}
+
 impl PolicyDecision {
     pub fn has(&self, obligation: Obligation) -> bool {
         self.obligations.contains(&obligation)
@@ -189,10 +220,12 @@ pub fn evaluate(input: PolicyInput) -> PolicyDecision {
 pub fn explain(input: PolicyInput) -> PolicyExplanation {
     let (decision, trace) = evaluate_with_trace(input);
     let roles = recommend_roles(&decision);
+    let orchestration = recommend_orchestration(input, &decision);
 
     PolicyExplanation {
         decision,
         roles,
+        orchestration,
         trace,
     }
 }
@@ -355,6 +388,61 @@ pub fn recommend_roles(decision: &PolicyDecision) -> RolePlan {
         coordinator: true,
         sidecar: decision.has(Obligation::SubagentEligible),
         verifier,
+    }
+}
+
+pub fn recommend_orchestration(
+    input: PolicyInput,
+    decision: &PolicyDecision,
+) -> OrchestrationGuidance {
+    let complex_parallel_shape = matches!(
+        input.task_shape,
+        TaskShape::MultiFile | TaskShape::Architectural | TaskShape::LongRunning
+    );
+
+    let subagents = if decision.has(Obligation::SubagentEligible) {
+        SubagentStrategy::AllowIndependentSlices
+    } else if input.parallelism == Parallelism::Possible
+        && complex_parallel_shape
+        && matches!(
+            input.run_state,
+            RunState::Exploring | RunState::Executing | RunState::Blocked
+        )
+    {
+        SubagentStrategy::WaitForIndependentSlices
+    } else {
+        SubagentStrategy::SoloOnly
+    };
+
+    let review_posture = if decision.has(Obligation::Review) {
+        ReviewPosture::Independent
+    } else if decision.has(Obligation::DebugRigor) || decision.has(Obligation::Tdd) {
+        ReviewPosture::Iterative
+    } else if decision.has(Obligation::VerifyLight) {
+        ReviewPosture::Light
+    } else {
+        ReviewPosture::None
+    };
+
+    let verifier_timing = if review_posture == ReviewPosture::None {
+        VerifierTiming::None
+    } else if decision.has(Obligation::DebugRigor)
+        || decision.has(Obligation::Tdd)
+        || decision.has(Obligation::SelfRepair)
+    {
+        VerifierTiming::ThroughoutExecution
+    } else if matches!(input.run_state, RunState::Validating | RunState::Closing)
+        || decision.has(Obligation::Review)
+    {
+        VerifierTiming::ClosingGate
+    } else {
+        VerifierTiming::AfterChangeSet
+    };
+
+    OrchestrationGuidance {
+        subagents,
+        review_posture,
+        verifier_timing,
     }
 }
 
@@ -566,5 +654,49 @@ mod tests {
         assert!(roles.coordinator);
         assert!(roles.sidecar);
         assert!(roles.verifier);
+    }
+
+    #[test]
+    fn local_edit_keeps_light_review_after_change_set() {
+        let input = PolicyInput {
+            intent: Intent::Edit,
+            task_shape: TaskShape::Local,
+            risk: Level::Low,
+            ambiguity: Level::Low,
+            parallelism: Parallelism::None,
+            context_pressure: Level::Low,
+            run_state: RunState::Executing,
+        };
+        let decision = evaluate(input);
+
+        let orchestration = recommend_orchestration(input, &decision);
+
+        assert_eq!(orchestration.subagents, SubagentStrategy::SoloOnly);
+        assert_eq!(orchestration.review_posture, ReviewPosture::Light);
+        assert_eq!(orchestration.verifier_timing, VerifierTiming::AfterChangeSet);
+    }
+
+    #[test]
+    fn possible_parallel_work_stays_single_agent_until_slices_are_clear() {
+        let input = PolicyInput {
+            intent: Intent::Orchestrate,
+            task_shape: TaskShape::LongRunning,
+            risk: Level::Medium,
+            ambiguity: Level::Medium,
+            parallelism: Parallelism::Possible,
+            context_pressure: Level::Medium,
+            run_state: RunState::Exploring,
+        };
+        let decision = evaluate(input);
+
+        let orchestration = recommend_orchestration(input, &decision);
+
+        assert!(!decision.has(Obligation::SubagentEligible));
+        assert_eq!(
+            orchestration.subagents,
+            SubagentStrategy::WaitForIndependentSlices
+        );
+        assert_eq!(orchestration.review_posture, ReviewPosture::Independent);
+        assert_eq!(orchestration.verifier_timing, VerifierTiming::ClosingGate);
     }
 }

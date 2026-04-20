@@ -1,5 +1,6 @@
 use sane_policy::{
-    Level, Obligation, Parallelism, PolicyRule, RunState, TaskShape, canonical_scenarios, explain,
+    Level, Obligation, Parallelism, PolicyRule, ReviewPosture, RunState, SubagentStrategy,
+    TaskShape, VerifierTiming, canonical_scenarios, explain,
 };
 
 #[test]
@@ -54,6 +55,15 @@ fn explain_traces_why_a_complex_feature_gets_heavy_obligations() {
     assert!(explanation.roles.coordinator);
     assert!(explanation.roles.sidecar);
     assert!(explanation.roles.verifier);
+    assert_eq!(
+        explanation.orchestration.subagents,
+        SubagentStrategy::AllowIndependentSlices
+    );
+    assert_eq!(explanation.orchestration.review_posture, ReviewPosture::Independent);
+    assert_eq!(
+        explanation.orchestration.verifier_timing,
+        VerifierTiming::ThroughoutExecution
+    );
 
     assert_eq!(
         traced_rules,
@@ -67,6 +77,41 @@ fn explain_traces_why_a_complex_feature_gets_heavy_obligations() {
             ),
         ]
     );
+}
+
+#[test]
+fn blocked_long_run_keeps_subagents_disallowed_until_parallel_slices_are_clear() {
+    let scenario = canonical_scenarios()
+        .iter()
+        .find(|scenario| scenario.id == "blocked-long-run")
+        .expect("blocked-long-run fixture");
+
+    let explanation = explain(scenario.input);
+
+    assert!(!explanation.decision.has(Obligation::SubagentEligible));
+    assert_eq!(
+        explanation.orchestration.subagents,
+        SubagentStrategy::WaitForIndependentSlices
+    );
+    assert_eq!(explanation.orchestration.review_posture, ReviewPosture::Independent);
+    assert_eq!(
+        explanation.orchestration.verifier_timing,
+        VerifierTiming::ThroughoutExecution
+    );
+}
+
+#[test]
+fn simple_question_stays_single_agent_without_review_posture() {
+    let scenario = canonical_scenarios()
+        .iter()
+        .find(|scenario| scenario.id == "simple-question")
+        .expect("simple-question fixture");
+
+    let explanation = explain(scenario.input);
+
+    assert_eq!(explanation.orchestration.subagents, SubagentStrategy::SoloOnly);
+    assert_eq!(explanation.orchestration.review_posture, ReviewPosture::None);
+    assert_eq!(explanation.orchestration.verifier_timing, VerifierTiming::None);
 }
 
 #[test]
