@@ -310,6 +310,15 @@ fn execute_backend_command(
     Ok(result)
 }
 
+fn execute_config_save(
+    paths: &ProjectPaths,
+    config: &LocalConfig,
+) -> Result<OperationResult, String> {
+    let result = save_config(paths, config)?;
+    append_operation_event(paths, &result)?;
+    Ok(result)
+}
+
 #[derive(Clone, Copy)]
 struct TuiAction {
     label: &'static str,
@@ -882,7 +891,7 @@ fn run_tui_loop(
                     KeyCode::Left | KeyCode::Char('h') => editor.cycle_current(-1),
                     KeyCode::Right | KeyCode::Char('l') => editor.cycle_current(1),
                     KeyCode::Char('r') => editor.reset_defaults(),
-                    KeyCode::Enter => match save_config(&app.paths, &editor.config) {
+                    KeyCode::Enter => match execute_config_save(&app.paths, &editor.config) {
                         Ok(result) => {
                             app.output = result.render_text();
                             refresh_status_after_save(app);
@@ -909,7 +918,7 @@ fn run_tui_loop(
                         Ok(result) => app.output = result.render_text(),
                         Err(error) => app.output = format!("reset failed: {error}"),
                     },
-                    KeyCode::Enter => match save_config(&app.paths, &editor.config) {
+                    KeyCode::Enter => match execute_config_save(&app.paths, &editor.config) {
                         Ok(result) => {
                             app.output = result.render_text();
                             refresh_status_after_save(app);
@@ -933,7 +942,7 @@ fn run_tui_loop(
                     KeyCode::Up | KeyCode::Char('k') => editor.previous(),
                     KeyCode::Left | KeyCode::Right | KeyCode::Char(' ') => editor.toggle_current(),
                     KeyCode::Char('r') => editor.reset_defaults(),
-                    KeyCode::Enter => match save_config(&app.paths, &editor.config) {
+                    KeyCode::Enter => match execute_config_save(&app.paths, &editor.config) {
                         Ok(result) => {
                             app.output = result.render_text();
                             refresh_status_after_save(app);
@@ -6572,6 +6581,25 @@ mod tests {
                 .iter()
                 .any(|line| line == "write mode: rewrite")
         );
+    }
+
+    #[test]
+    fn execute_config_save_updates_local_state_history() {
+        let project = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        let paths = sane_platform::ProjectPaths::discover(project.path()).unwrap();
+        let config = sane_config::LocalConfig::default();
+
+        let _ = super::execute_config_save(&paths, &config).unwrap();
+
+        let events = std::fs::read_to_string(&paths.events_path).unwrap();
+        let summary = std::fs::read_to_string(&paths.summary_path).unwrap();
+        let brief = std::fs::read_to_string(&paths.brief_path).unwrap();
+        let config_path = paths.config_path.display().to_string();
+
+        assert!(events.contains("\"action\":\"show_config\""));
+        assert!(summary.contains(&config_path), "summary was:\n{summary}");
+        assert!(brief.contains(&config_path), "brief was:\n{brief}");
     }
 
     #[test]
