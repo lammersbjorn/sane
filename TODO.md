@@ -82,6 +82,9 @@ Implemented:
 - optional repo-local AGENTS export now exists as an explicit separate target and is not part of `export all`
 - canonical `.sane` layered-state helpers now load config, summary, current run, and brief files in one typed bundle
 - typed JSONL history helpers now support full reads plus ordered offset/limit slices for events, decisions, and artifacts
+- canonical state rewrites now create timestamped `.bak` sibling backups before replacing existing JSON/TOML files
+- canonical rewrite helpers now expose typed metadata (`rewritten_path`, `backup_path`, `first_write`)
+- canonical backup sibling listing helpers now return matching backups newest-first for repair/rollback flows
 
 Current gate:
 
@@ -116,6 +119,9 @@ cargo test
 - [x] Add symmetric uninstall flow for managed user-skill assets
 - [x] Finish `B1`: explicit inventory/status read on top of current typed backend layer
 - [x] Finish `B1`: tighten touched-path reporting and backend contract docs/tests
+- [x] Add canonical rewrite backups for explicit state migrations/upgrades
+- [x] Add canonical rewrite metadata plumbing (`rewritten_path`, `backup_path`, `first_write`)
+- [x] Add canonical backup sibling listing helpers sorted newest-first
 
 ## Research Gates
 
