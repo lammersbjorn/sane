@@ -188,9 +188,17 @@ pub struct InventoryItem {
 pub struct OperationResult {
     pub kind: OperationKind,
     pub summary: String,
+    pub rewrite: Option<OperationRewriteMetadata>,
     pub details: Vec<String>,
     pub paths_touched: Vec<String>,
     pub inventory: Vec<InventoryItem>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OperationRewriteMetadata {
+    pub rewritten_path: String,
+    pub backup_path: Option<String>,
+    pub first_write: bool,
 }
 
 impl OperationResult {

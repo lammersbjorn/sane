@@ -21,11 +21,11 @@ use sane_config::{
 };
 use sane_core::{
     GuidancePacks, InventoryItem, InventoryScope, InventoryStatus, ModelRoleGuidance, NAME,
-    OperationKind, OperationResult, SANE_AGENT_NAME, SANE_EXPLORER_AGENT_NAME,
-    SANE_GLOBAL_AGENTS_BEGIN, SANE_GLOBAL_AGENTS_END, SANE_REPO_AGENTS_BEGIN, SANE_REPO_AGENTS_END,
-    SANE_REVIEWER_AGENT_NAME, SANE_ROUTER_SKILL_NAME, sane_agent, sane_explorer_agent,
-    sane_global_agents_overlay, sane_optional_pack_skill, sane_optional_pack_skill_name,
-    sane_reviewer_agent, sane_router_skill,
+    OperationKind, OperationResult, OperationRewriteMetadata, SANE_AGENT_NAME,
+    SANE_EXPLORER_AGENT_NAME, SANE_GLOBAL_AGENTS_BEGIN, SANE_GLOBAL_AGENTS_END,
+    SANE_REPO_AGENTS_BEGIN, SANE_REPO_AGENTS_END, SANE_REVIEWER_AGENT_NAME, SANE_ROUTER_SKILL_NAME,
+    sane_agent, sane_explorer_agent, sane_global_agents_overlay, sane_optional_pack_skill,
+    sane_optional_pack_skill_name, sane_reviewer_agent, sane_router_skill,
 };
 use sane_platform::{CodexPaths, ProjectPaths, detect_platform};
 use sane_policy::{
@@ -33,8 +33,9 @@ use sane_policy::{
     recommend_roles,
 };
 use sane_state::{
-    ArtifactRecord, CanonicalStatePaths, CurrentRunState, DecisionRecord, EventRecord,
-    LayeredStateBundle, RunSummary, VerificationStatus,
+    ArtifactRecord, CanonicalStateFormat, CanonicalStatePaths, CurrentRunState, DecisionRecord,
+    EventRecord, LayeredStateBundle, RunSummary, VerificationStatus,
+    write_canonical_with_backup_result,
 };
 use serde_json::{Map, Value, json};
 use toml::Value as TomlValue;
@@ -2404,6 +2405,7 @@ fn preview_policy(paths: &ProjectPaths) -> Result<OperationResult, String> {
     Ok(OperationResult {
         kind: OperationKind::PreviewPolicy,
         summary: "policy preview: rendered adaptive obligation scenarios".to_string(),
+        rewrite: None,
         details,
         paths_touched: Vec::new(),
         inventory: Vec::new(),
@@ -2677,6 +2679,7 @@ fn install_runtime(
     Ok(OperationResult {
         kind: OperationKind::InstallRuntime,
         summary: format!("installed runtime at {}", paths.runtime_root.display()),
+        rewrite: None,
         details: vec![
             format!("config: {}", paths.config_path.display()),
             format!("current-run: {}", paths.current_run_path.display()),
@@ -2758,6 +2761,7 @@ fn show_config(paths: &ProjectPaths) -> Result<OperationResult, String> {
         return Ok(OperationResult {
             kind: OperationKind::ShowConfig,
             summary: format!("config: missing at {}", paths.config_path.display()),
+            rewrite: None,
             details: vec![],
             paths_touched: vec![paths.config_path.display().to_string()],
             inventory: vec![InventoryItem {
@@ -2775,6 +2779,7 @@ fn show_config(paths: &ProjectPaths) -> Result<OperationResult, String> {
     Ok(OperationResult {
         kind: OperationKind::ShowConfig,
         summary: format!("config: ok at {}", paths.config_path.display()),
+        rewrite: None,
         details: config_details(&config),
         paths_touched: vec![paths.config_path.display().to_string()],
         inventory: vec![InventoryItem {
@@ -2797,6 +2802,7 @@ fn show_codex_config(codex_paths: &CodexPaths) -> Result<OperationResult, String
                 "codex-config: missing at {}",
                 codex_paths.config_toml.display()
             ),
+            rewrite: None,
             details: vec![
                 "no user Codex config exists yet".to_string(),
                 "use `apply codex-profile` or `apply integrations-profile` to create one"
@@ -2811,6 +2817,7 @@ fn show_codex_config(codex_paths: &CodexPaths) -> Result<OperationResult, String
     Ok(OperationResult {
         kind: OperationKind::ShowCodexConfig,
         summary: format!("codex-config: ok at {}", codex_paths.config_toml.display()),
+        rewrite: None,
         details: codex_config_details(&config),
         paths_touched: vec![codex_paths.config_toml.display().to_string()],
         inventory: vec![inventory],
@@ -2833,6 +2840,7 @@ fn backup_codex_config(
                 "codex-config backup: nothing to back up at {}",
                 codex_paths.config_toml.display()
             ),
+            rewrite: None,
             details: vec!["no ~/.codex/config.toml exists yet".to_string()],
             paths_touched: vec![codex_paths.config_toml.display().to_string()],
             inventory: vec![inventory],
@@ -2843,6 +2851,7 @@ fn backup_codex_config(
         return Ok(OperationResult {
             kind: OperationKind::BackupCodexConfig,
             summary: "codex-config backup: skipped because config is invalid".to_string(),
+            rewrite: None,
             details: vec!["repair ~/.codex/config.toml first".to_string()],
             paths_touched: vec![codex_paths.config_toml.display().to_string()],
             inventory: vec![inventory],
@@ -2854,6 +2863,7 @@ fn backup_codex_config(
     Ok(OperationResult {
         kind: OperationKind::BackupCodexConfig,
         summary: format!("codex-config backup: wrote {}", backup_path.display()),
+        rewrite: None,
         details: vec![
             format!("source: {}", codex_paths.config_toml.display()),
             "future managed profile writes must preview diff before applying".to_string(),
@@ -2896,6 +2906,7 @@ fn preview_codex_profile(codex_paths: &CodexPaths) -> Result<OperationResult, St
     Ok(OperationResult {
         kind: OperationKind::PreviewCodexProfile,
         summary: format!("codex-profile preview: {change_count} recommended change(s)"),
+        rewrite: None,
         details,
         paths_touched: vec![codex_paths.config_toml.display().to_string()],
         inventory: vec![inventory],
@@ -2923,6 +2934,7 @@ fn preview_integrations_profile(codex_paths: &CodexPaths) -> Result<OperationRes
     Ok(OperationResult {
         kind: OperationKind::PreviewIntegrationsProfile,
         summary: format!("integrations-profile preview: {change_count} recommended change(s)"),
+        rewrite: None,
         details,
         paths_touched: vec![codex_paths.config_toml.display().to_string()],
         inventory: vec![inventory],
@@ -2949,6 +2961,7 @@ fn preview_cloudflare_profile(codex_paths: &CodexPaths) -> Result<OperationResul
     Ok(OperationResult {
         kind: OperationKind::PreviewCloudflareProfile,
         summary: format!("cloudflare-profile preview: {change_count} recommended change(s)"),
+        rewrite: None,
         details,
         paths_touched: vec![codex_paths.config_toml.display().to_string()],
         inventory: vec![inventory],
@@ -2969,6 +2982,7 @@ fn apply_codex_profile(
         return Ok(OperationResult {
             kind: OperationKind::ApplyCodexProfile,
             summary: "codex-profile apply: blocked by invalid config".to_string(),
+            rewrite: None,
             details: vec![
                 "repair ~/.codex/config.toml first".to_string(),
                 "Sane only writes after a clean parse".to_string(),
@@ -3024,6 +3038,7 @@ fn apply_codex_profile(
     Ok(OperationResult {
         kind: OperationKind::ApplyCodexProfile,
         summary: "codex-profile apply: wrote recommended core profile".to_string(),
+        rewrite: None,
         details,
         paths_touched,
         inventory: vec![InventoryItem {
@@ -3049,6 +3064,7 @@ fn apply_integrations_profile(
         return Ok(OperationResult {
             kind: OperationKind::ApplyIntegrationsProfile,
             summary: "integrations-profile apply: blocked by invalid config".to_string(),
+            rewrite: None,
             details: vec![
                 "repair ~/.codex/config.toml first".to_string(),
                 "Sane only writes after a clean parse".to_string(),
@@ -3081,6 +3097,7 @@ fn apply_integrations_profile(
         return Ok(OperationResult {
             kind: OperationKind::ApplyIntegrationsProfile,
             summary: "integrations-profile apply: already satisfied".to_string(),
+            rewrite: None,
             details: before_details,
             paths_touched: vec![codex_paths.config_toml.display().to_string()],
             inventory: vec![inventory],
@@ -3112,6 +3129,7 @@ fn apply_integrations_profile(
     Ok(OperationResult {
         kind: OperationKind::ApplyIntegrationsProfile,
         summary: "integrations-profile apply: wrote recommended integrations".to_string(),
+        rewrite: None,
         details,
         paths_touched,
         inventory: vec![InventoryItem {
@@ -3137,6 +3155,7 @@ fn apply_cloudflare_profile(
         return Ok(OperationResult {
             kind: OperationKind::ApplyCloudflareProfile,
             summary: "cloudflare-profile apply: blocked by invalid config".to_string(),
+            rewrite: None,
             details: vec![
                 "repair ~/.codex/config.toml first".to_string(),
                 "Sane only writes after a clean parse".to_string(),
@@ -3168,6 +3187,7 @@ fn apply_cloudflare_profile(
         return Ok(OperationResult {
             kind: OperationKind::ApplyCloudflareProfile,
             summary: "cloudflare-profile apply: already satisfied".to_string(),
+            rewrite: None,
             details: before_details,
             paths_touched: vec![codex_paths.config_toml.display().to_string()],
             inventory: vec![inventory],
@@ -3199,6 +3219,7 @@ fn apply_cloudflare_profile(
     Ok(OperationResult {
         kind: OperationKind::ApplyCloudflareProfile,
         summary: "cloudflare-profile apply: wrote optional provider profile".to_string(),
+        rewrite: None,
         details,
         paths_touched,
         inventory: vec![InventoryItem {
@@ -3219,6 +3240,7 @@ fn restore_codex_config(
         return Ok(OperationResult {
             kind: OperationKind::RestoreCodexConfig,
             summary: "codex-config restore: no backup available".to_string(),
+            rewrite: None,
             details: vec![format!(
                 "expected backups under {}",
                 paths.codex_config_backups_dir.display()
@@ -3239,6 +3261,7 @@ fn restore_codex_config(
             "codex-config restore: restored from {}",
             backup_path.display()
         ),
+        rewrite: None,
         details: vec![format!("target: {}", codex_paths.config_toml.display())],
         paths_touched: vec![
             backup_path.display().to_string(),
@@ -3363,15 +3386,46 @@ fn save_config(paths: &ProjectPaths, config: &LocalConfig) -> Result<OperationRe
         .ensure_runtime_dirs()
         .map_err(|error| error.to_string())?;
     ensure_telemetry_files(paths, config.privacy.telemetry)?;
-    config
-        .write_to_path(&paths.config_path)
-        .map_err(|error| error.to_string())?;
+    let rewrite_result =
+        write_canonical_with_backup_result(&paths.config_path, config, CanonicalStateFormat::Toml)
+            .map_err(|error| error.to_string())?;
+
+    let rewrite = OperationRewriteMetadata {
+        rewritten_path: rewrite_result.rewritten_path.display().to_string(),
+        backup_path: rewrite_result
+            .backup_path
+            .as_ref()
+            .map(|path| path.display().to_string()),
+        first_write: rewrite_result.first_write,
+    };
+
+    let mut details = vec![format!("rewritten path: {}", rewrite.rewritten_path)];
+    if let Some(backup_path) = &rewrite.backup_path {
+        details.push(format!("backup path: {backup_path}"));
+    }
+    details.push(format!(
+        "write mode: {}",
+        if rewrite.first_write {
+            "first write"
+        } else {
+            "rewrite"
+        }
+    ));
+
+    let mut paths_touched = vec![rewrite.rewritten_path.clone()];
+    if let Some(backup_path) = &rewrite.backup_path {
+        paths_touched.push(backup_path.clone());
+    }
+
+    paths_touched.sort();
+    paths_touched.dedup();
 
     Ok(OperationResult {
         kind: OperationKind::ShowConfig,
         summary: format!("config: saved at {}", paths.config_path.display()),
-        details: config_details(config),
-        paths_touched: vec![paths.config_path.display().to_string()],
+        rewrite: Some(rewrite),
+        details,
+        paths_touched,
         inventory: vec![InventoryItem {
             name: "config".to_string(),
             scope: InventoryScope::LocalRuntime,
@@ -3424,6 +3478,7 @@ fn reset_telemetry_data(paths: &ProjectPaths) -> Result<OperationResult, String>
         return Ok(OperationResult {
             kind: OperationKind::ResetTelemetryData,
             summary: "telemetry reset: no local telemetry data present".to_string(),
+            rewrite: None,
             details: vec![],
             paths_touched: vec![paths.telemetry_dir.display().to_string()],
             inventory: vec![],
@@ -3434,6 +3489,7 @@ fn reset_telemetry_data(paths: &ProjectPaths) -> Result<OperationResult, String>
     Ok(OperationResult {
         kind: OperationKind::ResetTelemetryData,
         summary: "telemetry reset: removed local telemetry data".to_string(),
+        rewrite: None,
         details: vec![],
         paths_touched: vec![paths.telemetry_dir.display().to_string()],
         inventory: vec![],
@@ -3449,6 +3505,7 @@ fn inventory_status(
     Ok(OperationResult {
         kind: OperationKind::ShowStatus,
         summary: format!("status: {} managed targets inspected", inventory.len()),
+        rewrite: None,
         details: vec![],
         paths_touched: collect_paths_touched(&inventory),
         inventory,
@@ -3512,6 +3569,7 @@ fn doctor_runtime(
             paths.runtime_root.display(),
             codex_paths.codex_home.display()
         ),
+        rewrite: None,
         details: vec![],
         paths_touched: collect_paths_touched(&inventory),
         inventory,
@@ -4114,6 +4172,7 @@ fn export_skills_target(
     Ok(OperationResult {
         kind,
         summary: format!("{summary_prefix}: installed {}", SANE_ROUTER_SKILL_NAME),
+        rewrite: None,
         details: vec![
             format!("path: {}", skill_path.display()),
             format!("packs: {}", format_guidance_packs(packs)),
@@ -4207,6 +4266,7 @@ fn export_agents_target(
     Ok(OperationResult {
         kind,
         summary: format!("{summary_prefix}: installed managed block"),
+        rewrite: None,
         details: vec![
             format!("path: {}", agents_path.display()),
             format!("packs: {}", format_guidance_packs(packs)),
@@ -4273,6 +4333,7 @@ fn uninstall_skills_target(
         return Ok(OperationResult {
             kind,
             summary: format!("{summary_prefix}: {} not installed", SANE_ROUTER_SKILL_NAME),
+            rewrite: None,
             details: vec![],
             paths_touched: vec![skill_path.display().to_string()],
             inventory: vec![InventoryItem {
@@ -4304,6 +4365,7 @@ fn uninstall_skills_target(
     Ok(OperationResult {
         kind,
         summary: format!("{summary_prefix}: removed {}", SANE_ROUTER_SKILL_NAME),
+        rewrite: None,
         details: vec![],
         paths_touched,
         inventory: vec![InventoryItem {
@@ -4341,6 +4403,7 @@ fn uninstall_agents_target(
         return Ok(OperationResult {
             kind,
             summary: format!("{summary_prefix}: not installed"),
+            rewrite: None,
             details: vec![],
             paths_touched: vec![agents_path.display().to_string()],
             inventory: vec![InventoryItem {
@@ -4364,6 +4427,7 @@ fn uninstall_agents_target(
         return Ok(OperationResult {
             kind,
             summary: format!("{summary_prefix}: not installed"),
+            rewrite: None,
             details: vec![],
             paths_touched: vec![agents_path.display().to_string()],
             inventory: vec![InventoryItem {
@@ -4385,6 +4449,7 @@ fn uninstall_agents_target(
     Ok(OperationResult {
         kind,
         summary: format!("{summary_prefix}: removed managed block"),
+        rewrite: None,
         details: vec![],
         paths_touched: vec![agents_path.display().to_string()],
         inventory: vec![InventoryItem {
@@ -4453,6 +4518,7 @@ fn export_custom_agents_target(
         summary: format!(
             "{summary_prefix}: installed {SANE_AGENT_NAME}, {SANE_REVIEWER_AGENT_NAME}, and {SANE_EXPLORER_AGENT_NAME}"
         ),
+        rewrite: None,
         details: vec![
             format!("path: {}", agent_path.display()),
             format!("path: {}", reviewer_path.display()),
@@ -4489,6 +4555,7 @@ fn uninstall_custom_agents_target(
         return Ok(OperationResult {
             kind,
             summary: format!("{summary_prefix}: not installed"),
+            rewrite: None,
             details: vec![],
             paths_touched: vec![agents_dir.display().to_string()],
             inventory: vec![InventoryItem {
@@ -4521,6 +4588,7 @@ fn uninstall_custom_agents_target(
         summary: format!(
             "{summary_prefix}: removed {SANE_AGENT_NAME}, {SANE_REVIEWER_AGENT_NAME}, and {SANE_EXPLORER_AGENT_NAME}"
         ),
+        rewrite: None,
         details: vec![],
         paths_touched: vec![
             agent_path.display().to_string(),
@@ -4582,6 +4650,7 @@ fn export_hooks(codex_paths: &CodexPaths) -> Result<OperationResult, String> {
     Ok(OperationResult {
         kind: OperationKind::ExportHooks,
         summary: "export hooks: installed managed SessionStart hook".to_string(),
+        rewrite: None,
         details: vec![format!("path: {}", codex_paths.hooks_json.display())],
         paths_touched: vec![codex_paths.hooks_json.display().to_string()],
         inventory: vec![InventoryItem {
@@ -4599,6 +4668,7 @@ fn uninstall_hooks(codex_paths: &CodexPaths) -> Result<OperationResult, String> 
         return Ok(OperationResult {
             kind: OperationKind::UninstallHooks,
             summary: "uninstall hooks: not installed".to_string(),
+            rewrite: None,
             details: vec![],
             paths_touched: vec![codex_paths.hooks_json.display().to_string()],
             inventory: vec![InventoryItem {
@@ -4633,6 +4703,7 @@ fn uninstall_hooks(codex_paths: &CodexPaths) -> Result<OperationResult, String> 
         return Ok(OperationResult {
             kind: OperationKind::UninstallHooks,
             summary: "uninstall hooks: not installed".to_string(),
+            rewrite: None,
             details: vec![],
             paths_touched: vec![codex_paths.hooks_json.display().to_string()],
             inventory: vec![InventoryItem {
@@ -4658,6 +4729,7 @@ fn uninstall_hooks(codex_paths: &CodexPaths) -> Result<OperationResult, String> 
     Ok(OperationResult {
         kind: OperationKind::UninstallHooks,
         summary: "uninstall hooks: removed managed SessionStart hook".to_string(),
+        rewrite: None,
         details: vec![],
         paths_touched: vec![codex_paths.hooks_json.display().to_string()],
         inventory: vec![InventoryItem {
@@ -5236,6 +5308,7 @@ fn merge_results(
     OperationResult {
         kind,
         summary: summary.to_string(),
+        rewrite: None,
         details,
         paths_touched,
         inventory,
@@ -6233,12 +6306,52 @@ mod tests {
 
         assert!(result.summary.contains("config: saved"));
         assert_eq!(saved, config);
-        assert!(result.details.iter().any(|line| line == "telemetry: off"));
+        let rewrite = result.rewrite.expect("rewrite metadata missing");
+        assert_eq!(
+            rewrite.rewritten_path,
+            paths.config_path.display().to_string()
+        );
+        assert!(rewrite.backup_path.is_none());
+        assert!(rewrite.first_write);
+        assert!(result.details.iter().any(|line| {
+            line == format!("rewritten path: {}", paths.config_path.display()).as_str()
+        }));
         assert!(
             result
                 .details
                 .iter()
-                .any(|line| line == "packs: core, caveman, rtk")
+                .any(|line| line == "write mode: first write")
+        );
+    }
+
+    #[test]
+    fn save_config_reports_rewrite_with_backup_after_first_write() {
+        let project = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        let paths = sane_platform::ProjectPaths::discover(project.path()).unwrap();
+        let base = sane_config::LocalConfig::default();
+        let mut changed = sane_config::LocalConfig::default();
+        changed.models.verifier.model = "gpt-5.2".to_string();
+
+        let _ = super::save_config(&paths, &base).unwrap();
+        let result = super::save_config(&paths, &changed).unwrap();
+
+        let rewrite = result.rewrite.expect("rewrite metadata missing");
+        assert!(!rewrite.first_write);
+        let backup_path = rewrite.backup_path.expect("backup path missing");
+        assert!(backup_path.contains("config.local.toml.bak."));
+        assert!(std::path::Path::new(&backup_path).exists());
+        assert!(
+            result
+                .details
+                .iter()
+                .any(|line| line == format!("backup path: {backup_path}").as_str())
+        );
+        assert!(
+            result
+                .details
+                .iter()
+                .any(|line| line == "write mode: rewrite")
         );
     }
 
@@ -6317,6 +6430,7 @@ mod tests {
         let status = sane_core::OperationResult {
             kind: sane_core::OperationKind::ShowStatus,
             summary: "status: ok".to_string(),
+            rewrite: None,
             details: vec![],
             paths_touched: vec![],
             inventory: vec![
