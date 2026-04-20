@@ -1,54 +1,49 @@
 # Contributing to Sane
 
-Thanks for helping.
+`Sane` is still early. Good contributions usually make it clearer, safer, more reversible, and easier for a new user to trust.
 
-`Sane` is still early, so good contributions are usually the ones that make it clearer, safer, more reversible, and easier to trust.
+## Read This First
 
-## Start Here
-
-Read these first:
+Start with the docs that define product truth:
 
 - [README.md](./README.md)
-- [SUPPORT.md](./SUPPORT.md)
-- [SECURITY.md](./SECURITY.md)
+- [docs/what-sane-does.md](./docs/what-sane-does.md)
 - [docs/decisions/2026-04-19-sane-decision-log.md](./docs/decisions/2026-04-19-sane-decision-log.md)
-- [docs/plans/2026-04-19-sane-strict-implementation-plan.md](./docs/plans/2026-04-19-sane-strict-implementation-plan.md)
+- [docs/specs/2026-04-19-sane-backend-contract.md](./docs/specs/2026-04-19-sane-backend-contract.md)
+- [TODO.md](./TODO.md)
 
-The decision log matters.
-Consult it to distinguish stabilized architecture from experimental areas.
-If the docs or code drift away from a locked decision, fix the drift before adding new functionality.
+Use the decision log to separate:
+
+- locked product direction
+- recommended but flexible implementation shape
+- open future questions
+
+Do not present an open idea as a shipped fact.
 
 ## What You Are Contributing To
 
-`Sane` is a Codex-native QoL framework with a Rust control surface.
+`Sane` is a Codex-native setup and repair tool.
 
-In practice that means:
+In practice:
 
-- the TUI is how users configure and repair things
-- the real effect lands in Codex-native assets and narrow config changes
-- `.sane/` exists to keep local config, state, and backups inspectable
+- the TUI is the user control surface
+- the real product effect lands in Codex-native installs and narrow config changes
+- `.sane/` is the local runtime for config, state, and backups
+- repo mutation is optional
+- `AGENTS.md` is optional
 
-If you need the product story first, read:
+If you need the user story first, re-read:
 
 - [README.md](./README.md)
 - [docs/what-sane-does.md](./docs/what-sane-does.md)
 
-If your change affects user behavior, think in terms of these surfaces:
-
-- local `.sane/` runtime and state
-- user skills in `~/.agents/skills/`
-- managed `AGENTS.md` guidance
-- managed hooks
-- managed custom agents
-- managed Codex config profiles
-
-## Local Setup
+## First-Time Setup
 
 ### Prerequisites
 
 - Rust toolchain
 - Git
-- a Codex environment if you want to test end-to-end flows
+- a Codex environment if you want to test end-to-end behavior
 
 ### Clone and run
 
@@ -56,6 +51,14 @@ If your change affects user behavior, think in terms of these surfaces:
 git clone https://github.com/lammersbjorn/sane.git
 cd sane
 cargo run -p sane
+```
+
+That opens the onboarding TUI.
+
+If you want to jump straight into the settings/configure area:
+
+```bash
+cargo run -p sane -- settings
 ```
 
 ### Install the git hooks
@@ -72,84 +75,88 @@ That sets:
 git config core.hooksPath .githooks
 ```
 
-The hook is there to keep history readable, not to slow you down.
+## Local Workflow
 
-## Normal Dev Loop
+Use this baseline loop while developing:
 
 ```bash
-cargo check
 cargo fmt --check
+cargo check
 cargo test
 cargo run -p sane
 ```
 
-Use:
+Useful commands:
 
-- `cargo check`
-  Fast compile pass.
-- `cargo fmt --check`
-  Formatting guard.
-- `cargo test`
-  Behavior and regression checks.
-- `cargo run -p sane`
-  Manual TUI and behavior checks.
+| Command | Why you would run it |
+| --- | --- |
+| `cargo run -p sane` | Open the onboarding-first TUI. |
+| `cargo run -p sane -- settings` | Go straight to settings/configure mode. |
+| `cargo run -p sane -- doctor` | Check runtime state and managed Codex installs. |
+| `cargo run -p sane -- status` | Inspect current managed targets and drift. |
+
+If your change affects repair, preview/apply, export, or uninstall, test that flow directly.
 
 ## Repo Map
 
-| Path | Purpose |
+| Path | Why it exists |
 | --- | --- |
-| [`README.md`](./README.md) | Public product docs. |
-| [`crates/sane-tui/`](./crates/sane-tui/README.md) | Installer, configurator, doctor, preview/apply/export UI. |
-| [`crates/sane-core/`](./crates/sane-core/README.md) | Shared names, generated content, operation contracts. |
-| [`crates/sane-config/`](./crates/sane-config/README.md) | Local config schema and validation. |
-| [`crates/sane-platform/`](./crates/sane-platform/README.md) | Path discovery and platform-specific layout. |
-| [`crates/sane-state/`](./crates/sane-state/README.md) | Local state files and persistence helpers. |
-| [`crates/sane-policy/`](./crates/sane-policy/README.md) | Adaptive policy groundwork. |
+| [README.md](./README.md) | Public beginner-first product story. |
+| [docs/what-sane-does.md](./docs/what-sane-does.md) | Longer plain-English explainer of what changes in practice. |
+| [TODO.md](./TODO.md) | Current state, guardrails, and future-only items. |
+| [docs/decisions/2026-04-19-sane-decision-log.md](./docs/decisions/2026-04-19-sane-decision-log.md) | Locked product decisions. |
+| [docs/specs/2026-04-19-sane-backend-contract.md](./docs/specs/2026-04-19-sane-backend-contract.md) | Current backend contract the TUI wraps. |
+| [crates/sane-tui/README.md](./crates/sane-tui/README.md) | User-facing control surface responsibilities. |
+| [crates/sane-core/README.md](./crates/sane-core/README.md) | Shared names, contracts, and generated managed content. |
+| [crates/sane-config/README.md](./crates/sane-config/README.md) | Meaning of saved Sane settings. |
+| [crates/sane-platform/README.md](./crates/sane-platform/README.md) | Cross-platform path and filesystem layout rules. |
+| [crates/sane-state/README.md](./crates/sane-state/README.md) | Thin local state and persistence. |
+| [crates/sane-policy/README.md](./crates/sane-policy/README.md) | Adaptive policy groundwork. |
 
-## Rules For Good Contributions
+## Keeping Docs In Sync
+
+Update docs in the same PR when you change:
+
+- what a user sees in the TUI
+- what `Sane` writes
+- what profiles or exports do
+- what is safe, optional, additive, or reversible
+- what contributors are expected to verify
+- crate responsibilities
+
+Rules for doc updates:
+
+- keep the root README user-facing first
+- keep under-the-hood detail in service of the user story
+- keep future ideas in `TODO.md` or specs, not in the README as shipped behavior
+- keep the BuildStory Hackathon #2 note in the root README project note, not scattered through product explainers
+- if a change affects a crate boundary, update that crate's README in the same PR
+
+## Contribution Rules
 
 ### Keep user value ahead of architecture
 
-The root docs should answer:
+The root docs should always answer:
 
-- what `Sane` does
+- what `Sane` is
 - who it is for
-- what changes after install
-- how it stays safe and reversible
-
-Do not turn internal crate structure into the product pitch.
-If the change affects users, the user docs should explain it in plain language.
-
-### Do not turn open decisions into facts
-
-Some things are still intentionally open.
-If the decision log says something is still open, docs should not present it as settled product truth.
+- what changes in practice
+- what users actually get
+- what is already real versus planned later
 
 ### Preserve the safety model
 
 Prefer:
 
 - preview before apply
-- backup before destructive changes
+- backup before risky writes
 - additive changes over clobbering
-- uninstall and restore paths that leave unrelated user content alone
+- uninstall and restore paths that leave unrelated content alone
 
 ### Keep it Codex-native
 
 `Sane` should not drift into a mandatory wrapper workflow.
-The TUI is a control surface, not the only way users should be able to benefit from it.
-
-## When Docs Must Change In The Same PR
-
-Update docs in the same PR if you change:
-
-- what users see in the TUI
-- what files `Sane` writes
-- what profiles or exports do
-- what contributors are expected to verify
-- what is safe, optional, or reversible
-
-If the change would confuse someone reading the README after pulling `main`, the docs are part of the code change.
+The TUI is a control surface, not the user's daily prompting interface.
 
 ## Changes That Need Discussion First
 
@@ -159,7 +166,7 @@ Open an issue first for:
 - new default integrations or provider profiles
 - new managed surfaces that write more user files
 - broad routing-policy changes
-- architecture changes that alter the local-first or Codex-native stance
+- architecture shifts that weaken the local-first or Codex-native stance
 
 ## Pull Request Checklist
 
@@ -168,10 +175,8 @@ Before opening a PR, make sure you can explain:
 - the user problem
 - the user-facing effect
 - what surfaces changed
-- what was verified
-- what docs changed with it
-
-Good PRs here are usually small, obvious, and easy to reverse if needed.
+- what you verified
+- which docs changed with it
 
 ## Commit Style
 
@@ -181,8 +186,9 @@ Examples:
 
 - `feat(tui): add clearer apply confirmation`
 - `fix(state): validate malformed summary files`
-- `docs(readme): explain packs in plain language`
+- `docs(readme): explain Sane to first-time users`
 
 ## Need Help?
 
-Use [SUPPORT.md](./SUPPORT.md).
+- [SUPPORT.md](./SUPPORT.md)
+- [SECURITY.md](./SECURITY.md)

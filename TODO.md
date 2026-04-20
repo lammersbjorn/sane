@@ -136,6 +136,7 @@ cargo test
 - [ ] Self-hosting shadow mode
 - [ ] Eval harness for routing, compaction, and self-improvement
 - [ ] Later end-to-end outcome runner:
+  - future only, not part of the current user-facing product surface
   - a user-facing one-shot command for idea-to-finished-result work
   - plain-language first
   - may ask targeted follow-up questions

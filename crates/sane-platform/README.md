@@ -1,35 +1,34 @@
 # ⚖️ sane-platform
 
-Path discovery and platform layout rules for `Sane`.
+Cross-platform path discovery and filesystem layout rules for `Sane`.
 
-## What This Crate Is
-
-This crate answers one question for the rest of `Sane`:
-
-> where does this belong?
-
-It finds:
-
-- the project root
-- the local `.sane/` directory
-- Codex user paths
-- backup directories
-- other managed filesystem locations
-
-## Why It Exists
+## Why This Crate Exists
 
 `Sane` is meant to work on macOS, Linux, and Windows.
-Users should not have to memorize path differences or special cases.
+Users should not have to memorize where `.sane`, Codex config, hooks, backups, or managed exports belong on each platform.
 
-Keeping that logic here makes the rest of the workspace simpler and safer, especially when the same project has to work on macOS, Linux, and Windows.
+This crate answers the filesystem question for the rest of the workspace:
+
+> where should this go?
+
+## What Users Feel From It
+
+Users feel this crate when:
+
+- `Sane` finds the right project root
+- local runtime files land in the expected `.sane/` paths
+- user-level Codex files are discovered correctly
+- backup, uninstall, status, and doctor all point at the right locations
+
+If path rules are wrong here, the rest of the product becomes confusing fast.
 
 ## What It Owns
 
 - platform detection
 - project-root discovery
 - path normalization
-- resolution of `.sane/` sub-paths
-- helper paths for Codex user-level files
+- `.sane/` layout helpers
+- helper paths for user-level Codex files
 
 ## What It Must Not Own
 
@@ -38,21 +37,17 @@ Keeping that logic here makes the rest of the workspace simpler and safer, espec
 - policy logic
 - TUI copy
 
-This crate should say where things live, not what they mean.
+## When Docs Should Change
 
-## Contributor Note
+Update docs if you change:
 
-Path changes are user-facing changes.
-If you touch this crate, check:
-
-- docs
-- backups
-- uninstall
-- status and doctor output
-- platform tests
+- any user-visible path
+- repo-local versus user-level install targets
+- backup locations
+- project-root discovery behavior
 
 ## Read Alongside
 
 - [root README](../../README.md)
-- [crates/sane-tui/README.md](../sane-tui/README.md)
 - [crates/sane-state/README.md](../sane-state/README.md)
+- [crates/sane-tui/README.md](../sane-tui/README.md)

@@ -1,48 +1,41 @@
 # ⚖️ sane-policy
 
-Adaptive decision logic for `Sane`.
+Adaptive decision logic groundwork for `Sane`.
 
-## What This Crate Is
+## Why This Crate Exists
 
-This crate turns a plain-language task into the kinds of obligations `Sane` should follow.
+`Sane` is meant to adapt its rigor to the task instead of forcing one visible mode on everyone.
 
-It is the “should I plan, verify, debug, compact, or use a sidecar?” brain.
-
-It models:
-
-- task characteristics
-- risk
-- ambiguity
-- parallelism
-- run state
-
-and turns them into recommendations or explicit requirements.
-
-## In Practice
-
-- “simple question” -> stay direct
-- “small local edit” -> answer + light verification
-- “unknown bug” -> debugging rigor + verification
-- “big multi-file feature” -> planning + TDD + review + sidecar eligibility
-- “blocked long run” -> compaction + self-repair
-
-## Why It Exists
-
-If adaptive behavior lives only in UI copy or scattered conditionals, it becomes impossible to reason about.
-
-This crate keeps the logic:
+That only works if the decision logic is:
 
 - explicit
 - typed
 - testable
-- separate from file writes and UI state
+- separate from UI and file writes
+
+This crate holds that logic.
+
+## What Users Feel From It
+
+Today, users mostly feel this crate indirectly.
+
+It supports:
+
+- consistent explanations of why `Sane` recommends a path
+- internal previews of adaptive behavior
+- future policy-driven decisions that stay understandable instead of becoming hidden magic
+
+Important current boundary:
+
+- this crate is groundwork
+- it is not a shipped user-facing orchestration runtime yet
 
 ## What It Owns
 
 - policy input types
 - policy output types
-- typed rule/trace output for obligation explanations
-- canonical scenario fixtures for backend inspection
+- typed rule and trace output
+- canonical scenarios for policy previews
 - role recommendation helpers
 - pure evaluation logic
 
@@ -53,20 +46,13 @@ This crate keeps the logic:
 - TUI code
 - path discovery
 
-It should stay deterministic and explainable.
+## When Docs Should Change
 
-## Key Entry Points
+Update docs if you change:
 
-- `evaluate`: compute obligations only
-- `explain`: compute obligations, role plan, and typed rule trace
-- `canonical_scenarios`: stable fixtures for backend/dev policy previews
-
-`explain` is what the UI and previews should use when they need to show the user why Sane picked a certain path.
-
-## Contributor Note
-
-Policy changes are product changes.
-If you touch this crate, verify the docs and user-facing explanations still match what the system actually recommends.
+- the meaning of policy outputs users can inspect
+- the current scope boundary between internal groundwork and shipped product behavior
+- any user-facing explanation of how `Sane` adapts rigor
 
 ## Read Alongside
 

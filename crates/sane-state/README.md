@@ -1,38 +1,37 @@
 # ⚖️ sane-state
 
-Local state and persistence helpers for `Sane`.
+Thin local state and persistence for `Sane`.
 
-## What This Crate Is
+## Why This Crate Exists
 
-This crate defines the small amount of project-local state `Sane` keeps so it can inspect, repair, and summarize its own behavior without turning `.sane/` into a second runtime.
+`Sane` needs a small local memory so it can inspect, repair, summarize, and roll back its own work.
 
-It covers files like:
+That local memory should stay:
 
-- current run snapshots
-- summary state
-- event logs
-- decision logs
-- artifact logs
-- brief handoff state for resuming or understanding recent work
+- project-local
+- inspectable
+- operational
+- thin
 
-## Why It Exists
+This crate exists to support that boundary.
 
-`Sane` needs more than one-shot install logic.
+## What Users Feel From It
 
-It needs enough local memory to answer:
+Users feel this crate when `Sane` can answer:
 
 - what changed recently
-- what state looks broken
+- what state looks stale or broken
 - what can be repaired
 - what happened during a longer run
 
-The goal is a thin local recorder, not a second product runtime.
+It powers the local `.sane/` record without turning `.sane/` into a second product runtime.
 
 ## What It Owns
 
 - typed state records
 - JSON and JSONL persistence helpers
-- summary and snapshot formats, which are intentionally different
+- run snapshot and summary formats
+- event, decision, and artifact log formats
 
 ## What It Must Not Own
 
@@ -41,18 +40,14 @@ The goal is a thin local recorder, not a second product runtime.
 - path discovery
 - policy decisions
 
-If this crate starts trying to own workflow logic, it has grown too far.
+## When Docs Should Change
 
-## Contributor Note
+Update docs if you change:
 
-State changes need extra care because they affect:
-
-- repair flows
-- summaries
-- doctor output
-- backward compatibility
-
-If you change a format, document it.
+- local state file formats
+- what `.sane/` stores
+- backward-compatibility expectations for state files
+- repair or summary behavior users will notice
 
 ## Read Alongside
 

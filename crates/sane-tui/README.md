@@ -1,33 +1,30 @@
 # ⚖️ sane-tui
 
-The onboarding-first installer, configurator, diagnostic, and recovery interface for `Sane`.
+The onboarding-first control surface for `Sane`.
 
-## What This Crate Is
+## Why This Crate Exists
 
-If someone runs `sane`, this crate is the first thing they see.
+If someone runs `sane`, this is what they meet first.
 
-It owns the user-facing flows for:
+This crate exists so users have one understandable place to:
+
+- learn what `Sane` does
+- review what is optional
+- preview changes before writing them
+- inspect current state
+- repair, restore, or uninstall safely
+
+## What Users See Here
+
+This crate owns the user-facing flows for:
 
 - guided onboarding
-- configure/settings
-- exports
-- inspect
-- repair/recovery
+- settings/configure
+- install and export actions
+- inspect and doctor output
+- repair, restore, and uninstall actions
 
-It is the bridge between what the user wants to do and the Codex-native pieces `Sane` manages.
-
-## Why It Exists
-
-`Sane` is supposed to feel easy to operate.
-That means users need one place to:
-
-- understand what an option does
-- inspect current state
-- see safe previews
-- make reversible changes
-- recover cleanly when something drifts
-
-That is this crate.
+It is the bridge between plain-language user intent and the Codex-native surfaces `Sane` manages.
 
 ## What It Touches
 
@@ -42,36 +39,33 @@ Depending on the action, this crate can coordinate writes to:
 - `~/.codex/agents/`
 - `~/.codex/config.toml`
 
-It should do that carefully:
-
-- preview before apply where possible
-- preserve unrelated user content
-- keep uninstall scoped to Sane-managed content
+That write surface is why the copy, previews, and confirmations here matter.
 
 ## What It Owns
 
-- the no-args `sane` onboarding entry point
-- the `sane settings` shortcut into configure mode
+- the no-args onboarding entry point
+- the `sane settings` shortcut
 - action labels and help text
 - confirmation flows for risky operations
 - command dispatch into backend operations
-- user-facing rendering of status, doctor, and output
+- user-facing rendering of status, doctor, and result output
 
-## What It Does Not Own
+## What It Must Not Own
 
 - config schema meaning
 - path discovery rules
 - shared generated content
 - pure policy evaluation
 
-Those belong in the lower-level crates.
+## When Docs Should Change
 
-## Main Invariants
+Update docs if you change:
 
-- user-facing actions must be explainable in plain language
-- destructive operations need confirmation
-- user-visible docs and UI copy should stay aligned
-- status and doctor should describe the same world the backend actually manages
+- what users see in the TUI
+- command names or shortcuts
+- what install/export/uninstall actions do
+- confirmation or repair behavior
+- the user-facing explanation of current managed targets
 
 ## Read Alongside
 

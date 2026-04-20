@@ -1,11 +1,11 @@
 <h1 align="center">⚖️ Sane</h1>
 
 <p align="center">
-  <strong>Make Codex feel better without changing how you work.</strong>
+  <strong>Make Codex easier to trust, easier to tune, and easier to recover.</strong>
 </p>
 
 <p align="center">
-  Codex-native quality of life for better defaults, safer setup, optional packs, and cleaner long sessions.
+  <code>Sane</code> is an onboarding-first setup and repair tool for Codex. It helps you install better defaults, manage optional guidance packs, preview narrow config changes, and keep a reversible local record of what changed.
 </p>
 
 <p align="center">
@@ -16,66 +16,149 @@
 </p>
 
 <p align="center">
-  <a href="#why-sane">Why Sane</a> •
-  <a href="#immediate-impact">Immediate Impact</a> •
+  <a href="#what-sane-is">What Sane Is</a> •
+  <a href="#who-its-for">Who It's For</a> •
+  <a href="#what-changes-in-practice">What Changes</a> •
+  <a href="#what-you-get-today">What You Get</a> •
   <a href="#how-it-works">How It Works</a> •
-  <a href="#install">Install</a> •
-  <a href="#what-ships-today">What Ships Today</a> •
-  <a href="#safety-and-reversibility">Safety</a> •
-  <a href="#community">Community</a>
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#today-vs-later">Today vs Later</a>
 </p>
 
 > [!WARNING]
-> `Sane` is pre-release. The direction is locked. The exact surface is not.
+> `Sane` is pre-release. The product direction is locked. The exact surface is still being refined.
 
 > [!NOTE]
-> `Sane` is being built in public for [Buildstory Hackathon #2](https://www.buildstory.com/projects/sane): ship a real open-source Codex QoL framework during the event, dogfood it hard, and make the rough edges visible while it is still early enough to fix properly.
-
-## Why Sane
-
-Codex is already good at the hard part.
-What often feels bad is everything around it:
-
-- defaults scattered across config
-- hooks, skills, and agents installed by hand
-- too much manual setup to get good behavior
-- no clean recovery story when config drifts
-- long sessions getting messy with no local handoff state
-- agent frameworks that force commands, wrappers, or rituals before you can do normal work
-
-`Sane` is for people who want stronger Codex behavior without turning daily work into framework ceremony.
-
-## Immediate Impact
-
-| Before `Sane` | After `Sane` |
-| --- | --- |
-| You hand-edit Codex config and hope you remember what changed. | You can preview, back up, apply, restore, and uninstall managed changes. |
-| Skills, hooks, and custom agents are easy to forget or drift. | `Sane` can install and refresh the Codex-native pieces it manages. |
-| Good defaults live in your head or in scattered notes. | `Sane` keeps a local config and can export that into native Codex surfaces. |
-| Recovery is manual. | `doctor`, backups, and uninstall give you a clean way back out. |
-| Long sessions lose shape. | Local `.sane` state gives `Sane` enough context to inspect, repair, and summarize what it changed. |
+> Project note: `Sane` is being built in public for [BuildStory Hackathon #2](https://www.buildstory.com/projects/sane). This belongs here as project context, not as the main product story.
 
 ## What Sane Is
 
-- an onboarding-first setup and config TUI for Codex
-- a manager for Codex-native skills, hooks, custom agents, and optional config profiles
-- a local-first layer that keeps just enough project state for repair, inspection, and handoff
-- a way to add stronger defaults without forcing a command-first workflow
+`Sane` is not another chat app and not a daily wrapper you have to prompt through.
 
-If you want the plain-English version of the product story, read [What Sane Does](./docs/what-sane-does.md).
+It is a setup, configuration, inspection, and recovery layer for Codex. You use `Sane` when you want Codex to start from better defaults, manage a few Codex-native installs for you, or recover cleanly when your setup drifts.
 
-## What Sane Is Not
+At a high level, `Sane` gives you:
 
-- not a replacement chat interface
-- not a daily wrapper you must prompt through
-- not a framework that requires `AGENTS.md`
-- not a tool that should silently take over your repo
-- not a plugin marketplace in `v1`
+- a guided TUI for onboarding, settings, install, inspection, and repair
+- a thin local `.sane/` runtime for config, state, and backups
+- managed Codex-native surfaces such as skills, `AGENTS.md` overlays, hooks, custom agents, and narrow config diffs
 
-## Install
+> [!TIP]
+> The goal is simple: use `Sane` to set things up, then keep using Codex normally.
 
-Right now, `Sane` runs from source.
-Packaged install targets like Homebrew and `winget` are planned after `v1` stabilizes.
+## Who It's For
+
+`Sane` is for people who use Codex and want a better operating baseline without adding process theater.
+
+Good fit:
+
+- you want better defaults without hand-editing config files
+- you want preview, backup, restore, and uninstall paths
+- you want optional guidance packs, hooks, or shared repo installs
+- you want Codex-native behavior changes, not a new mandatory workflow
+- you want long sessions to leave behind a small, inspectable local record
+
+Not the point:
+
+- replacing Codex with a separate runtime
+- forcing `AGENTS.md` on every repo
+- making repo mutation mandatory
+- adding a command ritual before normal work can begin
+
+## What Changes In Practice
+
+| Without `Sane` | With `Sane` |
+| --- | --- |
+| You hand-edit Codex settings and hope you remember what changed. | You can preview, back up, apply, restore, and uninstall managed changes. |
+| Good defaults live in scattered notes or muscle memory. | `Sane` saves local settings and can export them into Codex-native surfaces. |
+| Skills, hooks, and custom agents drift over time. | `Sane` can install, refresh, inspect, and remove the pieces it manages. |
+| Something breaks and recovery is manual. | `status`, `doctor`, backups, and uninstall give you a clear repair path. |
+| Long runs leave little local context behind. | `.sane/` keeps a thin operational record for inspection, repair, and handoff. |
+
+## What You Get Today
+
+### User-facing control surface
+
+- no-args onboarding TUI
+- `sane settings` shortcut into the settings/configure area
+- install, inspect, repair, export, and uninstall flows
+
+### Better Codex defaults
+
+`Sane` can preview and apply a narrow Codex profile for:
+
+- model
+- reasoning effort
+- hook support
+
+When no saved local config exists yet, `Sane` derives recommended defaults from the Codex models it can detect on that machine and falls back to stable defaults when detection is thin.
+
+### Recommended integrations
+
+`Sane` can preview and apply a separate recommended integrations profile for:
+
+- `Context7`
+- `Playwright`
+- `grep.app`
+
+There is also a separate opt-in Cloudflare profile.
+
+### Optional guidance packs
+
+Built-in packs currently exposed in `Sane`:
+
+- `core`
+- `caveman`
+- `cavemem`
+- `rtk`
+- `frontend-craft`
+
+These packs change guidance and behavior. They are not meant to turn the product into a command ritual.
+
+### Codex-native installs
+
+`Sane` can currently manage:
+
+- the user-level `sane-router` skill
+- optional repo-local shared skills in `.agents/skills/`
+- optional additive repo-local guidance in `AGENTS.md`
+- an additive global guidance block in `~/.codex/AGENTS.md`
+- Sane-managed entries in `~/.codex/hooks.json`
+- Sane-managed custom agents in `~/.codex/agents/`
+
+### Local runtime and repair tools
+
+`Sane` keeps a small local runtime under `.sane/` for:
+
+- local config
+- run snapshot and summary files
+- event, decision, and artifact logs
+- a brief handoff file
+- Codex config backups
+
+## How It Works
+
+The short version:
+
+1. Open `Sane`.
+2. Review the onboarding and settings in plain language.
+3. Preview the changes you want.
+4. Apply only the pieces you choose.
+5. Keep using Codex normally.
+
+Under the hood, `Sane` has three layers:
+
+| Layer | Why users should care |
+| --- | --- |
+| TUI | Gives you one place to understand, preview, install, inspect, and repair. |
+| Local `.sane/` runtime | Keeps a thin, inspectable local record instead of hiding state in your head. |
+| Codex-native surfaces | These are the actual behavior changes: skills, overlays, hooks, custom agents, and narrow config updates. |
+
+This split matters because it keeps `Sane` useful without making it a wrapper you must live inside.
+
+## Quick Start
+
+Right now, `Sane` runs from source. Packaged installs come later.
 
 ```bash
 git clone https://github.com/lammersbjorn/sane.git
@@ -83,184 +166,60 @@ cd sane
 cargo run -p sane
 ```
 
-That opens the onboarding TUI. If you already know you want the settings/config area, run `cargo run -p sane -- settings`.
+That opens the onboarding TUI.
 
-## How People Actually Use It
+If you already know you want the settings/configure area, run:
 
-### I want better defaults
+```bash
+cargo run -p sane -- settings
+```
 
-1. Open `Sane`
-2. Preview the recommended profile
-3. Back up config
-4. Apply the profile
-5. Keep using Codex normally
+If you want the longer user-story version, read [docs/what-sane-does.md](./docs/what-sane-does.md).
 
-If no local config exists yet, `Sane` starts from the Codex models it can see on that machine and falls back to stable defaults when it cannot detect enough.
+## Today Vs Later
 
-### I want useful integrations without editing config by hand
+| Status | Scope |
+| --- | --- |
+| In place today | Onboarding-first TUI, local `.sane/` runtime, config preview/apply/restore, recommended integrations profile, opt-in Cloudflare profile, managed skills, additive `AGENTS.md` overlays, hooks, custom agents, status/doctor, uninstall. |
+| Planned later | Packaging and distribution polish, broader adaptive orchestration, exact long-term pack set, and a later end-to-end outcome runner / one-shot flow. |
 
-1. Preview the integrations profile
-2. See what `Sane` wants to add
-3. Apply it only if you want it
+> [!IMPORTANT]
+> The later end-to-end outcome runner is future work. It is not the current product surface.
 
-### I want different behavior from Codex, not more commands
+## What `Sane` Writes
 
-1. Turn packs on or off in `Sane`
-2. Export the managed assets you actually want
-3. Choose user-level install or optional repo-local shared skills
-4. Keep prompting in plain language
+`Sane` is explicit about what it touches.
 
-### Something feels broken
+| Scope | Paths |
+| --- | --- |
+| Project-local runtime | `.sane/config.local.toml`, `.sane/state/*`, `.sane/BRIEF.md`, `.sane/backups/` |
+| Optional repo-local exports | `.agents/skills/`, `AGENTS.md` |
+| User-level Codex surfaces | `~/.agents/skills/`, `~/.codex/AGENTS.md`, `~/.codex/hooks.json`, `~/.codex/agents/`, `~/.codex/config.toml` |
 
-1. Run `status`
-2. Run `doctor`
-3. Restore or uninstall if needed
+Design rules:
 
-## How It Works
-
-Short version:
-
-1. `Sane` opens in a guided TUI.
-2. You preview what it wants to change.
-3. `Sane` writes only the parts you explicitly choose.
-4. Codex keeps working normally after that.
-
-The deeper version lives in [What Sane Does](./docs/what-sane-does.md).
-
-At a high level, `Sane` has three layers:
-
-- the TUI, which is the control surface
-- a tiny local `.sane/` record of what happened
-- Codex-native surfaces, which are the part that actually changes Codex behavior
-
-## What Ships Today
-
-### Current built-in packs
-
-These are the built-in packs `Sane` ships with today:
-
-- `core`
-  Base Sane guidance. Always on.
-- `caveman`
-  Shorter, more token-efficient communication bias.
-- `cavemem`
-  Better compact session memory and handoff bias.
-- `rtk`
-  Prefer RTK-routed shell execution when RTK policy exists.
-- `frontend-craft`
-  Stronger frontend quality and anti-generic-UI bias.
-
-### Current Codex-facing surfaces
-
-`Sane` can manage these Codex-facing pieces today:
-
-- router skill export
-- optional repo-local skill export into `.agents/skills/`
-- optional repo-local `AGENTS.md` export
-- managed `AGENTS.md` block export
-- managed hook export
-- managed custom-agent export
-- core Codex profile preview and apply
-- integrations profile preview and apply
-- optional Cloudflare profile preview and apply
-
-### Recommended integrations today
-
-The current recommended general integrations profile is centered on:
-
-- `Context7`
-- `Playwright`
-- `grep.app`
-
-Provider-specific profiles stay separate.
-
-## What Gets Written Where
-
-`Sane` is local-first and explicit about what it touches.
-
-### Project-local
-
-`Sane` creates and manages `.sane/` in the project for local config, state, and backups.
-
-It can also optionally write shared repo skills into:
-
-- `.agents/skills/`
-- `AGENTS.md`
-
-### User-level Codex surfaces
-
-When you explicitly export or apply things, `Sane` may update:
-
-- `~/.agents/skills/`
-- `~/.codex/AGENTS.md`
-- `~/.codex/hooks.json`
-- `~/.codex/agents/`
-- `~/.codex/config.toml`
-
-By design:
-
-- `AGENTS.md` is optional
-- repo mutation is optional
-- unrelated user config should be preserved
-
-<details>
-<summary><strong>Exact managed paths today</strong></summary>
-
-- `.sane/config.local.toml`
-- `.sane/state/current-run.json`
-- `.sane/state/summary.json`
-- `.sane/state/events.jsonl`
-- `.sane/state/decisions.jsonl`
-- `.sane/state/artifacts.jsonl`
-- `.sane/BRIEF.md`
-- `.sane/backups/`
-- `.agents/skills/sane-router/`
-- `AGENTS.md`
-- `~/.agents/skills/sane-router/`
-- optional pack skill directories exported by `Sane`
-- a Sane-managed block inside `~/.codex/AGENTS.md`
-- Sane-managed entries inside `~/.codex/hooks.json`
-- Sane-managed custom agent files inside `~/.codex/agents/`
-- narrow diffs to `~/.codex/config.toml` when you apply profiles
-
-</details>
+- no required `AGENTS.md`
+- no required repo mutation
+- preserve unrelated user content
+- keep uninstall and restore scoped to Sane-managed changes
 
 ## Safety And Reversibility
 
-`Sane` is supposed to be easy to trust because it is easy to inspect.
+`Sane` should be easy to trust because it is easy to inspect.
 
-| Action | What it means |
+| Action | What it is for |
 | --- | --- |
-| `preview` | Show what `Sane` wants to do without writing files. |
-| `backup` | Save the current Codex config before a risky change. |
-| `apply` | Write a managed config profile. |
-| `export` | Install or refresh Codex-native assets like skills, hooks, or custom agents. |
-| `doctor` | Inspect local runtime and managed Codex surfaces for missing, invalid, or stale state. |
-| `restore` | Roll Codex config back to a previous backup. |
-| `uninstall` | Remove Sane-managed assets while leaving unrelated user content alone. |
+| `preview` | Show what `Sane` would change before writing files. |
+| `backup` | Save your current Codex config before a risky write. |
+| `apply` | Write the narrow profile or integration changes you chose. |
+| `export` | Install or refresh managed Codex-native pieces. |
+| `status` / `doctor` | Show what is installed, missing, stale, or invalid. |
+| `restore` | Roll back to the latest local backup. |
+| `uninstall` | Remove only Sane-managed content while leaving unrelated content alone. |
 
-For a user-first explanation of why these actions exist, see [What Sane Does](./docs/what-sane-does.md).
+## Learn More
 
-## What Is Still Moving
-
-Some things are intentionally still in motion:
-
-- the exact long-term built-in pack set
-- broader model and subagent routing policy
-- distribution channels after `v1`
-- later one-shot and self-improvement workflows
-
-The stable direction is already locked:
-
-- Codex-native
-- no required `AGENTS.md`
-- no required repo mutation
-- local-first
-- reversible
-- adaptive, not rigid
-
-## Community
-
+- [What Sane Does](./docs/what-sane-does.md)
 - [Contributing guide](./CONTRIBUTING.md)
 - [Support guide](./SUPPORT.md)
 - [Security policy](./SECURITY.md)

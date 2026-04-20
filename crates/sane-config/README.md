@@ -1,30 +1,29 @@
 # ⚖️ sane-config
 
-The local config model for `Sane`.
+The meaning of saved `Sane` settings.
 
-## What This Crate Is
+## Why This Crate Exists
 
-This crate defines what the saved `Sane` settings mean and what a user can expect after they click apply.
+When a user changes a setting in `Sane`, the workspace needs one authoritative answer to:
 
-When users change things like:
+- what that setting means
+- what the default should be
+- which combinations are valid
+- what should be rejected before any file write happens
 
-- model-role defaults
-- reasoning defaults
-- built-in packs
-- privacy choices
+That authority lives here.
 
-this crate is where those settings are parsed, assigned defaults, and validated before anything gets written out.
+## What Users Feel From It
 
-## Why It Exists
+Users feel this crate whenever `Sane`:
 
-`Sane` cannot safely preview, apply, or export behavior if configuration semantics are scattered across the app.
+- shows stable defaults
+- remembers model-role choices
+- tracks enabled built-in packs
+- stores privacy and telemetry choices
+- rejects invalid combinations before export or apply
 
-This crate gives the workspace one place to answer:
-
-- what a config value means
-- what the defaults are
-- what combinations are allowed
-- what should be rejected as invalid
+If config meaning drifts across the workspace, previews and installs stop being trustworthy.
 
 ## What It Owns
 
@@ -32,7 +31,7 @@ This crate gives the workspace one place to answer:
 - defaults
 - model and reasoning enums
 - pack settings
-- privacy and telemetry levels
+- privacy and telemetry settings
 - serialization helpers
 - validation rules
 
@@ -41,22 +40,16 @@ This crate gives the workspace one place to answer:
 - file writes into Codex paths
 - TUI behavior
 - path discovery
-- runtime policy decisions
+- policy decisions
 
-Those depend on config.
-They should not define config.
+## When Docs Should Change
 
-## Contributor Note
+Update docs if you change:
 
-If you change config here, check all dependent surfaces:
-
-- previews
-- applies
-- exports
-- status and doctor output
-- docs that describe saved behavior
-
-Config drift is easy to create and hard for users to diagnose.
+- what a saved setting means
+- default model or reasoning behavior
+- pack configuration semantics
+- privacy or telemetry behavior users can select
 
 ## Read Alongside
 

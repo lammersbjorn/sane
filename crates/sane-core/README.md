@@ -1,60 +1,56 @@
 # ⚖️ sane-core
 
-Shared names, contracts, and generated content for `Sane`.
+Shared names, contracts, and generated managed content for `Sane`.
 
-## What This Crate Is
+## Why This Crate Exists
 
-This crate holds the names and generated content that need to stay stable across the workspace.
+Users experience `Sane` as one product.
+Under the hood, that only stays true if every layer agrees on:
 
-That includes things like:
+- what a managed thing is called
+- when it counts as installed versus configured
+- what content gets exported
+- what uninstall is allowed to remove
 
-- managed asset names
-- typed operation results
-- inventory contracts
-- generated skill and overlay content
-- markers used for additive edits in user files
+This crate keeps that shared vocabulary in one place.
 
-## Why It Exists
+## What Users Feel From It
 
-Without a shared core, the workspace drifts fast:
+Most users never think about `sane-core` directly.
+They feel it indirectly when:
 
-- one layer says something is installed
-- another says it is only configured
-- generated content no longer matches what the UI claims
-- uninstall boundaries stop lining up with export boundaries
-
-This crate keeps the shared vocabulary in one place so the UI, docs, export logic, and uninstall paths stay in sync.
+- the TUI, docs, status, and doctor all describe the same world
+- exported skills and overlays use consistent names and markers
+- uninstall removes only Sane-managed content
+- generated guidance stays aligned with enabled packs and saved model-role defaults
 
 ## What It Owns
 
-- operation and inventory types
 - canonical names for Sane-managed assets
-- managed block markers
-- reusable generated text for Sane-managed surfaces
+- operation and inventory types
+- managed block markers for additive file edits
+- generated `sane-router` and related managed content
+- shared wording used to keep install/export/uninstall boundaries aligned
 
 ## What It Must Not Own
 
-- path lookup
+- path discovery
 - raw file I/O
 - TUI rendering
 - config persistence
-- policy decisions
+- policy evaluation
 
-It should remain minimal, stable, and predictable.
+## When Docs Should Change
 
-## Contributor Note
+Update docs if you change:
 
-Changes here often ripple everywhere.
-If you rename a managed file block, asset name, or result contract, verify:
-
-- status
-- doctor
-- export
-- uninstall
-- docs
+- a managed asset name
+- exported guidance content in a way users will notice
+- install/uninstall boundaries
+- status or doctor terminology
 
 ## Read Alongside
 
 - [root README](../../README.md)
 - [crates/sane-tui/README.md](../sane-tui/README.md)
-- [crates/sane-platform/README.md](../sane-platform/README.md)
+- [crates/sane-config/README.md](../sane-config/README.md)
