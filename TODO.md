@@ -85,6 +85,9 @@ Implemented:
 - canonical state rewrites now create timestamped `.bak` sibling backups before replacing existing JSON/TOML files
 - canonical rewrite helpers now expose typed metadata (`rewritten_path`, `backup_path`, `first_write`)
 - canonical backup sibling listing helpers now return matching backups newest-first for repair/rollback flows
+- `config` save output now reports canonical rewrite metadata (`rewritten path`, optional `backup path`, `write mode`)
+- `install` output now reports per-file rewrite metadata for `config`, `current-run`, and `summary` (including repair rewrites with backups)
+- `doctor` summary now reports canonical backup history for local config and summary (`config-backups`, `summary-backups`)
 
 Current gate:
 
@@ -122,6 +125,9 @@ cargo test
 - [x] Add canonical rewrite backups for explicit state migrations/upgrades
 - [x] Add canonical rewrite metadata plumbing (`rewritten_path`, `backup_path`, `first_write`)
 - [x] Add canonical backup sibling listing helpers sorted newest-first
+- [x] Surface save-config rewrite metadata in user-facing output
+- [x] Surface install-runtime rewrite reporting for config/current-run/summary
+- [x] Surface doctor backup history for config/summary canonical files
 
 ## Research Gates
 

@@ -1109,6 +1109,9 @@ fn append_export_drift_warnings(output: &mut String, status: &OperationResult) {
             ("global-agents", InventoryStatus::Invalid) => {
                 Some("warning: exported global-agents stale; rerun `export global-agents`")
             }
+            ("custom-agents", InventoryStatus::Invalid) => {
+                Some("warning: exported custom-agents stale; rerun `export custom-agents`")
+            }
             _ => None,
         };
 
@@ -6664,6 +6667,13 @@ mod tests {
                     path: "/tmp/AGENTS.md".to_string(),
                     repair_hint: Some("rerun `export global-agents`".to_string()),
                 },
+                sane_core::InventoryItem {
+                    name: "custom-agents".to_string(),
+                    scope: sane_core::InventoryScope::CodexNative,
+                    status: sane_core::InventoryStatus::Invalid,
+                    path: "/tmp/agents".to_string(),
+                    repair_hint: Some("rerun `export custom-agents`".to_string()),
+                },
             ],
         };
 
@@ -6672,6 +6682,9 @@ mod tests {
         assert!(output.contains("warning: exported user-skills stale; rerun `export user-skills`"));
         assert!(
             output.contains("warning: exported global-agents stale; rerun `export global-agents`")
+        );
+        assert!(
+            output.contains("warning: exported custom-agents stale; rerun `export custom-agents`")
         );
     }
 

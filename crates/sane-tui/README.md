@@ -23,6 +23,8 @@ This crate owns the user-facing flows for:
 - install and export actions
 - inspect and doctor output
 - repair, restore, and uninstall actions
+- save/install rewrite reporting for canonical local state files
+- backup-history reporting in doctor for canonical local state files
 
 It is the bridge between plain-language user intent and the Codex-native surfaces `Sane` manages.
 
@@ -49,6 +51,8 @@ That write surface is why the copy, previews, and confirmations here matter.
 - confirmation flows for risky operations
 - command dispatch into backend operations
 - user-facing rendering of status, doctor, and result output
+- user-facing rewrite metadata details (`rewritten path`, optional `backup path`, `write mode`)
+- user-facing doctor backup-history summary (`config-backups`, `summary-backups`)
 
 ## What It Must Not Own
 
