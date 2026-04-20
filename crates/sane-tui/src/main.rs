@@ -33,7 +33,8 @@ use sane_policy::{
     recommend_roles,
 };
 use sane_state::{
-    ArtifactRecord, CurrentRunState, DecisionRecord, EventRecord, RunSummary, VerificationStatus,
+    ArtifactRecord, CanonicalStatePaths, CurrentRunState, DecisionRecord, EventRecord,
+    LayeredStateBundle, RunSummary, VerificationStatus,
 };
 use serde_json::{Map, Value, json};
 use toml::Value as TomlValue;
@@ -2314,6 +2315,19 @@ fn ensure_file_with_default(path: &Path, default_contents: &str) -> Result<(), S
     fs::write(path, default_contents).map_err(|error| error.to_string())
 }
 
+fn canonical_state_paths(paths: &ProjectPaths) -> CanonicalStatePaths {
+    CanonicalStatePaths::new(
+        &paths.config_path,
+        &paths.summary_path,
+        &paths.current_run_path,
+        &paths.brief_path,
+    )
+}
+
+fn load_layered_state(paths: &ProjectPaths) -> Result<LayeredStateBundle, String> {
+    LayeredStateBundle::load(&canonical_state_paths(paths)).map_err(|error| error.to_string())
+}
+
 fn append_operation_event(paths: &ProjectPaths, result: &OperationResult) -> Result<(), String> {
     let current = current_run_state(paths);
     let summary = persist_operation_state(paths, result)?;
@@ -2522,11 +2536,9 @@ fn promote_operation_summary(
     paths: &ProjectPaths,
     result: &OperationResult,
 ) -> Result<RunSummary, String> {
-    let mut summary = if paths.summary_path.exists() {
-        RunSummary::read_from_path(&paths.summary_path).unwrap_or_default()
-    } else {
-        RunSummary::default()
-    };
+    let mut summary = RunSummary::read_optional_from_path(&paths.summary_path)
+        .unwrap_or_default()
+        .unwrap_or_default();
 
     for path in &result.paths_touched {
         if !summary.files_touched.contains(path) {
@@ -2646,9 +2658,20 @@ fn install_runtime(
         .map_err(|error| error.to_string())?;
     ensure_install_runtime_baseline(paths, codex_paths)?;
 
-    let current = CurrentRunState::read_from_path(&paths.current_run_path)
-        .map_err(|error| error.to_string())?;
-    let summary = RunSummary::read_from_path(&paths.summary_path).unwrap_or_default();
+    let layered = load_layered_state(paths).ok();
+    let current = if let Some(current) = layered
+        .as_ref()
+        .and_then(|bundle| bundle.current_run.clone())
+    {
+        current
+    } else {
+        CurrentRunState::read_from_path(&paths.current_run_path)
+            .map_err(|error| error.to_string())?
+    };
+    let summary = layered
+        .as_ref()
+        .and_then(|bundle| bundle.summary.clone())
+        .unwrap_or_else(|| RunSummary::read_from_path(&paths.summary_path).unwrap_or_default());
     ensure_file_with_default(&paths.brief_path, &summary.build_brief(&current))?;
 
     Ok(OperationResult {
@@ -3555,6 +3578,60 @@ fn inspect_inventory(
         "export global-agents",
     )
     .map_err(|error| error.to_string())?;
+    let layered_state = load_layered_state(paths).ok();
+    let current_run_status = if !paths.state_dir.exists() {
+        InventoryStatus::Missing
+    } else if let Some(bundle) = layered_state.as_ref() {
+        if bundle.current_run.is_some() {
+            InventoryStatus::Installed
+        } else {
+            InventoryStatus::Missing
+        }
+    } else if !paths.current_run_path.exists() {
+        InventoryStatus::Missing
+    } else if CurrentRunState::read_from_path(&paths.current_run_path).is_ok() {
+        InventoryStatus::Installed
+    } else {
+        InventoryStatus::Invalid
+    };
+    let current_run_repair_hint = match current_run_status {
+        InventoryStatus::Installed => None,
+        _ => Some("rerun `install`".to_string()),
+    };
+    let summary_status = if !paths.state_dir.exists() {
+        InventoryStatus::Missing
+    } else if let Some(bundle) = layered_state.as_ref() {
+        if bundle.summary.is_some() {
+            InventoryStatus::Installed
+        } else {
+            InventoryStatus::Missing
+        }
+    } else if !paths.summary_path.exists() {
+        InventoryStatus::Missing
+    } else if RunSummary::read_from_path(&paths.summary_path).is_ok() {
+        InventoryStatus::Installed
+    } else {
+        InventoryStatus::Invalid
+    };
+    let summary_repair_hint = match summary_status {
+        InventoryStatus::Installed => None,
+        _ => Some("rerun `install`".to_string()),
+    };
+    let brief_status = if let Some(bundle) = layered_state.as_ref() {
+        if bundle.brief.is_some() {
+            InventoryStatus::Installed
+        } else {
+            InventoryStatus::Missing
+        }
+    } else if paths.brief_path.exists() {
+        InventoryStatus::Installed
+    } else {
+        InventoryStatus::Missing
+    };
+    let brief_repair_hint = match brief_status {
+        InventoryStatus::Installed => None,
+        _ => Some("rerun `install`".to_string()),
+    };
 
     let mut inventory = vec![
         InventoryItem {
@@ -3594,55 +3671,23 @@ fn inspect_inventory(
         InventoryItem {
             name: "current-run".to_string(),
             scope: InventoryScope::LocalRuntime,
-            status: if !paths.state_dir.exists() || !paths.current_run_path.exists() {
-                InventoryStatus::Missing
-            } else if CurrentRunState::read_from_path(&paths.current_run_path).is_ok() {
-                InventoryStatus::Installed
-            } else {
-                InventoryStatus::Invalid
-            },
+            status: current_run_status,
             path: paths.current_run_path.display().to_string(),
-            repair_hint: if !paths.state_dir.exists() || !paths.current_run_path.exists() {
-                Some("rerun `install`".to_string())
-            } else if CurrentRunState::read_from_path(&paths.current_run_path).is_ok() {
-                None
-            } else {
-                Some("rerun `install`".to_string())
-            },
+            repair_hint: current_run_repair_hint,
         },
         InventoryItem {
             name: "summary".to_string(),
             scope: InventoryScope::LocalRuntime,
-            status: if !paths.state_dir.exists() || !paths.summary_path.exists() {
-                InventoryStatus::Missing
-            } else if RunSummary::read_from_path(&paths.summary_path).is_ok() {
-                InventoryStatus::Installed
-            } else {
-                InventoryStatus::Invalid
-            },
+            status: summary_status,
             path: paths.summary_path.display().to_string(),
-            repair_hint: if !paths.state_dir.exists() || !paths.summary_path.exists() {
-                Some("rerun `install`".to_string())
-            } else if RunSummary::read_from_path(&paths.summary_path).is_ok() {
-                None
-            } else {
-                Some("rerun `install`".to_string())
-            },
+            repair_hint: summary_repair_hint,
         },
         InventoryItem {
             name: "brief".to_string(),
             scope: InventoryScope::LocalRuntime,
-            status: if paths.brief_path.exists() {
-                InventoryStatus::Installed
-            } else {
-                InventoryStatus::Missing
-            },
+            status: brief_status,
             path: paths.brief_path.display().to_string(),
-            repair_hint: if paths.brief_path.exists() {
-                None
-            } else {
-                Some("rerun `install`".to_string())
-            },
+            repair_hint: brief_repair_hint,
         },
     ];
     inventory.extend(pack_inventory);
