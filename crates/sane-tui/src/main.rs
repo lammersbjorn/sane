@@ -376,7 +376,7 @@ impl HomeOption {
 fn section_actions(section: TuiSection) -> Vec<TuiAction> {
     match section {
         TuiSection::StartHere => vec![
-            TuiAction::backend("1. Create Sane's local files", Command::Install),
+            TuiAction::backend("1. Create Sane's local project files", Command::Install),
             TuiAction::backend("2. View your current Codex settings", Command::CodexConfig),
             TuiAction::backend(
                 "3. Preview Sane's recommended Codex settings",
@@ -390,53 +390,77 @@ fn section_actions(section: TuiSection) -> Vec<TuiAction> {
             TuiAction::backend("6. Install Sane into Codex", Command::ExportAll),
         ],
         TuiSection::Configure => vec![
-            TuiAction::config_editor("Edit model defaults"),
-            TuiAction::pack_editor("Manage built-in packs"),
-            TuiAction::privacy_editor("Set telemetry level"),
-            TuiAction::backend("View Sane config", Command::Config),
-            TuiAction::backend("View Codex settings", Command::CodexConfig),
-            TuiAction::backend(
-                "Preview Cloudflare tools",
-                Command::PreviewCloudflareProfile,
-            ),
-            TuiAction::backend("Install Cloudflare tools", Command::ApplyCloudflareProfile),
-        ],
-        TuiSection::Exports => vec![
-            TuiAction::backend("Install Sane user skill", Command::ExportUserSkills),
-            TuiAction::backend("Install Sane repo skills", Command::ExportRepoSkills),
-            TuiAction::backend("Install repo AGENTS.md block", Command::ExportRepoAgents),
-            TuiAction::backend(
-                "Install global AGENTS.md block",
-                Command::ExportGlobalAgents,
-            ),
-            TuiAction::backend("Install Sane hooks", Command::ExportHooks),
-            TuiAction::backend("Install Sane custom agents", Command::ExportCustomAgents),
-            TuiAction::backend("Install everything Sane manages", Command::ExportAll),
-        ],
-        TuiSection::Inspect => vec![
-            TuiAction::backend("See what Sane manages", Command::Status),
-            TuiAction::backend("Check for Sane problems", Command::Doctor),
-            TuiAction::backend("View Sane config", Command::Config),
+            TuiAction::config_editor("Edit default model and reasoning settings"),
+            TuiAction::pack_editor("Enable or disable built-in guidance packs"),
+            TuiAction::privacy_editor("Choose your telemetry and privacy level"),
+            TuiAction::backend("View your current Sane config", Command::Config),
             TuiAction::backend("View your current Codex settings", Command::CodexConfig),
             TuiAction::backend(
-                "Preview recommended Codex tools",
+                "Preview optional Cloudflare Codex settings",
+                Command::PreviewCloudflareProfile,
+            ),
+            TuiAction::backend(
+                "Apply optional Cloudflare Codex settings",
+                Command::ApplyCloudflareProfile,
+            ),
+        ],
+        TuiSection::Exports => vec![
+            TuiAction::backend(
+                "Install Sane user skills for your account",
+                Command::ExportUserSkills,
+            ),
+            TuiAction::backend(
+                "Install Sane repo skills for this project",
+                Command::ExportRepoSkills,
+            ),
+            TuiAction::backend(
+                "Install Sane guidance block in this repo's AGENTS.md",
+                Command::ExportRepoAgents,
+            ),
+            TuiAction::backend(
+                "Install Sane guidance block in global AGENTS.md",
+                Command::ExportGlobalAgents,
+            ),
+            TuiAction::backend("Install Sane Codex hooks", Command::ExportHooks),
+            TuiAction::backend(
+                "Install Sane custom agents for Codex",
+                Command::ExportCustomAgents,
+            ),
+            TuiAction::backend(
+                "Install everything Sane manages in Codex",
+                Command::ExportAll,
+            ),
+        ],
+        TuiSection::Inspect => vec![
+            TuiAction::backend("Show everything Sane currently manages", Command::Status),
+            TuiAction::backend("Run Sane doctor checks for problems", Command::Doctor),
+            TuiAction::backend("View your current Sane config", Command::Config),
+            TuiAction::backend("View your current Codex settings", Command::CodexConfig),
+            TuiAction::backend(
+                "Preview optional recommended Codex tools",
                 Command::PreviewIntegrationsProfile,
             ),
-            TuiAction::backend("Explain routing policy", Command::DebugPolicyPreview),
+            TuiAction::backend("Explain Sane's routing policy", Command::DebugPolicyPreview),
         ],
         TuiSection::Repair => vec![
-            TuiAction::backend("Repair Sane's local files", Command::Install),
+            TuiAction::backend("Repair Sane's local project files", Command::Install),
             TuiAction::backend("Back up your Codex settings", Command::BackupCodexConfig),
             TuiAction::backend(
                 "Restore your last Codex backup",
                 Command::RestoreCodexConfig,
             ),
-            TuiAction::backend("Uninstall Sane repo skills", Command::UninstallRepoSkills),
             TuiAction::backend(
-                "Uninstall repo AGENTS.md block",
+                "Uninstall Sane repo skills from this project",
+                Command::UninstallRepoSkills,
+            ),
+            TuiAction::backend(
+                "Remove Sane block from this repo's AGENTS.md",
                 Command::UninstallRepoAgents,
             ),
-            TuiAction::backend("Remove everything Sane manages", Command::UninstallAll),
+            TuiAction::backend(
+                "Remove everything Sane manages from Codex",
+                Command::UninstallAll,
+            ),
         ],
     }
 }
@@ -687,8 +711,8 @@ impl TuiApp {
             codex_paths: codex_paths.clone(),
             sections: vec![
                 HomeOption::new("Start here", TuiSection::StartHere),
-                HomeOption::new("Set up", TuiSection::Configure),
-                HomeOption::new("Install Codex pieces", TuiSection::Exports),
+                HomeOption::new("Set up preferences", TuiSection::Configure),
+                HomeOption::new("Install to Codex", TuiSection::Exports),
                 HomeOption::new("Inspect", TuiSection::Inspect),
                 HomeOption::new("Repair or remove", TuiSection::Repair),
             ],
@@ -761,14 +785,17 @@ impl TuiApp {
         match action.kind {
             TuiActionKind::Backend(command) => {
                 if command_requires_confirmation(command) {
-                    self.output = format!("Confirm `{}` before applying it.", action.label);
+                    self.output = format!(
+                        "Review `{}`. Enter or y confirms. Esc or n cancels.",
+                        action.label
+                    );
                     self.screen = TuiScreen::Confirm(ConfirmScreen {
                         command,
                         label: action.label,
                         section: active_section(self),
                     });
                 } else {
-                    execute_backend_action(self, command);
+                    execute_backend_action(self, action.label, command);
                 }
             }
             TuiActionKind::OpenConfigEditor => {
@@ -928,10 +955,11 @@ fn run_tui_loop(
                     }
                     KeyCode::Enter | KeyCode::Char('y') => {
                         let command = confirm.command;
+                        let label = confirm.label;
                         let section = confirm.section;
                         app.screen = TuiScreen::Dashboard;
                         app.select_section(section);
-                        execute_backend_action(app, command);
+                        execute_backend_action(app, label, command);
                     }
                     _ => {}
                 },
@@ -961,10 +989,10 @@ fn refresh_status_after_save(app: &mut TuiApp) {
     }
 }
 
-fn execute_backend_action(app: &mut TuiApp, command: Command) {
+fn execute_backend_action(app: &mut TuiApp, label: &str, command: Command) {
     match execute_backend_command(command, &app.paths, &app.codex_paths) {
         Ok(result) => {
-            app.output = result.render_text();
+            app.output = format!("Completed `{label}`.\n\n{}", result.render_text());
             match inventory_status(&app.paths, &app.codex_paths) {
                 Ok(status) => app.status = status,
                 Err(error) => {
@@ -982,7 +1010,7 @@ fn execute_backend_action(app: &mut TuiApp, command: Command) {
             }
         }
         Err(error) => {
-            app.output = format!("action failed: {error}");
+            app.output = format!("Failed while running `{label}`: {error}");
         }
     }
 }
@@ -1201,27 +1229,42 @@ fn render_compact_dashboard_help(
 ) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Min(5), Constraint::Length(3)])
+        .constraints([Constraint::Min(8), Constraint::Length(3)])
         .split(area);
 
-    let mut lines = vec![Line::from("Section"), Line::from("")];
-    lines.extend(home_option_lines(section, &app.status));
-    lines.push(Line::from(""));
-    lines.push(Line::from("Selected step"));
-    lines.push(Line::from(""));
-    lines.extend(action_help_lines(action));
+    let info_chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(6), Constraint::Min(7)])
+        .split(chunks[0]);
 
-    let help = Paragraph::new(lines)
+    let section_help = Paragraph::new(home_option_lines(section, &app.status))
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title("About This Step"),
+                .title("Section Overview")
+                .border_style(Style::default().fg(Color::DarkGray)),
         )
         .wrap(Wrap { trim: false });
-    frame.render_widget(help, chunks[0]);
+    frame.render_widget(section_help, info_chunks[0]);
+
+    let selected_help = Paragraph::new(selected_action_help_lines(action))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("Selected Step Details")
+                .border_style(Style::default().fg(Color::Cyan))
+                .style(Style::default().bg(Color::Rgb(14, 18, 24))),
+        )
+        .wrap(Wrap { trim: false });
+    frame.render_widget(selected_help, info_chunks[1]);
 
     let result = Paragraph::new(tui_output_lines(&app.output))
-        .block(Block::default().borders(Borders::ALL).title("Last Result"))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("Latest Status")
+                .border_style(Style::default().fg(Color::Green)),
+        )
         .wrap(Wrap { trim: false });
     frame.render_widget(result, chunks[1]);
 }
@@ -1372,29 +1415,41 @@ fn render_confirm(frame: &mut Frame, app: &TuiApp, confirm: &ConfirmScreen) {
         .split(area);
 
     let header = Paragraph::new(vec![
-        Line::from("Confirm Action"),
-        Line::from("Enter/y confirms. Esc/n cancels."),
+        Line::from("Confirm This Action"),
+        Line::from("Enter or y runs it. Esc or n cancels."),
     ])
     .block(
         Block::default()
             .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::LightRed))
             .title("Before this runs"),
     )
     .wrap(Wrap { trim: true });
     frame.render_widget(header, chunks[0]);
 
     let body = Paragraph::new(vec![
-        Line::from(format!("Action: {}", confirm.label)),
+        Line::from(format!("Selected action: {}", confirm.label)),
         Line::from(""),
-        Line::from("This mutates managed user-level state or Codex config."),
-        Line::from("Use preview/backup first when available."),
+        Line::from(confirm_action_context(confirm.command)),
+        Line::from("Use preview or backup first when available."),
     ])
-    .block(Block::default().borders(Borders::ALL).title("Confirm"))
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .title("Impact")
+            .border_style(Style::default().fg(Color::LightRed))
+            .style(Style::default().bg(Color::Rgb(30, 16, 18))),
+    )
     .wrap(Wrap { trim: false });
     frame.render_widget(body, chunks[1]);
 
     let output = Paragraph::new(tui_output_lines(&app.output))
-        .block(Block::default().borders(Borders::ALL).title("Output"))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("Status")
+                .border_style(Style::default().fg(Color::Yellow)),
+        )
         .wrap(Wrap { trim: false });
     frame.render_widget(output, chunks[2]);
 }
@@ -1408,12 +1463,23 @@ fn render_notice(frame: &mut Frame, _app: &TuiApp, notice: &NoticeScreen) {
         .split(area);
 
     let body = Paragraph::new(tui_output_lines(&notice.body))
-        .block(Block::default().borders(Borders::ALL).title("Result"))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("Result")
+                .border_style(Style::default().fg(Color::LightGreen))
+                .style(Style::default().bg(Color::Rgb(14, 24, 16))),
+        )
         .wrap(Wrap { trim: false });
     frame.render_widget(body, chunks[0]);
 
     let footer = Paragraph::new("Enter, Space, or Esc closes this message.")
-        .block(Block::default().borders(Borders::ALL).title("Continue"))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("Continue")
+                .border_style(Style::default().fg(Color::DarkGray)),
+        )
         .alignment(Alignment::Center)
         .wrap(Wrap { trim: true });
     frame.render_widget(footer, chunks[1]);
@@ -1489,22 +1555,30 @@ fn render_dashboard_help(
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title("About This Section"),
+                .title("Section Overview")
+                .border_style(Style::default().fg(Color::DarkGray)),
         )
         .wrap(Wrap { trim: false });
     frame.render_widget(section_help, chunks[0]);
 
-    let help = Paragraph::new(action_help_lines(action))
+    let help = Paragraph::new(selected_action_help_lines(action))
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .title("What This Does"),
+                .title("Selected Step Details")
+                .border_style(Style::default().fg(Color::Cyan))
+                .style(Style::default().bg(Color::Rgb(14, 18, 24))),
         )
         .wrap(Wrap { trim: false });
     frame.render_widget(help, chunks[1]);
 
     let snapshot = Paragraph::new(tui_output_lines(&app.output))
-        .block(Block::default().borders(Borders::ALL).title("Last Result"))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("Latest Status")
+                .border_style(Style::default().fg(Color::Green)),
+        )
         .wrap(Wrap { trim: false });
     frame.render_widget(snapshot, chunks[2]);
 }
@@ -1629,7 +1703,7 @@ fn home_option_lines(section: TuiSection, status: &OperationResult) -> Vec<Line<
                 Line::from("2. Review and back up Codex settings"),
                 Line::from("3. Apply Sane's recommended Codex settings"),
                 Line::from("4. Install Sane into Codex"),
-                Line::from("More setup lives in Set up and Install Codex pieces."),
+                Line::from("More options live in Set up preferences and Install to Codex."),
             ];
 
             if has_attention_items(status) {
@@ -1639,7 +1713,7 @@ fn home_option_lines(section: TuiSection, status: &OperationResult) -> Vec<Line<
             lines
         }
         TuiSection::Configure => vec![
-            Line::from("Change how Sane behaves before it writes anything."),
+            Line::from("Change how Sane behaves before installing it into Codex."),
             Line::from(""),
             Line::from("Choose model and reasoning defaults."),
             Line::from("Turn built-in packs on or off."),
@@ -1647,7 +1721,7 @@ fn home_option_lines(section: TuiSection, status: &OperationResult) -> Vec<Line<
             Line::from("Open with `sane settings` if you want to land here directly."),
         ],
         TuiSection::Exports => vec![
-            Line::from("Install the Codex pieces Sane manages."),
+            Line::from("Install Sane into Codex on purpose."),
             Line::from(""),
             Line::from("User-level install changes your own Codex setup."),
             Line::from("Repo-level install is explicit and optional."),
@@ -1662,7 +1736,7 @@ fn home_option_lines(section: TuiSection, status: &OperationResult) -> Vec<Line<
             Line::from("View Sane config and Codex settings before applying changes."),
         ],
         TuiSection::Repair => vec![
-            Line::from("Repair, restore, and remove what Sane manages."),
+            Line::from("Repair, restore, and uninstall tools."),
             Line::from(""),
             Line::from("Use backup and restore when settings changes went wrong."),
             Line::from("Use uninstall when you want Sane removed cleanly."),
@@ -1752,13 +1826,61 @@ fn action_help_lines(action: &TuiAction) -> Vec<Line<'static>> {
     lines
 }
 
+fn selected_action_help_lines(action: &TuiAction) -> Vec<Line<'static>> {
+    let mut lines = vec![
+        Line::from(format!("Selected action: {}", action.label)),
+        Line::from(""),
+    ];
+    let details = action_help_lines(action);
+    if details.is_empty() {
+        lines.push(Line::from(
+            "This action explains what it changes before you run it.",
+        ));
+    } else {
+        lines.extend(details);
+    }
+
+    lines
+}
+
+fn confirm_action_context(command: Command) -> &'static str {
+    match command {
+        Command::ApplyCodexProfile
+        | Command::ApplyIntegrationsProfile
+        | Command::ApplyCloudflareProfile => {
+            "This writes changes into your `~/.codex/config.toml`."
+        }
+        Command::RestoreCodexConfig => {
+            "This replaces your current Codex config with the latest backup."
+        }
+        Command::UninstallAll => "This removes all Sane-managed Codex pieces.",
+        Command::UninstallUserSkills => {
+            "This removes the Sane user skill from your personal Codex skill folder."
+        }
+        Command::UninstallRepoSkills => {
+            "This removes Sane repo skills from this project's `.agents/skills` folder."
+        }
+        Command::UninstallRepoAgents => {
+            "This removes the Sane-managed block from this project's `AGENTS.md`."
+        }
+        Command::UninstallGlobalAgents => {
+            "This removes the Sane-managed block from your global `AGENTS.md`."
+        }
+        Command::UninstallHooks => "This removes Sane-managed entries from `~/.codex/hooks.json`.",
+        Command::UninstallCustomAgents => {
+            "This removes Sane-managed custom agent files from your Codex home."
+        }
+        _ => "This mutates managed user-level state or Codex config.",
+    }
+}
+
 fn command_help_lines(command: Command) -> Vec<Line<'static>> {
     match command {
         Command::Install => vec![
             Line::from("Create or repair Sane's local project files in this repo."),
             Line::from(""),
             Line::from("This creates Sane's local config and state files in `.sane/`."),
-            Line::from("Use this first in a new repo or if the local files are missing."),
+            Line::from("Use this first in a new repo or if Sane's local files are missing."),
         ],
         Command::Config => vec![
             Line::from("Show the current local Sane config."),
@@ -1841,7 +1963,7 @@ fn command_help_lines(command: Command) -> Vec<Line<'static>> {
             ),
         ],
         Command::Doctor => vec![
-            Line::from("Check Sane's local files and Codex installs."),
+            Line::from("Check Sane's local project files and Codex installs."),
             Line::from(""),
             Line::from("Use this when something feels broken, stale, or only partly installed."),
             Line::from("Doctor points at missing, invalid, or drifted Sane-managed pieces."),
@@ -5871,8 +5993,8 @@ mod tests {
             home_labels,
             vec![
                 "Start here",
-                "Set up",
-                "Install Codex pieces",
+                "Set up preferences",
+                "Install to Codex",
                 "Inspect",
                 "Repair or remove",
             ]
@@ -5885,7 +6007,7 @@ mod tests {
         assert_eq!(
             start_here,
             vec![
-                "1. Create Sane's local files",
+                "1. Create Sane's local project files",
                 "2. View your current Codex settings",
                 "3. Preview Sane's recommended Codex settings",
                 "4. Back up your Codex settings",
@@ -5906,6 +6028,43 @@ mod tests {
         assert!(body.contains("Preview only. No files are changed."));
         assert!(body.contains("model, reasoning, and hook settings"));
         assert!(body.contains("Codex models it can detect here"));
+    }
+
+    #[test]
+    fn selected_action_help_starts_with_explicit_selected_label() {
+        let action = super::section_actions(super::TuiSection::StartHere)[0];
+        let body = super::selected_action_help_lines(&action)
+            .into_iter()
+            .map(|line| line.to_string())
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        assert!(body.contains("Selected action: 1. Create Sane's local project files"));
+        assert!(body.contains("Use this first in a new repo"));
+    }
+
+    #[test]
+    fn confirmation_feedback_mentions_keys_and_impact() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+        let paths = sane_platform::ProjectPaths::discover(project.path()).unwrap();
+        let codex_paths = sane_platform::CodexPaths::new(home.path());
+        let mut app =
+            super::TuiApp::new(&paths, &codex_paths, super::TuiLaunchMode::Onboarding).unwrap();
+
+        let action = super::section_actions(super::TuiSection::StartHere)[4];
+        app.run_action(action);
+
+        assert!(matches!(app.screen, super::TuiScreen::Confirm(_)));
+        assert!(
+            app.output
+                .contains("Enter or y confirms. Esc or n cancels.")
+        );
+        assert!(
+            super::confirm_action_context(super::Command::ApplyCodexProfile)
+                .contains("writes changes into your `~/.codex/config.toml`")
+        );
     }
 
     #[test]
