@@ -2,6 +2,7 @@ use sane_state::{
     ArtifactRecord, CanonicalStateFormat, CanonicalStatePaths, CurrentRunState, DecisionRecord,
     EventRecord, LayeredStateBundle, LocalStateConfig, RunSnapshot, RunSnapshotError, RunSummary,
     SummaryPromotion, read_jsonl_records, read_jsonl_records_slice, write_canonical_with_backup,
+    write_canonical_with_backup_result,
 };
 use tempfile::tempdir;
 
@@ -395,6 +396,49 @@ fn canonical_json_rewrite_creates_backup_before_replacement() {
 }
 
 #[test]
+fn canonical_json_rewrite_metadata_reports_paths_and_not_first_write() {
+    let dir = tempdir().unwrap();
+    let path = dir.path().join("summary.json");
+
+    let previous = RunSummary {
+        version: 2,
+        accepted_decisions: vec!["old decision".to_string()],
+        completed_milestones: vec!["old milestone".to_string()],
+        constraints: vec![],
+        last_verified_outputs: vec![],
+        files_touched: vec![],
+        extra: Default::default(),
+    };
+    previous.write_to_path(&path).unwrap();
+
+    let replacement = RunSummary {
+        version: 2,
+        accepted_decisions: vec!["new decision".to_string()],
+        completed_milestones: vec!["new milestone".to_string()],
+        constraints: vec![],
+        last_verified_outputs: vec![],
+        files_touched: vec![],
+        extra: Default::default(),
+    };
+
+    let result =
+        write_canonical_with_backup_result(&path, &replacement, CanonicalStateFormat::Json)
+            .unwrap();
+    let backup_path = result
+        .backup_path
+        .clone()
+        .expect("expected backup file for rewrite");
+
+    let rewritten = RunSummary::read_from_path(&result.rewritten_path).unwrap();
+    let backup = RunSummary::read_from_path(&backup_path).unwrap();
+
+    assert_eq!(result.rewritten_path, path);
+    assert!(!result.first_write);
+    assert_eq!(rewritten, replacement);
+    assert_eq!(backup, previous);
+}
+
+#[test]
 fn canonical_toml_first_write_skips_backup() {
     let dir = tempdir().unwrap();
     let path = dir.path().join("config.local.toml");
@@ -409,6 +453,27 @@ fn canonical_toml_first_write_skips_backup() {
     let decoded = LocalStateConfig::read_from_path(&path).unwrap();
 
     assert!(backup.is_none());
+    assert_eq!(decoded, config);
+}
+
+#[test]
+fn canonical_toml_first_write_metadata_reports_first_write() {
+    let dir = tempdir().unwrap();
+    let path = dir.path().join("config.local.toml");
+
+    let mut config = LocalStateConfig::default();
+    config.extra.insert(
+        "telemetry".to_string(),
+        toml::Value::String("off".to_string()),
+    );
+
+    let result =
+        write_canonical_with_backup_result(&path, &config, CanonicalStateFormat::Toml).unwrap();
+    let decoded = LocalStateConfig::read_from_path(&result.rewritten_path).unwrap();
+
+    assert_eq!(result.rewritten_path, path);
+    assert!(result.backup_path.is_none());
+    assert!(result.first_write);
     assert_eq!(decoded, config);
 }
 

@@ -473,6 +473,13 @@ fn classify_subagent_readiness(
         );
     }
 
+    if input.run_state == RunState::Blocked && input.parallelism == Parallelism::Clear {
+        return (
+            SubagentStrategy::SoloOnly,
+            SubagentReadinessReason::RunStateDisallowsDelegation,
+        );
+    }
+
     if input.parallelism == Parallelism::Possible {
         return (
             SubagentStrategy::WaitForIndependentSlices,
@@ -776,6 +783,52 @@ mod tests {
         assert_eq!(
             orchestration.verifier_timing,
             VerifierTiming::ThroughoutExecution
+        );
+    }
+
+    #[test]
+    fn blocked_phase_keeps_clear_parallel_work_single_agent_due_to_run_state() {
+        let input = PolicyInput {
+            intent: Intent::Orchestrate,
+            task_shape: TaskShape::LongRunning,
+            risk: Level::Medium,
+            ambiguity: Level::Low,
+            parallelism: Parallelism::Clear,
+            context_pressure: Level::Medium,
+            run_state: RunState::Blocked,
+        };
+        let decision = evaluate(input);
+
+        let orchestration = recommend_orchestration(input, &decision);
+
+        assert!(!decision.has(Obligation::SubagentEligible));
+        assert_eq!(orchestration.subagents, SubagentStrategy::SoloOnly);
+        assert_eq!(
+            orchestration.subagent_readiness,
+            SubagentReadinessReason::RunStateDisallowsDelegation
+        );
+    }
+
+    #[test]
+    fn complex_work_with_no_parallel_slices_reports_no_independent_slices() {
+        let input = PolicyInput {
+            intent: Intent::Orchestrate,
+            task_shape: TaskShape::LongRunning,
+            risk: Level::Medium,
+            ambiguity: Level::Low,
+            parallelism: Parallelism::None,
+            context_pressure: Level::Medium,
+            run_state: RunState::Executing,
+        };
+        let decision = evaluate(input);
+
+        let orchestration = recommend_orchestration(input, &decision);
+
+        assert!(!decision.has(Obligation::SubagentEligible));
+        assert_eq!(orchestration.subagents, SubagentStrategy::SoloOnly);
+        assert_eq!(
+            orchestration.subagent_readiness,
+            SubagentReadinessReason::NoIndependentSlicesIdentified
         );
     }
 }

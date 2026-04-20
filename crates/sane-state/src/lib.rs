@@ -75,6 +75,13 @@ pub enum CanonicalStateFormat {
     Toml,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CanonicalRewriteResult {
+    pub rewritten_path: PathBuf,
+    pub backup_path: Option<PathBuf>,
+    pub first_write: bool,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct VerificationStatus {
     pub status: String,
@@ -772,12 +779,23 @@ pub fn write_canonical_with_backup<T>(
 where
     T: Serialize,
 {
+    Ok(write_canonical_with_backup_result(path, value, format)?.backup_path)
+}
+
+pub fn write_canonical_with_backup_result<T>(
+    path: impl AsRef<Path>,
+    value: &T,
+    format: CanonicalStateFormat,
+) -> Result<CanonicalRewriteResult, RunSnapshotError>
+where
+    T: Serialize,
+{
     let encoded = match format {
         CanonicalStateFormat::Json => serde_json::to_string_pretty(value)?,
         CanonicalStateFormat::Toml => toml::to_string_pretty(value)?,
     };
 
-    write_canonical_encoded_with_backup(path.as_ref(), &encoded)
+    write_canonical_encoded_with_backup_result(path.as_ref(), &encoded)
 }
 
 fn read_json<T>(path: impl AsRef<Path>) -> Result<T, RunSnapshotError>
@@ -915,10 +933,10 @@ where
     })
 }
 
-fn write_canonical_encoded_with_backup(
+fn write_canonical_encoded_with_backup_result(
     path: &Path,
     encoded: &str,
-) -> Result<Option<PathBuf>, RunSnapshotError> {
+) -> Result<CanonicalRewriteResult, RunSnapshotError> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(|source| RunSnapshotError::Write {
             path: parent.display().to_string(),
@@ -957,7 +975,11 @@ fn write_canonical_encoded_with_backup(
         });
     }
 
-    Ok(backup_path)
+    Ok(CanonicalRewriteResult {
+        rewritten_path: path.to_path_buf(),
+        first_write: backup_path.is_none(),
+        backup_path,
+    })
 }
 
 fn backup_existing_canonical(path: &Path) -> Result<Option<PathBuf>, RunSnapshotError> {
