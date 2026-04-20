@@ -35,7 +35,7 @@ use sane_policy::{
 use sane_state::{
     ArtifactRecord, CanonicalRewriteResult, CanonicalStateFormat, CanonicalStatePaths,
     CurrentRunState, DecisionRecord, EventRecord, LayeredStateBundle, RunSummary,
-    VerificationStatus, write_canonical_with_backup_result,
+    VerificationStatus, list_canonical_backup_siblings, write_canonical_with_backup_result,
 };
 use serde_json::{Map, Value, json};
 use toml::Value as TomlValue;
@@ -3619,6 +3619,10 @@ fn doctor_runtime(
     codex_paths: &CodexPaths,
 ) -> Result<OperationResult, String> {
     let inventory = inspect_inventory(paths, codex_paths)?;
+    let config_backups =
+        list_canonical_backup_siblings(&paths.config_path).map_err(|error| error.to_string())?;
+    let summary_backups =
+        list_canonical_backup_siblings(&paths.summary_path).map_err(|error| error.to_string())?;
     let runtime = find_inventory(&inventory, "runtime");
     let config = find_inventory(&inventory, "config");
     let current_run = find_inventory(&inventory, "current-run");
@@ -3640,11 +3644,13 @@ fn doctor_runtime(
     Ok(OperationResult {
         kind: OperationKind::Doctor,
         summary: format!(
-            "runtime: {}\nconfig: {}\ncurrent-run: {}\nsummary: {}\nbrief: {}\npack-core: {}\npack-caveman: {}\npack-cavemem: {}\npack-rtk: {}\npack-frontend-craft: {}\ncodex-config: {}\nuser-skills: {}\nrepo-skills: {}\nrepo-agents: {}\nglobal-agents: {}\nhooks: {}\ncustom-agents: {}\nroot: {}\ncodex-home: {}",
+            "runtime: {}\nconfig: {}\nconfig-backups: {}\ncurrent-run: {}\nsummary: {}\nsummary-backups: {}\nbrief: {}\npack-core: {}\npack-caveman: {}\npack-cavemem: {}\npack-rtk: {}\npack-frontend-craft: {}\ncodex-config: {}\nuser-skills: {}\nrepo-skills: {}\nrepo-agents: {}\nglobal-agents: {}\nhooks: {}\ncustom-agents: {}\nroot: {}\ncodex-home: {}",
             doctor_status(runtime),
             doctor_status(config),
+            canonical_backup_history_summary(&config_backups),
             doctor_status(current_run),
             doctor_status(summary),
+            canonical_backup_history_summary(&summary_backups),
             doctor_status(brief),
             doctor_status(pack_core),
             doctor_status(pack_caveman),
@@ -3666,6 +3672,34 @@ fn doctor_runtime(
         paths_touched: collect_paths_touched(&inventory),
         inventory,
     })
+}
+
+fn canonical_backup_history_summary(backups: &[std::path::PathBuf]) -> String {
+    if backups.is_empty() {
+        return "none".to_string();
+    }
+
+    let shown = backups
+        .iter()
+        .take(3)
+        .map(|path| {
+            path.file_name()
+                .and_then(|name| name.to_str())
+                .map(ToOwned::to_owned)
+                .unwrap_or_else(|| path.display().to_string())
+        })
+        .collect::<Vec<_>>();
+    let remaining = backups.len().saturating_sub(shown.len());
+    if remaining == 0 {
+        format!("{} ({})", backups.len(), shown.join(", "))
+    } else {
+        format!(
+            "{} ({} +{} more)",
+            backups.len(),
+            shown.join(", "),
+            remaining
+        )
+    }
 }
 
 fn inspect_inventory(
@@ -5716,6 +5750,35 @@ mod tests {
 
         assert!(output.contains("summary: missing summary.json"));
         assert!(output.contains("rerun install"));
+    }
+
+    #[test]
+    fn doctor_reports_canonical_backup_history_for_config_and_summary() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        std::fs::write(project.path().join("Cargo.toml"), "[workspace]\n").unwrap();
+
+        let _ = run_with_home(&["install"], project.path(), home.path()).unwrap();
+        std::fs::write(
+            project.path().join(".sane").join("config.local.toml"),
+            "invalid = [toml",
+        )
+        .unwrap();
+        std::fs::write(
+            project
+                .path()
+                .join(".sane")
+                .join("state")
+                .join("summary.json"),
+            "{ invalid json",
+        )
+        .unwrap();
+        let _ = run_with_home(&["install"], project.path(), home.path()).unwrap();
+
+        let output = run_with_home(&["doctor"], project.path(), home.path()).unwrap();
+
+        assert!(output.contains("config-backups: 1 (config.local.toml.bak."));
+        assert!(output.contains("summary-backups: 1 (summary.json.bak."));
     }
 
     #[test]

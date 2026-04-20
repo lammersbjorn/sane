@@ -1249,3 +1249,49 @@ fn render_bullets(items: &[String]) -> String {
             .join("\n")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    use tempfile::tempdir;
+
+    use super::list_canonical_backup_siblings;
+
+    #[test]
+    fn list_canonical_backup_siblings_returns_newest_first() {
+        let dir = tempdir().unwrap();
+        let canonical = dir.path().join("config.local.toml");
+
+        fs::write(dir.path().join("config.local.toml.bak.1700000000"), "a").unwrap();
+        fs::write(dir.path().join("config.local.toml.bak.1700000000.1"), "b").unwrap();
+        fs::write(dir.path().join("config.local.toml.bak.1700000001"), "c").unwrap();
+        fs::write(dir.path().join("config.local.toml.bak.bad"), "ignored").unwrap();
+        fs::write(dir.path().join("other.toml.bak.1700000009"), "ignored").unwrap();
+
+        let backups = list_canonical_backup_siblings(&canonical).unwrap();
+        let names = backups
+            .iter()
+            .map(|path| path.file_name().unwrap().to_string_lossy().to_string())
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            names,
+            vec![
+                "config.local.toml.bak.1700000001",
+                "config.local.toml.bak.1700000000.1",
+                "config.local.toml.bak.1700000000",
+            ]
+        );
+    }
+
+    #[test]
+    fn list_canonical_backup_siblings_returns_empty_when_parent_missing() {
+        let dir = tempdir().unwrap();
+        let canonical = dir.path().join("missing").join("summary.json");
+
+        let backups = list_canonical_backup_siblings(canonical).unwrap();
+
+        assert!(backups.is_empty());
+    }
+}
