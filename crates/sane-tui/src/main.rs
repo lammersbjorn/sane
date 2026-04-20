@@ -33,9 +33,9 @@ use sane_policy::{
     recommend_roles,
 };
 use sane_state::{
-    ArtifactRecord, CanonicalStateFormat, CanonicalStatePaths, CurrentRunState, DecisionRecord,
-    EventRecord, LayeredStateBundle, RunSummary, VerificationStatus,
-    write_canonical_with_backup_result,
+    ArtifactRecord, CanonicalRewriteResult, CanonicalStateFormat, CanonicalStatePaths,
+    CurrentRunState, DecisionRecord, EventRecord, LayeredStateBundle, RunSummary,
+    VerificationStatus, write_canonical_with_backup_result,
 };
 use serde_json::{Map, Value, json};
 use toml::Value as TomlValue;
@@ -2658,7 +2658,7 @@ fn install_runtime(
     paths
         .ensure_runtime_dirs()
         .map_err(|error| error.to_string())?;
-    ensure_install_runtime_baseline(paths, codex_paths)?;
+    let canonical_rewrites = ensure_install_runtime_baseline(paths, codex_paths)?;
 
     let layered = load_layered_state(paths).ok();
     let current = if let Some(current) = layered
@@ -2676,50 +2676,109 @@ fn install_runtime(
         .unwrap_or_else(|| RunSummary::read_from_path(&paths.summary_path).unwrap_or_default());
     ensure_file_with_default(&paths.brief_path, &summary.build_brief(&current))?;
 
+    let mut details = Vec::new();
+    for rewrite in &canonical_rewrites {
+        append_named_rewrite_details(&mut details, rewrite.name, &rewrite.metadata);
+    }
+    details.extend([
+        format!("config: {}", paths.config_path.display()),
+        format!("current-run: {}", paths.current_run_path.display()),
+        format!("summary: {}", paths.summary_path.display()),
+        format!("brief: {}", paths.brief_path.display()),
+    ]);
+
+    let mut paths_touched = install_paths_touched(paths);
+    for rewrite in &canonical_rewrites {
+        paths_touched.push(rewrite.metadata.rewritten_path.clone());
+        if let Some(backup_path) = &rewrite.metadata.backup_path {
+            paths_touched.push(backup_path.clone());
+        }
+    }
+    paths_touched.sort();
+    paths_touched.dedup();
+
     Ok(OperationResult {
         kind: OperationKind::InstallRuntime,
         summary: format!("installed runtime at {}", paths.runtime_root.display()),
-        rewrite: None,
-        details: vec![
-            format!("config: {}", paths.config_path.display()),
-            format!("current-run: {}", paths.current_run_path.display()),
-            format!("summary: {}", paths.summary_path.display()),
-            format!("brief: {}", paths.brief_path.display()),
-        ],
-        paths_touched: install_paths_touched(paths),
+        rewrite: canonical_rewrites
+            .first()
+            .map(|rewrite| rewrite.metadata.clone()),
+        details,
+        paths_touched,
         inventory: vec![],
     })
+}
+
+#[derive(Clone)]
+struct InstallCanonicalRewrite {
+    name: &'static str,
+    metadata: OperationRewriteMetadata,
 }
 
 fn ensure_install_runtime_baseline(
     paths: &ProjectPaths,
     codex_paths: &CodexPaths,
-) -> Result<(), String> {
-    ensure_install_config(paths, codex_paths)?;
-    ensure_install_current_run(paths)?;
-    ensure_install_summary(paths)?;
+) -> Result<Vec<InstallCanonicalRewrite>, String> {
+    let mut rewrites = Vec::new();
+    if let Some(metadata) = ensure_install_config(paths, codex_paths)? {
+        rewrites.push(InstallCanonicalRewrite {
+            name: "config",
+            metadata,
+        });
+    }
+    if let Some(metadata) = ensure_install_current_run(paths)? {
+        rewrites.push(InstallCanonicalRewrite {
+            name: "current-run",
+            metadata,
+        });
+    }
+    if let Some(metadata) = ensure_install_summary(paths)? {
+        rewrites.push(InstallCanonicalRewrite {
+            name: "summary",
+            metadata,
+        });
+    }
     ensure_file_with_default(&paths.events_path, "")?;
     ensure_file_with_default(&paths.decisions_path, "")?;
     ensure_file_with_default(&paths.artifacts_path, "")?;
-    Ok(())
+    Ok(rewrites)
 }
 
-fn ensure_install_config(paths: &ProjectPaths, codex_paths: &CodexPaths) -> Result<(), String> {
-    if !paths.config_path.exists() {
-        recommended_local_config(codex_paths)
-            .write_to_path(&paths.config_path)
-            .map_err(|error| error.to_string())?;
+fn ensure_install_config(
+    paths: &ProjectPaths,
+    codex_paths: &CodexPaths,
+) -> Result<Option<OperationRewriteMetadata>, String> {
+    let should_rewrite =
+        !paths.config_path.exists() || LocalConfig::read_from_path(&paths.config_path).is_err();
+    if should_rewrite {
+        let rewrite_result = write_canonical_with_backup_result(
+            &paths.config_path,
+            &recommended_local_config(codex_paths),
+            CanonicalStateFormat::Toml,
+        )
+        .map_err(|error| error.to_string())?;
+        return Ok(Some(operation_rewrite_metadata(rewrite_result)));
     }
-    Ok(())
+
+    Ok(None)
 }
 
-fn ensure_install_current_run(paths: &ProjectPaths) -> Result<(), String> {
-    if !paths.current_run_path.exists() {
-        install_current_run_state()
-            .write_to_path(&paths.current_run_path)
-            .map_err(|error| error.to_string())?;
+fn ensure_install_current_run(
+    paths: &ProjectPaths,
+) -> Result<Option<OperationRewriteMetadata>, String> {
+    let should_rewrite = !paths.current_run_path.exists()
+        || CurrentRunState::read_from_path(&paths.current_run_path).is_err();
+    if should_rewrite {
+        let rewrite_result = write_canonical_with_backup_result(
+            &paths.current_run_path,
+            &install_current_run_state(),
+            CanonicalStateFormat::Json,
+        )
+        .map_err(|error| error.to_string())?;
+        return Ok(Some(operation_rewrite_metadata(rewrite_result)));
     }
-    Ok(())
+
+    Ok(None)
 }
 
 fn install_current_run_state() -> CurrentRunState {
@@ -2733,14 +2792,22 @@ fn install_current_run_state() -> CurrentRunState {
     state
 }
 
-fn ensure_install_summary(paths: &ProjectPaths) -> Result<(), String> {
-    if !paths.summary_path.exists() {
-        let summary = RunSummary::default();
-        summary
-            .write_to_path(&paths.summary_path)
-            .map_err(|error| error.to_string())?;
+fn ensure_install_summary(
+    paths: &ProjectPaths,
+) -> Result<Option<OperationRewriteMetadata>, String> {
+    let should_rewrite =
+        !paths.summary_path.exists() || RunSummary::read_from_path(&paths.summary_path).is_err();
+    if should_rewrite {
+        let rewrite_result = write_canonical_with_backup_result(
+            &paths.summary_path,
+            &RunSummary::default(),
+            CanonicalStateFormat::Json,
+        )
+        .map_err(|error| error.to_string())?;
+        return Ok(Some(operation_rewrite_metadata(rewrite_result)));
     }
-    Ok(())
+
+    Ok(None)
 }
 
 fn install_paths_touched(paths: &ProjectPaths) -> Vec<String> {
@@ -3390,27 +3457,10 @@ fn save_config(paths: &ProjectPaths, config: &LocalConfig) -> Result<OperationRe
         write_canonical_with_backup_result(&paths.config_path, config, CanonicalStateFormat::Toml)
             .map_err(|error| error.to_string())?;
 
-    let rewrite = OperationRewriteMetadata {
-        rewritten_path: rewrite_result.rewritten_path.display().to_string(),
-        backup_path: rewrite_result
-            .backup_path
-            .as_ref()
-            .map(|path| path.display().to_string()),
-        first_write: rewrite_result.first_write,
-    };
+    let rewrite = operation_rewrite_metadata(rewrite_result);
 
-    let mut details = vec![format!("rewritten path: {}", rewrite.rewritten_path)];
-    if let Some(backup_path) = &rewrite.backup_path {
-        details.push(format!("backup path: {backup_path}"));
-    }
-    details.push(format!(
-        "write mode: {}",
-        if rewrite.first_write {
-            "first write"
-        } else {
-            "rewrite"
-        }
-    ));
+    let mut details = Vec::new();
+    append_rewrite_details(&mut details, &rewrite);
 
     let mut paths_touched = vec![rewrite.rewritten_path.clone()];
     if let Some(backup_path) = &rewrite.backup_path {
@@ -3434,6 +3484,48 @@ fn save_config(paths: &ProjectPaths, config: &LocalConfig) -> Result<OperationRe
             repair_hint: None,
         }],
     })
+}
+
+fn operation_rewrite_metadata(rewrite_result: CanonicalRewriteResult) -> OperationRewriteMetadata {
+    OperationRewriteMetadata {
+        rewritten_path: rewrite_result.rewritten_path.display().to_string(),
+        backup_path: rewrite_result
+            .backup_path
+            .as_ref()
+            .map(|path| path.display().to_string()),
+        first_write: rewrite_result.first_write,
+    }
+}
+
+fn rewrite_mode(first_write: bool) -> &'static str {
+    if first_write {
+        "first write"
+    } else {
+        "rewrite"
+    }
+}
+
+fn append_rewrite_details(details: &mut Vec<String>, rewrite: &OperationRewriteMetadata) {
+    details.push(format!("rewritten path: {}", rewrite.rewritten_path));
+    if let Some(backup_path) = &rewrite.backup_path {
+        details.push(format!("backup path: {backup_path}"));
+    }
+    details.push(format!("write mode: {}", rewrite_mode(rewrite.first_write)));
+}
+
+fn append_named_rewrite_details(
+    details: &mut Vec<String>,
+    name: &str,
+    rewrite: &OperationRewriteMetadata,
+) {
+    details.push(format!("{name} rewritten path: {}", rewrite.rewritten_path));
+    if let Some(backup_path) = &rewrite.backup_path {
+        details.push(format!("{name} backup path: {backup_path}"));
+    }
+    details.push(format!(
+        "{name} write mode: {}",
+        rewrite_mode(rewrite.first_write)
+    ));
 }
 
 fn ensure_telemetry_files(paths: &ProjectPaths, level: TelemetryLevel) -> Result<(), String> {
@@ -5410,6 +5502,67 @@ mod tests {
         )
         .unwrap();
         assert_eq!(state.objective, "initialize sane runtime");
+    }
+
+    #[test]
+    fn install_reports_canonical_first_write_details() {
+        let dir = tempdir().unwrap();
+        let output = run(&["install"], dir.path()).unwrap();
+
+        assert!(output.contains(&format!(
+            "config rewritten path: {}",
+            dir.path().join(".sane").join("config.local.toml").display()
+        )));
+        assert!(output.contains(&format!(
+            "current-run rewritten path: {}",
+            dir.path()
+                .join(".sane")
+                .join("state")
+                .join("current-run.json")
+                .display()
+        )));
+        assert!(output.contains(&format!(
+            "summary rewritten path: {}",
+            dir.path().join(".sane").join("state").join("summary.json").display()
+        )));
+        assert!(output.contains("config write mode: first write"));
+        assert!(output.contains("current-run write mode: first write"));
+        assert!(output.contains("summary write mode: first write"));
+    }
+
+    #[test]
+    fn install_repairs_invalid_canonical_files_and_reports_rewrite_details() {
+        let project = tempdir().unwrap();
+        let home = tempdir().unwrap();
+        let _ = run_with_home(&["install"], project.path(), home.path()).unwrap();
+
+        let config_path = project.path().join(".sane").join("config.local.toml");
+        let current_run_path = project
+            .path()
+            .join(".sane")
+            .join("state")
+            .join("current-run.json");
+        let summary_path = project
+            .path()
+            .join(".sane")
+            .join("state")
+            .join("summary.json");
+
+        std::fs::write(&config_path, "not = [valid").unwrap();
+        std::fs::write(&current_run_path, "{").unwrap();
+        std::fs::write(&summary_path, "{").unwrap();
+
+        let output = run_with_home(&["install"], project.path(), home.path()).unwrap();
+
+        assert!(output.contains("config write mode: rewrite"));
+        assert!(output.contains("current-run write mode: rewrite"));
+        assert!(output.contains("summary write mode: rewrite"));
+        assert!(output.contains("config.local.toml.bak."));
+        assert!(output.contains("current-run.json.bak."));
+        assert!(output.contains("summary.json.bak."));
+        assert!(sane_config::LocalConfig::read_from_path(&config_path).is_ok());
+        assert!(sane_state::CurrentRunState::read_from_path(&current_run_path).is_ok());
+        assert!(sane_state::RunSummary::read_from_path(&summary_path).is_ok());
     }
 
     #[test]
