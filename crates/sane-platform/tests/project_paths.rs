@@ -1,4 +1,4 @@
-use sane_platform::{CodexPaths, ProjectPaths};
+use sane_platform::{CodexPaths, ProjectPaths, StateFile};
 use tempfile::tempdir;
 
 #[test]
@@ -186,4 +186,44 @@ fn ensure_runtime_dirs_creates_state_and_telemetry_layout() {
     assert!(paths.logs_dir.is_dir());
     assert!(paths.sessions_dir.is_dir());
     assert!(paths.telemetry_dir.is_dir());
+}
+
+#[test]
+fn canonical_state_load_order_matches_r3() {
+    let dir = tempdir().unwrap();
+    let paths = ProjectPaths::new(dir.path());
+
+    let order = paths.canonical_state_load_order();
+    assert_eq!(
+        order.map(|entry| entry.file),
+        [
+            StateFile::Config,
+            StateFile::Summary,
+            StateFile::CurrentRun,
+            StateFile::Brief
+        ]
+    );
+    assert_eq!(order[0].path, paths.config_path.as_path());
+    assert_eq!(order[1].path, paths.summary_path.as_path());
+    assert_eq!(order[2].path, paths.current_run_path.as_path());
+    assert_eq!(order[3].path, paths.brief_path.as_path());
+}
+
+#[test]
+fn raw_state_history_files_match_jsonl_layout() {
+    let dir = tempdir().unwrap();
+    let paths = ProjectPaths::new(dir.path());
+
+    let logs = paths.raw_state_history_files();
+    assert_eq!(
+        logs.map(|entry| entry.file),
+        [
+            StateFile::Events,
+            StateFile::Decisions,
+            StateFile::Artifacts
+        ]
+    );
+    assert_eq!(logs[0].path, paths.events_path.as_path());
+    assert_eq!(logs[1].path, paths.decisions_path.as_path());
+    assert_eq!(logs[2].path, paths.artifacts_path.as_path());
 }

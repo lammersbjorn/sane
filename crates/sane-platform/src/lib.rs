@@ -43,6 +43,23 @@ pub enum HostPlatform {
     Windows,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StateFile {
+    Config,
+    Summary,
+    CurrentRun,
+    Brief,
+    Events,
+    Decisions,
+    Artifacts,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct StateFileRef<'a> {
+    pub file: StateFile,
+    pub path: &'a Path,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ProjectPaths {
     pub project_root: PathBuf,
@@ -167,6 +184,56 @@ impl ProjectPaths {
             std::fs::create_dir_all(dir)?;
         }
         Ok(())
+    }
+
+    pub fn state_file_path(&self, file: StateFile) -> &Path {
+        match file {
+            StateFile::Config => &self.config_path,
+            StateFile::Summary => &self.summary_path,
+            StateFile::CurrentRun => &self.current_run_path,
+            StateFile::Brief => &self.brief_path,
+            StateFile::Events => &self.events_path,
+            StateFile::Decisions => &self.decisions_path,
+            StateFile::Artifacts => &self.artifacts_path,
+        }
+    }
+
+    pub fn canonical_state_load_order(&self) -> [StateFileRef<'_>; 4] {
+        [
+            StateFileRef {
+                file: StateFile::Config,
+                path: self.state_file_path(StateFile::Config),
+            },
+            StateFileRef {
+                file: StateFile::Summary,
+                path: self.state_file_path(StateFile::Summary),
+            },
+            StateFileRef {
+                file: StateFile::CurrentRun,
+                path: self.state_file_path(StateFile::CurrentRun),
+            },
+            StateFileRef {
+                file: StateFile::Brief,
+                path: self.state_file_path(StateFile::Brief),
+            },
+        ]
+    }
+
+    pub fn raw_state_history_files(&self) -> [StateFileRef<'_>; 3] {
+        [
+            StateFileRef {
+                file: StateFile::Events,
+                path: self.state_file_path(StateFile::Events),
+            },
+            StateFileRef {
+                file: StateFile::Decisions,
+                path: self.state_file_path(StateFile::Decisions),
+            },
+            StateFileRef {
+                file: StateFile::Artifacts,
+                path: self.state_file_path(StateFile::Artifacts),
+            },
+        ]
     }
 }
 

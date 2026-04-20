@@ -1,5 +1,6 @@
 use sane_state::{
-    ArtifactRecord, CurrentRunState, DecisionRecord, EventRecord, RunSnapshot, RunSummary,
+    ArtifactRecord, CanonicalStatePaths, CurrentRunState, DecisionRecord, EventRecord,
+    LayeredStateBundle, LocalStateConfig, RunSnapshot, RunSnapshotError, RunSummary,
     SummaryPromotion,
 };
 use tempfile::tempdir;
@@ -270,4 +271,93 @@ fn artifact_record_reads_legacy_event_shape() {
     assert_eq!(decoded.kind, "report");
     assert_eq!(decoded.path, "docs/report.md");
     assert_eq!(decoded.summary, "state audit report (ok)");
+}
+
+#[test]
+fn local_state_config_reads_and_writes_versioned_toml() {
+    let dir = tempdir().unwrap();
+    let path = dir.path().join("config.local.toml");
+
+    std::fs::write(
+        &path,
+        r#"
+version = 0
+telemetry = "off"
+"#,
+    )
+    .unwrap();
+
+    let decoded = LocalStateConfig::read_from_path(&path).unwrap();
+    assert_eq!(decoded.version, 1);
+    assert_eq!(
+        decoded
+            .extra
+            .get("telemetry")
+            .and_then(|value| value.as_str()),
+        Some("off")
+    );
+
+    decoded.write_to_path(&path).unwrap();
+    let body = std::fs::read_to_string(path).unwrap();
+    assert!(body.contains("version = 1"));
+    assert!(body.contains("telemetry = \"off\""));
+}
+
+#[test]
+fn layered_state_bundle_loads_optional_layers() {
+    let dir = tempdir().unwrap();
+    let runtime_root = dir.path().join(".sane");
+    let state_dir = runtime_root.join("state");
+    std::fs::create_dir_all(&state_dir).unwrap();
+
+    std::fs::write(runtime_root.join("config.local.toml"), "version = 1\n").unwrap();
+    std::fs::write(
+        state_dir.join("summary.json"),
+        r#"{"version":2,"accepted_decisions":["keep state thin"],"completed_milestones":[],"constraints":[],"last_verified_outputs":[],"files_touched":[]}"#,
+    )
+    .unwrap();
+    std::fs::write(runtime_root.join("BRIEF.md"), "# brief\n").unwrap();
+
+    let paths = CanonicalStatePaths::new(
+        runtime_root.join("config.local.toml"),
+        state_dir.join("summary.json"),
+        state_dir.join("current-run.json"),
+        runtime_root.join("BRIEF.md"),
+    );
+
+    let bundle = LayeredStateBundle::load(&paths).unwrap();
+    assert_eq!(bundle.config.as_ref().map(|config| config.version), Some(1));
+    assert_eq!(
+        bundle.summary.as_ref().map(|summary| summary.version),
+        Some(2)
+    );
+    assert!(bundle.current_run.is_none());
+    assert_eq!(bundle.brief.as_deref(), Some("# brief\n"));
+}
+
+#[test]
+fn layered_state_bundle_stops_on_summary_parse_after_config() {
+    let dir = tempdir().unwrap();
+    let runtime_root = dir.path().join(".sane");
+    let state_dir = runtime_root.join("state");
+    std::fs::create_dir_all(&state_dir).unwrap();
+
+    std::fs::write(runtime_root.join("config.local.toml"), "version = 1\n").unwrap();
+    std::fs::write(state_dir.join("summary.json"), "{").unwrap();
+    std::fs::write(state_dir.join("current-run.json"), "{").unwrap();
+
+    let paths = CanonicalStatePaths::new(
+        runtime_root.join("config.local.toml"),
+        state_dir.join("summary.json"),
+        state_dir.join("current-run.json"),
+        runtime_root.join("BRIEF.md"),
+    );
+
+    let error = LayeredStateBundle::load(&paths).unwrap_err();
+    match error {
+        RunSnapshotError::Parse { path, .. } => {
+            assert!(path.ends_with("summary.json"));
+        }
+        other => panic!("expected summary parse error, got {other:?}"),
+    }
 }

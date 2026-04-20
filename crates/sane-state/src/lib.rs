@@ -1,13 +1,14 @@
 use std::collections::BTreeMap;
 use std::fs;
 use std::io::Write;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::de::{self, Deserializer};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use thiserror::Error;
+use toml::Table as TomlTable;
 
 pub type ExtraMap = BTreeMap<String, Value>;
 
@@ -31,6 +32,13 @@ pub struct RunSummary {
     pub extra: ExtraMap,
 }
 
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct LocalStateConfig {
+    pub version: u32,
+    #[serde(flatten)]
+    pub extra: TomlTable,
+}
+
 /// Canonical live-run state.
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct CurrentRunState {
@@ -43,6 +51,22 @@ pub struct CurrentRunState {
     pub last_compaction_ts_unix: Option<u64>,
     #[serde(flatten)]
     pub extra: ExtraMap,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CanonicalStatePaths {
+    pub config_path: PathBuf,
+    pub summary_path: PathBuf,
+    pub current_run_path: PathBuf,
+    pub brief_path: PathBuf,
+}
+
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct LayeredStateBundle {
+    pub config: Option<LocalStateConfig>,
+    pub summary: Option<RunSummary>,
+    pub current_run: Option<CurrentRunState>,
+    pub brief: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -109,8 +133,16 @@ pub enum RunSnapshotError {
         #[source]
         source: serde_json::Error,
     },
+    #[error("failed to parse snapshot from {path}: {source}")]
+    ParseToml {
+        path: String,
+        #[source]
+        source: toml::de::Error,
+    },
     #[error("failed to encode snapshot to json: {0}")]
     Encode(#[from] serde_json::Error),
+    #[error("failed to encode snapshot to toml: {0}")]
+    EncodeToml(#[from] toml::ser::Error),
 }
 
 #[derive(Debug, Deserialize)]
@@ -123,6 +155,13 @@ struct RunSummaryWire {
     files_touched: Option<Vec<Value>>,
     #[serde(flatten)]
     extra: ExtraMap,
+}
+
+#[derive(Debug, Deserialize)]
+struct LocalStateConfigWire {
+    version: Option<u32>,
+    #[serde(flatten)]
+    extra: TomlTable,
 }
 
 #[derive(Debug, Deserialize)]
@@ -253,6 +292,19 @@ impl<'de> Deserialize<'de> for RunSummary {
     }
 }
 
+impl<'de> Deserialize<'de> for LocalStateConfig {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let wire = LocalStateConfigWire::deserialize(deserializer)?;
+        Ok(Self {
+            version: upgraded_config_version(wire.version),
+            extra: wire.extra,
+        })
+    }
+}
+
 impl<'de> Deserialize<'de> for DecisionRecord {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -373,6 +425,33 @@ impl<'de> Deserialize<'de> for CurrentRunState {
     }
 }
 
+impl CanonicalStatePaths {
+    pub fn new(
+        config_path: impl Into<PathBuf>,
+        summary_path: impl Into<PathBuf>,
+        current_run_path: impl Into<PathBuf>,
+        brief_path: impl Into<PathBuf>,
+    ) -> Self {
+        Self {
+            config_path: config_path.into(),
+            summary_path: summary_path.into(),
+            current_run_path: current_run_path.into(),
+            brief_path: brief_path.into(),
+        }
+    }
+}
+
+impl LayeredStateBundle {
+    pub fn load(paths: &CanonicalStatePaths) -> Result<Self, RunSnapshotError> {
+        Ok(Self {
+            config: LocalStateConfig::read_optional_from_path(&paths.config_path)?,
+            summary: RunSummary::read_optional_from_path(&paths.summary_path)?,
+            current_run: CurrentRunState::read_optional_from_path(&paths.current_run_path)?,
+            brief: read_optional_text(&paths.brief_path)?,
+        })
+    }
+}
+
 impl RunSnapshot {
     pub fn read_from_path(path: impl AsRef<Path>) -> Result<Self, RunSnapshotError> {
         let path = path.as_ref();
@@ -392,9 +471,31 @@ impl RunSnapshot {
     }
 }
 
+impl LocalStateConfig {
+    pub fn read_from_path(path: impl AsRef<Path>) -> Result<Self, RunSnapshotError> {
+        read_toml(path)
+    }
+
+    pub fn read_optional_from_path(
+        path: impl AsRef<Path>,
+    ) -> Result<Option<Self>, RunSnapshotError> {
+        read_optional_toml(path)
+    }
+
+    pub fn write_to_path(&self, path: impl AsRef<Path>) -> Result<(), RunSnapshotError> {
+        write_toml(path, self)
+    }
+}
+
 impl RunSummary {
     pub fn read_from_path(path: impl AsRef<Path>) -> Result<Self, RunSnapshotError> {
         read_json(path)
+    }
+
+    pub fn read_optional_from_path(
+        path: impl AsRef<Path>,
+    ) -> Result<Option<Self>, RunSnapshotError> {
+        read_optional_json(path)
     }
 
     pub fn write_to_path(&self, path: impl AsRef<Path>) -> Result<(), RunSnapshotError> {
@@ -468,9 +569,24 @@ impl Default for RunSummary {
     }
 }
 
+impl Default for LocalStateConfig {
+    fn default() -> Self {
+        Self {
+            version: 1,
+            extra: TomlTable::default(),
+        }
+    }
+}
+
 impl CurrentRunState {
     pub fn read_from_path(path: impl AsRef<Path>) -> Result<Self, RunSnapshotError> {
         read_json(path)
+    }
+
+    pub fn read_optional_from_path(
+        path: impl AsRef<Path>,
+    ) -> Result<Option<Self>, RunSnapshotError> {
+        read_optional_json(path)
     }
 
     pub fn write_to_path(&self, path: impl AsRef<Path>) -> Result<(), RunSnapshotError> {
@@ -599,6 +715,60 @@ where
     })
 }
 
+fn read_optional_json<T>(path: impl AsRef<Path>) -> Result<Option<T>, RunSnapshotError>
+where
+    T: for<'de> Deserialize<'de>,
+{
+    let path = path.as_ref();
+    if !path.exists() {
+        return Ok(None);
+    }
+
+    read_json(path).map(Some)
+}
+
+fn read_toml<T>(path: impl AsRef<Path>) -> Result<T, RunSnapshotError>
+where
+    T: for<'de> Deserialize<'de>,
+{
+    let path = path.as_ref();
+    let raw = fs::read_to_string(path).map_err(|source| RunSnapshotError::Read {
+        path: path.display().to_string(),
+        source,
+    })?;
+
+    toml::from_str(&raw).map_err(|source| RunSnapshotError::ParseToml {
+        path: path.display().to_string(),
+        source,
+    })
+}
+
+fn read_optional_toml<T>(path: impl AsRef<Path>) -> Result<Option<T>, RunSnapshotError>
+where
+    T: for<'de> Deserialize<'de>,
+{
+    let path = path.as_ref();
+    if !path.exists() {
+        return Ok(None);
+    }
+
+    read_toml(path).map(Some)
+}
+
+fn read_optional_text(path: impl AsRef<Path>) -> Result<Option<String>, RunSnapshotError> {
+    let path = path.as_ref();
+    if !path.exists() {
+        return Ok(None);
+    }
+
+    fs::read_to_string(path)
+        .map(Some)
+        .map_err(|source| RunSnapshotError::Read {
+            path: path.display().to_string(),
+            source,
+        })
+}
+
 fn write_json<T>(path: impl AsRef<Path>, value: &T) -> Result<(), RunSnapshotError>
 where
     T: Serialize,
@@ -612,6 +782,25 @@ where
     }
 
     let encoded = serde_json::to_string_pretty(value)?;
+    fs::write(path, encoded).map_err(|source| RunSnapshotError::Write {
+        path: path.display().to_string(),
+        source,
+    })
+}
+
+fn write_toml<T>(path: impl AsRef<Path>, value: &T) -> Result<(), RunSnapshotError>
+where
+    T: Serialize,
+{
+    let path = path.as_ref();
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|source| RunSnapshotError::Write {
+            path: parent.display().to_string(),
+            source,
+        })?;
+    }
+
+    let encoded = toml::to_string_pretty(value)?;
     fs::write(path, encoded).map_err(|source| RunSnapshotError::Write {
         path: path.display().to_string(),
         source,
@@ -649,6 +838,13 @@ fn upgraded_version(version: Option<u32>) -> u32 {
     match version {
         Some(value) if value >= 2 => value,
         _ => 2,
+    }
+}
+
+fn upgraded_config_version(version: Option<u32>) -> u32 {
+    match version {
+        Some(value) if value >= 1 => value,
+        _ => 1,
     }
 }
 
