@@ -1,7 +1,7 @@
 import { InventoryStatus } from "@sane/core";
 import { type CodexPaths, type ProjectPaths } from "@sane/platform";
 
-import { inspectIntegrationsProfileAudit, inspectIntegrationsProfileStatus } from "./codex-config.js";
+import { inspectIntegrationsProfileSnapshot } from "./codex-config.js";
 import { CORE_INSTALL_BUNDLE_TARGETS } from "./core-install-bundle-targets.js";
 import { inspectStatusBundle } from "./inventory.js";
 import {
@@ -44,22 +44,21 @@ export function inspectInstallStatus(
 ): InstallStatusSnapshot {
   const statusBundle = inspectStatusBundle(paths, codexPaths);
   const inventory = statusBundle.codexNative;
-  const integrationsAudit = inspectIntegrationsProfileAudit(codexPaths);
-  const integrationStatus = inspectIntegrationsProfileStatus(codexPaths);
+  const integrationsProfile = inspectIntegrationsProfileSnapshot(codexPaths);
   const missingTargets = missingBundleTargets(inventory);
   const bundleStatus = statusBundle.primary.installBundle;
-  const integrationsStatusSnapshot = integrationsStatus(integrationStatus);
+  const integrationsStatusSnapshot = integrationsStatus(integrationsProfile.audit.status);
 
   return {
     inventory,
     bundleStatus,
     missingTargets,
     integrationsStatus: integrationsStatusSnapshot,
-    integrationsRecommendedChangeCount: integrationsAudit.recommendedChangeCount,
+    integrationsRecommendedChangeCount: integrationsProfile.audit.recommendedChangeCount,
     recommendedActionId:
       bundleStatus !== "installed"
         ? "export_all"
-        : integrationStatus !== "installed"
+        : integrationsProfile.audit.status !== "installed"
           ? "apply_integrations_profile"
           : null,
     actionStatus: {
@@ -98,7 +97,7 @@ function compatibilityStatus(
   return fromInventoryStatus(statusBundle.compatibility.find((item) => item.name === name)?.status);
 }
 
-function integrationsStatus(status: string): InstallActionStatus {
+function integrationsStatus(status: "installed" | "missing" | "invalid"): InstallActionStatus {
   if (status === "installed") {
     return statusDto("installed");
   }

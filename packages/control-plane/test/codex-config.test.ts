@@ -13,16 +13,20 @@ import {
   backupCodexConfig,
   inspectCloudflareProfileAudit,
   inspectCloudflareProfileApplyResult,
+  inspectCloudflareProfileSnapshot,
   inspectCloudflareProfileStatus,
   inspectCodexConfigBackupSnapshot,
   inspectCodexProfileApplyResult,
   inspectCodexProfileAudit,
+  inspectCodexProfileSnapshot,
   inspectCodexProfileStatus,
   inspectIntegrationsProfileAudit,
   inspectIntegrationsProfileApplyResult,
+  inspectIntegrationsProfileSnapshot,
   inspectIntegrationsProfileStatus,
   inspectOpencodeProfileAudit,
   inspectOpencodeProfileApplyResult,
+  inspectOpencodeProfileSnapshot,
   inspectOpencodeProfileStatus,
   previewCloudflareProfile,
   previewCodexProfile,
@@ -297,6 +301,64 @@ describe("codex config control plane", () => {
     applyIntegrationsProfile(projectPaths, codexPaths);
 
     expect(inspectIntegrationsProfileStatus(codexPaths)).toBe("installed");
+  });
+
+  it("reports typed profile snapshot helpers from one read path", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    expect(inspectCodexProfileSnapshot(codexPaths)).toMatchObject({
+      audit: expect.objectContaining({ status: "missing", recommendedChangeCount: 3 }),
+      apply: expect.objectContaining({ status: "ready", recommendedChangeCount: 3 }),
+      preview: expect.objectContaining({
+        summary: "codex-profile preview: 3 recommended change(s)"
+      })
+    });
+    expect(inspectIntegrationsProfileSnapshot(codexPaths)).toMatchObject({
+      audit: expect.objectContaining({ status: "missing", recommendedChangeCount: 3 }),
+      apply: expect.objectContaining({ status: "ready", recommendedChangeCount: 3 }),
+      preview: expect.objectContaining({
+        summary: "integrations-profile preview: 3 recommended change(s)"
+      })
+    });
+    expect(inspectCloudflareProfileSnapshot(codexPaths)).toMatchObject({
+      audit: expect.objectContaining({ status: "missing", recommendedChangeCount: 1 }),
+      apply: expect.objectContaining({ status: "ready", recommendedChangeCount: 1 }),
+      preview: expect.objectContaining({
+        summary: "cloudflare-profile preview: 1 recommended change(s)"
+      })
+    });
+    expect(inspectOpencodeProfileSnapshot(codexPaths)).toMatchObject({
+      audit: expect.objectContaining({ status: "missing", recommendedChangeCount: 1 }),
+      apply: expect.objectContaining({ status: "ready", recommendedChangeCount: 1 }),
+      preview: expect.objectContaining({
+        summary: "opencode-profile preview: 1 recommended change(s)"
+      })
+    });
+
+    applyCodexProfile(projectPaths, codexPaths);
+    applyIntegrationsProfile(projectPaths, codexPaths);
+    applyCloudflareProfile(projectPaths, codexPaths);
+    applyOpencodeProfile(projectPaths, codexPaths);
+
+    expect(inspectCodexProfileSnapshot(codexPaths)).toMatchObject({
+      audit: expect.objectContaining({ status: "installed", recommendedChangeCount: 0 }),
+      apply: expect.objectContaining({ status: "already_satisfied", recommendedChangeCount: 0 })
+    });
+    expect(inspectIntegrationsProfileSnapshot(codexPaths)).toMatchObject({
+      audit: expect.objectContaining({ status: "installed", recommendedChangeCount: 0 }),
+      apply: expect.objectContaining({ status: "already_satisfied", recommendedChangeCount: 0 })
+    });
+    expect(inspectCloudflareProfileSnapshot(codexPaths)).toMatchObject({
+      audit: expect.objectContaining({ status: "installed", recommendedChangeCount: 0 }),
+      apply: expect.objectContaining({ status: "already_satisfied", recommendedChangeCount: 0 })
+    });
+    expect(inspectOpencodeProfileSnapshot(codexPaths)).toMatchObject({
+      audit: expect.objectContaining({ status: "installed", recommendedChangeCount: 0 }),
+      apply: expect.objectContaining({ status: "already_satisfied", recommendedChangeCount: 0 })
+    });
   });
 
   it("reports typed integrations-profile apply result without scraping apply summary strings", () => {

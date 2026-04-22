@@ -96,6 +96,30 @@ export interface CodexConfigBackupSnapshot {
   latestBackupPath: string | null;
 }
 
+export interface CodexProfileSnapshot {
+  audit: CodexProfileAudit;
+  apply: CodexProfileApplyResult;
+  preview: OperationResult;
+}
+
+export interface IntegrationsProfileSnapshot {
+  audit: IntegrationsProfileAudit;
+  apply: IntegrationsProfileApplyResult;
+  preview: OperationResult;
+}
+
+export interface CloudflareProfileSnapshot {
+  audit: CloudflareProfileAudit;
+  apply: CloudflareProfileApplyResult;
+  preview: OperationResult;
+}
+
+export interface OpencodeProfileSnapshot {
+  audit: OpencodeProfileAudit;
+  apply: OpencodeProfileApplyResult;
+  preview: OperationResult;
+}
+
 export function showCodexConfig(codexPaths: CodexPaths): OperationResult {
   const inventory = inspectCodexConfigInventory(codexPaths);
 
@@ -160,55 +184,23 @@ export function backupCodexConfig(paths: ProjectPaths, codexPaths: CodexPaths): 
 }
 
 export function previewCodexProfile(codexPaths: CodexPaths): OperationResult {
-  const inventory = inspectCodexConfigInventory(codexPaths);
   const audit = inspectCodexProfileAudit(codexPaths);
-
-  return new OperationResult({
-    kind: OperationKind.PreviewCodexProfile,
-    summary: `codex-profile preview: ${audit.recommendedChangeCount} recommended change(s)`,
-    details: audit.details,
-    pathsTouched: [codexPaths.configToml],
-    inventory: [inventory]
-  });
+  return previewCodexProfileFromAudit(codexPaths, audit);
 }
 
 export function previewIntegrationsProfile(codexPaths: CodexPaths): OperationResult {
-  const inventory = inspectCodexConfigInventory(codexPaths);
   const audit = inspectIntegrationsProfileAudit(codexPaths);
-
-  return new OperationResult({
-    kind: OperationKind.PreviewIntegrationsProfile,
-    summary: `integrations-profile preview: ${audit.recommendedChangeCount} recommended change(s)`,
-    details: audit.details,
-    pathsTouched: [codexPaths.configToml],
-    inventory: [inventory]
-  });
+  return previewIntegrationsProfileFromAudit(codexPaths, audit);
 }
 
 export function previewCloudflareProfile(codexPaths: CodexPaths): OperationResult {
-  const inventory = inspectCodexConfigInventory(codexPaths);
   const audit = inspectCloudflareProfileAudit(codexPaths);
-
-  return new OperationResult({
-    kind: OperationKind.PreviewCloudflareProfile,
-    summary: `cloudflare-profile preview: ${audit.recommendedChangeCount} recommended change(s)`,
-    details: audit.details,
-    pathsTouched: [codexPaths.configToml],
-    inventory: [inventory]
-  });
+  return previewCloudflareProfileFromAudit(codexPaths, audit);
 }
 
 export function previewOpencodeProfile(codexPaths: CodexPaths): OperationResult {
-  const inventory = inspectCodexConfigInventory(codexPaths);
   const audit = inspectOpencodeProfileAudit(codexPaths);
-
-  return new OperationResult({
-    kind: OperationKind.PreviewOpencodeProfile,
-    summary: `opencode-profile preview: ${audit.recommendedChangeCount} recommended change(s)`,
-    details: audit.details,
-    pathsTouched: [codexPaths.configToml],
-    inventory: [inventory]
-  });
+  return previewOpencodeProfileFromAudit(codexPaths, audit);
 }
 
 export function applyCodexProfile(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
@@ -659,6 +651,44 @@ export function inspectCodexConfigBackupSnapshot(paths: ProjectPaths): CodexConf
   };
 }
 
+export function inspectCodexProfileSnapshot(codexPaths: CodexPaths): CodexProfileSnapshot {
+  const audit = inspectCodexProfileAudit(codexPaths);
+  return {
+    audit,
+    apply: inspectCodexProfileApplyResult(codexPaths),
+    preview: previewCodexProfileFromAudit(codexPaths, audit)
+  };
+}
+
+export function inspectIntegrationsProfileSnapshot(
+  codexPaths: CodexPaths
+): IntegrationsProfileSnapshot {
+  const audit = inspectIntegrationsProfileAudit(codexPaths);
+  return {
+    audit,
+    apply: inspectIntegrationsProfileApplyResult(codexPaths),
+    preview: previewIntegrationsProfileFromAudit(codexPaths, audit)
+  };
+}
+
+export function inspectCloudflareProfileSnapshot(codexPaths: CodexPaths): CloudflareProfileSnapshot {
+  const audit = inspectCloudflareProfileAudit(codexPaths);
+  return {
+    audit,
+    apply: inspectCloudflareProfileApplyResult(codexPaths),
+    preview: previewCloudflareProfileFromAudit(codexPaths, audit)
+  };
+}
+
+export function inspectOpencodeProfileSnapshot(codexPaths: CodexPaths): OpencodeProfileSnapshot {
+  const audit = inspectOpencodeProfileAudit(codexPaths);
+  return {
+    audit,
+    apply: inspectOpencodeProfileApplyResult(codexPaths),
+    preview: previewOpencodeProfileFromAudit(codexPaths, audit)
+  };
+}
+
 export function restoreCodexConfig(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
   const backupPath = latestCodexConfigBackup(paths);
   if (!backupPath) {
@@ -765,6 +795,58 @@ function listCodexConfigBackups(paths: ProjectPaths): string[] {
     .filter((entry) => entry.isFile() && /^config-\d+\.toml$/.test(entry.name))
     .map((entry) => join(paths.codexConfigBackupsDir, entry.name))
     .sort();
+}
+
+function previewCodexProfileFromAudit(
+  codexPaths: CodexPaths,
+  audit: CodexProfileAudit
+): OperationResult {
+  return new OperationResult({
+    kind: OperationKind.PreviewCodexProfile,
+    summary: `codex-profile preview: ${audit.recommendedChangeCount} recommended change(s)`,
+    details: audit.details,
+    pathsTouched: [codexPaths.configToml],
+    inventory: [inspectCodexConfigInventory(codexPaths)]
+  });
+}
+
+function previewIntegrationsProfileFromAudit(
+  codexPaths: CodexPaths,
+  audit: IntegrationsProfileAudit
+): OperationResult {
+  return new OperationResult({
+    kind: OperationKind.PreviewIntegrationsProfile,
+    summary: `integrations-profile preview: ${audit.recommendedChangeCount} recommended change(s)`,
+    details: audit.details,
+    pathsTouched: [codexPaths.configToml],
+    inventory: [inspectCodexConfigInventory(codexPaths)]
+  });
+}
+
+function previewCloudflareProfileFromAudit(
+  codexPaths: CodexPaths,
+  audit: CloudflareProfileAudit
+): OperationResult {
+  return new OperationResult({
+    kind: OperationKind.PreviewCloudflareProfile,
+    summary: `cloudflare-profile preview: ${audit.recommendedChangeCount} recommended change(s)`,
+    details: audit.details,
+    pathsTouched: [codexPaths.configToml],
+    inventory: [inspectCodexConfigInventory(codexPaths)]
+  });
+}
+
+function previewOpencodeProfileFromAudit(
+  codexPaths: CodexPaths,
+  audit: OpencodeProfileAudit
+): OperationResult {
+  return new OperationResult({
+    kind: OperationKind.PreviewOpencodeProfile,
+    summary: `opencode-profile preview: ${audit.recommendedChangeCount} recommended change(s)`,
+    details: audit.details,
+    pathsTouched: [codexPaths.configToml],
+    inventory: [inspectCodexConfigInventory(codexPaths)]
+  });
 }
 
 function applyCoreCodexProfileToValue(config: TomlTable, recommended: LocalConfig): void {

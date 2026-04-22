@@ -33,9 +33,7 @@ import {
 } from "@sane/state";
 
 import {
-  inspectIntegrationsProfileApplyResult,
-  inspectIntegrationsProfileAudit,
-  previewIntegrationsProfile,
+  inspectIntegrationsProfileSnapshot,
   showCodexConfig
 } from "./codex-config.js";
 import { doctor, doctorForStatusBundle, inspectDoctorSnapshot, inspectStatusBundle } from "./inventory.js";
@@ -96,9 +94,9 @@ export interface InspectSnapshot {
   latestPolicyPreview: ReturnType<typeof inspectLatestPolicyPreview>;
   localConfig: ReturnType<typeof showConfig>;
   codexConfig: ReturnType<typeof showCodexConfig>;
-  integrationsAudit: ReturnType<typeof inspectIntegrationsProfileAudit>;
-  integrationsApply: ReturnType<typeof inspectIntegrationsProfileApplyResult>;
-  integrationsPreview: ReturnType<typeof previewIntegrationsProfile>;
+  integrationsAudit: ReturnType<typeof inspectIntegrationsProfileSnapshot>["audit"];
+  integrationsApply: ReturnType<typeof inspectIntegrationsProfileSnapshot>["apply"];
+  integrationsPreview: ReturnType<typeof inspectIntegrationsProfileSnapshot>["preview"];
   driftItems: Array<{
     name: string;
     path: string;
@@ -199,6 +197,7 @@ export function inspectSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): In
   const runtimeState = inspectRuntimeStateSnapshot(paths);
   const doctorResult = doctorForStatusBundle(paths, codexPaths, statusBundle);
   const doctorSnapshot = inspectDoctorSnapshot(paths, codexPaths, statusBundle);
+  const integrationsProfile = inspectIntegrationsProfileSnapshot(codexPaths);
 
   return {
     status: {
@@ -214,9 +213,9 @@ export function inspectSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): In
     latestPolicyPreview: runtimeState.latestPolicyPreview,
     localConfig: showConfig(paths, codexPaths),
     codexConfig: showCodexConfig(codexPaths),
-    integrationsAudit: inspectIntegrationsProfileAudit(codexPaths),
-    integrationsApply: inspectIntegrationsProfileApplyResult(codexPaths),
-    integrationsPreview: previewIntegrationsProfile(codexPaths),
+    integrationsAudit: integrationsProfile.audit,
+    integrationsApply: integrationsProfile.apply,
+    integrationsPreview: integrationsProfile.preview,
     driftItems: statusBundle.driftItems.map((item) => ({
       name: item.name,
       path: item.path,

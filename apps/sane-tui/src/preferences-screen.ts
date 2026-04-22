@@ -1,11 +1,7 @@
 import { type CodexPaths, type ProjectPaths } from "@sane/platform";
 import {
-  inspectCloudflareProfileApplyResult,
-  inspectCloudflareProfileAudit,
-  inspectOpencodeProfileApplyResult,
-  inspectOpencodeProfileAudit,
-  previewCloudflareProfile,
-  previewOpencodeProfile
+  inspectCloudflareProfileSnapshot,
+  inspectOpencodeProfileSnapshot
 } from "@sane/control-plane/codex-config.js";
 import { inspectPreferencesSnapshot } from "@sane/control-plane/preferences.js";
 import { listSectionActions, type UiCommandId } from "@/command-registry.js";
@@ -36,12 +32,12 @@ export interface PreferencesScreenModel {
   telemetry: ReturnType<typeof inspectPreferencesSnapshot>["telemetry"];
   telemetryFiles: ReturnType<typeof inspectPreferencesSnapshot>["telemetryFiles"];
   enabledPacks: string[];
-  cloudflareAudit: ReturnType<typeof inspectCloudflareProfileAudit>;
-  cloudflareApply: ReturnType<typeof inspectCloudflareProfileApplyResult>;
-  cloudflarePreview: ReturnType<typeof previewCloudflareProfile>;
-  opencodeAudit: ReturnType<typeof inspectOpencodeProfileAudit>;
-  opencodeApply: ReturnType<typeof inspectOpencodeProfileApplyResult>;
-  opencodePreview: ReturnType<typeof previewOpencodeProfile>;
+  cloudflareAudit: ReturnType<typeof inspectCloudflareProfileSnapshot>["audit"];
+  cloudflareApply: ReturnType<typeof inspectCloudflareProfileSnapshot>["apply"];
+  cloudflarePreview: ReturnType<typeof inspectCloudflareProfileSnapshot>["preview"];
+  opencodeAudit: ReturnType<typeof inspectOpencodeProfileSnapshot>["audit"];
+  opencodeApply: ReturnType<typeof inspectOpencodeProfileSnapshot>["apply"];
+  opencodePreview: ReturnType<typeof inspectOpencodeProfileSnapshot>["preview"];
   actions: PreferencesScreenAction[];
 }
 
@@ -62,6 +58,8 @@ export function loadPreferencesScreen(
             : "backend"
   }));
   const snapshot = inspectPreferencesSnapshot(paths, codexPaths);
+  const cloudflareProfile = inspectCloudflareProfileSnapshot(codexPaths);
+  const opencodeProfile = inspectOpencodeProfileSnapshot(codexPaths);
   return {
     summary: "Preferences",
     source: snapshot.source,
@@ -71,12 +69,12 @@ export function loadPreferencesScreen(
     telemetry: snapshot.telemetry,
     telemetryFiles: snapshot.telemetryFiles,
     enabledPacks: snapshot.enabledPacks,
-    cloudflareAudit: inspectCloudflareProfileAudit(codexPaths),
-    cloudflareApply: inspectCloudflareProfileApplyResult(codexPaths),
-    cloudflarePreview: previewCloudflareProfile(codexPaths),
-    opencodeAudit: inspectOpencodeProfileAudit(codexPaths),
-    opencodeApply: inspectOpencodeProfileApplyResult(codexPaths),
-    opencodePreview: previewOpencodeProfile(codexPaths),
+    cloudflareAudit: cloudflareProfile.audit,
+    cloudflareApply: cloudflareProfile.apply,
+    cloudflarePreview: cloudflareProfile.preview,
+    opencodeAudit: opencodeProfile.audit,
+    opencodeApply: opencodeProfile.apply,
+    opencodePreview: opencodeProfile.preview,
     actions
   };
 }
