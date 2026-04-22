@@ -176,7 +176,7 @@ pnpm check
 
 - [x] `B2` proper install TUI foundation
 - [x] `B3` asset inventory / auditability surface
-- [ ] `B4` next managed targets, including optional `Opencode` compatibility if it fits the Codex surface map and stays additive/removable
+- [x] `B4` next managed targets, including optional `Opencode` compatibility if it fits the Codex surface map and stays additive/removable
 - [x] `B5` model/subagent config surface
 - [x] `B6` privacy / telemetry foundation
 - [ ] `B7` adaptive orchestration engine
@@ -241,8 +241,8 @@ See:
 
 Current allowed next slice:
 
-1. finish `B4` only if adding another managed surface is clearly justified by the Codex surface map
-2. if `B4` moves, evaluate optional `Opencode` compatibility as a separate additive/removable profile rather than widening the default core profile
+1. treat any post-`B4` managed-surface additions as optional and only if clearly justified by the Codex surface map
+2. keep `Opencode` compatibility additive/removable and separate from the default core profile if scope widens beyond the current optional profile/export work
 3. otherwise wire more backend/status flows through the existing layered `.sane` state shape instead of inventing new ad hoc readers or files
 4. keep TUI first, backend verbs escape hatch only
 5. keep merge/preserve/remove behavior additive and reversible

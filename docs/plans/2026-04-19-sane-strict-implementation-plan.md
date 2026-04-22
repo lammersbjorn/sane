@@ -271,8 +271,7 @@ Remaining order:
 3. any new repo-level exports beyond the current set, only if clearly justified
 
 Next justified additions to evaluate inside `B4`:
-- optional `Opencode` compatibility surface, kept separate from the default core profile
-- any related merge/preserve/remove coverage needed so `Opencode`-specific writes stay additive and removable
+- future managed surfaces only if clearly justified by the Codex-native surface map
 
 Rules:
 - additive only
@@ -391,7 +390,7 @@ Before touching docs:
 ## Immediate Next Allowed Work
 
 Allowed now:
-- finish `B4` only if another managed Codex surface is clearly justified
+- `B4` optional `Opencode` compatibility work is shipped; evaluate only further managed surfaces that are clearly justified
 - otherwise keep aligning real state files with the `R3` design
 - keep privacy / telemetry local-first
 - keep TUI first and backend verbs secondary

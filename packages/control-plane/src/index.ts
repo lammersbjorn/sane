@@ -23,9 +23,8 @@ import {
   createCanonicalStatePaths,
   loadLayeredStateBundle,
   listCanonicalBackupSiblings,
-  policyPreviewDecisionContext,
   readCurrentRunState,
-  readLatestPolicyPreviewDecision,
+  readLatestPolicyPreviewSnapshot,
   readLocalStateConfig,
   readRunSummary,
   stringifyCurrentRunState,
@@ -34,6 +33,7 @@ import {
   type CurrentRunState,
   type LayeredStateBundle,
   type LayeredStateHistoryCounts,
+  type LatestPolicyPreviewSnapshot,
   type RunSummary
 } from "@sane/state";
 
@@ -49,12 +49,6 @@ import { showConfig } from "./preferences.js";
 interface InstallCanonicalRewrite {
   name: "config" | "current-run" | "summary";
   metadata: OperationRewriteMetadata;
-}
-
-export interface LatestPolicyPreviewSnapshot {
-  status: "missing" | "present";
-  scenarioCount: number;
-  scenarioIds: string[];
 }
 
 export interface RuntimeProgressSnapshot {
@@ -265,28 +259,7 @@ export function showRuntimeSummary(paths: ProjectPaths): OperationResult {
 }
 
 export function inspectLatestPolicyPreview(paths: ProjectPaths): LatestPolicyPreviewSnapshot {
-  const latestPolicyDecision = readLatestPolicyPreviewDecision(paths.decisionsPath);
-  const latestPolicyContext = latestPolicyDecision
-    ? policyPreviewDecisionContext(latestPolicyDecision)
-    : null;
-
-  if (!latestPolicyContext) {
-    return {
-      status: "missing",
-      scenarioCount: 0,
-      scenarioIds: []
-    };
-  }
-
-  const scenarioIds = latestPolicyContext.scenarios.flatMap((scenario) =>
-    typeof scenario.id === "string" ? [scenario.id] : []
-  );
-
-  return {
-    status: "present",
-    scenarioCount: latestPolicyContext.scenarios.length,
-    scenarioIds
-  };
+  return readLatestPolicyPreviewSnapshot(paths.decisionsPath);
 }
 
 export * from "./codex-config.js";

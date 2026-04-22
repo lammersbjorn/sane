@@ -25,6 +25,7 @@ import {
   readCurrentRunState,
   readJsonlRecords,
   readJsonlRecordsSlice,
+  readLatestPolicyPreviewSnapshot,
   readRunSnapshot,
   readRunSummary,
   readLocalStateConfig,
@@ -355,6 +356,53 @@ describe('typed record parity', () => {
     const decision = readLatestPolicyPreviewDecision(path);
 
     expect(decision?.summary).toBe('policy preview: rendered adaptive obligation scenarios');
+  });
+
+  it('reads latest policy preview snapshot through typed helper', () => {
+    const dir = makeTempDir();
+    const path = join(dir, 'decisions.jsonl');
+
+    appendJsonlRecord(
+      path,
+      createDecisionRecord(
+        'policy preview: rendered adaptive obligation scenarios',
+        'simple-question: direct_answer | coordinator=gpt-5.4/high',
+        [],
+        createPolicyPreviewDecisionContext([{ id: 'simple-question' }, { id: 'multi-file-feature' }]),
+      ),
+      stringifyDecisionRecord,
+    );
+
+    expect(readLatestPolicyPreviewSnapshot(path)).toEqual({
+      status: 'present',
+      scenarioCount: 2,
+      scenarioIds: ['simple-question', 'multi-file-feature'],
+    });
+  });
+
+  it('returns missing typed snapshot when latest policy context is malformed', () => {
+    const dir = makeTempDir();
+    const path = join(dir, 'decisions.jsonl');
+
+    appendJsonlRecord(
+      path,
+      createDecisionRecord(
+        'policy preview: malformed',
+        'bad context',
+        [],
+        {
+          kind: 'policy_preview',
+          scenarios: [42 as never],
+        },
+      ),
+      stringifyDecisionRecord,
+    );
+
+    expect(readLatestPolicyPreviewSnapshot(path)).toEqual({
+      status: 'missing',
+      scenarioCount: 0,
+      scenarioIds: [],
+    });
   });
 
   it('parses typed and legacy artifact records', () => {

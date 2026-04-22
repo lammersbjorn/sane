@@ -124,6 +124,12 @@ export interface PolicyPreviewDecisionContext extends JsonRecord {
   scenarios: JsonRecord[];
 }
 
+export interface LatestPolicyPreviewSnapshot {
+  status: 'missing' | 'present';
+  scenarioCount: number;
+  scenarioIds: string[];
+}
+
 export interface ArtifactRecord {
   version: number;
   tsUnix: number;
@@ -611,6 +617,31 @@ export function readLatestPolicyPreviewDecision(path: string): DecisionRecord | 
   }
 
   return null;
+}
+
+export function readLatestPolicyPreviewSnapshot(path: string): LatestPolicyPreviewSnapshot {
+  const latestPolicyDecision = readLatestPolicyPreviewDecision(path);
+  const latestPolicyContext = latestPolicyDecision
+    ? policyPreviewDecisionContext(latestPolicyDecision)
+    : null;
+
+  if (!latestPolicyContext) {
+    return {
+      status: 'missing',
+      scenarioCount: 0,
+      scenarioIds: [],
+    };
+  }
+
+  const scenarioIds = latestPolicyContext.scenarios.flatMap((scenario) =>
+    typeof scenario.id === 'string' ? [scenario.id] : [],
+  );
+
+  return {
+    status: 'present',
+    scenarioCount: latestPolicyContext.scenarios.length,
+    scenarioIds,
+  };
 }
 
 export function createPolicyPreviewDecisionContext(
