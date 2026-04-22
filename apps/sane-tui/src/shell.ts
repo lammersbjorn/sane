@@ -33,7 +33,7 @@ import {
 } from "@sane/control-plane/hooks-custom-agents.js";
 import { exportOpencodeAgents, uninstallOpencodeAgents } from "@sane/control-plane/opencode-native.js";
 import { executeConfigSave, executeOperation, readLastOperationSummary } from "@sane/control-plane/history.js";
-import { doctor, showStatus } from "@sane/control-plane/inventory.js";
+import { doctor, inspectStatusBundle, showStatus } from "@sane/control-plane/inventory.js";
 import { previewPolicy } from "@sane/control-plane/policy-preview.js";
 import {
   inspectEditablePreferencesConfig,
@@ -42,6 +42,7 @@ import {
 } from "@sane/control-plane/preferences.js";
 import {
   installRuntime,
+  showRuntimeProgress,
   showRuntimeSummary,
   uninstallRepoAgents,
   uninstallRepoSkills
@@ -89,6 +90,7 @@ export interface TuiShell {
   paths: ProjectPaths;
   codexPaths: CodexPaths;
   sections: ReturnType<typeof COMMAND_METADATA_REGISTRY.sections.slice>;
+  statusSnapshot: ShellStatusSnapshot;
   status: ReturnType<typeof showStatus>;
   activeSectionId: TuiSectionId;
   activeActionIndex: number;
@@ -98,6 +100,12 @@ export interface TuiShell {
   lastResult: LastResultView;
 }
 
+export interface ShellStatusSnapshot {
+  status: ReturnType<typeof showStatus>;
+  statusBundle: ReturnType<typeof inspectStatusBundle>;
+  runtimeProgress: ReturnType<typeof showRuntimeProgress>;
+}
+
 export function createTuiShell(
   paths: ProjectPaths,
   codexPaths: CodexPaths,
@@ -105,11 +113,13 @@ export function createTuiShell(
 ): TuiShell {
   const sectionId = COMMAND_METADATA_REGISTRY.shortcuts[launchShortcut];
   const lastSummary = readLastOperationSummary(paths);
+  const statusSnapshot = buildStatusSnapshot(paths, codexPaths);
   return {
     paths,
     codexPaths,
     sections: COMMAND_METADATA_REGISTRY.sections.slice(),
-    status: showStatus(paths, codexPaths),
+    statusSnapshot,
+    status: statusSnapshot.status,
     activeSectionId: sectionId,
     activeActionIndex: 0,
     activeEditor: null,
@@ -269,7 +279,7 @@ export function saveActiveEditor(shell: TuiShell): OperationResult | null {
   }
 
   const result = executeConfigSave(shell.paths, shell.activeEditor.config);
-  shell.status = showStatus(shell.paths, shell.codexPaths);
+  refreshStatusSnapshot(shell);
   shell.lastResult = buildLastResultView(result, result.renderText());
   shell.notice = {
     title: "Saved",
@@ -316,7 +326,7 @@ function runCommand(shell: TuiShell, commandId: UiCommandId): OperationResult | 
       return null;
     default: {
       const result = executeUiCommand(shell.paths, shell.codexPaths, commandId);
-      shell.status = showStatus(shell.paths, shell.codexPaths);
+      refreshStatusSnapshot(shell);
       shell.activeEditor = null;
       shell.lastResult = buildLastResultView(result, result.renderText());
       const notice = buildNotice(commandId, result);
@@ -406,6 +416,19 @@ function executeUiCommand(
     case "uninstall_all":
       return executeOperation(paths, () => uninstallAll(codexPaths));
   }
+}
+
+function buildStatusSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): ShellStatusSnapshot {
+  return {
+    status: showStatus(paths, codexPaths),
+    statusBundle: inspectStatusBundle(paths, codexPaths),
+    runtimeProgress: showRuntimeProgress(paths)
+  };
+}
+
+function refreshStatusSnapshot(shell: TuiShell): void {
+  shell.statusSnapshot = buildStatusSnapshot(shell.paths, shell.codexPaths);
+  shell.status = shell.statusSnapshot.status;
 }
 
 function buildPendingConfirmation(action: SectionActionMetadata): PendingConfirmation {

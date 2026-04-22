@@ -111,12 +111,42 @@ describe("dashboard view", () => {
     const codexPaths = createCodexPaths(homeDir);
     const shell = createTuiShell(paths, codexPaths);
 
-    const progressSpy = vi.spyOn(controlPlane, "showRuntimeProgress").mockReturnValue(null);
+    vi.spyOn(getStarted, "loadGetStartedScreen").mockReturnValue({
+      summary: "Get Started",
+      recommendedActionId: "install_runtime",
+      recommendedNextStep: "Create Sane's local project files first.",
+      attentionItems: [],
+      statusLine:
+        "runtime missing | codex-config missing | user-skills missing | hooks missing | install bundle missing",
+      codexProfileAudit: {
+        status: "missing",
+        recommendedChangeCount: 3,
+        changes: [],
+        details: []
+      },
+      codexProfileApply: {
+        status: "ready",
+        recommendedChangeCount: 3,
+        appliedKeys: ["model", "model_reasoning_effort", "features.codex_hooks"],
+        details: []
+      },
+      codexProfilePreview: {
+        summary: "codex-profile preview: 3 recommended change(s)",
+        details: [],
+        pathsTouched: [],
+        inventory: [],
+        kind: { value: "PreviewCodexProfile" }
+      } as any,
+      steps: []
+    });
+    const statusBundleSpy = vi.spyOn(inventory, "inspectStatusBundle");
+    const progressSpy = vi.spyOn(controlPlane, "showRuntimeProgress");
     const summarySpy = vi.spyOn(controlPlane, "showRuntimeSummary");
 
     const view = loadDashboardView(shell);
 
-    expect(progressSpy).toHaveBeenCalledWith(paths);
+    expect(statusBundleSpy).not.toHaveBeenCalled();
+    expect(progressSpy).not.toHaveBeenCalled();
     expect(summarySpy).not.toHaveBeenCalled();
     expect(view.chips.find((chip) => chip.id === "phase")).toBeUndefined();
     expect(view.chips.find((chip) => chip.id === "verification")).toBeUndefined();
@@ -155,42 +185,28 @@ describe("dashboard view", () => {
       } as any,
       steps: []
     });
-    vi.spyOn(inventory, "inspectStatusBundle").mockReturnValue({
-      inventory: [
-        {
-          name: "custom-agents",
-          status: { displayString: () => "installed" }
-        }
-      ],
-      localRuntime: [],
-      codexNative: [],
-      driftItems: [],
-      counts: {
-        installed: 0,
-        configured: 0,
-        disabled: 0,
-        missing: 0,
-        invalid: 0,
-        present_without_sane_block: 0,
-        removed: 0
-      },
-      primary: {
-        runtime: { status: { displayString: () => "installed" } },
-        codexConfig: { status: { displayString: () => "installed" } },
-        userSkills: { status: { displayString: () => "installed" } },
-        hooks: { status: { displayString: () => "installed" } },
-        customAgents: { status: { displayString: () => "installed" } },
-        installBundle: "installed",
-        status: {
-          runtime: "installed",
-          codexConfig: "installed",
-          userSkills: "installed",
-          hooks: "installed",
-          customAgents: "installed",
-          installBundle: "installed"
+    const bundle = shell.statusSnapshot.statusBundle;
+    shell.statusSnapshot = {
+      ...shell.statusSnapshot,
+      statusBundle: {
+        ...bundle,
+        driftItems: [],
+        primary: {
+          ...bundle.primary,
+          installBundle: "installed",
+          status: {
+            ...bundle.primary.status,
+            runtime: "installed",
+            codexConfig: "installed",
+            userSkills: "installed",
+            hooks: "installed",
+            customAgents: "installed",
+            installBundle: "installed"
+          }
         }
       }
-    } as unknown as ReturnType<typeof inventory.inspectStatusBundle>);
+    };
+    shell.status = shell.statusSnapshot.status;
 
     const view = loadDashboardView(shell);
 

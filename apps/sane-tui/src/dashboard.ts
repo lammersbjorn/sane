@@ -1,5 +1,3 @@
-import { showRuntimeProgress } from "@sane/control-plane";
-import { inspectStatusBundle } from "@sane/control-plane/inventory.js";
 import { presentManagedStatus, type ManagedStatusKind } from "@sane/control-plane/status-presenter.js";
 import * as getStartedScreen from "@/get-started-screen.js";
 import { currentAction, currentActions, currentSection, projectLabel, recommendedNextStep, type TuiShell } from "@/shell.js";
@@ -28,7 +26,6 @@ export interface DashboardView {
 
 export function loadDashboardView(shell: TuiShell): DashboardView {
   const getStarted = getStartedScreen.loadGetStartedScreen(shell.paths, shell.codexPaths);
-  const statusBundle = inspectStatusBundle(shell.paths, shell.codexPaths);
 
   return {
     title: "Sane",
@@ -42,23 +39,21 @@ export function loadDashboardView(shell: TuiShell): DashboardView {
     actions: currentActions(shell),
     selectedAction: currentAction(shell),
     lastResult: shell.lastResult,
-    chips: buildStatusChips(shell, statusBundle)
+    chips: buildStatusChips(shell.statusSnapshot)
   };
 }
 
-function buildStatusChips(
-  shell: TuiShell,
-  statusBundle: ReturnType<typeof inspectStatusBundle>
-): DashboardChip[] {
+function buildStatusChips(statusSnapshot: TuiShell["statusSnapshot"]): DashboardChip[] {
+  const { statusBundle, runtimeProgress } = statusSnapshot;
   const wanted = [
-    ["runtime", "runtime"],
-    ["codex-config", "codex-config"],
-    ["user-skills", "user-skills"],
-    ["hooks", "hooks"]
+    "runtime",
+    "codex-config",
+    "user-skills",
+    "hooks"
   ] as const;
   const chips: DashboardChip[] = [];
 
-  for (const [name, inventoryName] of wanted) {
+  for (const name of wanted) {
     const presentation = primaryStatusPresentation(statusBundle, name);
 
     chips.push({
@@ -95,7 +90,6 @@ function buildStatusChips(
     tone: statusBundle.driftItems.length === 0 ? "ok" : "warn"
   });
 
-  const runtimeProgress = runtimeProgressFromSnapshot(shell.paths);
   if (runtimeProgress) {
     chips.push({
       id: "phase",
@@ -115,7 +109,7 @@ function buildStatusChips(
 }
 
 function primaryStatusPresentation(
-  statusBundle: ReturnType<typeof inspectStatusBundle>,
+  statusBundle: TuiShell["statusSnapshot"]["statusBundle"],
   name: "runtime" | "codex-config" | "user-skills" | "hooks"
 ): ReturnType<typeof presentManagedStatus> {
   switch (name) {
@@ -145,12 +139,6 @@ function chipLabel(name: string): string {
     default:
       return name;
   }
-}
-
-function runtimeProgressFromSnapshot(
-  paths: TuiShell["paths"]
-): { phase: string; verificationStatus: string } | null {
-  return showRuntimeProgress(paths);
 }
 
 function toneForValue(value: string): DashboardChip["tone"] {
