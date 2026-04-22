@@ -46,6 +46,16 @@ export interface CodexProfileAudit {
   details: string[];
 }
 
+export type CodexProfileStatus = CodexProfileAudit["status"];
+export type CodexProfileApplyResultStatus = "blocked_invalid" | "already_satisfied" | "ready";
+export type CodexProfileAppliedKey = CodexProfileChange["key"];
+export interface CodexProfileApplyResult {
+  status: CodexProfileApplyResultStatus;
+  recommendedChangeCount: number;
+  appliedKeys: CodexProfileAppliedKey[];
+  details: string[];
+}
+
 export interface CloudflareProfileAudit {
   status: "installed" | "missing" | "invalid";
   recommendedChangeCount: number;
@@ -203,16 +213,13 @@ export function applyCodexProfile(paths: ProjectPaths, codexPaths: CodexPaths): 
   ensureRuntimeDirs(paths);
   const recommended = recommendedLocalConfig(codexPaths);
   const inventory = inspectCodexConfigInventory(codexPaths);
-  const audit = inspectCodexProfileAudit(codexPaths);
+  const applyResult = inspectCodexProfileApplyResult(codexPaths);
 
-  if (inventory.status === InventoryStatus.Invalid) {
+  if (applyResult.status === "blocked_invalid") {
     return new OperationResult({
       kind: OperationKind.ApplyCodexProfile,
       summary: "codex-profile apply: blocked by invalid config",
-      details: [
-        "repair ~/.codex/config.toml first",
-        "Sane only writes after a clean parse"
-      ],
+      details: applyResult.details,
       pathsTouched: [codexPaths.configToml],
       inventory: [inventory]
     });
@@ -222,7 +229,7 @@ export function applyCodexProfile(paths: ProjectPaths, codexPaths: CodexPaths): 
     inventory.status === InventoryStatus.Installed ? writeCodexConfigBackup(paths, codexPaths) : null;
   const config =
     inventory.status === InventoryStatus.Installed ? readCodexConfig(codexPaths.configToml) : {};
-  const details = codexProfileApplyDetails(audit);
+  const details = [...applyResult.details];
 
   applyCoreCodexProfileToValue(config, recommended);
   writeCodexConfig(codexPaths.configToml, config);
@@ -390,6 +397,33 @@ export function inspectCodexProfileAudit(codexPaths: CodexPaths): CodexProfileAu
     },
     "missing"
   );
+}
+
+export function inspectCodexProfileStatus(codexPaths: CodexPaths): CodexProfileStatus {
+  return inspectCodexProfileAudit(codexPaths).status;
+}
+
+export function inspectCodexProfileApplyResult(codexPaths: CodexPaths): CodexProfileApplyResult {
+  const inventory = inspectCodexConfigInventory(codexPaths);
+  if (inventory.status === InventoryStatus.Invalid) {
+    return {
+      status: "blocked_invalid",
+      recommendedChangeCount: 0,
+      appliedKeys: [],
+      details: [
+        "repair ~/.codex/config.toml first",
+        "Sane only writes after a clean parse"
+      ]
+    };
+  }
+
+  const audit = inspectCodexProfileAudit(codexPaths);
+  return {
+    status: audit.recommendedChangeCount === 0 ? "already_satisfied" : "ready",
+    recommendedChangeCount: audit.recommendedChangeCount,
+    appliedKeys: audit.changes.map((change) => change.key),
+    details: codexProfileApplyDetails(audit)
+  };
 }
 
 export function inspectCloudflareProfileAudit(codexPaths: CodexPaths): CloudflareProfileAudit {

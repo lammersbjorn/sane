@@ -134,6 +134,25 @@ describe("dashboard view", () => {
       attentionItems: [],
       statusLine:
         "runtime missing | codex-config missing | user-skills missing | hooks missing | install bundle missing",
+      codexProfileAudit: {
+        status: "missing",
+        recommendedChangeCount: 3,
+        changes: [],
+        details: []
+      },
+      codexProfileApply: {
+        status: "ready",
+        recommendedChangeCount: 3,
+        appliedKeys: ["model", "model_reasoning_effort", "features.codex_hooks"],
+        details: []
+      },
+      codexProfilePreview: {
+        summary: "codex-profile preview: 3 recommended change(s)",
+        details: [],
+        pathsTouched: [],
+        inventory: [],
+        kind: { value: "PreviewCodexProfile" }
+      } as any,
       steps: []
     });
     vi.spyOn(inventory, "inspectStatusBundle").mockReturnValue({

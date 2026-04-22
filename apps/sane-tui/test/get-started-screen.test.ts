@@ -38,6 +38,8 @@ describe("get started screen model", () => {
     expect(screen.summary).toBe("Get Started");
     expect(screen.recommendedActionId).toBe("install_runtime");
     expect(screen.recommendedNextStep).toBe("Create Sane's local project files first.");
+    expect(screen.codexProfileAudit.status).toBe("missing");
+    expect(screen.codexProfileApply.status).toBe("ready");
     expect(screen.statusLine).toBe(
       "runtime missing | codex-config missing | user-skills missing | hooks missing | install bundle missing"
     );
@@ -88,6 +90,7 @@ describe("get started screen model", () => {
     expect(screen.recommendedNextStep).toBe(
       "Inspect Codex config, then preview the core Codex profile."
     );
+    expect(screen.codexProfilePreview.summary).toBe("codex-profile preview: 3 recommended change(s)");
   });
 
   it("recommends bundle export once runtime and core Codex config are in place", () => {
@@ -107,6 +110,7 @@ describe("get started screen model", () => {
     expect(screen.recommendedNextStep).toBe(
       "Install Sane into Codex so Codex can use Sane's guidance."
     );
+    expect(screen.codexProfileApply.status).toBe("already_satisfied");
   });
 
   it("falls back to review/inspect guidance once onboarding bundle is installed", () => {

@@ -15,7 +15,9 @@ import {
   inspectCloudflareProfileApplyResult,
   inspectCloudflareProfileStatus,
   inspectCodexConfigBackupSnapshot,
+  inspectCodexProfileApplyResult,
   inspectCodexProfileAudit,
+  inspectCodexProfileStatus,
   inspectIntegrationsProfileAudit,
   inspectIntegrationsProfileApplyResult,
   inspectIntegrationsProfileStatus,
@@ -402,6 +404,40 @@ describe("codex config control plane", () => {
       status: "installed",
       recommendedChangeCount: 0,
       changes: []
+    });
+  });
+
+  it("reports codex-profile status through a narrow helper", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    expect(inspectCodexProfileStatus(codexPaths)).toBe("missing");
+
+    applyCodexProfile(projectPaths, codexPaths);
+
+    expect(inspectCodexProfileStatus(codexPaths)).toBe("installed");
+  });
+
+  it("reports typed codex-profile apply result without scraping apply summary strings", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    expect(inspectCodexProfileApplyResult(codexPaths)).toMatchObject({
+      status: "ready",
+      recommendedChangeCount: 3,
+      appliedKeys: ["model", "model_reasoning_effort", "features.codex_hooks"]
+    });
+
+    applyCodexProfile(projectPaths, codexPaths);
+
+    expect(inspectCodexProfileApplyResult(codexPaths)).toMatchObject({
+      status: "already_satisfied",
+      recommendedChangeCount: 0,
+      appliedKeys: []
     });
   });
 

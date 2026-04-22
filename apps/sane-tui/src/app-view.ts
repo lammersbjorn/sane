@@ -68,7 +68,7 @@ export function loadAppView(shell: TuiShell): SaneTuiAppView {
       repair
     }),
     selectedHelpTitle: "Selected Step Details",
-    selectedHelpLines: selectedActionHelpLines(shell, inspect, preferences),
+    selectedHelpLines: selectedActionHelpLines(shell, getStarted, inspect, preferences),
     latestStatusTitle: dashboard.lastResult.title,
     latestStatusLines: dashboard.lastResult.lines,
     footerTitle: "Now",
@@ -114,6 +114,9 @@ function sectionOverviewLines(
         lines.push("Attention items found in current setup.");
         lines.push(...dashboard.attentionItems);
       }
+      lines.push(
+        `core codex profile: ${models.getStarted.codexProfileAudit.status} (${models.getStarted.codexProfileAudit.recommendedChangeCount} recommended changes; apply ${models.getStarted.codexProfileApply.status})`
+      );
       return lines;
     }
     case "inspect": {
@@ -173,10 +176,23 @@ function sectionOverviewLines(
 
 function selectedActionHelpLines(
   shell: TuiShell,
+  getStarted: ReturnType<typeof loadGetStartedScreen>,
   inspect: () => ReturnType<typeof loadInspectScreen>,
   preferences: () => ReturnType<typeof loadPreferencesScreen>
 ): string[] {
   const action = currentAction(shell);
+  if (action.id === "preview_codex_profile" || action.id === "apply_codex_profile") {
+    return [
+      `Selected action: ${action.label}`,
+      "",
+      ...action.help,
+      "",
+      `audit: ${getStarted.codexProfileAudit.status} (${getStarted.codexProfileAudit.recommendedChangeCount} recommended changes)`,
+      `apply readiness: ${getStarted.codexProfileApply.status} (${getStarted.codexProfileApply.appliedKeys.length} changes)`,
+      ...getStarted.codexProfilePreview.details
+    ];
+  }
+
   if (
     action.id === "preview_integrations_profile" ||
     action.id === "apply_integrations_profile"

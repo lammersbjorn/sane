@@ -57,6 +57,21 @@ describe("app view", () => {
     expect(view.sectionOverviewLines.join("\n")).toContain("config: missing");
     expect(view.sectionOverviewLines.join("\n")).toContain("codex-config: missing");
     expect(view.sectionOverviewLines.join("\n")).toContain("user-skills: missing");
+    expect(view.sectionOverviewLines.join("\n")).toContain("core codex profile: missing");
+  });
+
+  it("surfaces typed codex profile readiness in Get Started guidance", () => {
+    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
+    for (let index = 0; index < 2; index += 1) {
+      moveSelection(shell, "action", 1);
+    }
+
+    const view = loadAppView(shell);
+
+    expect(view.selectedAction.id).toBe("preview_codex_profile");
+    expect(view.selectedHelpLines.join("\n")).toContain("audit: missing");
+    expect(view.selectedHelpLines.join("\n")).toContain("apply readiness: ready (3 changes)");
+    expect(view.selectedHelpLines.join("\n")).toContain("model: <missing> -> gpt-5.4");
   });
 
   it("expands inspect into read-only status, doctor, config, and drift guidance", () => {

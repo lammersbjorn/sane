@@ -1,6 +1,11 @@
 import { type CodexPaths, type ProjectPaths } from "@sane/platform";
 
 import {
+  inspectCodexProfileApplyResult,
+  inspectCodexProfileAudit,
+  previewCodexProfile
+} from "@sane/control-plane/codex-config.js";
+import {
   inspectOnboardingSnapshot,
   type OnboardingAttentionItem,
   type OnboardingReasonId
@@ -25,6 +30,9 @@ export interface GetStartedScreenModel {
   recommendedNextStep: string;
   attentionItems: string[];
   statusLine: string;
+  codexProfileAudit: ReturnType<typeof inspectCodexProfileAudit>;
+  codexProfileApply: ReturnType<typeof inspectCodexProfileApplyResult>;
+  codexProfilePreview: ReturnType<typeof previewCodexProfile>;
   steps: GetStartedStep[];
 }
 
@@ -51,6 +59,9 @@ export function loadGetStartedScreen(
       `hooks ${onboarding.primaryStatuses.hooks}`,
       `install bundle ${onboarding.primaryStatuses.installBundle}`
     ].join(" | "),
+    codexProfileAudit: inspectCodexProfileAudit(codexPaths),
+    codexProfileApply: inspectCodexProfileApplyResult(codexPaths),
+    codexProfilePreview: previewCodexProfile(codexPaths),
     steps
   };
 }
