@@ -249,7 +249,19 @@ describe("policy preview", () => {
         summary: "policy preview: rendered adaptive obligation scenarios",
         details: ["simple-question: direct_answer | coordinator=gpt-5.4/high"],
         policyPreview: {
-          scenarios: [{ id: "simple-question" }]
+          scenarios: [
+            {
+              id: "simple-question",
+              obligations: [],
+              orchestration: {
+                subagents: "none",
+                subagentReadiness: "not_needed",
+                reviewPosture: "inline_only",
+                verifierTiming: "inline"
+              },
+              trace: []
+            }
+          ]
         }
       }
     );
@@ -277,16 +289,31 @@ describe("policy preview", () => {
           "simple-question: direct_answer | coordinator=gpt-5.4/high",
           "multi-file-feature: plan, tdd | coordinator=gpt-5.4/high"
         ],
-        policyPreview: null
+        policyPreview: {
+          scenarios: [
+            {
+              id: "simple-question",
+              obligations: ["direct_answer"],
+              orchestration: {
+                subagents: "none",
+                subagentReadiness: "not_needed",
+                reviewPosture: "inline_only",
+                verifierTiming: "inline"
+              },
+              trace: [{ obligation: "direct_answer", rule: "keep_direct_answers_light" }]
+            }
+          ]
+        }
       },
       { mode: "action", currentPrefix: "current preview" }
     );
 
     expect(lines).toEqual([
       "latest policy snapshot: missing (current-run-derived read-only view)",
-      "current preview: policy preview: rendered adaptive obligation scenarios; 2 scenarios",
+      "current preview: policy preview: rendered adaptive obligation scenarios; 1 scenario",
       "simple-question: direct_answer | coordinator=gpt-5.4/high",
-      "multi-file-feature: plan, tdd | coordinator=gpt-5.4/high"
+      "multi-file-feature: plan, tdd | coordinator=gpt-5.4/high",
+      "current preview scenario simple-question: obligations 1, traces 1, subagents none, readiness not_needed, review inline_only, verifier inline"
     ]);
   });
 });

@@ -38,6 +38,7 @@ The TUI should feel like:
 
 These layers are already implemented in TypeScript and should stay thin, typed, and renderer-friendly.
 The current policy-preview source of truth is `packages/control-plane/src/policy-preview.ts`; the Rust `debug policy-preview` path in `crates/sane-tui/src/main.rs` is legacy migration-only.
+Optional pack registry ownership (optional pack names + config-key mapping + enabled/disabled selectors) lives in `@sane/framework-assets`; TUI editor/overlay and control-plane consumers should reuse those shared helpers instead of local pack lists.
 
 ### 1. Welcome Shell
 
@@ -120,6 +121,7 @@ Content:
 - runtime handoff state (`current-run`, `summary`, `brief`)
 - bounded local runtime history counts (`events`, `decisions`, `artifacts`)
 - latest persisted policy snapshot and typed input classification, read-only only
+- current policy preview summary/scenario counts are shown with the same shared presenter used by action-level `preview policy` details (including per-scenario obligation/trace/orchestration lines), read-only only
 - local config view
 - Codex config view
 - export drift view

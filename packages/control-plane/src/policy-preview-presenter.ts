@@ -19,7 +19,20 @@ export interface InspectCurrentPolicyPreview {
   summary: string;
   details: string[];
   policyPreview?: {
-    scenarios: unknown[];
+    scenarios: Array<{
+      id: string;
+      obligations: string[];
+      orchestration: {
+        subagents: string;
+        subagentReadiness: string;
+        reviewPosture: string;
+        verifierTiming: string;
+      };
+      trace: Array<{
+        obligation: string;
+        rule: string;
+      }>;
+    }>;
   } | null;
 }
 
@@ -37,6 +50,7 @@ export function formatInspectPolicyPreviewLines(
   lines.push(formatCurrentPolicyPreviewLine(currentPolicyPreview, options.currentPrefix));
   if (mode === "action") {
     lines.push(...currentPolicyPreview.details);
+    lines.push(...formatCurrentPolicyScenarioLines(currentPolicyPreview));
   }
 
   return lines;
@@ -116,4 +130,15 @@ function formatCurrentPolicyPreviewLine(
   const label = scenarioCount === 1 ? "scenario" : "scenarios";
 
   return `${prefix}: ${currentPolicyPreview.summary}; ${scenarioCount} ${label}`;
+}
+
+function formatCurrentPolicyScenarioLines(
+  currentPolicyPreview: InspectCurrentPolicyPreview
+): string[] {
+  return (currentPolicyPreview.policyPreview?.scenarios ?? []).map((scenario) => {
+    const obligationCount = scenario.obligations.length;
+    const traceCount = scenario.trace.length;
+
+    return `current preview scenario ${scenario.id}: obligations ${obligationCount}, traces ${traceCount}, subagents ${scenario.orchestration.subagents}, readiness ${scenario.orchestration.subagentReadiness}, review ${scenario.orchestration.reviewPosture}, verifier ${scenario.orchestration.verifierTiming}`;
+  });
 }

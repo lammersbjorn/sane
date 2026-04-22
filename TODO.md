@@ -85,6 +85,7 @@ Implemented:
 - built-in pack editor in the TUI with local-only optional pack toggles
 - built-in pack state exposed in status / doctor inventory
 - built-in pack set currently remains fixed: always-on `core` plus optional `caveman`, `cavemem`, `rtk`, and `frontend-craft`
+- optional pack registry helpers (name/config-key mapping + enabled/disabled selection) now live in `@sane/framework-assets` and are reused by TUI/editor + control-plane inventory/export paths
 - optional packs now show `configured` vs `installed` truthfully depending on whether managed user-skill assets were exported
 - `frontend-craft` currently exports exactly two concrete skills: `design-taste-frontend` and `impeccable`
 - `cavemem` and `rtk` currently stay capability-only (router/overlay behavior, no dedicated skill export directory)
@@ -101,6 +102,7 @@ Implemented:
 - policy preview history now has typed shared context helpers, tail-first latest-preview lookup, and runtime-summary plumbing for the latest valid snapshot
 - inspect/app-view now surface the latest persisted current-run-derived policy-preview snapshot through a bounded typed read path instead of re-parsing runtime-summary copy, and this remains a read-only Inspect surface
 - Inspect/runtime-summary now also surface typed latest-policy input classification lines for that persisted snapshot, still read-only and inspect-only
+- inspect/app-view now share one control-plane policy-preview presenter that includes both latest persisted snapshot/input lines and current preview summary/scenario counts (plus scenario detail lines in `preview policy` action view), read-only only
 - runtime summary/inspect now surface bounded `.sane` history counts for `events`, `decisions`, and `artifacts` through canonical layered-state bundle `historyCounts`, without adding a new log-browsing surface
 - startup last-event reads now go through control-plane history helper instead of direct TUI peek logic, keeping history access on one typed bounded path
 - preferences, telemetry presence, and Codex backup-availability reads now go through control-plane snapshot helpers instead of ad hoc TUI file checks

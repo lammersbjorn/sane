@@ -263,6 +263,9 @@ describe("app view", () => {
     expect(view.selectedHelpLines.join("\n")).toContain(
       "current preview: policy preview: rendered adaptive obligation scenarios;"
     );
+    expect(view.selectedHelpLines.join("\n")).toContain(
+      "current preview scenario simple-question: obligations 1, traces 1"
+    );
     expect(view.selectedHelpLines.join("\n")).toContain("simple-question:");
     expect(view.selectedHelpLines.join("\n")).toContain("direct_answer");
     expect(view.selectedHelpLines.join("\n")).toContain("explorer=");
