@@ -116,6 +116,7 @@ Implemented:
 - install/repair overview copy now consumes typed install/repair snapshots directly for integrations status/count, restore status, and removable installs instead of scraping action rows
 - codex profile, integrations profile, cloudflare profile, and opencode profile now have typed snapshot helpers so get-started/preferences/install/inspect can reuse one read path per profile family instead of recomputing audit/apply/preview separately
 - typed family snapshot helper now exists for Codex profile surfaces, and Preferences uses it for provider-profile state instead of separate provider snapshot reads
+- Start Here onboarding can now derive from a preloaded typed status bundle, and app-view threads shell status bundle through that path instead of forcing a fresh onboarding status-bundle rebuild
 - TUI Inspect now shows read-only policy-preview snapshot visibility derived from the latest current run instead of command-only access
 - TUI now requires confirmation for risky apply/restore/uninstall actions
 - TUI repair now exposes local telemetry reset as a first-class confirmed action instead of only a privacy-editor shortcut

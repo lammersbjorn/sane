@@ -50,10 +50,6 @@ describe("app view", () => {
 
   it("loads Get Started once even when dashboard and section overview both need it", async () => {
     vi.resetModules();
-    const getStartedSpy = vi.fn((paths, codexPaths) => {
-      const actual = vi.importActual<typeof import("@/get-started-screen.js")>("@/get-started-screen.js");
-      return actual.then((mod) => mod.loadGetStartedScreen(paths, codexPaths));
-    });
     vi.doMock("@/get-started-screen.js", async () => {
       const actual = await vi.importActual<typeof import("@/get-started-screen.js")>("@/get-started-screen.js");
       return {
@@ -69,9 +65,11 @@ describe("app view", () => {
     loadAppViewWithSpy(shell);
 
     expect(vi.mocked(getStartedScreen.loadGetStartedScreen)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(getStartedScreen.loadGetStartedScreen).mock.calls[0]?.[2]).toBe(
+      shell.statusSnapshot.statusBundle
+    );
     vi.doUnmock("@/get-started-screen.js");
     vi.resetModules();
-    void getStartedSpy;
   });
 
   it("surfaces attention items and the next step in Start Here guidance", () => {

@@ -4,9 +4,10 @@ import { join } from "node:path";
 
 import { createDefaultLocalConfig } from "@sane/config";
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { applyCodexProfile } from "@sane/control-plane/codex-config.js";
+import * as inventory from "@sane/control-plane/inventory.js";
 import { exportAll } from "@sane/control-plane";
 import { installRuntime } from "@sane/control-plane";
 import { saveConfig } from "@sane/control-plane/preferences.js";
@@ -131,5 +132,22 @@ describe("get started screen model", () => {
     expect(screen.recommendedNextStep).toBe(
       "Review configure or inspect sections and change only what you actually want."
     );
+  });
+
+  it("uses the preloaded status bundle path when provided", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const bundle = inventory.inspectStatusBundle(paths, codexPaths);
+    const fromBundleSpy = vi.spyOn(inventory, "inspectOnboardingSnapshotFromStatusBundle");
+    const wrapperSpy = vi.spyOn(inventory, "inspectOnboardingSnapshot");
+
+    const screen = loadGetStartedScreen(paths, codexPaths, bundle);
+
+    expect(fromBundleSpy).toHaveBeenCalledTimes(1);
+    expect(fromBundleSpy).toHaveBeenCalledWith(paths, bundle);
+    expect(wrapperSpy).not.toHaveBeenCalled();
+    expect(screen.recommendedActionId).toBe("install_runtime");
   });
 });

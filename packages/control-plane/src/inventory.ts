@@ -221,6 +221,13 @@ export function inspectOnboardingSnapshot(
   codexPaths: CodexPaths
 ): OnboardingSnapshot {
   const statusBundle = inspectStatusBundle(paths, codexPaths);
+  return inspectOnboardingSnapshotFromStatusBundle(paths, statusBundle);
+}
+
+export function inspectOnboardingSnapshotFromStatusBundle(
+  paths: ProjectPaths,
+  statusBundle: ReturnType<typeof inspectStatusBundle>
+): OnboardingSnapshot {
   const recommendedActionId = recommendedOnboardingAction(statusBundle);
 
   return {

@@ -4,7 +4,9 @@ import {
   inspectCodexProfileSnapshot
 } from "@sane/control-plane/codex-config.js";
 import {
+  inspectStatusBundle,
   inspectOnboardingSnapshot,
+  inspectOnboardingSnapshotFromStatusBundle,
   type OnboardingAttentionItem,
   type OnboardingReasonId
 } from "@sane/control-plane/inventory.js";
@@ -36,9 +38,12 @@ export interface GetStartedScreenModel {
 
 export function loadGetStartedScreen(
   paths: ProjectPaths,
-  codexPaths: CodexPaths
+  codexPaths: CodexPaths,
+  statusBundle: ReturnType<typeof inspectStatusBundle> | null = null
 ): GetStartedScreenModel {
-  const onboarding = inspectOnboardingSnapshot(paths, codexPaths);
+  const onboarding = statusBundle
+    ? inspectOnboardingSnapshotFromStatusBundle(paths, statusBundle)
+    : inspectOnboardingSnapshot(paths, codexPaths);
   const codexProfile = inspectCodexProfileSnapshot(codexPaths);
   const steps = listSectionActions("get_started").map((action) => ({
     id: action.id as GetStartedStep["id"],
