@@ -1,4 +1,12 @@
 import { type CodexPaths, type ProjectPaths } from "@sane/platform";
+import {
+  inspectCloudflareProfileApplyResult,
+  inspectCloudflareProfileAudit,
+  inspectOpencodeProfileApplyResult,
+  inspectOpencodeProfileAudit,
+  previewCloudflareProfile,
+  previewOpencodeProfile
+} from "@sane/control-plane/codex-config.js";
 import { inspectPreferencesSnapshot } from "@sane/control-plane/preferences.js";
 import { listSectionActions, type UiCommandId } from "@/command-registry.js";
 
@@ -25,6 +33,12 @@ export interface PreferencesScreenModel {
   models: ReturnType<typeof inspectPreferencesSnapshot>["models"];
   telemetry: ReturnType<typeof inspectPreferencesSnapshot>["telemetry"];
   enabledPacks: string[];
+  cloudflareAudit: ReturnType<typeof inspectCloudflareProfileAudit>;
+  cloudflareApply: ReturnType<typeof inspectCloudflareProfileApplyResult>;
+  cloudflarePreview: ReturnType<typeof previewCloudflareProfile>;
+  opencodeAudit: ReturnType<typeof inspectOpencodeProfileAudit>;
+  opencodeApply: ReturnType<typeof inspectOpencodeProfileApplyResult>;
+  opencodePreview: ReturnType<typeof previewOpencodeProfile>;
   actions: PreferencesScreenAction[];
 }
 
@@ -51,6 +65,12 @@ export function loadPreferencesScreen(
     models: snapshot.models,
     telemetry: snapshot.telemetry,
     enabledPacks: snapshot.enabledPacks,
+    cloudflareAudit: inspectCloudflareProfileAudit(codexPaths),
+    cloudflareApply: inspectCloudflareProfileApplyResult(codexPaths),
+    cloudflarePreview: previewCloudflareProfile(codexPaths),
+    opencodeAudit: inspectOpencodeProfileAudit(codexPaths),
+    opencodeApply: inspectOpencodeProfileApplyResult(codexPaths),
+    opencodePreview: previewOpencodeProfile(codexPaths),
     actions
   };
 }

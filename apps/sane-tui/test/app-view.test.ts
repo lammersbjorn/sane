@@ -148,6 +148,42 @@ describe("app view", () => {
     expect(view.selectedHelpLines.join("\n")).toContain("grep.app: missing -> recommended");
   });
 
+  it("surfaces typed cloudflare profile readiness in Preferences guidance", () => {
+    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
+    selectSection(shell, "preferences");
+    for (let index = 0; index < 5; index += 1) {
+      moveSelection(shell, "action", 1);
+    }
+
+    const view = loadAppView(shell);
+
+    expect(view.selectedAction.id).toBe("preview_cloudflare_profile");
+    expect(view.sectionOverviewLines.join("\n")).toContain("cloudflare profile: missing");
+    expect(view.selectedHelpLines.join("\n")).toContain("audit: missing");
+    expect(view.selectedHelpLines.join("\n")).toContain("apply readiness: ready (1 keys)");
+    expect(view.selectedHelpLines.join("\n")).toContain(
+      "cloudflare-api: missing -> optional provider profile"
+    );
+  });
+
+  it("surfaces typed opencode profile readiness in Preferences guidance", () => {
+    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
+    selectSection(shell, "preferences");
+    for (let index = 0; index < 8; index += 1) {
+      moveSelection(shell, "action", 1);
+    }
+
+    const view = loadAppView(shell);
+
+    expect(view.selectedAction.id).toBe("apply_opencode_profile");
+    expect(view.sectionOverviewLines.join("\n")).toContain("opencode profile: missing");
+    expect(view.selectedHelpLines.join("\n")).toContain("audit: missing");
+    expect(view.selectedHelpLines.join("\n")).toContain("apply readiness: ready (1 keys)");
+    expect(view.selectedHelpLines.join("\n")).toContain(
+      "opensrc: missing -> optional Opencode compatibility profile"
+    );
+  });
+
   it("surfaces runtime-summary payload in Inspect guidance", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
     selectSection(shell, "inspect");

@@ -38,6 +38,10 @@ describe("preferences screen model", () => {
     expect(screen.models.sidecar.model).toBe("gpt-5.4-mini");
     expect(screen.telemetry).toBe("off");
     expect(screen.enabledPacks).toEqual(["core"]);
+    expect(screen.cloudflareAudit.status).toBe("missing");
+    expect(screen.cloudflareApply.status).toBe("ready");
+    expect(screen.opencodeAudit.status).toBe("missing");
+    expect(screen.opencodeApply.status).toBe("ready");
     expect(screen.actions.map((action) => action.id)).toEqual([
       "open_config_editor",
       "open_pack_editor",
@@ -66,5 +70,7 @@ describe("preferences screen model", () => {
     expect(screen.source).toBe("local");
     expect(screen.models.coordinator.model).toBe("gpt-5.2-codex");
     expect(screen.enabledPacks).toEqual(["core", "caveman"]);
+    expect(screen.cloudflarePreview.summary).toBe("cloudflare-profile preview: 1 recommended change(s)");
+    expect(screen.opencodePreview.summary).toBe("opencode-profile preview: 1 recommended change(s)");
   });
 });

@@ -69,7 +69,7 @@ export function loadAppView(shell: TuiShell): SaneTuiAppView {
       repair
     }),
     selectedHelpTitle: "Selected Step Details",
-    selectedHelpLines: selectedActionHelpLines(shell, inspect),
+    selectedHelpLines: selectedActionHelpLines(shell, inspect, preferences),
     latestStatusTitle: dashboard.lastResult.title,
     latestStatusLines: dashboard.lastResult.lines,
     footerTitle: "Now",
@@ -146,7 +146,9 @@ function sectionOverviewLines(
         `sidecar: ${preferences.models.sidecar.model}/${preferences.models.sidecar.reasoningEffort}`,
         `verifier: ${preferences.models.verifier.model}/${preferences.models.verifier.reasoningEffort}`,
         `telemetry: ${preferences.telemetry}`,
-        `enabled packs: ${preferences.enabledPacks.join(", ")}`
+        `enabled packs: ${preferences.enabledPacks.join(", ")}`,
+        `cloudflare profile: ${preferences.cloudflareAudit.status} (${preferences.cloudflareAudit.recommendedChangeCount} recommended changes; apply ${preferences.cloudflareApply.status})`,
+        `opencode profile: ${preferences.opencodeAudit.status} (${preferences.opencodeAudit.recommendedChangeCount} recommended changes; apply ${preferences.opencodeApply.status})`
       ];
     }
     case "repair": {
@@ -172,7 +174,8 @@ function sectionOverviewLines(
 
 function selectedActionHelpLines(
   shell: TuiShell,
-  inspect: () => ReturnType<typeof loadInspectScreen>
+  inspect: () => ReturnType<typeof loadInspectScreen>,
+  preferences: () => ReturnType<typeof loadPreferencesScreen>
 ): string[] {
   const action = currentAction(shell);
   if (
@@ -215,6 +218,32 @@ function selectedActionHelpLines(
       ),
       ...formatLatestPolicyPreviewInputLines(model.latestPolicyPreview, "latest snapshot input"),
       ...model.policyPreview.details
+    ];
+  }
+
+  if (action.id === "preview_cloudflare_profile" || action.id === "apply_cloudflare_profile") {
+    const model = preferences();
+    return [
+      `Selected action: ${action.label}`,
+      "",
+      ...action.help,
+      "",
+      `audit: ${model.cloudflareAudit.status} (${model.cloudflareAudit.recommendedChangeCount} recommended changes)`,
+      `apply readiness: ${model.cloudflareApply.status} (${model.cloudflareApply.appliedKeys.length} keys)`,
+      ...model.cloudflarePreview.details
+    ];
+  }
+
+  if (action.id === "preview_opencode_profile" || action.id === "apply_opencode_profile") {
+    const model = preferences();
+    return [
+      `Selected action: ${action.label}`,
+      "",
+      ...action.help,
+      "",
+      `audit: ${model.opencodeAudit.status} (${model.opencodeAudit.recommendedChangeCount} recommended changes)`,
+      `apply readiness: ${model.opencodeApply.status} (${model.opencodeApply.appliedKeys.length} keys)`,
+      ...model.opencodePreview.details
     ];
   }
 
