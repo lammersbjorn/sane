@@ -133,9 +133,9 @@ export const runtimeArtifacts = [
   ".sane/config.local.toml",
   ".sane/state/current-run.json",
   ".sane/state/summary.json",
-  ".sane/events.jsonl",
-  ".sane/decisions.jsonl",
-  ".sane/artifacts.jsonl"
+  ".sane/state/events.jsonl",
+  ".sane/state/decisions.jsonl",
+  ".sane/state/artifacts.jsonl"
 ] as const;
 
 export const integrations = {

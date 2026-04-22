@@ -220,13 +220,13 @@ export const COMMAND_METADATA_REGISTRY = {
         "Show a read-only summary of local current-run-derived handoff state.",
         "",
         "Visibility only. No files are changed and no runtime orchestration runs.",
-        "This reads current-run, summary, and brief state from `.sane/`.",
+        "This reads `.sane/state/current-run.json`, `.sane/state/summary.json`, and `.sane/BRIEF.md`.",
         "Use it when you want a compact view of what Sane has recorded locally."
       ],
       confirmation: null,
       successNoticeTitle: null,
       repoMutation: false,
-      filesTouched: [".sane/current-run.json", ".sane/state/summary.json", ".sane/BRIEF.md"]
+      filesTouched: [".sane/state/current-run.json", ".sane/state/summary.json", ".sane/BRIEF.md"]
     },
     reset_telemetry_data: {
       id: "reset_telemetry_data",
@@ -264,7 +264,7 @@ export const COMMAND_METADATA_REGISTRY = {
       confirmation: null,
       successNoticeTitle: null,
       repoMutation: false,
-      filesTouched: [".sane/current-run.json", ".sane/state/summary.json", ".sane/state/decisions.jsonl"]
+      filesTouched: [".sane/state/current-run.json", ".sane/state/summary.json", ".sane/state/decisions.jsonl"]
     },
     backup_codex_config: {
       id: "backup_codex_config",

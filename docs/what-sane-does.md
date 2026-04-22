@@ -79,7 +79,7 @@ Today, `Sane` can manage:
 - the separate recommended integrations profile for Codex tools like `Context7`, `Playwright`, and `grep.app`
 - structured integrations audit output in install/apply/inspect flows so recommended adds are reviewable before write without summary-string guessing
 - bounded latest current-run-derived policy-preview snapshot visibility in read-only Inspect/runtime surfaces so routing state stays inspectable without becoming a user-facing orchestration mode
-- bounded runtime-history counts for `.sane/events.jsonl`, `.sane/decisions.jsonl`, and `.sane/artifacts.jsonl` in inspect/runtime surfaces
+- bounded runtime-history counts for `.sane/state/events.jsonl`, `.sane/state/decisions.jsonl`, and `.sane/state/artifacts.jsonl` in inspect/runtime surfaces
 - optional repo-local shared skills when a repo actually needs shared targeted behavior
 - optional additive guidance blocks in global or repo `AGENTS.md`, with repo `AGENTS.md` reserved for explicit broad guidance
 - Sane-managed hook entries

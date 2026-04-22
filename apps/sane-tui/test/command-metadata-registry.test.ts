@@ -81,6 +81,16 @@ describe("command metadata registry", () => {
     expect(getCommandSpec("show_runtime_summary").help[0]).toBe(
       "Show a read-only summary of local current-run-derived handoff state."
     );
+    expect(getCommandSpec("show_runtime_summary").filesTouched).toEqual([
+      ".sane/state/current-run.json",
+      ".sane/state/summary.json",
+      ".sane/BRIEF.md"
+    ]);
+    expect(getCommandSpec("preview_policy").filesTouched).toEqual([
+      ".sane/state/current-run.json",
+      ".sane/state/summary.json",
+      ".sane/state/decisions.jsonl"
+    ]);
   });
 
   it("tracks risky confirmation copy and notice titles", () => {
