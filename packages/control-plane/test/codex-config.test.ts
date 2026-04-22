@@ -12,6 +12,7 @@ import {
   applyOpencodeProfile,
   backupCodexConfig,
   inspectCodexConfigBackupSnapshot,
+  inspectCodexProfileAudit,
   inspectIntegrationsProfileAudit,
   inspectIntegrationsProfileStatus,
   previewCloudflareProfile,
@@ -239,5 +240,54 @@ describe("codex config control plane", () => {
     applyIntegrationsProfile(projectPaths, codexPaths);
 
     expect(inspectIntegrationsProfileStatus(codexPaths)).toBe("installed");
+  });
+
+  it("reports structured codex-profile audit state without scraping preview strings", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    expect(inspectCodexProfileAudit(codexPaths)).toMatchObject({
+      status: "missing",
+      recommendedChangeCount: 3,
+      changes: [
+        { key: "model", current: null, recommended: "gpt-5.4" },
+        { key: "model_reasoning_effort", current: null, recommended: "high" },
+        { key: "features.codex_hooks", current: null, recommended: "enabled" }
+      ]
+    });
+
+    applyCodexProfile(projectPaths, codexPaths);
+
+    expect(inspectCodexProfileAudit(codexPaths)).toMatchObject({
+      status: "installed",
+      recommendedChangeCount: 0,
+      changes: []
+    });
+  });
+
+  it("keeps codex-profile preview summary count aligned with structured audit", () => {
+    const homeDir = makeTempDir();
+    const codexPaths = createCodexPaths(homeDir);
+
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+    writeFileSync(
+      codexPaths.configToml,
+      ['model = "gpt-5.4"', 'model_reasoning_effort = "low"', "[features]", "codex_hooks = true", ""].join(
+        "\n"
+      ),
+      "utf8"
+    );
+
+    const audit = inspectCodexProfileAudit(codexPaths);
+    const preview = previewCodexProfile(codexPaths);
+
+    expect(audit).toMatchObject({
+      status: "missing",
+      recommendedChangeCount: 1,
+      changes: [{ key: "model_reasoning_effort", current: "low", recommended: "high" }]
+    });
+    expect(preview.summary).toBe("codex-profile preview: 1 recommended change(s)");
   });
 });
