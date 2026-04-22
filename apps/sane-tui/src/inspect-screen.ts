@@ -51,9 +51,7 @@ export function inspectOverviewLines(snapshot: InspectScreenSnapshot): string[] 
     `doctor result: ${snapshot.doctor.summary.split("\n")[0] ?? "no doctor output"}`,
     `runtime summary (read-only local visibility): ${snapshot.runtimeSummary.summary}`,
     `runtime history (read-only local visibility): events ${snapshot.runtimeHistory.events}, decisions ${snapshot.runtimeHistory.decisions}, artifacts ${snapshot.runtimeHistory.artifacts}`,
-    snapshot.latestPolicyPreview.status === "present"
-      ? `latest policy snapshot: present (current-run-derived read-only view; ts ${snapshot.latestPolicyPreview.tsUnix}; summary ${snapshot.latestPolicyPreview.summary}; ${snapshot.latestPolicyPreview.scenarioCount} scenarios: ${snapshot.latestPolicyPreview.scenarioIds.join(", ")})`
-      : "latest policy snapshot: missing (current-run-derived read-only view)",
+    formatLatestPolicyPreviewLine(snapshot.latestPolicyPreview),
     `local config view: ${snapshot.localConfig.summary}`,
     `Codex config view: ${snapshot.codexConfig.summary}`,
     `integrations audit: ${snapshot.integrationsAudit.status} (${snapshot.integrationsAudit.recommendedChangeCount} recommended changes)`,
@@ -68,4 +66,12 @@ export function inspectOverviewLines(snapshot: InspectScreenSnapshot): string[] 
         : `${item.name}: ${item.status}`
     )
   );
+}
+
+export function formatLatestPolicyPreviewLine(
+  preview: InspectScreenSnapshot["latestPolicyPreview"]
+): string {
+  return preview.status === "present"
+    ? `latest policy snapshot: present (current-run-derived read-only view; ts ${preview.tsUnix}; summary ${preview.summary}; ${preview.scenarioCount} scenarios: ${preview.scenarioIds.join(", ")})`
+    : "latest policy snapshot: missing (current-run-derived read-only view)";
 }

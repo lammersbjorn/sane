@@ -133,6 +133,7 @@ describe("inspect screen model", () => {
       status: "missing",
       scenarioCount: 0,
       scenarioIds: [],
+      scenarios: [],
       tsUnix: null,
       summary: null
     });
@@ -204,6 +205,10 @@ describe("inspect screen model", () => {
       status: "present",
       scenarioCount: 2,
       scenarioIds: ["simple-question", "multi-file-feature"],
+      scenarios: [
+        { id: "simple-question", summary: null, obligationCount: 0, traceCount: 0 },
+        { id: "multi-file-feature", summary: null, obligationCount: 0, traceCount: 0 }
+      ],
       tsUnix: 1_700_000_004,
       summary: "policy preview: rendered adaptive obligation scenarios"
     });

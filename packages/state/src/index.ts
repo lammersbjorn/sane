@@ -122,13 +122,73 @@ export interface DecisionRecord {
 
 export interface PolicyPreviewDecisionContext extends JsonRecord {
   kind: 'policy_preview';
-  scenarios: JsonRecord[];
+  scenarios: PolicyPreviewDecisionScenario[];
+}
+
+export interface PolicyPreviewDecisionScenarioInput {
+  id: string;
+  summary?: string | null;
+  obligations?: string[];
+  roles?: PolicyPreviewDecisionRolesInput | null;
+  orchestration?: PolicyPreviewScenarioOrchestrationInput | null;
+  trace?: PolicyPreviewDecisionTraceEntryInput[];
+}
+
+export interface PolicyPreviewDecisionRolesInput {
+  coordinator?: boolean | null;
+  sidecar?: boolean | null;
+  verifier?: boolean | null;
+}
+
+export interface PolicyPreviewScenarioOrchestrationInput {
+  subagents?: string | null;
+  subagentReadiness?: string | null;
+  reviewPosture?: string | null;
+  verifierTiming?: string | null;
+}
+
+export interface PolicyPreviewDecisionTraceEntryInput {
+  obligation?: string | null;
+  rule?: string | null;
+}
+
+export interface PolicyPreviewDecisionScenario {
+  [key: string]: JsonValue;
+  id: string;
+  summary: string | null;
+  obligations: string[];
+  roles: {
+    [key: string]: JsonValue;
+    coordinator: boolean;
+    sidecar: boolean;
+    verifier: boolean;
+  } | null;
+  orchestration: {
+    [key: string]: JsonValue;
+    subagents: string | null;
+    subagentReadiness: string | null;
+    reviewPosture: string | null;
+    verifierTiming: string | null;
+  } | null;
+  trace: Array<{
+    [key: string]: JsonValue;
+    obligation: string;
+    rule: string;
+  }>;
+}
+
+export interface LatestPolicyPreviewScenarioSnapshot {
+  id: string;
+  summary: string | null;
+  obligationCount: number;
+  traceCount: number;
 }
 
 export interface LatestPolicyPreviewSnapshot {
   status: 'missing' | 'present';
   scenarioCount: number;
   scenarioIds: string[];
+  scenarios: LatestPolicyPreviewScenarioSnapshot[];
   tsUnix: number | null;
   summary: string | null;
 }
@@ -185,16 +245,7 @@ export function writeRunSnapshot(path: string, snapshot: RunSnapshot): void {
 }
 
 export function runSnapshotToCurrentRunState(snapshot: RunSnapshot): CurrentRunState {
-  return {
-    version: upgradedVersion(snapshot.version),
-    objective: snapshot.objective,
-    phase: 'unknown',
-    activeTasks: [],
-    blockingQuestions: [],
-    verification: createDefaultVerificationStatus(),
-    lastCompactionTsUnix: null,
-    extra: {},
-  };
+  return createDefaultCurrentRunState(snapshot.objective, snapshot.version);
 }
 
 export function currentRunStateToRunSnapshot(state: CurrentRunState): RunSnapshot {
@@ -262,6 +313,22 @@ export function createDefaultRunSummary(): RunSummary {
     constraints: [],
     lastVerifiedOutputs: [],
     filesTouched: [],
+    extra: {},
+  };
+}
+
+export function createDefaultCurrentRunState(
+  objective: string,
+  version = 2,
+): CurrentRunState {
+  return {
+    version: upgradedVersion(version),
+    objective,
+    phase: 'unknown',
+    activeTasks: [],
+    blockingQuestions: [],
+    verification: createDefaultVerificationStatus(),
+    lastCompactionTsUnix: null,
     extra: {},
   };
 }
@@ -651,6 +718,12 @@ export function readLatestPolicyPreviewSnapshot(path: string): LatestPolicyPrevi
     status: 'present',
     scenarioCount: latestPolicyContext.scenarios.length,
     scenarioIds,
+    scenarios: latestPolicyContext.scenarios.map((scenario) => ({
+      id: scenario.id,
+      summary: scenario.summary,
+      obligationCount: scenario.obligations.length,
+      traceCount: scenario.trace.length,
+    })),
     tsUnix: latestPolicyDecision.tsUnix,
     summary: latestPolicyDecision.summary,
   };
@@ -661,17 +734,18 @@ function missingLatestPolicyPreviewSnapshot(): LatestPolicyPreviewSnapshot {
     status: 'missing',
     scenarioCount: 0,
     scenarioIds: [],
+    scenarios: [],
     tsUnix: null,
     summary: null,
   };
 }
 
 export function createPolicyPreviewDecisionContext(
-  scenarios: JsonRecord[],
+  scenarios: PolicyPreviewDecisionScenarioInput[],
 ): PolicyPreviewDecisionContext {
   return {
     kind: 'policy_preview',
-    scenarios,
+    scenarios: scenarios.map(normalizePolicyPreviewScenario),
   };
 }
 
@@ -683,16 +757,111 @@ export function policyPreviewDecisionContext(
     return null;
   }
 
-  const scenarios: JsonRecord[] = [];
+  const parsedScenarios: PolicyPreviewDecisionScenario[] = [];
   for (const scenario of context.scenarios) {
     const parsed = asOptionalJsonRecord(scenario);
     if (!parsed) {
       return null;
     }
-    scenarios.push(parsed);
+    try {
+      parsedScenarios.push(normalizePolicyPreviewScenarioRecord(parsed));
+    } catch {
+      return null;
+    }
   }
 
-  return createPolicyPreviewDecisionContext(scenarios);
+  return {
+    kind: 'policy_preview',
+    scenarios: parsedScenarios,
+  };
+}
+
+function normalizePolicyPreviewScenario(
+  scenario: PolicyPreviewDecisionScenarioInput,
+): PolicyPreviewDecisionScenario {
+  return {
+    id: scenario.id,
+    summary: scenario.summary ?? null,
+    obligations: [...(scenario.obligations ?? [])],
+    roles: normalizePolicyPreviewScenarioRoles(scenario.roles),
+    orchestration: normalizePolicyPreviewScenarioOrchestration(scenario.orchestration),
+    trace: normalizePolicyPreviewTraceEntries(scenario.trace),
+  };
+}
+
+function normalizePolicyPreviewScenarioRecord(record: JsonRecord): PolicyPreviewDecisionScenario {
+  const id = asOptionalString(record.id);
+  const roles = asOptionalJsonRecord(record.roles);
+  const orchestration = asOptionalJsonRecord(record.orchestration);
+  if (!id) {
+    throw new Error('invalid policy preview scenario: missing id');
+  }
+
+  return normalizePolicyPreviewScenario({
+    id,
+    summary: asOptionalString(record.summary) ?? null,
+    obligations: asOptionalStringArray(record.obligations) ?? [],
+    roles: roles
+      ? {
+          coordinator: asOptionalBoolean(roles.coordinator) ?? false,
+          sidecar: asOptionalBoolean(roles.sidecar) ?? false,
+          verifier: asOptionalBoolean(roles.verifier) ?? false,
+        }
+      : null,
+    orchestration: orchestration
+      ? {
+          subagents: asOptionalString(orchestration.subagents) ?? null,
+          subagentReadiness: asOptionalString(orchestration.subagentReadiness) ?? null,
+          reviewPosture: asOptionalString(orchestration.reviewPosture) ?? null,
+          verifierTiming: asOptionalString(orchestration.verifierTiming) ?? null,
+        }
+      : null,
+    trace: Array.isArray(record.trace)
+      ? record.trace.flatMap((entry) => {
+          const traceRecord = asOptionalJsonRecord(entry);
+          const obligation = asOptionalString(traceRecord?.obligation);
+          const rule = asOptionalString(traceRecord?.rule);
+          return obligation && rule ? [{ obligation, rule }] : [];
+        })
+      : [],
+  });
+}
+
+function normalizePolicyPreviewScenarioRoles(
+  roles: PolicyPreviewDecisionRolesInput | null | undefined,
+): PolicyPreviewDecisionScenario['roles'] {
+  if (!roles) {
+    return null;
+  }
+
+  return {
+    coordinator: roles.coordinator ?? false,
+    sidecar: roles.sidecar ?? false,
+    verifier: roles.verifier ?? false,
+  };
+}
+
+function normalizePolicyPreviewScenarioOrchestration(
+  orchestration: PolicyPreviewScenarioOrchestrationInput | null | undefined,
+): PolicyPreviewDecisionScenario['orchestration'] {
+  if (!orchestration) {
+    return null;
+  }
+
+  return {
+    subagents: orchestration.subagents ?? null,
+    subagentReadiness: orchestration.subagentReadiness ?? null,
+    reviewPosture: orchestration.reviewPosture ?? null,
+    verifierTiming: orchestration.verifierTiming ?? null,
+  };
+}
+
+function normalizePolicyPreviewTraceEntries(
+  trace: PolicyPreviewDecisionTraceEntryInput[] | undefined,
+): PolicyPreviewDecisionScenario['trace'] {
+  return (trace ?? []).flatMap((entry) =>
+    entry.obligation && entry.rule ? [{ obligation: entry.obligation, rule: entry.rule }] : [],
+  );
 }
 
 export function writeCanonicalWithBackup<T>(
@@ -1378,6 +1547,10 @@ function asString(value: unknown, key: string): string {
 
 function asOptionalString(value: unknown): string | undefined {
   return typeof value === 'string' ? value : undefined;
+}
+
+function asOptionalBoolean(value: unknown): boolean | undefined {
+  return typeof value === 'boolean' ? value : undefined;
 }
 
 function asOptionalJsonRecord(value: unknown): JsonRecord | undefined {

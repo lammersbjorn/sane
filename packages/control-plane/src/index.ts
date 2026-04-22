@@ -276,6 +276,7 @@ export function inspectLatestPolicyPreview(paths: ProjectPaths): LatestPolicyPre
     status: "missing",
     scenarioCount: 0,
     scenarioIds: [],
+    scenarios: [],
     tsUnix: null,
     summary: null
   };

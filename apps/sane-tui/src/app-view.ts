@@ -2,7 +2,11 @@ import { type TuiShell, currentAction } from "@/shell.js";
 import { loadDashboardView } from "@/dashboard.js";
 import { loadGetStartedScreen } from "@/get-started-screen.js";
 import { loadInstallScreen } from "@/install-screen.js";
-import { inspectOverviewLines, loadInspectScreen } from "@/inspect-screen.js";
+import {
+  formatLatestPolicyPreviewLine,
+  inspectOverviewLines,
+  loadInspectScreen
+} from "@/inspect-screen.js";
 import { loadOverlayModel, type OverlayModel } from "@/overlay-models.js";
 import { loadPreferencesScreen } from "@/preferences-screen.js";
 import { loadRepairScreen } from "@/repair-screen.js";
@@ -204,9 +208,10 @@ function selectedActionHelpLines(
       "",
       ...action.help,
       "",
-      model.latestPolicyPreview.status === "present"
-        ? `latest snapshot: present (current-run-derived read-only view; ts ${model.latestPolicyPreview.tsUnix}; summary ${model.latestPolicyPreview.summary}; ${model.latestPolicyPreview.scenarioCount} scenarios: ${model.latestPolicyPreview.scenarioIds.join(", ")})`
-        : "latest snapshot: missing (current-run-derived read-only view)",
+      formatLatestPolicyPreviewLine(model.latestPolicyPreview).replace(
+        "latest policy snapshot:",
+        "latest snapshot:"
+      ),
       ...model.policyPreview.details
     ];
   }
