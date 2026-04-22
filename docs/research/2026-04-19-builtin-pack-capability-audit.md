@@ -57,6 +57,7 @@ Why `v1`:
 Owns:
 - durable memory compression / handoff support
 - brief / compaction helpers
+- capability-only pack behavior for now, not a mirrored standalone skill
 
 Why `v1`:
 - directly tied to long-session continuity
@@ -67,6 +68,7 @@ Why `v1`:
 Owns:
 - safer shell command routing
 - environment/policy integration when RTK is present
+- capability-only pack behavior for now, not a mirrored standalone skill
 
 Why `v1`:
 - already part of your real workflow
@@ -172,10 +174,10 @@ Why not default:
 - terse communication + token economy
 
 `cavemem`
-- durable memory + compaction helpers
+- durable memory + compaction helpers, currently capability-only
 
 `rtk`
-- shell execution discipline
+- shell execution discipline, currently capability-only
 
 `frontend-craft`
 - high-quality UI generation / anti-generic frontend output

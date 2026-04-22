@@ -178,7 +178,6 @@ impl Command {
             (Some("config"), _) => Ok(Self::Config),
             (Some("codex-config"), _) => Ok(Self::CodexConfig),
             (Some("backup"), Some("codex-config")) => Ok(Self::BackupCodexConfig),
-            (Some("debug"), Some("policy-preview")) => Ok(Self::DebugPolicyPreview),
             (Some("debug"), None) => Ok(Self::Debug),
             (Some("preview"), Some("codex-profile")) => Ok(Self::PreviewCodexProfile),
             (Some("preview"), Some("integrations-profile")) => Ok(Self::PreviewIntegrationsProfile),
@@ -215,7 +214,7 @@ impl Command {
 
     fn static_output(self) -> Option<&'static str> {
         match self {
-            Command::Debug => Some("debug: legacy migration target: policy-preview"),
+            Command::Debug => Some("debug: no public migration targets"),
             Command::Export => Some(
                 "export: available targets: all, user-skills, repo-skills, repo-agents, global-agents, hooks, custom-agents",
             ),
@@ -5452,7 +5451,9 @@ mod tests {
     use sane_state::CurrentRunState;
     use tempfile::tempdir;
 
-    use super::{run, run_with_home};
+    use sane_platform::ProjectPaths;
+
+    use super::{preview_policy, run, run_with_home};
 
     #[test]
     fn install_creates_dot_sane_runtime() {
@@ -5895,9 +5896,8 @@ mod tests {
     #[test]
     fn debug_policy_preview_renders_adaptive_scenarios() {
         let dir = tempdir().unwrap();
-        let home = tempdir().unwrap();
-
-        let output = run_with_home(&["debug", "policy-preview"], dir.path(), home.path()).unwrap();
+        let paths = ProjectPaths::discover(dir.path()).unwrap();
+        let output = preview_policy(&paths).unwrap().render_text();
 
         assert!(output.contains("policy preview: rendered adaptive obligation scenarios"));
         assert!(output.contains("simple-question: direct_answer | coordinator=gpt-5.4/high"));

@@ -75,7 +75,7 @@ Routing note:
 Today, `Sane` can manage:
 
 - the `sane-router` skill
-- optional built-in pack skills
+- optional built-in pack exports, which may be concrete skills or capability-only pack behavior depending on the pack
 - the separate recommended integrations profile for Codex tools like `Context7`, `Playwright`, and `grep.app`
 - structured integrations audit output in install/apply/inspect flows so recommended adds are reviewable before write without summary-string guessing
 - bounded latest current-run-derived policy-preview snapshot visibility in read-only Inspect/runtime surfaces so routing state stays inspectable without becoming a user-facing orchestration mode
