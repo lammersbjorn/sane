@@ -215,7 +215,7 @@ impl Command {
 
     fn static_output(self) -> Option<&'static str> {
         match self {
-            Command::Debug => Some("debug: available targets: policy-preview"),
+            Command::Debug => Some("debug: legacy migration target: policy-preview"),
             Command::Export => Some(
                 "export: available targets: all, user-skills, repo-skills, repo-agents, global-agents, hooks, custom-agents",
             ),
@@ -1966,11 +1966,11 @@ fn command_help_lines(command: Command) -> Vec<Line<'static>> {
             Line::from("Use this if a profile apply did not give you the result you wanted."),
         ],
         Command::DebugPolicyPreview => vec![
-            Line::from("Show Sane's current internal adaptive policy preview."),
+            Line::from("Show Sane's legacy Rust-side adaptive policy preview."),
             Line::from(""),
-            Line::from("This is mostly for development right now."),
+            Line::from("This is a migration-only path while the public Rust TUI still ships."),
             Line::from(
-                "It helps inspect how coordinator, sidecar, and verifier roles are being recommended.",
+                "The TypeScript control-plane preview is the current source of truth for policy behavior.",
             ),
         ],
         Command::Doctor => vec![
