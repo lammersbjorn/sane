@@ -86,6 +86,7 @@ export interface LayeredStateBundle {
   currentRun: CurrentRunState | null;
   brief: string | null;
   historyCounts: LayeredStateHistoryCounts;
+  latestPolicyPreview: LatestPolicyPreviewSnapshot;
 }
 
 export type CanonicalStateFormat = 'json' | 'toml';
@@ -374,6 +375,9 @@ export function loadLayeredStateBundle(paths: CanonicalStatePaths): LayeredState
       decisions: countOptionalJsonlEntries(paths.decisionsPath),
       artifacts: countOptionalJsonlEntries(paths.artifactsPath),
     },
+    latestPolicyPreview: paths.decisionsPath
+      ? readLatestPolicyPreviewSnapshot(paths.decisionsPath)
+      : missingLatestPolicyPreviewSnapshot(),
   };
 }
 
@@ -630,25 +634,13 @@ export function readLatestPolicyPreviewDecision(path: string): DecisionRecord | 
 export function readLatestPolicyPreviewSnapshot(path: string): LatestPolicyPreviewSnapshot {
   const latestPolicyDecision = readLatestPolicyPreviewDecision(path);
   if (!latestPolicyDecision) {
-    return {
-      status: 'missing',
-      scenarioCount: 0,
-      scenarioIds: [],
-      tsUnix: null,
-      summary: null,
-    };
+    return missingLatestPolicyPreviewSnapshot();
   }
 
   const latestPolicyContext = policyPreviewDecisionContext(latestPolicyDecision);
 
   if (!latestPolicyContext) {
-    return {
-      status: 'missing',
-      scenarioCount: 0,
-      scenarioIds: [],
-      tsUnix: null,
-      summary: null,
-    };
+    return missingLatestPolicyPreviewSnapshot();
   }
 
   const scenarioIds = latestPolicyContext.scenarios.flatMap((scenario) =>
@@ -661,6 +653,16 @@ export function readLatestPolicyPreviewSnapshot(path: string): LatestPolicyPrevi
     scenarioIds,
     tsUnix: latestPolicyDecision.tsUnix,
     summary: latestPolicyDecision.summary,
+  };
+}
+
+function missingLatestPolicyPreviewSnapshot(): LatestPolicyPreviewSnapshot {
+  return {
+    status: 'missing',
+    scenarioCount: 0,
+    scenarioIds: [],
+    tsUnix: null,
+    summary: null,
   };
 }
 

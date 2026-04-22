@@ -24,7 +24,6 @@ import {
   loadLayeredStateBundle,
   listCanonicalBackupSiblings,
   readCurrentRunState,
-  readLatestPolicyPreviewSnapshot,
   readLocalStateConfig,
   readRunSummary,
   stringifyCurrentRunState,
@@ -178,6 +177,7 @@ export function showRuntimeProgress(paths: ProjectPaths): RuntimeProgressSnapsho
 
 export function inspectSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): InspectSnapshot {
   const statusBundle = inspectStatusBundle(paths, codexPaths);
+  const layered = tryLoadLayeredState(paths);
 
   return {
     status: {
@@ -187,8 +187,8 @@ export function inspectSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): In
     statusBundle,
     doctor: doctor(paths, codexPaths),
     runtimeSummary: showRuntimeSummary(paths),
-    runtimeHistory: showRuntimeHistory(paths),
-    latestPolicyPreview: inspectLatestPolicyPreview(paths),
+    runtimeHistory: layered?.historyCounts ?? { events: 0, decisions: 0, artifacts: 0 },
+    latestPolicyPreview: layered?.latestPolicyPreview ?? inspectLatestPolicyPreview(paths),
     localConfig: showConfig(paths),
     codexConfig: showCodexConfig(codexPaths),
     integrationsAudit: inspectIntegrationsProfileAudit(codexPaths),
@@ -208,7 +208,7 @@ export function showRuntimeSummary(paths: ProjectPaths): OperationResult {
   const current = layered?.currentRun;
   const summary = layered?.summary;
   const brief = layered?.brief;
-  const latestPolicyPreview = inspectLatestPolicyPreview(paths);
+  const latestPolicyPreview = layered?.latestPolicyPreview ?? inspectLatestPolicyPreview(paths);
   const historyCounts = layered?.historyCounts ?? { events: 0, decisions: 0, artifacts: 0 };
   const details = [
     `current-run: ${current ? "present" : "missing"} at ${paths.currentRunPath}`,
@@ -259,12 +259,26 @@ export function showRuntimeSummary(paths: ProjectPaths): OperationResult {
         ? `runtime-summary: local handoff state at ${paths.runtimeRoot}`
         : `runtime-summary: no local handoff state at ${paths.runtimeRoot}`,
     details,
-    pathsTouched: [paths.currentRunPath, paths.summaryPath, paths.briefPath]
+    pathsTouched: [
+      paths.currentRunPath,
+      paths.summaryPath,
+      paths.briefPath,
+      paths.eventsPath,
+      paths.decisionsPath,
+      paths.artifactsPath
+    ]
   });
 }
 
 export function inspectLatestPolicyPreview(paths: ProjectPaths): LatestPolicyPreviewSnapshot {
-  return readLatestPolicyPreviewSnapshot(paths.decisionsPath);
+  const layered = tryLoadLayeredState(paths);
+  return layered?.latestPolicyPreview ?? {
+    status: "missing",
+    scenarioCount: 0,
+    scenarioIds: [],
+    tsUnix: null,
+    summary: null
+  };
 }
 
 export * from "./codex-config.js";

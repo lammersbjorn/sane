@@ -691,6 +691,13 @@ describe('layered load parity', () => {
     expect(bundle.currentRun).toEqual(currentRun);
     expect(bundle.brief).toBe('# brief\n');
     expect(bundle.historyCounts).toEqual({ events: 0, decisions: 0, artifacts: 0 });
+    expect(bundle.latestPolicyPreview).toEqual({
+      status: 'missing',
+      scenarioCount: 0,
+      scenarioIds: [],
+      tsUnix: null,
+      summary: null,
+    });
   });
 
   it('keeps readable layers when summary parsing fails', () => {
@@ -726,6 +733,81 @@ describe('layered load parity', () => {
     expect(bundle.currentRun?.objective).toBe('recover current run');
     expect(bundle.currentRun?.phase).toBe('implementing');
     expect(bundle.brief).toBe('# brief\n');
+    expect(bundle.latestPolicyPreview).toEqual({
+      status: 'missing',
+      scenarioCount: 0,
+      scenarioIds: [],
+      tsUnix: null,
+      summary: null,
+    });
+  });
+
+  it('includes latest policy preview snapshot from decisions history', () => {
+    const dir = makeTempDir();
+    const runtimeRoot = join(dir, '.sane');
+    const stateDir = join(runtimeRoot, 'state');
+    const configPath = join(runtimeRoot, 'config.local.toml');
+    const summaryPath = join(stateDir, 'summary.json');
+    const currentRunPath = join(stateDir, 'current-run.json');
+    const briefPath = join(runtimeRoot, 'BRIEF.md');
+    const decisionsPath = join(stateDir, 'decisions.jsonl');
+
+    writeLocalStateConfig(configPath, { version: 1, extra: {} });
+    writeRunSummary(summaryPath, {
+      version: 2,
+      acceptedDecisions: ['keep state thin'],
+      completedMilestones: [],
+      constraints: [],
+      lastVerifiedOutputs: [],
+      filesTouched: [],
+      extra: {},
+    });
+    writeCurrentRunState(currentRunPath, {
+      version: 2,
+      objective: 'Finish R3',
+      phase: 'implementing',
+      activeTasks: [],
+      blockingQuestions: [],
+      verification: createVerificationStatus('pending'),
+      lastCompactionTsUnix: null,
+      extra: {},
+    });
+    writeFileSync(briefPath, '# brief\n');
+
+    const previewDecision = createDecisionRecord(
+      'policy preview: rendered adaptive obligation scenarios',
+      'simple-question: direct_answer | coordinator=gpt-5.4/high',
+      [],
+      createPolicyPreviewDecisionContext([{ id: 'simple-question' }, { id: 'multi-file-feature' }]),
+    );
+    previewDecision.tsUnix = 1_700_000_123;
+    appendJsonlRecord(decisionsPath, previewDecision, stringifyDecisionRecord);
+
+    appendJsonlRecord(
+      decisionsPath,
+      createDecisionRecord('runtime installed', 'keep runtime bootstrap explicit', ['.sane/config.local.toml']),
+      stringifyDecisionRecord,
+    );
+
+    const bundle = loadLayeredStateBundle(
+      createCanonicalStatePaths(
+        configPath,
+        summaryPath,
+        currentRunPath,
+        briefPath,
+        undefined,
+        decisionsPath,
+      ),
+    );
+
+    expect(bundle.latestPolicyPreview).toEqual({
+      status: 'present',
+      scenarioCount: 2,
+      scenarioIds: ['simple-question', 'multi-file-feature'],
+      tsUnix: 1_700_000_123,
+      summary: 'policy preview: rendered adaptive obligation scenarios',
+    });
+    expect(bundle.historyCounts.decisions).toBe(2);
   });
 
   it('returns empty backup lists when the parent directory is missing', () => {

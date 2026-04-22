@@ -42,7 +42,14 @@ describe("showRuntimeSummary", () => {
     expect(result.details).toContain(`current-run: missing at ${paths.currentRunPath}`);
     expect(result.details).toContain(`summary: missing at ${paths.summaryPath}`);
     expect(result.details).toContain(`brief: missing at ${paths.briefPath}`);
-    expect(result.pathsTouched).toEqual([paths.currentRunPath, paths.summaryPath, paths.briefPath]);
+    expect(result.pathsTouched).toEqual([
+      paths.currentRunPath,
+      paths.summaryPath,
+      paths.briefPath,
+      paths.eventsPath,
+      paths.decisionsPath,
+      paths.artifactsPath
+    ]);
   });
 
   it("summarizes current-run, summary, and brief after bootstrap", () => {

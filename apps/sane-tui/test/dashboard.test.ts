@@ -122,7 +122,7 @@ describe("dashboard view", () => {
     expect(view.chips.find((chip) => chip.id === "verification")).toBeUndefined();
   });
 
-  it("prefers onboarding snapshot status line over status bundle primary shape for core chips", () => {
+  it("uses typed status bundle primary shape for core chips instead of onboarding status line text", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const shell = createTuiShell(createProjectPaths(projectRoot), createCodexPaths(homeDir));
@@ -167,10 +167,10 @@ describe("dashboard view", () => {
 
     const view = loadDashboardView(shell);
 
-    expect(view.chips.find((chip) => chip.id === "runtime")?.value).toBe("missing");
-    expect(view.chips.find((chip) => chip.id === "codex-config")?.value).toBe("missing");
-    expect(view.chips.find((chip) => chip.id === "user-skills")?.value).toBe("missing");
-    expect(view.chips.find((chip) => chip.id === "hooks")?.value).toBe("missing");
-    expect(view.chips.find((chip) => chip.id === "install_bundle")?.value).toBe("missing");
+    expect(view.chips.find((chip) => chip.id === "runtime")?.value).toBe("installed");
+    expect(view.chips.find((chip) => chip.id === "codex-config")?.value).toBe("installed");
+    expect(view.chips.find((chip) => chip.id === "user-skills")?.value).toBe("installed");
+    expect(view.chips.find((chip) => chip.id === "hooks")?.value).toBe("installed");
+    expect(view.chips.find((chip) => chip.id === "install_bundle")?.value).toBe("installed");
   });
 });

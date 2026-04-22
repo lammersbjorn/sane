@@ -28,7 +28,6 @@ export interface DashboardView {
 export function loadDashboardView(shell: TuiShell): DashboardView {
   const getStarted = getStartedScreen.loadGetStartedScreen(shell.paths, shell.codexPaths);
   const statusBundle = inspectStatusBundle(shell.paths, shell.codexPaths);
-  const onboardingStatuses = parseOnboardingStatusLine(getStarted.statusLine);
 
   return {
     title: "Sane",
@@ -42,14 +41,13 @@ export function loadDashboardView(shell: TuiShell): DashboardView {
     actions: currentActions(shell),
     selectedAction: currentAction(shell),
     lastResult: shell.lastResult,
-    chips: buildStatusChips(shell, statusBundle, onboardingStatuses)
+    chips: buildStatusChips(shell, statusBundle)
   };
 }
 
 function buildStatusChips(
   shell: TuiShell,
-  statusBundle: ReturnType<typeof inspectStatusBundle>,
-  onboardingStatuses: Partial<Record<"runtime" | "codex-config" | "user-skills" | "hooks" | "install_bundle", string>>
+  statusBundle: ReturnType<typeof inspectStatusBundle>
 ): DashboardChip[] {
   const wanted = [
     ["runtime", "runtime"],
@@ -60,7 +58,7 @@ function buildStatusChips(
   const chips: DashboardChip[] = [];
 
   for (const [name, inventoryName] of wanted) {
-    const value = onboardingStatuses[name] ?? inventoryStatusValue(statusBundle.inventory, inventoryName);
+    const value = primaryStatusValue(statusBundle, name) ?? inventoryStatusValue(statusBundle.inventory, inventoryName);
     if (!value) {
       continue;
     }
@@ -83,7 +81,7 @@ function buildStatusChips(
     });
   }
 
-  const installBundleValue = onboardingStatuses.install_bundle ?? bundleStatusFromInventory(statusBundle.inventory);
+  const installBundleValue = statusBundle.primary.installBundle;
 
   chips.push({
     id: "install_bundle",
@@ -118,37 +116,6 @@ function buildStatusChips(
   return chips;
 }
 
-function parseOnboardingStatusLine(
-  statusLine: string
-): Partial<Record<"runtime" | "codex-config" | "user-skills" | "hooks" | "install_bundle", string>> {
-  const parsed: Partial<Record<"runtime" | "codex-config" | "user-skills" | "hooks" | "install_bundle", string>> = {};
-
-  for (const segment of statusLine.split("|")) {
-    const part = segment.trim();
-    if (part.startsWith("runtime ")) {
-      parsed.runtime = part.slice("runtime ".length).trim();
-      continue;
-    }
-    if (part.startsWith("codex-config ")) {
-      parsed["codex-config"] = part.slice("codex-config ".length).trim();
-      continue;
-    }
-    if (part.startsWith("user-skills ")) {
-      parsed["user-skills"] = part.slice("user-skills ".length).trim();
-      continue;
-    }
-    if (part.startsWith("hooks ")) {
-      parsed.hooks = part.slice("hooks ".length).trim();
-      continue;
-    }
-    if (part.startsWith("install bundle ")) {
-      parsed.install_bundle = part.slice("install bundle ".length).trim();
-    }
-  }
-
-  return parsed;
-}
-
 function inventoryStatusValue(
   inventory: ReturnType<typeof inspectStatusBundle>["inventory"],
   name: string
@@ -156,13 +123,20 @@ function inventoryStatusValue(
   return inventory.find((item) => item.name === name)?.status.displayString() ?? null;
 }
 
-function bundleStatusFromInventory(
-  inventory: ReturnType<typeof inspectStatusBundle>["inventory"]
-): "installed" | "missing" {
-  const names = ["user-skills", "global-agents", "hooks", "custom-agents"] as const;
-  return names.every((name) => inventoryStatusValue(inventory, name) === "installed")
-    ? "installed"
-    : "missing";
+function primaryStatusValue(
+  statusBundle: ReturnType<typeof inspectStatusBundle>,
+  name: "runtime" | "codex-config" | "user-skills" | "hooks"
+): string {
+  switch (name) {
+    case "runtime":
+      return statusBundle.primary.runtime?.status.displayString() ?? "missing";
+    case "codex-config":
+      return statusBundle.primary.codexConfig?.status.displayString() ?? "missing";
+    case "user-skills":
+      return statusBundle.primary.userSkills?.status.displayString() ?? "missing";
+    case "hooks":
+      return statusBundle.primary.hooks?.status.displayString() ?? "missing";
+  }
 }
 
 function chipLabel(name: string): string {
