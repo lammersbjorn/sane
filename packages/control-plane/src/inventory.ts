@@ -295,14 +295,27 @@ function packSkillStatus(
     let matchedAll = true;
 
     for (const skill of expectedSkills) {
-      const skillPath = join(skillsRoot, skill.name, "SKILL.md");
+      const skillDir = join(skillsRoot, skill.name);
+      const skillPath = join(skillDir, "SKILL.md");
+      const skillDirPresent = existsSync(skillDir);
       try {
         const body = readFileSync(skillPath, "utf8");
         foundAny = true;
         if (body !== skill.content) {
           return InventoryStatus.Invalid;
         }
+
+        for (const resource of skill.resources) {
+          const resourcePath = join(skillDir, resource.path);
+          const resourceBody = readFileSync(resourcePath, "utf8");
+          if (resourceBody !== resource.content) {
+            return InventoryStatus.Invalid;
+          }
+        }
       } catch {
+        if (skillDirPresent) {
+          return InventoryStatus.Invalid;
+        }
         matchedAll = false;
       }
     }

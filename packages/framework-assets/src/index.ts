@@ -7,8 +7,8 @@ export const SANE_ROUTER_SKILL_NAME = "sane-router";
 export const SANE_CAVEMAN_PACK_SKILL_NAME = "sane-caveman";
 export const SANE_CAVEMEM_PACK_SKILL_NAME = "sane-cavemem";
 export const SANE_RTK_PACK_SKILL_NAME = "sane-rtk";
-export const SANE_FRONTEND_CRAFT_PACK_SKILL_NAME = "sane-frontend-craft";
-export const SANE_FRONTEND_REVIEW_PACK_SKILL_NAME = "sane-frontend-review";
+export const SANE_FRONTEND_CRAFT_PACK_SKILL_NAME = "design-taste-frontend";
+export const SANE_FRONTEND_REVIEW_PACK_SKILL_NAME = "impeccable";
 export const SANE_AGENT_NAME = "sane-agent";
 export const SANE_REVIEWER_AGENT_NAME = "sane-reviewer";
 export const SANE_EXPLORER_AGENT_NAME = "sane-explorer";
@@ -82,10 +82,24 @@ interface CorePackManifestEntry {
     name: string;
     path: string;
     taskKinds?: string[];
+    resources?: Array<{
+      source: string;
+      target: string;
+    }>;
   }>;
   routerNote: string;
   overlayNote: string;
   provenance: PackAssetProvenance;
+}
+
+interface OptionalPackSkillAsset {
+  name: string;
+  path: string;
+  taskKinds?: string[];
+  resources?: Array<{
+    source: string;
+    target: string;
+  }>;
 }
 
 interface CorePackManifest {
@@ -179,7 +193,7 @@ export function optionalPackSkillNames(pack: string): string[] {
   return optionalPackSkills(pack).map((skill) => skill.name);
 }
 
-export function optionalPackSkills(pack: string): Array<{ name: string; path: string; taskKinds?: string[] }> {
+export function optionalPackSkills(pack: string): OptionalPackSkillAsset[] {
   const entry = CORE_PACK_MANIFEST.optionalPacks[pack];
   if (!entry) {
     return [];
@@ -203,10 +217,18 @@ export function optionalPackSkillSelections(pack: string): Array<{ name: string;
   }));
 }
 
-export function createOptionalPackSkills(pack: string): Array<{ name: string; content: string }> {
+export function createOptionalPackSkills(pack: string): Array<{
+  name: string;
+  content: string;
+  resources: Array<{ path: string; content: string }>;
+}> {
   return optionalPackSkills(pack).map((skill) => ({
     name: skill.name,
-    content: readCoreAsset(skill.path)
+    content: readCoreAsset(skill.path),
+    resources: (skill.resources ?? []).map((resource) => ({
+      path: resource.target,
+      content: readCoreAsset(resource.source)
+    }))
   }));
 }
 

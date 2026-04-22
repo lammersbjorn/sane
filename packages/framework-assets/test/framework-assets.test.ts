@@ -63,6 +63,10 @@ interface CorePackManifest {
         name: string;
         path: string;
         taskKinds?: string[];
+        resources?: Array<{
+          source: string;
+          target: string;
+        }>;
       }>;
       routerNote: string;
       overlayNote: string;
@@ -204,12 +208,12 @@ describe("framework asset parity", () => {
       REALTIME_REASONING: roles.realtimeReasoning,
       ENABLED_PACK_OVERLAY_NOTES: [
         "- cavemem pack active: prefer compact durable memory and handoff summaries",
-        "- frontend-craft pack active: for frontend work, pick the dedicated build vs review skill instead of generic AI aesthetics"
+        "- frontend-craft pack active: for frontend work, pick the real task-specific frontend skills (`design-taste-frontend`, `impeccable`) instead of vague pack wrappers"
       ].join("\n"),
       ENABLED_PACK_SKILL_SELECTIONS: [
         "- cavemem task picks: memory, handoff, long-session -> sane-cavemem",
-        "- frontend-craft task picks: implementation, restyle, frontend-build -> sane-frontend-craft",
-        "- frontend-craft task picks: review, audit, critique, polish -> sane-frontend-review"
+        "- frontend-craft task picks: implementation, restyle, frontend-build -> design-taste-frontend",
+        "- frontend-craft task picks: review, audit, critique, polish -> impeccable"
       ].join("\n")
     });
 
@@ -243,24 +247,58 @@ describe("framework asset parity", () => {
     expect(createOptionalPackSkills("frontend-craft")).toEqual([
       {
         name: SANE_FRONTEND_CRAFT_PACK_SKILL_NAME,
-        content: readCoreAsset(manifestSkills(manifest.optionalPacks["frontend-craft"])[0]!.path)
+        content: readCoreAsset(manifestSkills(manifest.optionalPacks["frontend-craft"])[0]!.path),
+        resources: []
       },
       {
         name: SANE_FRONTEND_REVIEW_PACK_SKILL_NAME,
-        content: readCoreAsset(manifestSkills(manifest.optionalPacks["frontend-craft"])[1]!.path)
+        content: readCoreAsset(manifestSkills(manifest.optionalPacks["frontend-craft"])[1]!.path),
+        resources: [
+          {
+            path: "reference/color-and-contrast.md",
+            content: readCoreAsset("skills/vendor/frontend/impeccable/reference/color-and-contrast.md")
+          },
+          {
+            path: "reference/craft.md",
+            content: readCoreAsset("skills/vendor/frontend/impeccable/reference/craft.md")
+          },
+          {
+            path: "reference/interaction-design.md",
+            content: readCoreAsset("skills/vendor/frontend/impeccable/reference/interaction-design.md")
+          },
+          {
+            path: "reference/motion-design.md",
+            content: readCoreAsset("skills/vendor/frontend/impeccable/reference/motion-design.md")
+          },
+          {
+            path: "reference/responsive-design.md",
+            content: readCoreAsset("skills/vendor/frontend/impeccable/reference/responsive-design.md")
+          },
+          {
+            path: "reference/spatial-design.md",
+            content: readCoreAsset("skills/vendor/frontend/impeccable/reference/spatial-design.md")
+          },
+          {
+            path: "reference/typography.md",
+            content: readCoreAsset("skills/vendor/frontend/impeccable/reference/typography.md")
+          },
+          {
+            path: "reference/ux-writing.md",
+            content: readCoreAsset("skills/vendor/frontend/impeccable/reference/ux-writing.md")
+          }
+        ]
       }
     ]);
-    expect(frontendCraft).toContain("Taste-inspired frontend implementation craft");
-    expect(frontendCraft).toContain("gpt-taste");
+    expect(frontendCraft).toContain("# High-Agency Frontend Skill");
+    expect(frontendCraft).toContain("ACTIVE BASELINE CONFIGURATION");
     expect(frontendCraft).toContain("DESIGN_VARIANCE");
-    expect(frontendCraft).toContain("avoid generic AI frontend aesthetics");
-    expect(frontendCraft).toContain("sane-frontend-review");
+    expect(frontendCraft).toContain("ANTI-EMOJI POLICY");
 
     const frontendReview = createOptionalPackSkills("frontend-craft")[1]?.content ?? "";
-    expect(frontendReview).toContain("Impeccable-style frontend review");
-    expect(frontendReview).toContain("anti-pattern sweep");
-    expect(frontendReview).toContain("findings first");
-    expect(frontendReview).toContain("code-linked findings");
+    expect(frontendReview).toContain("name: impeccable");
+    expect(frontendReview).toContain("Context Gathering Protocol");
+    expect(frontendReview).toContain("Run impeccable teach");
+    expect(frontendReview).toContain("Consult [typography reference](reference/typography.md)");
   });
 
   it("exposes pinned provenance seam for optional packs", () => {
@@ -281,21 +319,22 @@ describe("framework asset parity", () => {
     });
     expect(optionalPackProvenance("frontend-craft")).toEqual({
       kind: "derived",
-      note: "Sane-curated frontend pack built around Taste for implementation craft and Impeccable for review-shaped frontend quality guidance.",
-      updateStrategy: "manual-curated",
+      note: "Pinned vendored mirrors of Taste Skill and Impeccable, exported under their upstream skill names instead of Sane-written wrapper prose.",
+      updateStrategy: "pinned-manual",
       upstreams: [
         {
           name: "taste-skill",
           role: "primary",
           url: "https://github.com/Leonxlnx/taste-skill",
-          ref: "main",
-          path: "skills/taste-skill/SKILL.md"
+          ref: "f0eea3f4409c7de76118be0149dafcf2a0031e50",
+          path: "skills/taste-skill/SKILL.md",
+          license: null
         },
         {
           name: "impeccable",
           role: "review-secondary",
           url: "https://github.com/pbakaus/impeccable",
-          ref: "main",
+          ref: "00d485659af82982aef0328d0419c49a2716d123",
           path: "source/skills/impeccable/SKILL.md",
           license: "Apache-2.0"
         }
@@ -336,7 +375,12 @@ describe("framework asset parity", () => {
       manifest.assets.opencodeAgents.primary,
       manifest.assets.opencodeAgents.reviewer,
       manifest.assets.opencodeAgents.explorer,
-      ...Object.values(manifest.optionalPacks).flatMap((entry) => manifestSkills(entry).map((skill) => skill.path))
+      ...Object.values(manifest.optionalPacks).flatMap((entry) =>
+        manifestSkills(entry).flatMap((skill) => [
+          skill.path,
+          ...((skill.resources ?? []).map((resource) => resource.source))
+        ])
+      )
     ];
 
     expect(manifest.assetSources?.style).toBe("pinned-upstream-link");
@@ -379,13 +423,13 @@ describe("framework asset parity", () => {
     expect(agent).toContain(`name = "${SANE_AGENT_NAME.replace("-", "_")}"`);
     expect(agent).toContain(`model = "${roles.coordinatorModel}"`);
     expect(agent).toContain("pick the most task-specific one");
-    expect(agent).toContain("sane-frontend-craft");
-    expect(agent).toContain("sane-frontend-review");
+    expect(agent).toContain("design-taste-frontend");
+    expect(agent).toContain("impeccable");
     expect(reviewer).toBe(expectedReviewer);
     expect(reviewer).toContain(`name = "${SANE_REVIEWER_AGENT_NAME.replace("-", "_")}"`);
     expect(reviewer).toContain(`model = "${roles.verifierModel}"`);
     expect(reviewer).toContain("dedicated review skills");
-    expect(reviewer).toContain("sane-frontend-review");
+    expect(reviewer).toContain("impeccable");
     expect(explorer).toBe(expectedExplorer);
     expect(explorer).toContain(`name = "${SANE_EXPLORER_AGENT_NAME.replace("-", "_")}"`);
     expect(explorer).toContain(`model = "${roles.sidecarModel}"`);

@@ -91,39 +91,74 @@
       }
     },
     "frontend-craft": {
-      "skillName": "sane-frontend-craft",
-      "skillPath": "skills/optional/sane-frontend-craft.md",
+      "skillName": "design-taste-frontend",
+      "skillPath": "skills/vendor/frontend/taste-skill/SKILL.md",
       "skills": [
         {
-          "name": "sane-frontend-craft",
-          "path": "skills/optional/sane-frontend-craft.md",
+          "name": "design-taste-frontend",
+          "path": "skills/vendor/frontend/taste-skill/SKILL.md",
           "taskKinds": ["implementation", "restyle", "frontend-build"]
         },
         {
-          "name": "sane-frontend-review",
-          "path": "skills/optional/sane-frontend-review.md",
+          "name": "impeccable",
+          "path": "skills/vendor/frontend/impeccable/SKILL.md",
+          "resources": [
+            {
+              "source": "skills/vendor/frontend/impeccable/reference/color-and-contrast.md",
+              "target": "reference/color-and-contrast.md"
+            },
+            {
+              "source": "skills/vendor/frontend/impeccable/reference/craft.md",
+              "target": "reference/craft.md"
+            },
+            {
+              "source": "skills/vendor/frontend/impeccable/reference/interaction-design.md",
+              "target": "reference/interaction-design.md"
+            },
+            {
+              "source": "skills/vendor/frontend/impeccable/reference/motion-design.md",
+              "target": "reference/motion-design.md"
+            },
+            {
+              "source": "skills/vendor/frontend/impeccable/reference/responsive-design.md",
+              "target": "reference/responsive-design.md"
+            },
+            {
+              "source": "skills/vendor/frontend/impeccable/reference/spatial-design.md",
+              "target": "reference/spatial-design.md"
+            },
+            {
+              "source": "skills/vendor/frontend/impeccable/reference/typography.md",
+              "target": "reference/typography.md"
+            },
+            {
+              "source": "skills/vendor/frontend/impeccable/reference/ux-writing.md",
+              "target": "reference/ux-writing.md"
+            }
+          ],
           "taskKinds": ["review", "audit", "critique", "polish"]
         }
       ],
-      "routerNote": "- frontend-craft pack active: use `sane-frontend-craft` for implementation and `sane-frontend-review` for critique/review tasks instead of one blended frontend skill",
-      "overlayNote": "- frontend-craft pack active: for frontend work, pick the dedicated build vs review skill instead of generic AI aesthetics",
+      "routerNote": "- frontend-craft pack active: use `design-taste-frontend` for implementation/restyling and `impeccable` for critique/review tasks",
+      "overlayNote": "- frontend-craft pack active: for frontend work, pick the real task-specific frontend skills (`design-taste-frontend`, `impeccable`) instead of vague pack wrappers",
       "provenance": {
         "kind": "derived",
-        "note": "Sane-curated frontend pack built around Taste for implementation craft and Impeccable for review-shaped frontend quality guidance.",
-        "updateStrategy": "manual-curated",
+        "note": "Pinned vendored mirrors of Taste Skill and Impeccable, exported under their upstream skill names instead of Sane-written wrapper prose.",
+        "updateStrategy": "pinned-manual",
         "upstreams": [
           {
             "name": "taste-skill",
             "role": "primary",
             "url": "https://github.com/Leonxlnx/taste-skill",
-            "ref": "main",
-            "path": "skills/taste-skill/SKILL.md"
+            "ref": "f0eea3f4409c7de76118be0149dafcf2a0031e50",
+            "path": "skills/taste-skill/SKILL.md",
+            "license": null
           },
           {
             "name": "impeccable",
             "role": "review-secondary",
             "url": "https://github.com/pbakaus/impeccable",
-            "ref": "main",
+            "ref": "00d485659af82982aef0328d0419c49a2716d123",
             "path": "source/skills/impeccable/SKILL.md",
             "license": "Apache-2.0"
           }
@@ -218,18 +253,74 @@
         "license": "MIT OR Apache-2.0",
         "updateStrategy": "pinned-manual"
       },
-      "skills/optional/sane-frontend-craft.md": {
-        "repo": "https://github.com/lammersbjorn/sane",
-        "path": "packs/core/skills/optional/sane-frontend-craft.md",
-        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
-        "license": "MIT OR Apache-2.0",
+      "skills/vendor/frontend/taste-skill/SKILL.md": {
+        "repo": "https://github.com/Leonxlnx/taste-skill",
+        "path": "skills/taste-skill/SKILL.md",
+        "ref": "f0eea3f4409c7de76118be0149dafcf2a0031e50",
+        "license": "NOASSERTION",
         "updateStrategy": "pinned-manual"
       },
-      "skills/optional/sane-frontend-review.md": {
-        "repo": "https://github.com/lammersbjorn/sane",
-        "path": "packs/core/skills/optional/sane-frontend-review.md",
-        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
-        "license": "MIT OR Apache-2.0",
+      "skills/vendor/frontend/impeccable/SKILL.md": {
+        "repo": "https://github.com/pbakaus/impeccable",
+        "path": "source/skills/impeccable/SKILL.md",
+        "ref": "00d485659af82982aef0328d0419c49a2716d123",
+        "license": "Apache-2.0",
+        "updateStrategy": "pinned-manual"
+      },
+      "skills/vendor/frontend/impeccable/reference/color-and-contrast.md": {
+        "repo": "https://github.com/pbakaus/impeccable",
+        "path": "source/skills/impeccable/reference/color-and-contrast.md",
+        "ref": "00d485659af82982aef0328d0419c49a2716d123",
+        "license": "Apache-2.0",
+        "updateStrategy": "pinned-manual"
+      },
+      "skills/vendor/frontend/impeccable/reference/craft.md": {
+        "repo": "https://github.com/pbakaus/impeccable",
+        "path": "source/skills/impeccable/reference/craft.md",
+        "ref": "00d485659af82982aef0328d0419c49a2716d123",
+        "license": "Apache-2.0",
+        "updateStrategy": "pinned-manual"
+      },
+      "skills/vendor/frontend/impeccable/reference/interaction-design.md": {
+        "repo": "https://github.com/pbakaus/impeccable",
+        "path": "source/skills/impeccable/reference/interaction-design.md",
+        "ref": "00d485659af82982aef0328d0419c49a2716d123",
+        "license": "Apache-2.0",
+        "updateStrategy": "pinned-manual"
+      },
+      "skills/vendor/frontend/impeccable/reference/motion-design.md": {
+        "repo": "https://github.com/pbakaus/impeccable",
+        "path": "source/skills/impeccable/reference/motion-design.md",
+        "ref": "00d485659af82982aef0328d0419c49a2716d123",
+        "license": "Apache-2.0",
+        "updateStrategy": "pinned-manual"
+      },
+      "skills/vendor/frontend/impeccable/reference/responsive-design.md": {
+        "repo": "https://github.com/pbakaus/impeccable",
+        "path": "source/skills/impeccable/reference/responsive-design.md",
+        "ref": "00d485659af82982aef0328d0419c49a2716d123",
+        "license": "Apache-2.0",
+        "updateStrategy": "pinned-manual"
+      },
+      "skills/vendor/frontend/impeccable/reference/spatial-design.md": {
+        "repo": "https://github.com/pbakaus/impeccable",
+        "path": "source/skills/impeccable/reference/spatial-design.md",
+        "ref": "00d485659af82982aef0328d0419c49a2716d123",
+        "license": "Apache-2.0",
+        "updateStrategy": "pinned-manual"
+      },
+      "skills/vendor/frontend/impeccable/reference/typography.md": {
+        "repo": "https://github.com/pbakaus/impeccable",
+        "path": "source/skills/impeccable/reference/typography.md",
+        "ref": "00d485659af82982aef0328d0419c49a2716d123",
+        "license": "Apache-2.0",
+        "updateStrategy": "pinned-manual"
+      },
+      "skills/vendor/frontend/impeccable/reference/ux-writing.md": {
+        "repo": "https://github.com/pbakaus/impeccable",
+        "path": "source/skills/impeccable/reference/ux-writing.md",
+        "ref": "00d485659af82982aef0328d0419c49a2716d123",
+        "license": "Apache-2.0",
         "updateStrategy": "pinned-manual"
       }
     }

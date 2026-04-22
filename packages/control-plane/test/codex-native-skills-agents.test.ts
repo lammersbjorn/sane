@@ -99,13 +99,23 @@ describe("codex-native skills and agents", () => {
     const skillPaths = exportedSkills.map((skill) => join(codexPaths.userSkillsDir, skill.name, "SKILL.md"));
 
     expect(skillPaths).toEqual([
-      join(codexPaths.userSkillsDir, "sane-frontend-craft", "SKILL.md"),
-      join(codexPaths.userSkillsDir, "sane-frontend-review", "SKILL.md")
+      join(codexPaths.userSkillsDir, "design-taste-frontend", "SKILL.md"),
+      join(codexPaths.userSkillsDir, "impeccable", "SKILL.md")
     ]);
     expect(result.pathsTouched).toEqual(expect.arrayContaining(skillPaths));
     for (const [index, skill] of exportedSkills.entries()) {
       expect(readFileSync(skillPaths[index]!, "utf8")).toBe(skill.content);
     }
+    expect(
+      readFileSync(
+        join(codexPaths.userSkillsDir, "impeccable", "reference", "typography.md"),
+        "utf8"
+      )
+    ).toBe(
+      exportedSkills.find((skill) => skill.name === "impeccable")!.resources.find(
+        (resource) => resource.path === "reference/typography.md"
+      )!.content
+    );
   });
 
   it("exports AGENTS blocks additively and uninstalls them without removing user content", () => {
@@ -179,8 +189,8 @@ describe("codex-native skills and agents", () => {
 
     expect(uninstallUser.pathsTouched).toEqual(
       expect.arrayContaining([
-        join(codexPaths.userSkillsDir, "sane-frontend-craft"),
-        join(codexPaths.userSkillsDir, "sane-frontend-review")
+        join(codexPaths.userSkillsDir, "design-taste-frontend"),
+        join(codexPaths.userSkillsDir, "impeccable")
       ])
     );
   });

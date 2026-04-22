@@ -189,6 +189,13 @@ function exportSkillsTarget(
       mkdirSync(packDir, { recursive: true });
       writeFileSync(packPath, skill.content, "utf8");
       pathsTouched.push(packPath);
+
+      for (const resource of skill.resources) {
+        const resourcePath = join(packDir, resource.path);
+        mkdirSync(dirname(resourcePath), { recursive: true });
+        writeFileSync(resourcePath, resource.content, "utf8");
+        pathsTouched.push(resourcePath);
+      }
     }
   }
 
@@ -509,7 +516,12 @@ function formatGuidancePacks(packs: GuidancePacks): string {
 
 function enabledOptionalPackSkills(
   packs: GuidancePacks
-): Array<[typeof OPTIONAL_PACK_NAMES[number], Array<{ name: string; content: string }>]> {
+): Array<
+  [
+    typeof OPTIONAL_PACK_NAMES[number],
+    Array<{ name: string; content: string; resources: Array<{ path: string; content: string }> }>
+  ]
+> {
   return OPTIONAL_PACK_NAMES.filter((name) => isPackEnabled(name, packs))
     .map((name) => [name, createOptionalPackSkills(name)]);
 }

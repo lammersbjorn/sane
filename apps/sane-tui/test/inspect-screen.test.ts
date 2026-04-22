@@ -77,8 +77,8 @@ describe("inspect screen model", () => {
             name: "frontend-craft",
             inventoryName: "pack-frontend-craft",
             status: "disabled",
-            skillName: "sane-frontend-craft",
-            skillNames: ["sane-frontend-craft", "sane-frontend-review"],
+            skillName: "design-taste-frontend",
+            skillNames: ["design-taste-frontend", "impeccable"],
             provenance: {
               kind: "derived",
               note: "taste + impeccable",
@@ -135,7 +135,7 @@ describe("inspect screen model", () => {
       "hooks: invalid (Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows.)"
     );
     expect(lines).toContain(
-      "optional pack provenance: caveman configured (sane-caveman; derived from caveman); cavemem disabled (sane-cavemem; derived from cavemem); rtk disabled (sane-rtk; internal); frontend-craft disabled (sane-frontend-craft + sane-frontend-review; derived from taste-skill + impeccable)"
+      "optional pack provenance: caveman configured (sane-caveman; derived from caveman); cavemem disabled (sane-cavemem; derived from cavemem); rtk disabled (sane-rtk; internal); frontend-craft disabled (design-taste-frontend + impeccable; derived from taste-skill + impeccable)"
     );
   });
 
@@ -212,7 +212,7 @@ describe("inspect screen model", () => {
       expect.objectContaining({
         name: "frontend-craft",
         status: "disabled",
-        skillNames: ["sane-frontend-craft", "sane-frontend-review"],
+        skillNames: ["design-taste-frontend", "impeccable"],
         provenance: expect.objectContaining({
           kind: "derived"
         })
@@ -236,7 +236,7 @@ describe("inspect screen model", () => {
     expect(screen.overviewLines.join("\n")).toContain("runtime history (read-only local visibility):");
     expect(screen.overviewLines.join("\n")).toContain("latest policy snapshot: missing (current-run-derived read-only view)");
     expect(screen.overviewLines.join("\n")).toContain(
-      "optional pack provenance: caveman configured (sane-caveman; derived from caveman); cavemem disabled (sane-cavemem; derived from cavemem); rtk disabled (sane-rtk; internal); frontend-craft disabled (sane-frontend-craft + sane-frontend-review; derived from taste-skill + impeccable)"
+      "optional pack provenance: caveman configured (sane-caveman; derived from caveman); cavemem disabled (sane-cavemem; derived from cavemem); rtk disabled (sane-rtk; internal); frontend-craft disabled (design-taste-frontend + impeccable; derived from taste-skill + impeccable)"
     );
   });
 

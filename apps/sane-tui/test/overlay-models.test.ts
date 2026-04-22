@@ -56,6 +56,20 @@ describe("overlay models", () => {
     expect(overlay.detailsLines.some((line: string) => line.includes("selected pack: caveman"))).toBe(true);
     expect(overlay.detailsLines).toContain("exports: sane-caveman");
 
+    if (shell.activeEditor?.kind !== "packs") {
+      throw new Error("expected packs editor state");
+    }
+    shell.activeEditor.selected = 3;
+    overlay = loadOverlayModel(shell);
+    expect(overlay?.kind).toBe("packs");
+    if (!overlay || overlay.kind !== "packs") {
+      throw new Error("expected packs overlay");
+    }
+    expect(overlay.detailsLines.some((line: string) => line.includes("selected pack: frontend-craft"))).toBe(
+      true
+    );
+    expect(overlay.detailsLines).toContain("exports: design-taste-frontend, impeccable");
+
     shell.activeEditor = null;
     moveSelection(shell, "action", 1);
     runSelectedAction(shell);

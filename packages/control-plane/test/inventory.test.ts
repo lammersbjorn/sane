@@ -107,8 +107,8 @@ describe("full inventory and doctor", () => {
         name: "frontend-craft",
         inventoryName: "pack-frontend-craft",
         status: "disabled",
-        skillName: "sane-frontend-craft",
-        skillNames: ["sane-frontend-craft", "sane-frontend-review"],
+        skillName: "design-taste-frontend",
+        skillNames: ["design-taste-frontend", "impeccable"],
         provenance: expect.objectContaining({
           kind: "derived"
         })
@@ -235,18 +235,46 @@ describe("full inventory and doctor", () => {
     installRuntime(paths, codexPaths);
     saveConfig(paths, config);
     exportUserSkills(paths, codexPaths);
-    rmSync(join(codexPaths.userSkillsDir, "sane-frontend-review"), { recursive: true, force: true });
+    rmSync(join(codexPaths.userSkillsDir, "impeccable"), { recursive: true, force: true });
 
     const bundle = inspectStatusBundle(paths, codexPaths);
 
     expect(bundle.optionalPacks.find((item) => item.name === "frontend-craft")).toEqual(
       expect.objectContaining({
         status: "configured",
-        skillNames: ["sane-frontend-craft", "sane-frontend-review"]
+        skillNames: ["design-taste-frontend", "impeccable"]
       })
     );
     expect(bundle.inventory.find((item) => item.name === "pack-frontend-craft")?.status).toBe(
       InventoryStatus.Configured
+    );
+  });
+
+  it("marks a pack invalid when a shipped frontend reference file goes missing", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const config = createDefaultLocalConfig();
+    config.packs.frontendCraft = true;
+
+    installRuntime(paths, codexPaths);
+    saveConfig(paths, config);
+    exportUserSkills(paths, codexPaths);
+    rmSync(join(codexPaths.userSkillsDir, "impeccable", "reference", "typography.md"), {
+      force: true
+    });
+
+    const bundle = inspectStatusBundle(paths, codexPaths);
+
+    expect(bundle.optionalPacks.find((item) => item.name === "frontend-craft")).toEqual(
+      expect.objectContaining({
+        status: "invalid",
+        skillNames: ["design-taste-frontend", "impeccable"]
+      })
+    );
+    expect(bundle.inventory.find((item) => item.name === "pack-frontend-craft")?.status).toBe(
+      InventoryStatus.Invalid
     );
   });
 
