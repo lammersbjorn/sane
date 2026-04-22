@@ -8,6 +8,7 @@ import { writeCurrentRunState } from "@sane/state";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { buildCurrentRunInspectPreview, previewPolicy } from "../src/policy-preview.js";
+import { formatInspectPolicyPreviewLines } from "../src/policy-preview-presenter.js";
 import { saveConfig } from "../src/preferences.js";
 
 const tempDirs: string[] = [];
@@ -216,5 +217,76 @@ describe("policy preview", () => {
     expect(result.details.some((line) => line.startsWith("current-run-inspect:"))).toBe(false);
     expect(result.policyPreview?.scenarios.some((scenario) => scenario.id === "current-run-inspect"))
       .toBe(false);
+  });
+
+  it("formats inspect policy preview lines through one presenter path", () => {
+    const lines = formatInspectPolicyPreviewLines(
+      {
+        status: "present",
+        scenarioCount: 1,
+        scenarioIds: ["simple-question"],
+        scenarios: [
+          {
+            id: "simple-question",
+            summary: null,
+            input: {
+              intent: "question",
+              taskShape: "trivial",
+              risk: "low",
+              ambiguity: "low",
+              parallelism: "none",
+              contextPressure: "low",
+              runState: "exploring"
+            },
+            obligationCount: 0,
+            traceCount: 0
+          }
+        ],
+        tsUnix: 1_700_000_006,
+        summary: "policy preview: rendered adaptive obligation scenarios"
+      },
+      {
+        summary: "policy preview: rendered adaptive obligation scenarios",
+        details: ["simple-question: direct_answer | coordinator=gpt-5.4/high"],
+        policyPreview: {
+          scenarios: [{ id: "simple-question" }]
+        }
+      }
+    );
+
+    expect(lines).toEqual([
+      "latest policy snapshot: present (current-run-derived read-only view; ts 1700000006; summary policy preview: rendered adaptive obligation scenarios; 1 scenarios: simple-question)",
+      "latest policy input simple-question: intent question, task trivial, risk low, ambiguity low, parallelism none, context low, run exploring",
+      "current policy preview: policy preview: rendered adaptive obligation scenarios; 1 scenario"
+    ]);
+  });
+
+  it("adds current preview scenario details in action mode", () => {
+    const lines = formatInspectPolicyPreviewLines(
+      {
+        status: "missing",
+        scenarioCount: 0,
+        scenarioIds: [],
+        scenarios: [],
+        tsUnix: null,
+        summary: null
+      },
+      {
+        summary: "policy preview: rendered adaptive obligation scenarios",
+        details: [
+          "simple-question: direct_answer | coordinator=gpt-5.4/high",
+          "multi-file-feature: plan, tdd | coordinator=gpt-5.4/high"
+        ],
+        policyPreview: null
+      },
+      { mode: "action", currentPrefix: "current preview" }
+    );
+
+    expect(lines).toEqual([
+      "latest policy snapshot: missing (current-run-derived read-only view)",
+      "current preview: policy preview: rendered adaptive obligation scenarios; 2 scenarios",
+      "simple-question: direct_answer | coordinator=gpt-5.4/high",
+      "multi-file-feature: plan, tdd | coordinator=gpt-5.4/high"
+    ]);
   });
 });

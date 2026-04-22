@@ -8,6 +8,40 @@ export interface LatestPolicyPreviewLineOptions {
   inputPrefix?: string;
 }
 
+export interface InspectPolicyPreviewLineOptions {
+  mode?: "overview" | "action";
+  snapshotPrefix?: string;
+  inputPrefix?: string;
+  currentPrefix?: string;
+}
+
+export interface InspectCurrentPolicyPreview {
+  summary: string;
+  details: string[];
+  policyPreview?: {
+    scenarios: unknown[];
+  } | null;
+}
+
+export function formatInspectPolicyPreviewLines(
+  latestPolicyPreview: LatestPolicyPreviewSnapshot,
+  currentPolicyPreview: InspectCurrentPolicyPreview,
+  options: InspectPolicyPreviewLineOptions = {}
+): string[] {
+  const mode = options.mode ?? "overview";
+  const lines = formatLatestPolicyPreviewLines(latestPolicyPreview, {
+    snapshotPrefix: options.snapshotPrefix,
+    inputPrefix: options.inputPrefix ?? "latest policy input"
+  });
+
+  lines.push(formatCurrentPolicyPreviewLine(currentPolicyPreview, options.currentPrefix));
+  if (mode === "action") {
+    lines.push(...currentPolicyPreview.details);
+  }
+
+  return lines;
+}
+
 export function formatLatestPolicyPreviewLines(
   preview: LatestPolicyPreviewSnapshot,
   options: LatestPolicyPreviewLineOptions = {}
@@ -71,4 +105,15 @@ function formatInspectSnapshotLine(
   return preview.status === "present"
     ? `${prefix}: present (current-run-derived read-only view; ts ${preview.tsUnix}; summary ${preview.summary}; ${preview.scenarioCount} scenarios: ${preview.scenarioIds.join(", ")})`
     : `${prefix}: missing (current-run-derived read-only view)`;
+}
+
+function formatCurrentPolicyPreviewLine(
+  currentPolicyPreview: InspectCurrentPolicyPreview,
+  prefix = "current policy preview"
+): string {
+  const scenarioCount =
+    currentPolicyPreview.policyPreview?.scenarios.length ?? currentPolicyPreview.details.length;
+  const label = scenarioCount === 1 ? "scenario" : "scenarios";
+
+  return `${prefix}: ${currentPolicyPreview.summary}; ${scenarioCount} ${label}`;
 }

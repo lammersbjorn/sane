@@ -1,6 +1,7 @@
 import { type CodexPaths, type ProjectPaths } from "@sane/platform";
 
 import {
+  formatInspectPolicyPreviewLines as formatSharedInspectPolicyPreviewLines,
   formatLatestPolicyPreviewInputLines as formatSharedLatestPolicyPreviewInputLines,
   formatLatestPolicyPreviewLines as formatSharedLatestPolicyPreviewLines,
   inspectSnapshot
@@ -53,7 +54,7 @@ export function inspectOverviewLines(snapshot: InspectScreenSnapshot): string[] 
     `doctor result: ${snapshot.doctorHeadline}`,
     `runtime summary (read-only local visibility): ${snapshot.runtimeSummary.summary}`,
     `runtime history (read-only local visibility): events ${snapshot.runtimeHistory.events}, decisions ${snapshot.runtimeHistory.decisions}, artifacts ${snapshot.runtimeHistory.artifacts}`,
-    ...formatLatestPolicyPreviewLines(snapshot.latestPolicyPreview),
+    ...formatInspectPolicyPreviewLines(snapshot),
     formatOptionalPackProvenanceLine(snapshot.statusBundle.optionalPacks),
     `local config view: ${snapshot.localConfig.summary}`,
     `Codex config view: ${snapshot.codexConfig.summary}`,
@@ -98,6 +99,23 @@ export function formatLatestPolicyPreviewLines(
   return formatSharedLatestPolicyPreviewLines(preview, {
     snapshotPrefix: prefixes.snapshot,
     inputPrefix: prefixes.input ?? "latest policy input"
+  });
+}
+
+export function formatInspectPolicyPreviewLines(
+  snapshot: Pick<InspectScreenSnapshot, "latestPolicyPreview" | "policyPreview">,
+  options: {
+    mode?: "overview" | "action";
+    snapshot?: string;
+    input?: string;
+    current?: string;
+  } = {}
+): string[] {
+  return formatSharedInspectPolicyPreviewLines(snapshot.latestPolicyPreview, snapshot.policyPreview, {
+    mode: options.mode,
+    snapshotPrefix: options.snapshot,
+    inputPrefix: options.input ?? "latest policy input",
+    currentPrefix: options.current
   });
 }
 

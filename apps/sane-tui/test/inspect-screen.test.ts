@@ -124,6 +124,13 @@ describe("inspect screen model", () => {
       integrationsAudit: { status: "missing", recommendedChangeCount: 0 },
       integrationsApply: { status: "ready", appliedKeys: [] },
       integrationsPreview: { summary: "integrations-profile preview" },
+      policyPreview: {
+        summary: "policy preview: rendered adaptive obligation scenarios",
+        details: ["simple-question: direct_answer | coordinator=gpt-5.4/high"],
+        policyPreview: {
+          scenarios: [{ id: "simple-question" }]
+        }
+      },
       driftItems: [
         {
           name: "hooks",
@@ -244,6 +251,9 @@ describe("inspect screen model", () => {
     expect(screen.overviewLines.join("\n")).toContain("runtime summary (read-only local visibility):");
     expect(screen.overviewLines.join("\n")).toContain("runtime history (read-only local visibility):");
     expect(screen.overviewLines.join("\n")).toContain("latest policy snapshot: missing (current-run-derived read-only view)");
+    expect(screen.overviewLines.join("\n")).toContain(
+      "current policy preview: policy preview: rendered adaptive obligation scenarios;"
+    );
     expect(screen.overviewLines.join("\n")).toContain(
       "optional pack provenance: caveman configured (sane-caveman; derived from caveman); cavemem disabled (no skills; derived from cavemem); rtk disabled (no skills; internal); frontend-craft disabled (design-taste-frontend + impeccable; derived from taste-skill + impeccable)"
     );

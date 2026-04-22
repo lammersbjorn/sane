@@ -109,7 +109,8 @@ describe("app view", () => {
 
       return {
         loadInspectScreen: vi.fn(() => inspectModel),
-        inspectOverviewLines: vi.fn(() => ["from-inspect-overview-selector"])
+        inspectOverviewLines: vi.fn(() => ["from-inspect-overview-selector"]),
+        formatInspectPolicyPreviewLines: vi.fn(() => ["from-inspect-policy-preview-selector"])
       };
     });
 
@@ -259,9 +260,54 @@ describe("app view", () => {
     expect(view.selectedHelpLines.join("\n")).toContain(
       "latest snapshot: missing (current-run-derived read-only view)"
     );
+    expect(view.selectedHelpLines.join("\n")).toContain(
+      "current preview: policy preview: rendered adaptive obligation scenarios;"
+    );
     expect(view.selectedHelpLines.join("\n")).toContain("simple-question:");
     expect(view.selectedHelpLines.join("\n")).toContain("direct_answer");
     expect(view.selectedHelpLines.join("\n")).toContain("explorer=");
+  });
+
+  it("uses inspect policy presenter selector instead of manual policy line stitching", async () => {
+    vi.resetModules();
+    vi.doMock("@/inspect-screen.js", () => {
+      const inspectModel = {
+        summary: "Inspect",
+        actions: [],
+        overviewLines: ["inspect-overview"],
+        latestPolicyPreview: { status: "missing" },
+        policyPreview: {
+          summary: "policy preview: rendered adaptive obligation scenarios",
+          details: ["should-not-appear"],
+          policyPreview: {
+            scenarios: [{ id: "simple-question" }]
+          }
+        }
+      };
+
+      return {
+        loadInspectScreen: vi.fn(() => inspectModel),
+        inspectOverviewLines: vi.fn(() => ["inspect-overview"]),
+        formatInspectPolicyPreviewLines: vi.fn(() => ["from-policy-presenter"])
+      };
+    });
+
+    const { loadAppView: loadAppViewWithMock } = await import("@/app-view.js");
+    const inspectScreen = await import("@/inspect-screen.js");
+    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
+    selectSection(shell, "inspect");
+    for (let index = 0; index < 6; index += 1) {
+      moveSelection(shell, "action", 1);
+    }
+
+    const view = loadAppViewWithMock(shell);
+
+    expect(view.selectedAction.id).toBe("preview_policy");
+    expect(view.selectedHelpLines).toContain("from-policy-presenter");
+    expect(view.selectedHelpLines).not.toContain("should-not-appear");
+    expect(vi.mocked(inspectScreen.formatInspectPolicyPreviewLines)).toHaveBeenCalledTimes(1);
+    vi.doUnmock("@/inspect-screen.js");
+    vi.resetModules();
   });
 
   it("surfaces latest persisted policy input lines in the inspect policy action", () => {
