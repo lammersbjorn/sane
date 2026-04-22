@@ -4,8 +4,9 @@ import { join } from "node:path";
 
 import { createDefaultLocalConfig } from "@sane/config";
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
+import * as codexConfig from "@sane/control-plane/codex-config.js";
 import { saveConfig } from "@sane/control-plane/preferences.js";
 import { loadPreferencesScreen } from "@/preferences-screen.js";
 
@@ -93,5 +94,20 @@ describe("preferences screen model", () => {
     expect(screen.enabledPacks).toEqual(["core", "caveman"]);
     expect(screen.cloudflarePreview.summary).toBe("cloudflare-profile preview: 1 recommended change(s)");
     expect(screen.opencodePreview.summary).toBe("opencode-profile preview: 1 recommended change(s)");
+  });
+
+  it("reads provider profile data through the family snapshot helper", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const familySpy = vi.spyOn(codexConfig, "inspectCodexProfileFamilySnapshot");
+
+    const screen = loadPreferencesScreen(paths, codexPaths);
+
+    expect(familySpy).toHaveBeenCalledTimes(1);
+    expect(familySpy).toHaveBeenCalledWith(codexPaths);
+    expect(screen.cloudflareAudit.status).toBe("missing");
+    expect(screen.opencodeAudit.status).toBe("missing");
   });
 });

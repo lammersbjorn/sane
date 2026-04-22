@@ -16,6 +16,7 @@ import {
   inspectCloudflareProfileSnapshot,
   inspectCloudflareProfileStatus,
   inspectCodexConfigBackupSnapshot,
+  inspectCodexProfileFamilySnapshot,
   inspectCodexProfileApplyResult,
   inspectCodexProfileAudit,
   inspectCodexProfileSnapshot,
@@ -359,6 +360,30 @@ describe("codex config control plane", () => {
       audit: expect.objectContaining({ status: "installed", recommendedChangeCount: 0 }),
       apply: expect.objectContaining({ status: "already_satisfied", recommendedChangeCount: 0 })
     });
+  });
+
+  it("keeps family snapshot aligned with per-profile snapshot helpers", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    const missingFamily = inspectCodexProfileFamilySnapshot(codexPaths);
+    expect(missingFamily.core).toEqual(inspectCodexProfileSnapshot(codexPaths));
+    expect(missingFamily.integrations).toEqual(inspectIntegrationsProfileSnapshot(codexPaths));
+    expect(missingFamily.cloudflare).toEqual(inspectCloudflareProfileSnapshot(codexPaths));
+    expect(missingFamily.opencode).toEqual(inspectOpencodeProfileSnapshot(codexPaths));
+
+    applyCodexProfile(projectPaths, codexPaths);
+    applyIntegrationsProfile(projectPaths, codexPaths);
+    applyCloudflareProfile(projectPaths, codexPaths);
+    applyOpencodeProfile(projectPaths, codexPaths);
+
+    const installedFamily = inspectCodexProfileFamilySnapshot(codexPaths);
+    expect(installedFamily.core).toEqual(inspectCodexProfileSnapshot(codexPaths));
+    expect(installedFamily.integrations).toEqual(inspectIntegrationsProfileSnapshot(codexPaths));
+    expect(installedFamily.cloudflare).toEqual(inspectCloudflareProfileSnapshot(codexPaths));
+    expect(installedFamily.opencode).toEqual(inspectOpencodeProfileSnapshot(codexPaths));
   });
 
   it("reports typed integrations-profile apply result without scraping apply summary strings", () => {

@@ -120,6 +120,13 @@ export interface OpencodeProfileSnapshot {
   preview: OperationResult;
 }
 
+export interface CodexProfileFamilySnapshot {
+  core: CodexProfileSnapshot;
+  integrations: IntegrationsProfileSnapshot;
+  cloudflare: CloudflareProfileSnapshot;
+  opencode: OpencodeProfileSnapshot;
+}
+
 export function showCodexConfig(codexPaths: CodexPaths): OperationResult {
   const inventory = inspectCodexConfigInventory(codexPaths);
 
@@ -686,6 +693,17 @@ export function inspectOpencodeProfileSnapshot(codexPaths: CodexPaths): Opencode
     audit,
     apply: inspectOpencodeProfileApplyResult(codexPaths),
     preview: previewOpencodeProfileFromAudit(codexPaths, audit)
+  };
+}
+
+export function inspectCodexProfileFamilySnapshot(
+  codexPaths: CodexPaths
+): CodexProfileFamilySnapshot {
+  return {
+    core: inspectCodexProfileSnapshot(codexPaths),
+    integrations: inspectIntegrationsProfileSnapshot(codexPaths),
+    cloudflare: inspectCloudflareProfileSnapshot(codexPaths),
+    opencode: inspectOpencodeProfileSnapshot(codexPaths)
   };
 }
 
