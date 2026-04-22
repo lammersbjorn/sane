@@ -154,7 +154,8 @@ function mapCurrentRunToPolicyInput(currentRun: CurrentRunState): PolicyInput {
   const taskShape = deriveTaskShape(objective, taskText, activeTasks.length);
   const ambiguity =
     blockers.length >= 2 ? Level.High : blockers.length === 1 ? Level.Medium : Level.Low;
-  const risk = deriveRisk(intent, taskShape, ambiguity, currentRun.verification.status);
+  const verificationStatus = currentRun.verification.status;
+  const risk = deriveRisk(intent, taskShape, ambiguity, verificationStatus);
   const parallelism =
     activeTasks.length >= 4 ? Parallelism.Clear : activeTasks.length >= 2 ? Parallelism.Possible : Parallelism.None;
   const contextPressure =
@@ -225,7 +226,7 @@ function deriveRisk(
   intent: Intent,
   taskShape: TaskShape,
   ambiguity: Level,
-  verificationStatus: string
+  verificationStatus: CurrentRunState["verification"]["status"]
 ): Level {
   const status = verificationStatus.toLowerCase();
 
@@ -243,7 +244,7 @@ function deriveRisk(
 }
 
 function deriveRunState(
-  phase: string,
+  phase: CurrentRunState["phase"],
   blockerCount: number,
   activeTaskCount: number,
   taskShape: TaskShape

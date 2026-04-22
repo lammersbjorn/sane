@@ -7,6 +7,7 @@ import {
   appendJsonlRecord,
   buildRunBrief,
   createDefaultRunSummary,
+  createDefaultCurrentRunState,
   createArtifactRecord,
   createDecisionRecord,
   createEventRecord,
@@ -21,7 +22,6 @@ import {
   stringifyEventRecord,
   writeRunSummary,
   type CurrentRunState,
-  type JsonRecord,
   type RunSummary
 } from "@sane/state";
 
@@ -122,7 +122,7 @@ function currentRunState(paths: ProjectPaths): CurrentRunState {
   try {
     return readCurrentRunState(paths.currentRunPath);
   } catch {
-    return fallbackCurrentRunState("unknown");
+    return createDefaultCurrentRunState("unknown");
   }
 }
 
@@ -132,22 +132,6 @@ function readOptionalSummary(paths: ProjectPaths): RunSummary | null {
   } catch {
     return null;
   }
-}
-
-function fallbackCurrentRunState(objective: string): CurrentRunState {
-  return {
-    version: 2,
-    objective,
-    phase: "unknown",
-    activeTasks: [],
-    blockingQuestions: [],
-    verification: {
-      status: "unknown",
-      summary: null
-    },
-    lastCompactionTsUnix: null,
-    extra: {}
-  };
 }
 
 function operationMilestone(kind: OperationKind): string | null {
@@ -179,33 +163,14 @@ function operationMilestone(kind: OperationKind): string | null {
   }
 }
 
-function decisionContext(result: OperationResult): JsonRecord | null {
+function decisionContext(
+  result: OperationResult
+): ReturnType<typeof createPolicyPreviewDecisionContext> | null {
   if (result.kind !== OperationKind.PreviewPolicy || !result.policyPreview) {
     return null;
   }
 
-  return createPolicyPreviewDecisionContext(
-    result.policyPreview.scenarios.map((scenario) => ({
-      id: scenario.id,
-      summary: scenario.summary,
-      obligations: scenario.obligations,
-      roles: {
-        coordinator: scenario.roles.coordinator,
-        sidecar: scenario.roles.sidecar,
-        verifier: scenario.roles.verifier
-      },
-      orchestration: {
-        subagents: scenario.orchestration.subagents,
-        subagentReadiness: scenario.orchestration.subagentReadiness,
-        reviewPosture: scenario.orchestration.reviewPosture,
-        verifierTiming: scenario.orchestration.verifierTiming
-      },
-      trace: scenario.trace.map((entry) => ({
-        obligation: entry.obligation,
-        rule: entry.rule
-      }))
-    }))
-  );
+  return createPolicyPreviewDecisionContext(result.policyPreview.scenarios);
 }
 
 function operationKindLabel(kind: OperationKind): string {

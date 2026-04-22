@@ -211,6 +211,10 @@ pnpm check
   - runtime/auth support on the actual Sane surface
   - benchmark evidence status recorded
   - default-tier vs candidate-only decision recorded
+- [ ] Exact bonus-lane policy for models such as `Codex-Spark` when a user's plan/runtime exposes separate quota:
+  - capability-gated only, never assumed
+  - prefer only for latency-first `realtime` work where it actually fits
+  - preserve normal fallback for `implementation` / `verifier` / unavailable-plan cases
 - [ ] Exact contents/split of `Sane`'s own minimal self-hosting `AGENTS.md` vs repo skill files
 - [ ] Exact self-hosting milestone checklist
 - [ ] Exact TypeScript package split and Rust retirement/cutover checklist

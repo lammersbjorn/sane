@@ -104,6 +104,7 @@ Must answer:
 - sidecar eligibility rules
 - refresh policy for newly relevant models such as `Kimi K2.6`
 - which popular new models deserve explicit preset coverage vs generic capability-class fallback
+- whether bonus-lane models such as `Codex-Spark` should be preferred for low-latency `realtime` work when a user's runtime/plan exposes separate quota, without making `Sane` depend on that lane
 
 ### R3. State / Compaction Design
 
