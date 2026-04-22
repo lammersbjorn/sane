@@ -44,6 +44,7 @@ import {
 import { doctor, inspectStatusBundle } from "./inventory.js";
 import { previewPolicy } from "./policy-preview.js";
 import { showConfig } from "./preferences.js";
+import { inspectSavedLocalConfig } from "./local-config.js";
 
 interface InstallCanonicalRewrite {
   name: "config" | "current-run" | "summary";
@@ -96,12 +97,9 @@ export interface InspectSnapshot {
 export function installRuntime(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
   ensureRuntimeDirs(paths);
   const canonicalRewrites = ensureInstallRuntimeBaseline(paths, codexPaths);
-
-  const layered = tryLoadLayeredState(paths);
-  const current =
-    layered?.currentRun ??
-    readCurrentRunState(paths.currentRunPath);
-  const summary = layered?.summary ?? readRunSummary(paths.summaryPath);
+  const runtimeState = inspectRuntimeStateSnapshot(paths);
+  const current = runtimeState.current ?? installCurrentRunState();
+  const summary = runtimeState.summary ?? defaultRunSummary();
   ensureFileWithDefault(paths.briefPath, buildBriefBody(summary, current));
 
   const details: string[] = [];
@@ -369,14 +367,7 @@ function ensureInstallConfig(
   paths: ProjectPaths,
   codexPaths: CodexPaths
 ): OperationRewriteMetadata | null {
-  let shouldRewrite = false;
-  try {
-    readLocalConfig(paths.configPath);
-  } catch {
-    shouldRewrite = true;
-  }
-
-  if (!shouldRewrite) {
+  if (inspectSavedLocalConfig(paths).kind === "loaded") {
     return null;
   }
 
@@ -389,14 +380,7 @@ function ensureInstallConfig(
 }
 
 function ensureInstallCurrentRun(paths: ProjectPaths): OperationRewriteMetadata | null {
-  let shouldRewrite = false;
-  try {
-    readCurrentRunState(paths.currentRunPath);
-  } catch {
-    shouldRewrite = true;
-  }
-
-  if (!shouldRewrite) {
+  if (safeRead(() => readCurrentRunState(paths.currentRunPath))) {
     return null;
   }
 
@@ -409,14 +393,7 @@ function ensureInstallCurrentRun(paths: ProjectPaths): OperationRewriteMetadata 
 }
 
 function ensureInstallSummary(paths: ProjectPaths): OperationRewriteMetadata | null {
-  let shouldRewrite = false;
-  try {
-    readRunSummary(paths.summaryPath);
-  } catch {
-    shouldRewrite = true;
-  }
-
-  if (!shouldRewrite) {
+  if (safeRead(() => readRunSummary(paths.summaryPath))) {
     return null;
   }
 
