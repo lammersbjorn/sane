@@ -76,7 +76,9 @@ describe("inspect screen model", () => {
     expect(screen.latestPolicyPreview).toEqual({
       status: "missing",
       scenarioCount: 0,
-      scenarioIds: []
+      scenarioIds: [],
+      tsUnix: null,
+      summary: null
     });
     expect(screen.driftItems).toEqual([]);
     expect(screen.policyPreview.summary).toBe("policy preview: rendered adaptive obligation scenarios");
@@ -123,19 +125,17 @@ describe("inspect screen model", () => {
     const codexPaths = createCodexPaths(homeDir);
 
     installRuntime(paths, codexPaths);
-    appendJsonlRecord(
-      paths.decisionsPath,
-      createDecisionRecord(
-        "policy preview: rendered adaptive obligation scenarios",
-        "simple-question: direct_answer | coordinator=gpt-5.4/high",
-        [],
-        {
-          kind: "policy_preview",
-          scenarios: [{ id: "simple-question" }, { id: "multi-file-feature" }]
-        }
-      ),
-      stringifyDecisionRecord
+    const decision = createDecisionRecord(
+      "policy preview: rendered adaptive obligation scenarios",
+      "simple-question: direct_answer | coordinator=gpt-5.4/high",
+      [],
+      {
+        kind: "policy_preview",
+        scenarios: [{ id: "simple-question" }, { id: "multi-file-feature" }]
+      }
     );
+    decision.tsUnix = 1_700_000_004;
+    appendJsonlRecord(paths.decisionsPath, decision, stringifyDecisionRecord);
 
     const screen = loadInspectScreen(paths, codexPaths);
 
@@ -147,10 +147,12 @@ describe("inspect screen model", () => {
     expect(screen.latestPolicyPreview).toEqual({
       status: "present",
       scenarioCount: 2,
-      scenarioIds: ["simple-question", "multi-file-feature"]
+      scenarioIds: ["simple-question", "multi-file-feature"],
+      tsUnix: 1_700_000_004,
+      summary: "policy preview: rendered adaptive obligation scenarios"
     });
     expect(screen.overviewLines.join("\n")).toContain(
-      "latest policy snapshot: present (current-run-derived read-only view; 2 scenarios: simple-question, multi-file-feature)"
+      "latest policy snapshot: present (current-run-derived read-only view; ts 1700000004; summary policy preview: rendered adaptive obligation scenarios; 2 scenarios: simple-question, multi-file-feature)"
     );
   });
 });

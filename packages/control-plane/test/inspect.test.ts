@@ -53,7 +53,9 @@ describe("inspect snapshot", () => {
     expect(snapshot.latestPolicyPreview).toEqual({
       status: "missing",
       scenarioCount: 0,
-      scenarioIds: []
+      scenarioIds: [],
+      tsUnix: null,
+      summary: null
     });
     expect(snapshot.localConfig.summary).toContain("config: ok");
     expect(snapshot.codexConfig.summary).toContain("codex-config: ok");
@@ -73,19 +75,17 @@ describe("inspect snapshot", () => {
 
     mkdirSync(join(homeDir, ".codex"), { recursive: true });
     writeFileSync(codexPaths.hooksJson, "{", "utf8");
-    appendJsonlRecord(
-      paths.decisionsPath,
-      createDecisionRecord(
-        "policy preview: rendered adaptive obligation scenarios",
-        "simple-question: direct_answer | coordinator=gpt-5.4/high",
-        [],
-        {
-          kind: "policy_preview",
-          scenarios: [{ id: "simple-question" }, { id: "multi-file-feature" }]
-        }
-      ),
-      stringifyDecisionRecord
+    const decision = createDecisionRecord(
+      "policy preview: rendered adaptive obligation scenarios",
+      "simple-question: direct_answer | coordinator=gpt-5.4/high",
+      [],
+      {
+        kind: "policy_preview",
+        scenarios: [{ id: "simple-question" }, { id: "multi-file-feature" }]
+      }
     );
+    decision.tsUnix = 1_700_000_003;
+    appendJsonlRecord(paths.decisionsPath, decision, stringifyDecisionRecord);
 
     const snapshot = inspectSnapshot(paths, codexPaths);
 
@@ -116,7 +116,9 @@ describe("inspect snapshot", () => {
     expect(snapshot.latestPolicyPreview).toEqual({
       status: "present",
       scenarioCount: 2,
-      scenarioIds: ["simple-question", "multi-file-feature"]
+      scenarioIds: ["simple-question", "multi-file-feature"],
+      tsUnix: 1_700_000_003,
+      summary: "policy preview: rendered adaptive obligation scenarios"
     });
   });
 });

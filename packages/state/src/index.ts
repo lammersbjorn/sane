@@ -128,6 +128,8 @@ export interface LatestPolicyPreviewSnapshot {
   status: 'missing' | 'present';
   scenarioCount: number;
   scenarioIds: string[];
+  tsUnix: number | null;
+  summary: string | null;
 }
 
 export interface ArtifactRecord {
@@ -627,15 +629,25 @@ export function readLatestPolicyPreviewDecision(path: string): DecisionRecord | 
 
 export function readLatestPolicyPreviewSnapshot(path: string): LatestPolicyPreviewSnapshot {
   const latestPolicyDecision = readLatestPolicyPreviewDecision(path);
-  const latestPolicyContext = latestPolicyDecision
-    ? policyPreviewDecisionContext(latestPolicyDecision)
-    : null;
+  if (!latestPolicyDecision) {
+    return {
+      status: 'missing',
+      scenarioCount: 0,
+      scenarioIds: [],
+      tsUnix: null,
+      summary: null,
+    };
+  }
+
+  const latestPolicyContext = policyPreviewDecisionContext(latestPolicyDecision);
 
   if (!latestPolicyContext) {
     return {
       status: 'missing',
       scenarioCount: 0,
       scenarioIds: [],
+      tsUnix: null,
+      summary: null,
     };
   }
 
@@ -647,6 +659,8 @@ export function readLatestPolicyPreviewSnapshot(path: string): LatestPolicyPrevi
     status: 'present',
     scenarioCount: latestPolicyContext.scenarios.length,
     scenarioIds,
+    tsUnix: latestPolicyDecision.tsUnix,
+    summary: latestPolicyDecision.summary,
   };
 }
 

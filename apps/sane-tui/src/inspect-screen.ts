@@ -51,7 +51,7 @@ export function inspectOverviewLines(snapshot: InspectScreenSnapshot): string[] 
     `runtime summary (read-only local visibility): ${snapshot.runtimeSummary.summary}`,
     `runtime history (read-only local visibility): events ${snapshot.runtimeHistory.events}, decisions ${snapshot.runtimeHistory.decisions}, artifacts ${snapshot.runtimeHistory.artifacts}`,
     snapshot.latestPolicyPreview.status === "present"
-      ? `latest policy snapshot: present (current-run-derived read-only view; ${snapshot.latestPolicyPreview.scenarioCount} scenarios: ${snapshot.latestPolicyPreview.scenarioIds.join(", ")})`
+      ? `latest policy snapshot: present (current-run-derived read-only view; ts ${snapshot.latestPolicyPreview.tsUnix}; summary ${snapshot.latestPolicyPreview.summary}; ${snapshot.latestPolicyPreview.scenarioCount} scenarios: ${snapshot.latestPolicyPreview.scenarioIds.join(", ")})`
       : "latest policy snapshot: missing (current-run-derived read-only view)",
     `local config view: ${snapshot.localConfig.summary}`,
     `Codex config view: ${snapshot.codexConfig.summary}`,

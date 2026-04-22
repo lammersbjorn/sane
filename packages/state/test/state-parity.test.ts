@@ -362,14 +362,17 @@ describe('typed record parity', () => {
     const dir = makeTempDir();
     const path = join(dir, 'decisions.jsonl');
 
+    const decision = createDecisionRecord(
+      'policy preview: rendered adaptive obligation scenarios',
+      'simple-question: direct_answer | coordinator=gpt-5.4/high',
+      [],
+      createPolicyPreviewDecisionContext([{ id: 'simple-question' }, { id: 'multi-file-feature' }]),
+    );
+    decision.tsUnix = 1_700_000_001;
+
     appendJsonlRecord(
       path,
-      createDecisionRecord(
-        'policy preview: rendered adaptive obligation scenarios',
-        'simple-question: direct_answer | coordinator=gpt-5.4/high',
-        [],
-        createPolicyPreviewDecisionContext([{ id: 'simple-question' }, { id: 'multi-file-feature' }]),
-      ),
+      decision,
       stringifyDecisionRecord,
     );
 
@@ -377,6 +380,8 @@ describe('typed record parity', () => {
       status: 'present',
       scenarioCount: 2,
       scenarioIds: ['simple-question', 'multi-file-feature'],
+      tsUnix: 1_700_000_001,
+      summary: 'policy preview: rendered adaptive obligation scenarios',
     });
   });
 
@@ -402,6 +407,8 @@ describe('typed record parity', () => {
       status: 'missing',
       scenarioCount: 0,
       scenarioIds: [],
+      tsUnix: null,
+      summary: null,
     });
   });
 
@@ -426,6 +433,8 @@ describe('typed record parity', () => {
       status: 'present',
       scenarioCount: 1,
       scenarioIds: ['simple-question'],
+      tsUnix: expect.any(Number),
+      summary: 'policy preview: rendered adaptive obligation scenarios',
     });
   });
 
@@ -440,6 +449,8 @@ describe('typed record parity', () => {
       status: 'missing',
       scenarioCount: 0,
       scenarioIds: [],
+      tsUnix: null,
+      summary: null,
     });
   });
 
@@ -475,6 +486,8 @@ describe('typed record parity', () => {
       status: 'present',
       scenarioCount: 1,
       scenarioIds: ['simple-question'],
+      tsUnix: expect.any(Number),
+      summary: 'policy preview: rendered adaptive obligation scenarios',
     });
   });
 

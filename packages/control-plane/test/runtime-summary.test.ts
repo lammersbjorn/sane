@@ -79,28 +79,35 @@ describe("showRuntimeSummary", () => {
     const paths = createProjectPaths(projectRoot);
 
     installRuntime(paths, createCodexPaths(homeDir));
+    const decision = createDecisionRecord(
+      "policy preview: rendered adaptive obligation scenarios",
+      "simple-question: direct_answer | coordinator=gpt-5.4/high",
+      [],
+      {
+        kind: "policy_preview",
+        scenarios: [{ id: "simple-question" }, { id: "multi-file-feature" }]
+      }
+    );
+    decision.tsUnix = 1_700_000_002;
     appendJsonlRecord(
       paths.decisionsPath,
-      createDecisionRecord(
-        "policy preview: rendered adaptive obligation scenarios",
-        "simple-question: direct_answer | coordinator=gpt-5.4/high",
-        [],
-        {
-          kind: "policy_preview",
-          scenarios: [{ id: "simple-question" }, { id: "multi-file-feature" }]
-        }
-      ),
+      decision,
       stringifyDecisionRecord
     );
 
     const result = showRuntimeSummary(paths);
 
     expect(result.details).toContain("latest policy preview: 2 scenarios");
+    expect(result.details).toContain(
+      "latest policy preview provenance: ts 1700000002, summary policy preview: rendered adaptive obligation scenarios"
+    );
     expect(result.details).toContain(`decisions: 1 at ${paths.decisionsPath}`);
     expect(inspectLatestPolicyPreview(paths)).toEqual({
       status: "present",
       scenarioCount: 2,
-      scenarioIds: ["simple-question", "multi-file-feature"]
+      scenarioIds: ["simple-question", "multi-file-feature"],
+      tsUnix: 1_700_000_002,
+      summary: "policy preview: rendered adaptive obligation scenarios"
     });
   });
 
@@ -148,7 +155,9 @@ describe("showRuntimeSummary", () => {
     expect(inspectLatestPolicyPreview(paths)).toEqual({
       status: "missing",
       scenarioCount: 0,
-      scenarioIds: []
+      scenarioIds: [],
+      tsUnix: null,
+      summary: null
     });
   });
 });

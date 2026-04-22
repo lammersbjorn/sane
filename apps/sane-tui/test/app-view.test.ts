@@ -171,19 +171,17 @@ describe("app view", () => {
     const paths = createProjectPaths(projectRoot);
     const codexPaths = createCodexPaths(homeDir);
 
-    appendJsonlRecord(
-      paths.decisionsPath,
-      createDecisionRecord(
-        "policy preview: rendered adaptive obligation scenarios",
-        "simple-question: direct_answer | coordinator=gpt-5.4/high",
-        [],
-        {
-          kind: "policy_preview",
-          scenarios: [{ id: "simple-question" }, { id: "multi-file-feature" }]
-        }
-      ),
-      stringifyDecisionRecord
+    const decision = createDecisionRecord(
+      "policy preview: rendered adaptive obligation scenarios",
+      "simple-question: direct_answer | coordinator=gpt-5.4/high",
+      [],
+      {
+        kind: "policy_preview",
+        scenarios: [{ id: "simple-question" }, { id: "multi-file-feature" }]
+      }
     );
+    decision.tsUnix = 1_700_000_005;
+    appendJsonlRecord(paths.decisionsPath, decision, stringifyDecisionRecord);
 
     const shell = createTuiShell(paths, codexPaths);
     selectSection(shell, "inspect");
@@ -191,7 +189,7 @@ describe("app view", () => {
     const view = loadAppView(shell);
 
     expect(view.sectionOverviewLines.join("\n")).toContain(
-      "latest policy snapshot: present (current-run-derived read-only view; 2 scenarios: simple-question, multi-file-feature)"
+      "latest policy snapshot: present (current-run-derived read-only view; ts 1700000005; summary policy preview: rendered adaptive obligation scenarios; 2 scenarios: simple-question, multi-file-feature)"
     );
   });
 

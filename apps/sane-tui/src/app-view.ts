@@ -205,7 +205,7 @@ function selectedActionHelpLines(
       ...action.help,
       "",
       model.latestPolicyPreview.status === "present"
-        ? `latest snapshot: present (current-run-derived read-only view; ${model.latestPolicyPreview.scenarioCount} scenarios: ${model.latestPolicyPreview.scenarioIds.join(", ")})`
+        ? `latest snapshot: present (current-run-derived read-only view; ts ${model.latestPolicyPreview.tsUnix}; summary ${model.latestPolicyPreview.summary}; ${model.latestPolicyPreview.scenarioCount} scenarios: ${model.latestPolicyPreview.scenarioIds.join(", ")})`
         : "latest snapshot: missing (current-run-derived read-only view)",
       ...model.policyPreview.details
     ];

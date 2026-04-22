@@ -245,6 +245,11 @@ export function showRuntimeSummary(paths: ProjectPaths): OperationResult {
 
   if (latestPolicyPreview.status === "present") {
     details.push(`latest policy preview: ${latestPolicyPreview.scenarioCount} scenarios`);
+    if (latestPolicyPreview.tsUnix !== null && latestPolicyPreview.summary) {
+      details.push(
+        `latest policy preview provenance: ts ${latestPolicyPreview.tsUnix}, summary ${latestPolicyPreview.summary}`
+      );
+    }
   }
 
   return new OperationResult({
