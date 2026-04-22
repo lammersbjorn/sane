@@ -3,8 +3,7 @@ import { loadDashboardView } from "@/dashboard.js";
 import { loadGetStartedScreen } from "@/get-started-screen.js";
 import { loadInstallScreen } from "@/install-screen.js";
 import {
-  formatLatestPolicyPreviewInputLines,
-  formatLatestPolicyPreviewLine,
+  formatLatestPolicyPreviewLines,
   inspectOverviewLines,
   loadInspectScreen
 } from "@/inspect-screen.js";
@@ -212,11 +211,10 @@ function selectedActionHelpLines(
       "",
       ...action.help,
       "",
-      formatLatestPolicyPreviewLine(model.latestPolicyPreview).replace(
-        "latest policy snapshot:",
-        "latest snapshot:"
-      ),
-      ...formatLatestPolicyPreviewInputLines(model.latestPolicyPreview, "latest snapshot input"),
+      ...formatLatestPolicyPreviewLines(model.latestPolicyPreview, {
+        snapshot: "latest snapshot",
+        input: "latest snapshot input"
+      }),
       ...model.policyPreview.details
     ];
   }

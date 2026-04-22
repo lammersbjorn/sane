@@ -51,8 +51,7 @@ export function inspectOverviewLines(snapshot: InspectScreenSnapshot): string[] 
     `doctor result: ${snapshot.doctorHeadline}`,
     `runtime summary (read-only local visibility): ${snapshot.runtimeSummary.summary}`,
     `runtime history (read-only local visibility): events ${snapshot.runtimeHistory.events}, decisions ${snapshot.runtimeHistory.decisions}, artifacts ${snapshot.runtimeHistory.artifacts}`,
-    formatLatestPolicyPreviewLine(snapshot.latestPolicyPreview),
-    ...formatLatestPolicyPreviewInputLines(snapshot.latestPolicyPreview),
+    ...formatLatestPolicyPreviewLines(snapshot.latestPolicyPreview),
     formatOptionalPackProvenanceLine(snapshot.statusBundle.optionalPacks),
     `local config view: ${snapshot.localConfig.summary}`,
     `Codex config view: ${snapshot.codexConfig.summary}`,
@@ -71,11 +70,12 @@ export function inspectOverviewLines(snapshot: InspectScreenSnapshot): string[] 
 }
 
 export function formatLatestPolicyPreviewLine(
-  preview: InspectScreenSnapshot["latestPolicyPreview"]
+  preview: InspectScreenSnapshot["latestPolicyPreview"],
+  prefix = "latest policy snapshot"
 ): string {
   return preview.status === "present"
-    ? `latest policy snapshot: present (current-run-derived read-only view; ts ${preview.tsUnix}; summary ${preview.summary}; ${preview.scenarioCount} scenarios: ${preview.scenarioIds.join(", ")})`
-    : "latest policy snapshot: missing (current-run-derived read-only view)";
+    ? `${prefix}: present (current-run-derived read-only view; ts ${preview.tsUnix}; summary ${preview.summary}; ${preview.scenarioCount} scenarios: ${preview.scenarioIds.join(", ")})`
+    : `${prefix}: missing (current-run-derived read-only view)`;
 }
 
 export function formatLatestPolicyPreviewInputLines(
@@ -95,6 +95,19 @@ export function formatLatestPolicyPreviewInputLines(
       `${prefix} ${scenario.id}: intent ${scenario.input.intent ?? "unknown"}, task ${scenario.input.taskShape ?? "unknown"}, risk ${scenario.input.risk ?? "unknown"}, ambiguity ${scenario.input.ambiguity ?? "unknown"}, parallelism ${scenario.input.parallelism ?? "unknown"}, context ${scenario.input.contextPressure ?? "unknown"}, run ${scenario.input.runState ?? "unknown"}`
     ];
   });
+}
+
+export function formatLatestPolicyPreviewLines(
+  preview: InspectScreenSnapshot["latestPolicyPreview"],
+  prefixes: {
+    snapshot?: string;
+    input?: string;
+  } = {}
+): string[] {
+  return [
+    formatLatestPolicyPreviewLine(preview, prefixes.snapshot),
+    ...formatLatestPolicyPreviewInputLines(preview, prefixes.input ?? "latest policy input")
+  ];
 }
 
 function formatOptionalPackProvenanceLine(
