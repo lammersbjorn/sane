@@ -1,0 +1,13 @@
+
+> @sane/platform@ test /Users/bjorn/Code/labs/betteragents/packages/platform
+> vp test run
+
+ RUN  /Users/bjorn/Code/labs/betteragents/packages/platform
+
+ ✓ |@sane/platform| test/project-paths.test.ts (12 tests) 23ms
+
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+   Start at  04:22:50
+   Duration  2.03s (transform 195ms, setup 0ms, import 331ms, tests 23ms, environment 0ms)
+

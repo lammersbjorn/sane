@@ -1,0 +1,24 @@
+{
+  "name": "@sane/control-plane",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vp test run",
+    "test:watch": "vp test",
+    "typecheck": "tsc --project tsconfig.json"
+  },
+  "dependencies": {
+    "@iarna/toml": "^2.2.5",
+    "@sane/config": "workspace:*",
+    "@sane/core": "workspace:*",
+    "@sane/framework-assets": "workspace:*",
+    "@sane/platform": "workspace:*",
+    "@sane/policy": "workspace:*",
+    "@sane/state": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite-plus": "catalog:",
+    "vitest": "catalog:"
+  }
+}

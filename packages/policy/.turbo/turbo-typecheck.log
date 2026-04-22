@@ -1,0 +1,4 @@
+
+> @sane/policy@ typecheck /Users/bjorn/Code/labs/betteragents/packages/policy
+> tsc --project tsconfig.json
+

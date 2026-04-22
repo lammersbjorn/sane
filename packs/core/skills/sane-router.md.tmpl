@@ -1,0 +1,29 @@
+---
+name: sane-router
+description: Install and update Sane-managed Codex assets, routing defaults, and optional hooks without forcing repo mutation.
+---
+
+# Sane Router
+
+Use this managed skill when work touches Sane's installed Codex assets, adaptive workflow rules, or config-backed routing defaults.
+
+Prefer this skill for:
+- installing or uninstalling Sane-managed Codex assets
+- adjusting config-backed routing and task-shaped model defaults
+- maintaining Sane-managed skills, hooks, custom agents, and optional AGENTS overlays
+- keeping Sane additive, low-ceremony, and easy to undo
+
+Keep behavior aligned with Sane philosophy:
+- plain-language first
+- commands optional
+- no required AGENTS.md
+- no workflow lock-in
+- model and subagent choice should adapt to task shape
+
+Current managed role defaults:
+- coordinator: {{COORDINATOR_MODEL}} ({{COORDINATOR_REASONING}})
+- execution: {{EXECUTION_MODEL}} ({{EXECUTION_REASONING}})
+- sidecar: {{SIDECAR_MODEL}} ({{SIDECAR_REASONING}})
+- verifier: {{VERIFIER_MODEL}} ({{VERIFIER_REASONING}})
+- realtime iteration: {{REALTIME_MODEL}} ({{REALTIME_REASONING}})
+{{ENABLED_PACK_ROUTER_NOTES}}

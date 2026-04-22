@@ -1,6 +1,6 @@
 # Sane Decision Log
 
-Last updated: 2026-04-20
+Last updated: 2026-04-22
 
 This file is the durable source of truth for decisions already made in the April 19, 2026 session.
 
@@ -40,11 +40,16 @@ Primary source:
 - Must work without `AGENTS.md`
 - Must work everywhere, not only in repos prepared for it
 - `AGENTS.md` is optional enhancement / export path only
+- `Sane`'s own repo may intentionally self-host with a minimal repo-local `AGENTS.md` plus targeted repo skill files when building `Sane` itself
+- That repo-local self-hosting path is for bounded dogfooding, not a requirement or expectation for other repos
+- Large catch-all `AGENTS.md` files are an anti-pattern; keep the root file minimal and push specific guidance into targeted skills
 - No required repo mutation
 - No daily wrapper required for prompting
 - No command-first UX
 - No wrapper-first runtime
-- Rust should primarily be the installer / configurator / updater / doctor / asset manager
+- TypeScript-first control plane should primarily be the installer / configurator / updater / doctor / asset manager
+- Implemented TypeScript package boundaries now include `@sane/sane-tui`, `@sane/config`, `@sane/control-plane`, `@sane/core`, `@sane/framework-assets`, `@sane/platform`, `@sane/policy`, and `@sane/state`
+- File-first framework assets should render from checked-in `packs/core` sources through `packages/framework-assets`
 - Codex-native installation targets are the main product surface
 - Current managed Codex surfaces include the user skill, optional repo skills, optional repo `AGENTS.md` block, global `AGENTS.md` block, hooks, and custom agents
 - Optional user-level Codex settings management is allowed later, but only as an explicit opt-in surface with preserve / backup / restore behavior
@@ -69,7 +74,7 @@ Primary source:
 
 - Do not lock `Sane` to one model
 - `Sane` should auto-pick the best available models, reasoning settings, and subagent configurations for the task
-- Selection should respect the user's subscription and available Codex capabilities
+- Selection should respect task shape, runtime support, and available Codex capabilities
 - Fast / cheap sidecar tasks and heavier coordinator tasks may use different model presets
 - When no saved config exists, recommended defaults should come from local Codex model availability and plan data when present; static presets stay as fallback only
 
@@ -90,6 +95,7 @@ Primary source:
 - Onboarding can borrow from the strongest parts of `openagentsbtw`, without becoming command-first
 - The current no-args TUI should open into an onboarding-first tabbed layout
 - Current section tabs are `Get started`, `Preferences`, `Install`, `Inspect`, and `Repair`
+- Current TypeScript TUI implementation is layered as shell state, view models, editor state, and overlays rather than a renderer-owned monolith
 - Narrow layouts take priority over forcing a cramped wide split
 - Risky writes require confirmation, and successful writes may use explicit notice popups plus compact result feedback
 - User-facing copy should name concrete installs/files instead of vague "assets"
@@ -100,7 +106,7 @@ Primary source:
 
 - Cross-platform from day one
 - Targets: `macOS`, `Linux`, `Windows`
-- Rust for implementation
+- TypeScript-first for implementation
 - Architecture should be ready for plugin / pack expansion later
 - `v1` does not need a public plugin API yet
 - `v1` should be pack-system ready, not pack-system complete
@@ -118,6 +124,7 @@ Primary source:
 
 - `Sane` should eventually help build `Sane`
 - Dogfooding should be phased, not immediate
+- The current acceptable dogfooding step is minimal repo-local self-hosting guidance in `Sane`'s own repo
 - Self-improvement must be verifier-driven and bounded
 - Safe auto-fix classes may exist later
 - Evals and verification are mandatory for self-hosting
@@ -137,8 +144,8 @@ Primary source:
 
 These are strong direction, but not frozen down to exact implementation shape.
 
-- Thin Rust control plane first, Codex-native asset management as the core product
-- Keep `ratatui` for the current TUI path unless product needs prove otherwise
+- Thin TypeScript-first control plane, Codex-native asset management as the core product
+- Migration may be phased, but the target is one TypeScript-first control plane rather than a permanent mixed-stack product surface
 - Adaptive policy engine over rigid visible modes
 - No numeric scoring engine as the core UX
 - Structured machine-readable state plus compact human summaries
@@ -155,11 +162,11 @@ These are still undecided and should stay out of `Locked`.
 
 - Exact local runtime directory layout and names
 - Exact state file formats and compaction strategy
-- Exact Rust crate boundaries
 - Exact `v1` built-in packs
 - Any additional export surfaces beyond the current user skill, repo skills, repo `AGENTS.md` block, global `AGENTS.md` block, hooks, and custom agents
 - Exact model preset matrix and routing rules
-- Whether the TUI needs more than the current `ratatui` path after polish work is exhausted
+- Exact control-surface implementation details within the TypeScript-first stack
+- Exact migration sequencing and Rust retirement/cutover checklist
 - Final product name for the later end-to-end outcome-runner flow
 - Exact self-hosting milestone checklist
 - Exact telemetry schema
@@ -174,3 +181,4 @@ Future plan/spec docs must:
 - keep `Recommended` separate from `Locked`
 - keep `Open` separate from both
 - not silently promote `Open` items into implementation facts
+- not reintroduce Rust-first assumptions now that TypeScript-first is the locked stack direction

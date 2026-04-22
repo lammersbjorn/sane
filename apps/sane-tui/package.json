@@ -1,0 +1,22 @@
+{
+  "name": "@sane/sane-tui",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vp test run",
+    "test:watch": "vp test",
+    "typecheck": "tsc --project tsconfig.json"
+  },
+  "dependencies": {
+    "@sane/config": "workspace:*",
+    "@sane/control-plane": "workspace:*",
+    "@sane/core": "workspace:*",
+    "@sane/platform": "workspace:*",
+    "@sane/state": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite-plus": "catalog:",
+    "vitest": "catalog:"
+  }
+}

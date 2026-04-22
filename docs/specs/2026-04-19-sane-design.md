@@ -2,7 +2,9 @@
 
 ## Vision
 
-`Sane` is a Codex-native QoL framework for plain-language, high-signal development work. It should improve the quality, speed, and ergonomics of working with Codex without forcing users into a command language, rigid workflow, or repo-bound setup. It must remain useful in ordinary repos, in long multi-hour sessions, and for users with minimal prior customization.
+`Sane` is a QoL agent framework for Codex. It should improve the quality, speed, and ergonomics of working with Codex without forcing users into a command language, rigid workflow, or repo-bound setup. It must remain useful in ordinary repos, in long multi-hour sessions, and for users with minimal prior customization.
+
+The product value should live in the framework behavior and managed Codex-native exports. The TUI is a control surface for that framework, not the center of the product identity.
 
 ## Goals
 
@@ -55,14 +57,20 @@ The default install should not change repo behavior for collaborators. Runtime s
 
 Prompt bloat, giant always-loaded methodology, and excessive orchestration are product failures. `Sane` should keep base guidance small, load specific capabilities lazily, and maintain compact state.
 
+### 6. Repo Guidance Must Stay Narrow
+
+Repo-level guidance should be explicit, minimal, and easy to remove. Prefer file-based targeted skills over large always-on `AGENTS.md` blocks, especially when dogfooding `Sane` inside its own repo.
+
 ## System Architecture
 
-`Sane` should use a thin Rust control plane to install, manage, and repair Codex-native assets.
+`Sane` uses a thin TypeScript-first control plane to install, manage, and repair Codex-native assets.
+
+The stack direction does not change the product boundary: the control plane stays thin, the TUI stays setup/ops-only, and the framework value stays in Codex-native behavior rather than wrapper ritual.
 
 ### Runtime Layers
 
-1. Rust control plane
-- installed via TUI
+1. TypeScript-first control plane
+- exposed through a thin control surface, with the TUI handling install / configure flows in `v1`
 - cross-platform
 - owns install / configure / update / export / doctor flows
 
@@ -70,6 +78,7 @@ Prompt bloat, giant always-loaded methodology, and excessive orchestration are p
 - user-level Codex assets
 - optional repo-level assets
 - skills, hooks, custom agents, model/subagent presets, and related managed files
+- repo-level exports stay explicit and minimal
 - first thin implemented surfaces:
   - user-level skills under `~/.agents/skills`
   - optional additive global overlay in `~/.codex/AGENTS.md`
@@ -86,11 +95,33 @@ Prompt bloat, giant always-loaded methodology, and excessive orchestration are p
 - no frozen public plugin API yet
 - current local config/editor foundation can enable or disable optional built-in packs without exposing a public plugin system
 
+### Current Package Boundaries
+
+- `apps/sane-tui`
+  - current TypeScript setup/ops surface
+  - owns shell state, view models, editor state, and overlays
+- `packages/config`
+  - local config schema, defaults, normalization, environment-aware recommendations
+- `packages/control-plane`
+  - install/config/export/repair/history/inventory verbs
+- `packages/core`
+  - shared operation and inventory result primitives
+- `packages/framework-assets`
+  - file-first framework asset loader/renderer
+  - reads `packs/core/manifest.json` and checked-in templates under `packs/core`
+- `packages/platform`
+  - project/home path discovery and layout
+- `packages/policy`
+  - adaptive policy logic and typed obligations
+- `packages/state`
+  - local state serialization, JSONL history helpers, backups, canonical rewrite metadata
+
 Current Codex settings stance:
 - inspect and preview first
 - backup before managed writes
 - keep bare core profile narrow
 - treat integrations as separate opt-in profile work
+- treat integrations-profile preview/apply as structured-audit first so install surfaces can explain exact recommended adds before write
 - treat provider-specific stacks like Cloudflare as separate opt-in profiles
 - preserve unrelated user config when applying core profile
 - preserve unrelated user config when applying recommended integrations
@@ -148,9 +179,13 @@ The state model should separate stable policy, thin operational state, and human
 
 - single-agent by default
 - subagents only when work decomposes cleanly
-- choose model and reasoning settings per subtask
-- respect subscription / capability availability
-- keep one central verifier / coordinator
+- choose model and reasoning settings per subtask using task-shaped presets:
+  - `explorer`
+  - `implementation`
+  - `verifier`
+  - `realtime`
+- respect runtime support / capability availability
+- keep one central reviewer authority even when routing classes vary
 
 ## Later End-To-End Flow
 
@@ -174,12 +209,14 @@ This capability depends on:
 
 ## Model Strategy
 
-`Sane` should not hardcode a single model policy. Instead it should maintain a model-selection layer that can map work types to:
+`Sane` should not hardcode a single model policy. Instead it should maintain a model-selection layer that maps work to task-shaped classes plus coordinator defaults.
 
-- coordinator model
-- sidecar model
-- reasoning effort
-- verification model
+Class targets:
+- `explorer`
+- `implementation`
+- `verifier`
+- `realtime`
+- coordinator/session authority (non-subagent synthesis)
 
 Example classes:
 
@@ -188,13 +225,28 @@ Example classes:
 - planning / architecture
 - implementation
 - review / verification
-- long-running sidecar analysis
+- long-running execution
+- real-time iteration
 
-Exact presets remain an open implementation task, but the design principle is fixed: choose the best available configuration for the task rather than forcing one global model. When no saved local config exists, derive the starting defaults from local Codex model availability and plan data if present, then fall back to static presets only if detection fails.
+Current implementation direction:
+
+- policy preview/docs should expose `explorer` / `implementation` / `verifier` / `realtime` routing classes directly
+- local config + policy preview are now wired around those routing classes directly
+- local config may still keep legacy role fields where needed for compatibility, but routing intent remains class-first
+- inspect/runtime surfaces may expose bounded latest policy-preview snapshot state for read-only transparency, but must not imply live orchestration control
+- documented OpenAI positioning and actual spawnable-here runtime support must be tracked separately
+- OpenAI docs do not currently publish one hard benchmark table across these workflow classes, so class ordering is an implementation inference grounded in official positioning, not benchmark truth
+
+The design principle is fixed: choose the best available configuration for the task rather than forcing one global model. When no saved local config exists, derive the starting defaults from detected local Codex model availability and fall back to stable static presets only if detection fails.
 
 ## TUI
 
-The TUI is the installer/configuration surface, not a chatting surface.
+The TUI is the current installer/configuration surface, not a chatting surface and not the center of the product identity.
+
+Current implementation note:
+
+- the active TypeScript TUI is already split into shell state, view-model, editor-state, and overlay-model layers
+- renderer/runtime details are separate from those app-model boundaries
 
 ### `v1` responsibilities
 
@@ -250,6 +302,8 @@ Issue relay is separate from telemetry.
 
 Self-hosting is a later phase, not a launch assumption.
 
+For `Sane`'s own repo, self-hosting guidance should stay minimal. Dogfooding should prove that the framework remains useful without relying on a giant always-on repo instruction layer.
+
 ### Phases
 
 1. Build `Sane` with normal Codex workflow
@@ -257,6 +311,13 @@ Self-hosting is a later phase, not a launch assumption.
 3. Use `Sane` for bounded parts of its own workflow
 4. Let `Sane` propose self-improvements
 5. Allow narrow safe classes of self-applied fixes
+
+### Repo Guidance Rule For `Sane` Itself
+
+- default to no broad always-on repo `AGENTS.md`
+- prefer small file-based targeted skills when repo-local help is actually needed
+- use repo `AGENTS.md` only for durable facts that truly need to load every session
+- keep self-hosting artifacts narrow enough that public docs do not need inflated claims to justify them
 
 ### Preconditions
 
@@ -273,7 +334,7 @@ Still requires targeted research before freezing `v1`:
 
 - built-in capability pack shortlist
 - model preset matrix
-- Rust TUI library choice
+- TypeScript-first control-surface implementation choice
 - state compaction format
 - export surface design
 - cross-platform path discovery and install integration
@@ -290,16 +351,16 @@ docs/
   decisions/
   specs/
   plans/
-crates/
+packages/
   sane-core/
-  sane-tui/  # crate path; package/binary name is `sane`
+  sane-tui/  # package path; binary/app name is `sane`
   sane-platform/
   sane-state/
   sane-config/
 ```
 
-The crate boundaries are provisional and can be tightened during the first implementation pass.
+The package/module boundaries are provisional and can be tightened during the migration pass.
 
 ## Correction
 
-Earlier planning drifted toward treating `.sane` as the center of the product. That is not the intended architecture. The product should remain Codex-native, with Rust acting as the thin operational layer that installs and manages Codex-facing assets.
+Earlier planning drifted toward treating `.sane` as the center of the product. That is not the intended architecture. The product should remain a framework for Codex, with a TypeScript-first control plane acting as the thin operational layer that installs and manages Codex-facing assets.

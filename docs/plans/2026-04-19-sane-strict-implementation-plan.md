@@ -1,6 +1,6 @@
 # Sane Strict Implementation Plan
 
-Last updated: 2026-04-20
+Last updated: 2026-04-22
 
 This plan is intentionally strict.
 
@@ -22,15 +22,20 @@ Never violate these:
 - plain-language first
 - commands/skills optional, not required
 - must work without `AGENTS.md`
+- repo-local `AGENTS.md` + repo skill self-hosting is allowed only as a minimal dogfooding path for `Sane`'s own repo
+- do not treat that repo-local self-hosting path as a requirement for normal repos
+- keep any root `AGENTS.md` minimal; prefer targeted repo skills over giant catch-all instructions
 - no required repo mutation
 - no command-first UX
 - no wrapper-first runtime
-- Rust is the thin installer / configurator / updater / doctor / asset manager
+- TypeScript-first control plane is the thin installer / configurator / updater / doctor / asset manager
 - Codex-native installation targets are the main product surface
 - `.sane` stays thin and operational
 - proper install TUI from day one
 - TUI is for setup / config / update / export / doctor
 - TUI is not the daily prompting interface
+- repo-local self-hosting guidance must not become a replacement for the TUI/setup boundary
+- migration may be phased, but temporary mixed-stack internals must stay behind stable product behavior and one TypeScript-first target
 - cross-platform first
 - pack/plugin-ready architecture, but no public plugin API in `v1`
 - do not lock builtin packs before the capability audit
@@ -46,6 +51,22 @@ Research gates answer open questions.
 Build gates implement only already-supported direction.
 
 Do not mix them.
+
+## Stack Migration Rule
+
+- The stack target is TypeScript-first. Do not keep adding Rust-first assumptions to new plans/specs.
+- Temporary bridge code is allowed only to preserve behavior while landing parity.
+- Migration work must not be used to reopen product philosophy, add wrapper ritual, or widen repo self-hosting guidance.
+
+## Self-Hosting Boundary
+
+For `Sane`'s own repo only:
+
+- minimal repo-local `AGENTS.md` + repo skill files are allowed and useful for building `Sane`
+- the root `AGENTS.md` should stay short, stable, and high-signal
+- task- or domain-specific behavior should live in targeted repo skills
+- this is repo-local dogfooding, not product direction that every repo should copy
+- this must not weaken the core product promise that `Sane` works without repo mutation and is operated through setup/repair surfaces rather than daily wrapper ritual
 
 ## Research Gates
 
@@ -74,13 +95,15 @@ Outputs:
 ### R2. Model / Subagent Preset Matrix
 
 Goal:
-- decide coordinator / sidecar / verifier default strategy
+- decide routing-default strategy for editable roles plus derived task classes
 
 Must answer:
 - capability classes
-- fallback order by subscription
+- fallback order by runtime support
 - reasoning defaults
 - sidecar eligibility rules
+- refresh policy for newly relevant models such as `Kimi K2.6`
+- which popular new models deserve explicit preset coverage vs generic capability-class fallback
 
 ### R3. State / Compaction Design
 
@@ -125,7 +148,7 @@ Must answer:
 - canonical release artifact source
 - macOS/Linux package path
 - Windows package path
-- Rust-native fallback path
+- direct install fallback path
 - automation and signing implications
 
 ## Build Gates
@@ -154,7 +177,8 @@ Allowed:
 - stable touched-path reporting
 
 Not allowed:
-- new UI stack decisions
+- reopening the locked TypeScript-first stack direction
+- new product-surface decisions unrelated to the backend contract
 - new Codex-native targets beyond already accepted ones
 
 Exit criteria:
@@ -199,6 +223,7 @@ Current accepted shape:
 - narrow layouts stack action/help/result before using a wide split
 - risky writes require confirmation
 - successful writes can use notice popups and compact result feedback
+- current TypeScript TUI implementation is already split into shell, view-model, editor-state, and overlay layers
 
 Required shortcut:
 - `sane settings` should jump directly into the configure/settings section
@@ -236,6 +261,7 @@ Already landed:
 - repo skills
 - repo `AGENTS.md` block
 - global `AGENTS.md` block
+- install-surface apply flow for recommended integrations profile
 - hooks
 - custom agents: `sane-agent`, `sane-reviewer`, `sane-explorer`
 
@@ -243,6 +269,10 @@ Remaining order:
 1. optional further overlays
 2. optional user-level Codex settings profile widening
 3. any new repo-level exports beyond the current set, only if clearly justified
+
+Next justified additions to evaluate inside `B4`:
+- optional `Opencode` compatibility surface, kept separate from the default core profile
+- any related merge/preserve/remove coverage needed so `Opencode`-specific writes stay additive and removable
 
 Rules:
 - additive only
@@ -254,7 +284,7 @@ Rules:
 ## B5. Model/Subagent Config Surface
 
 Goal:
-- expose model-role defaults and capability constraints
+- expose routing defaults and capability constraints
 
 Allowed:
 - config schema
@@ -300,6 +330,8 @@ First allowed work:
 - pure evaluation rules
 - tests for the locked philosophy
 - backend/internal inspection only
+- typed history/state plumbing for policy previews
+- bounded read paths for latest policy snapshots
 
 Not allowed yet:
 - pretend policy is complete

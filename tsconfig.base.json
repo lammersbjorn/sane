@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ESNext"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "paths": {
+      "@/*": ["./apps/sane-tui/src/*"],
+      "@sane/config": ["./packages/config/src/index.ts"],
+      "@sane/config/*": ["./packages/config/src/*"],
+      "@sane/control-plane": ["./packages/control-plane/src/index.ts"],
+      "@sane/control-plane/*": ["./packages/control-plane/src/*"],
+      "@sane/core": ["./packages/core/src/index.ts"],
+      "@sane/core/*": ["./packages/core/src/*"],
+      "@sane/framework-assets": ["./packages/framework-assets/src/index.ts"],
+      "@sane/framework-assets/*": ["./packages/framework-assets/src/*"],
+      "@sane/platform": ["./packages/platform/src/index.ts"],
+      "@sane/platform/*": ["./packages/platform/src/*"],
+      "@sane/policy": ["./packages/policy/src/index.ts"],
+      "@sane/policy/*": ["./packages/policy/src/*"],
+      "@sane/state": ["./packages/state/src/index.ts"],
+      "@sane/state/*": ["./packages/state/src/*"]
+    },
+    "strict": true,
+    "noEmit": true,
+    "types": ["node", "vitest/globals"],
+    "skipLibCheck": true
+  }
+}

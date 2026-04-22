@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { createDefaultLocalConfig } from "@sane/config";
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { appendJsonlRecord, createDecisionRecord, stringifyDecisionRecord } from "@sane/state";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { applyCodexProfile, inspectSnapshot, installRuntime } from "../src/index.js";
 import { exportHooks } from "../src/hooks-custom-agents.js";

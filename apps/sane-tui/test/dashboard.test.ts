@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import * as controlPlane from "@sane/control-plane";
 import * as inventory from "@sane/control-plane/inventory.js";
 

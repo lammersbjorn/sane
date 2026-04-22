@@ -5045,7 +5045,7 @@ fn write_codex_config(path: &Path, config: &TomlValue) -> Result<(), String> {
 
 fn read_codex_config(path: &Path) -> Result<TomlValue, String> {
     let body = fs::read_to_string(path).map_err(|error| error.to_string())?;
-    body.parse::<TomlValue>()
+    toml::from_str::<TomlValue>(&body)
         .map_err(|error| format!("invalid config.toml: {error}"))
 }
 

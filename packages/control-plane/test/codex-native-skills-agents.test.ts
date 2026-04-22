@@ -1,0 +1,168 @@
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+import { createDefaultLocalConfig, writeLocalConfig } from "@sane/config";
+import { InventoryStatus } from "@sane/core";
+import {
+  SANE_GLOBAL_AGENTS_BEGIN,
+  SANE_GLOBAL_AGENTS_END,
+  SANE_REPO_AGENTS_BEGIN,
+  SANE_REPO_AGENTS_END,
+  createOptionalPackSkill,
+  createSaneGlobalAgentsOverlay,
+  createSaneRouterSkill
+} from "@sane/framework-assets";
+import { createProjectPaths, createCodexPaths } from "@sane/platform";
+import { afterEach, describe, expect, it } from "vite-plus/test";
+
+import {
+  exportGlobalAgents,
+  exportRepoAgents,
+  exportRepoSkills,
+  exportUserSkills,
+  inspectCodexSkillsAndAgents,
+  uninstallGlobalAgents,
+  uninstallRepoAgents,
+  uninstallRepoSkills,
+  uninstallUserSkills
+} from "../src/codex-native.js";
+
+const tempDirs: string[] = [];
+
+function makeTempDir(): string {
+  const dir = mkdtempSync(join(tmpdir(), "sane-codex-native-"));
+  tempDirs.push(dir);
+  return dir;
+}
+
+afterEach(() => {
+  while (tempDirs.length > 0) {
+    rmSync(tempDirs.pop()!, { force: true, recursive: true });
+  }
+});
+
+describe("codex-native skills and agents", () => {
+  it("exports user skills from local config and installs enabled optional pack skills", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const config = createDefaultLocalConfig();
+    config.packs.caveman = true;
+    writeLocalConfig(projectPaths.configPath, config);
+
+    const result = exportUserSkills(projectPaths, codexPaths);
+    const routerPath = join(codexPaths.userSkillsDir, "sane-router", "SKILL.md");
+    const cavemanPath = join(codexPaths.userSkillsDir, "sane-caveman", "SKILL.md");
+
+    expect(result.summary).toBe("export user-skills: installed sane-router");
+    expect(result.pathsTouched).toContain(routerPath);
+    expect(result.pathsTouched).toContain(cavemanPath);
+    expect(readFileSync(routerPath, "utf8")).toBe(
+      createSaneRouterSkill(
+        {
+          caveman: true,
+          cavemem: false,
+          rtk: false,
+          frontendCraft: false
+        },
+        {
+          coordinatorModel: config.models.coordinator.model,
+          coordinatorReasoning: config.models.coordinator.reasoningEffort,
+          executionModel: "gpt-5.3-codex",
+          executionReasoning: "medium",
+          sidecarModel: config.models.sidecar.model,
+          sidecarReasoning: config.models.sidecar.reasoningEffort,
+          verifierModel: config.models.verifier.model,
+          verifierReasoning: config.models.verifier.reasoningEffort,
+          realtimeModel: "gpt-5.3-codex-spark",
+          realtimeReasoning: "low"
+        }
+      )
+    );
+    expect(readFileSync(cavemanPath, "utf8")).toBe(createOptionalPackSkill("caveman"));
+  });
+
+  it("exports AGENTS blocks additively and uninstalls them without removing user content", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const config = createDefaultLocalConfig();
+    config.packs.rtk = true;
+    writeLocalConfig(projectPaths.configPath, config);
+
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+    writeFileSync(codexPaths.globalAgentsMd, "# User notes\n", "utf8");
+    writeFileSync(projectPaths.repoAgentsMd, "# Repo notes\n", "utf8");
+
+    exportGlobalAgents(projectPaths, codexPaths);
+    exportRepoAgents(projectPaths, codexPaths);
+
+    const globalBody = readFileSync(codexPaths.globalAgentsMd, "utf8");
+    const repoBody = readFileSync(projectPaths.repoAgentsMd, "utf8");
+
+    expect(globalBody).toContain("# User notes");
+    expect(globalBody).toContain(SANE_GLOBAL_AGENTS_BEGIN);
+    expect(globalBody).toContain(SANE_GLOBAL_AGENTS_END);
+    expect(globalBody).toContain("rtk pack active");
+    expect(repoBody).toContain("# Repo notes");
+    expect(repoBody).toContain(SANE_REPO_AGENTS_BEGIN);
+    expect(repoBody).toContain(SANE_REPO_AGENTS_END);
+
+    const uninstallGlobal = uninstallGlobalAgents(codexPaths);
+    const uninstallRepo = uninstallRepoAgents(projectPaths);
+
+    expect(uninstallGlobal.summary).toBe("uninstall global-agents: removed managed block");
+    expect(uninstallRepo.summary).toBe("uninstall repo-agents: removed managed block");
+    expect(readFileSync(codexPaths.globalAgentsMd, "utf8")).toBe("# User notes\n");
+    expect(readFileSync(projectPaths.repoAgentsMd, "utf8")).toBe("# Repo notes\n");
+  });
+
+  it("uninstalls repo and user skills including optional pack skills", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const config = createDefaultLocalConfig();
+    config.packs.cavemem = true;
+    writeLocalConfig(projectPaths.configPath, config);
+
+    exportUserSkills(projectPaths, codexPaths);
+    exportRepoSkills(projectPaths, codexPaths);
+
+    const uninstallUser = uninstallUserSkills(codexPaths);
+    const uninstallRepo = uninstallRepoSkills(projectPaths);
+
+    expect(uninstallUser.summary).toBe("uninstall user-skills: removed sane-router");
+    expect(uninstallRepo.summary).toBe("uninstall repo-skills: removed sane-router");
+    expect(uninstallUser.pathsTouched.some((path) => path.endsWith("/sane-router"))).toBe(true);
+    expect(uninstallRepo.pathsTouched.some((path) => path.endsWith("/sane-cavemem"))).toBe(true);
+  });
+
+  it("inspects codex-native skills and agents inventory with expected statuses", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+    writeFileSync(codexPaths.globalAgentsMd, "# User notes only\n", "utf8");
+
+    const inventory = inspectCodexSkillsAndAgents(projectPaths, codexPaths);
+
+    expect(inventory.find((item) => item.name === "user-skills")?.status).toBe(
+      InventoryStatus.Missing
+    );
+    expect(inventory.find((item) => item.name === "repo-skills")?.status).toBe(
+      InventoryStatus.Disabled
+    );
+    expect(inventory.find((item) => item.name === "repo-agents")?.status).toBe(
+      InventoryStatus.Disabled
+    );
+    expect(inventory.find((item) => item.name === "global-agents")?.status).toBe(
+      InventoryStatus.PresentWithoutSaneBlock
+    );
+  });
+});

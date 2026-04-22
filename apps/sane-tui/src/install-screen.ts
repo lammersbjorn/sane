@@ -1,11 +1,7 @@
 import { type CodexPaths, type ProjectPaths } from "@sane/platform";
-import { InventoryStatus } from "@sane/core";
 
 import { exportAll } from "@sane/control-plane/bundles.js";
-import {
-  applyIntegrationsProfile,
-  inspectIntegrationsProfileStatus
-} from "@sane/control-plane/codex-config.js";
+import { applyIntegrationsProfile } from "@sane/control-plane/codex-config.js";
 import {
   exportGlobalAgents,
   exportRepoAgents,
@@ -17,24 +13,15 @@ import {
   exportHooks
 } from "@sane/control-plane/hooks-custom-agents.js";
 import { executeOperation } from "@sane/control-plane/history.js";
-import { inspectStatusBundle } from "@sane/control-plane/inventory.js";
+import { inspectInstallStatus } from "@sane/control-plane/install-status.js";
 import { listSectionActions } from "@/command-registry.js";
 
 export interface InstallScreenModel {
   summary: "Install";
-  inventory: ReturnType<typeof inspectStatusBundle>["codexNative"];
-  bundleStatus: ReturnType<typeof inspectStatusBundle>["primary"]["installBundle"];
+  inventory: ReturnType<typeof inspectInstallStatus>["inventory"];
+  bundleStatus: ReturnType<typeof inspectInstallStatus>["bundleStatus"];
   missingTargets: string[];
-  recommendedActionId:
-    | "export_user_skills"
-    | "export_repo_skills"
-    | "export_repo_agents"
-    | "export_global_agents"
-    | "apply_integrations_profile"
-    | "export_hooks"
-    | "export_custom_agents"
-    | "export_all"
-    | null;
+  recommendedActionId: ReturnType<typeof inspectInstallStatus>["recommendedActionId"];
   actions: InstallAction[];
   handlers: {
     installUserSkills: () => ReturnType<typeof exportUserSkills>;
@@ -65,17 +52,12 @@ export interface InstallAction {
 }
 
 export function loadInstallScreen(paths: ProjectPaths, codexPaths: CodexPaths): InstallScreenModel {
-  const statusBundle = inspectStatusBundle(paths, codexPaths);
-  const inventory = statusBundle.codexNative;
+  const status = inspectInstallStatus(paths, codexPaths);
+  const inventory = status.inventory;
   const actions = listSectionActions("install").map((action) => ({
     id: action.id as InstallAction["id"],
     title: action.label,
-    status:
-      action.id === "export_all"
-        ? bundleStatus(inventory)
-        : action.id === "apply_integrations_profile"
-          ? integrationsStatus(codexPaths)
-        : inventoryStatus(inventory, inventoryNameForAction(action.id as InstallAction["id"])),
+    status: status.actionStatus[action.id as keyof typeof status.actionStatus],
     repoMutation: action.repoMutation,
     includes: action.includes
   }));
@@ -83,9 +65,9 @@ export function loadInstallScreen(paths: ProjectPaths, codexPaths: CodexPaths): 
   return {
     summary: "Install",
     inventory,
-    bundleStatus: statusBundle.primary.installBundle,
-    missingTargets: missingBundleTargets(inventory),
-    recommendedActionId: recommendedActionId(statusBundle, codexPaths),
+    bundleStatus: status.bundleStatus,
+    missingTargets: status.missingTargets,
+    recommendedActionId: status.recommendedActionId,
     actions,
     handlers: {
       installUserSkills: () => executeOperation(paths, () => exportUserSkills(paths, codexPaths)),
@@ -98,62 +80,4 @@ export function loadInstallScreen(paths: ProjectPaths, codexPaths: CodexPaths): 
       installAll: () => executeOperation(paths, () => exportAll(paths, codexPaths))
     }
   };
-}
-
-function recommendedActionId(
-  statusBundle: ReturnType<typeof inspectStatusBundle>,
-  codexPaths: CodexPaths
-): InstallScreenModel["recommendedActionId"] {
-  return statusBundle.primary.installBundle !== "installed"
-    ? "export_all"
-    : integrationsStatus(codexPaths) !== "installed"
-      ? "apply_integrations_profile"
-      : null;
-}
-
-function inventoryStatus(
-  inventory: ReturnType<typeof inspectStatusBundle>["codexNative"],
-  name: string
-): string {
-  return inventory.find((item) => item.name === name)?.status.displayString() ?? "missing";
-}
-
-function bundleStatus(inventory: ReturnType<typeof inspectStatusBundle>["codexNative"]): string {
-  return missingBundleTargets(inventory).length === 0
-    ? "installed"
-    : "missing";
-}
-
-function missingBundleTargets(
-  inventory: ReturnType<typeof inspectStatusBundle>["codexNative"]
-): string[] {
-  const needed = ["user-skills", "global-agents", "hooks", "custom-agents"] as const;
-  return needed.filter(
-    (name) => inventory.find((item) => item.name === name)?.status !== InventoryStatus.Installed
-  );
-}
-
-function integrationsStatus(codexPaths: CodexPaths): string {
-  return inspectIntegrationsProfileStatus(codexPaths);
-}
-
-function inventoryNameForAction(actionId: InstallAction["id"]): string {
-  switch (actionId) {
-    case "export_user_skills":
-      return "user-skills";
-    case "export_repo_skills":
-      return "repo-skills";
-    case "export_repo_agents":
-      return "repo-agents";
-    case "export_global_agents":
-      return "global-agents";
-    case "apply_integrations_profile":
-      return "codex-config";
-    case "export_hooks":
-      return "hooks";
-    case "export_custom_agents":
-      return "custom-agents";
-    case "export_all":
-      return "user-skills";
-  }
 }

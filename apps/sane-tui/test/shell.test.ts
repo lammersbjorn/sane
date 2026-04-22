@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { parseEventRecordJson, readJsonlRecords } from "@sane/state";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { exportAll } from "@sane/control-plane/bundles.js";
 import { executeOperation } from "@sane/control-plane/history.js";

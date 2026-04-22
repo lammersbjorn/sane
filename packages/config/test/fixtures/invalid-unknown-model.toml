@@ -1,0 +1,13 @@
+version = 1
+
+[models.coordinator]
+model = "fake-model"
+reasoning_effort = "high"
+
+[models.sidecar]
+model = "gpt-5.1-codex-mini"
+reasoning_effort = "medium"
+
+[models.verifier]
+model = "gpt-5.3-codex"
+reasoning_effort = "medium"

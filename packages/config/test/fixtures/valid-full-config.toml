@@ -1,0 +1,23 @@
+version = 1
+
+[models.coordinator]
+model = "gpt-5.2-codex"
+reasoning_effort = "xhigh"
+
+[models.sidecar]
+model = "gpt-5.1-codex-mini"
+reasoning_effort = "low"
+
+[models.verifier]
+model = "gpt-5.3-codex"
+reasoning_effort = "medium"
+
+[privacy]
+telemetry = "product-improvement"
+
+[packs]
+core = true
+caveman = true
+cavemem = true
+rtk = true
+frontend-craft = true

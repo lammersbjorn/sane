@@ -2,7 +2,7 @@ import { type TuiShell, currentAction } from "@/shell.js";
 import { loadDashboardView } from "@/dashboard.js";
 import { loadGetStartedScreen } from "@/get-started-screen.js";
 import { loadInstallScreen } from "@/install-screen.js";
-import { loadInspectScreen } from "@/inspect-screen.js";
+import { inspectOverviewLines, loadInspectScreen } from "@/inspect-screen.js";
 import { loadOverlayModel, type OverlayModel } from "@/overlay-models.js";
 import { loadPreferencesScreen } from "@/preferences-screen.js";
 import { loadRepairScreen } from "@/repair-screen.js";
@@ -113,32 +113,7 @@ function sectionOverviewLines(
       return lines;
     }
     case "inspect": {
-      const inspect = models.inspect();
-      const counts = inspect.statusBundle.counts;
-      return [
-        `status counts: installed ${counts.installed}, configured ${counts.configured}, disabled ${counts.disabled}, missing ${counts.missing}, invalid ${counts.invalid}, drift ${inspect.statusBundle.driftItems.length}`,
-        `primary surfaces: runtime ${statusValue(inspect.statusBundle.primary.runtime)}, codex ${statusValue(inspect.statusBundle.primary.codexConfig)}, user ${statusValue(inspect.statusBundle.primary.userSkills)}, hooks ${statusValue(inspect.statusBundle.primary.hooks)}, custom-agents ${statusValue(inspect.statusBundle.primary.customAgents)}`,
-        `install bundle: ${inspect.statusBundle.primary.installBundle}`,
-        `doctor result: ${inspect.doctor.summary.split("\n")[0] ?? "no doctor output"}`,
-        `runtime summary: ${inspect.runtimeSummary.summary}`,
-        `runtime history: events ${inspect.runtimeHistory.events}, decisions ${inspect.runtimeHistory.decisions}, artifacts ${inspect.runtimeHistory.artifacts}`,
-        inspect.latestPolicyPreview.status === "present"
-          ? `latest policy snapshot: present (${inspect.latestPolicyPreview.scenarioCount} scenarios: ${inspect.latestPolicyPreview.scenarioIds.join(", ")})`
-          : "latest policy snapshot: missing",
-        `local config view: ${inspect.localConfig.summary}`,
-        `Codex config view: ${inspect.codexConfig.summary}`,
-        `integrations audit: ${inspect.integrationsAudit.status} (${inspect.integrationsAudit.recommendedChangeCount} recommended changes)`,
-        `integrations preview: ${inspect.integrationsPreview.summary}`,
-        inspect.driftItems.length === 0
-          ? "export drift view: no current drift detected"
-          : `export drift view: ${inspect.driftItems.map((item) => item.name).join(", ")}`
-      ].concat(
-        inspect.driftItems.map((item) =>
-          item.repairHint
-            ? `${item.name}: ${item.status} (${item.repairHint})`
-            : `${item.name}: ${item.status}`
-        )
-      );
+      return inspectOverviewLines(models.inspect());
     }
     case "install": {
       const install = models.install;
@@ -182,7 +157,7 @@ function sectionOverviewLines(
         removable.length === 0
           ? "removable installs: none currently installed"
           : `removable installs: ${removable.join(", ")}`,
-        `install bundle: ${repair.statusBundle.primary.installBundle}`
+        `install bundle: ${repair.installBundle}`
       ];
     }
     default:
@@ -257,10 +232,6 @@ function footerStatus(
   name: "runtime" | "codex-config" | "user-skills" | "hooks"
 ): string {
   return compactStatus(chipValue(chips, name));
-}
-
-function statusValue(item: { status: { displayString(): string } } | null): string {
-  return item?.status.displayString() ?? "missing";
 }
 
 function chipValue(chips: ReturnType<typeof loadDashboardView>["chips"], id: string): string {

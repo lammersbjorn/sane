@@ -39,6 +39,11 @@ If a tool is powerful but high-privilege or provider-specific, it should move to
   - [Cloudflare MCP server docs](https://developers.cloudflare.com/agents/model-context-protocol/mcp-servers-for-cloudflare/)
 - OpenSRC:
   - [opensrc official site](https://opensrc.sh/)
+- Context Mode:
+  - [mksglu/context-mode](https://github.com/mksglu/context-mode)
+  - [Context Mode benchmark doc](https://raw.githubusercontent.com/mksglu/context-mode/main/BENCHMARK.md)
+- Code Review Graph:
+  - [tirth8205/code-review-graph](https://github.com/tirth8205/code-review-graph)
 - MCP security research:
   - [Beyond the Protocol: Unveiling Attack Vectors in the MCP Ecosystem](https://arxiv.org/abs/2506.02040)
   - [Security and Safety in the MCP Ecosystem](https://arxiv.org/abs/2512.08290)
@@ -174,6 +179,83 @@ Good future shape:
 - preview permissions clearly before install
 - keep it out of the broad recommended profile unless the user explicitly wants Cloudflare tooling
 
+### 9. Context Mode
+
+Verdict:
+- not broad default
+- do not treat as a core Sane pack
+- keep as experimental optional integration only, if at all
+
+Why:
+- the project is real and ambitious:
+  - claims 96% overall context savings across 21 scenarios in its own benchmark doc
+  - uses sandbox tools, local SQLite + FTS5/BM25, and hook-driven session continuity
+  - ships Codex-specific config, hooks, and `AGENTS.md` templates
+- but for Codex specifically it is still blocked on upstream hook dispatch:
+  - the repo's Codex instructions say hook scripts are ready but dispatch is still waiting on upstream wiring
+  - it falls back to copying routing instructions into `AGENTS.md` for model awareness
+- licensing is a direct blocker for core import:
+  - `context-mode` uses `Elastic-2.0`
+  - Sane is `MIT OR Apache-2.0`
+- that collides with Sane's product boundary:
+  - Sane should not require a giant routing layer or turn itself into a context-owning wrapper
+  - Sane treats `AGENTS.md` as optional, not as mandatory glue for normal operation
+
+Useful ideas to steal:
+- sandbox large-output tools before they flood context
+- keep session continuity in thin local state with retrieval, not raw dumps
+- prefer executable analysis over pasting giant outputs into the model
+
+Why not default in Sane:
+- too much ceremony and routing ownership
+- too dependent on hooks that are not ready enough on Codex
+- upstream Codex hook support still looks unsettled / contradictory in their own docs and adapters
+- too close to becoming an alternate operating layer instead of a narrow optional integration
+
+Good future shape:
+- experimental `context-efficiency` integration profile later
+- or selective inspiration inside Sane internals:
+  - better compaction retrieval
+  - better large-output summarization
+  - better local indexing
+
+### 10. Code Review Graph
+
+Verdict:
+- not broad default
+- stronger candidate than Context Mode for a future optional integration profile
+- especially relevant for review / impact / architecture workflows
+
+Why:
+- directly supports Codex installation and MCP config
+- narrower and more additive than Context Mode
+- benchmark claims are more concrete and more obviously aligned with review workflows:
+  - 8.2x average token reduction across 6 repos / 13 commits
+  - 100% recall on impacted-file detection with 0.54 average F1
+  - local SQLite graph, Tree-sitter parsing, incremental updates under 2 seconds on the stated large-repo example
+- but the actual surface is already large and moving:
+  - current code exposes about 30 tools plus 5 prompts
+  - some docs still describe smaller older counts
+- its installer mutates many surfaces that Sane should own itself:
+  - Codex config
+  - hooks
+  - `AGENTS.md` / other platform rule files
+  - git hooks
+
+Why not broad default:
+- review/impact analysis is valuable, but narrower than docs lookup, browser verification, or public-code search
+- adds local indexing/watch hooks and nontrivial repo analysis machinery
+- payoff is highest on larger repos and multi-file review work, not every Codex session
+- direct `code-review-graph install` would conflict with Sane's additive/reversible managed-surface contract
+
+Good future shape:
+- optional `review-intel` or `graph-review` profile later
+- possible custom Sane MCP inspiration for:
+  - blast-radius analysis
+  - affected-test discovery
+  - architecture / dependency summaries
+  - monorepo-aware code review workflows
+
 ## Security Implication
 
 The research strongly supports a conservative default posture:
@@ -202,10 +284,12 @@ Keep this profile intentionally small:
 - `vercel`
 - `supabase-dev`
 - `cloudflare`
+- `review-intel` / `graph-review`
 
 ### Experimental / advanced only
 
 - `OpenSRC`
+- `Context Mode`
 
 ## Decision
 
@@ -216,3 +300,5 @@ Update the current `recommended-integrations` stance to:
 - remove `OpenSRC` from default recommended profile
 - move GitHub/Vercel/Supabase into provider-specific optional profiles later
 - move Cloudflare into provider-specific optional profiles later
+- keep `Context Mode` experimental only unless Codex-native hook maturity improves and the integration can stay optional/additive
+- treat `Code Review Graph` as a promising later optional review/impact profile, not a broad default

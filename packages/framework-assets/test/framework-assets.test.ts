@@ -1,0 +1,223 @@
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { describe, expect, it } from "vite-plus/test";
+
+import {
+  SANE_AGENT_NAME,
+  SANE_CAVEMAN_PACK_SKILL_NAME,
+  SANE_EXPLORER_AGENT_NAME,
+  SANE_FRONTEND_CRAFT_PACK_SKILL_NAME,
+  SANE_REVIEWER_AGENT_NAME,
+  createDefaultGuidancePacks,
+  createOptionalPackSkill,
+  createSaneAgentTemplate,
+  createSaneExplorerAgentTemplate,
+  createSaneGlobalAgentsOverlay,
+  createSaneReviewerAgentTemplate,
+  createSaneRouterSkill,
+  optionalPackSkillName,
+  type GuidancePacks,
+  type ModelRoleGuidance,
+  type ModelRoutingGuidance
+} from "../src/index.js";
+
+const TEST_DIR = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = resolve(TEST_DIR, "../../..");
+const CORE_PACK_ROOT = resolve(REPO_ROOT, "packs/core");
+
+interface CorePackManifest {
+  name: string;
+  assets: {
+    routerSkill: string;
+    globalOverlay: string;
+    repoOverlay: string;
+    agents: {
+      primary: string;
+      reviewer: string;
+      explorer: string;
+    };
+  };
+  optionalPacks: Record<
+    string,
+    {
+      skillName: string;
+      skillPath: string;
+      routerNote: string;
+      overlayNote: string;
+    }
+  >;
+}
+
+function roleGuidance(): ModelRoutingGuidance {
+  return {
+    coordinatorModel: "gpt-5.4",
+    coordinatorReasoning: "high",
+    executionModel: "gpt-5.3-codex",
+    executionReasoning: "medium",
+    sidecarModel: "gpt-5.4-mini",
+    sidecarReasoning: "medium",
+    verifierModel: "gpt-5.4",
+    verifierReasoning: "medium",
+    realtimeModel: "gpt-5.3-codex-spark",
+    realtimeReasoning: "low"
+  };
+}
+
+function readCoreManifest(): CorePackManifest {
+  return JSON.parse(readFileSync(resolve(CORE_PACK_ROOT, "manifest.json"), "utf8")) as CorePackManifest;
+}
+
+function readCoreAsset(path: string): string {
+  return readFileSync(resolve(CORE_PACK_ROOT, path), "utf8");
+}
+
+function renderTemplate(template: string, replacements: Record<string, string>): string {
+  return Object.entries(replacements).reduce(
+    (body, [key, value]) => body.replaceAll(`{{${key}}}`, value),
+    template
+  );
+}
+
+describe("framework asset parity", () => {
+  it("core pack manifest describes the managed asset files", () => {
+    const manifest = readCoreManifest();
+
+    expect(manifest.name).toBe("core");
+    expect(manifest.assets.routerSkill).toBe("skills/sane-router.md.tmpl");
+    expect(manifest.assets.globalOverlay).toBe("overlays/global-agents.md.tmpl");
+    expect(manifest.assets.repoOverlay).toBe("overlays/repo-agents.md.tmpl");
+    expect(manifest.assets.agents.primary).toBe("agents/sane-agent.toml.tmpl");
+    expect(manifest.assets.agents.reviewer).toBe("agents/sane-reviewer.toml.tmpl");
+    expect(manifest.assets.agents.explorer).toBe("agents/sane-explorer.toml.tmpl");
+    expect(manifest.optionalPacks.caveman.skillName).toBe(SANE_CAVEMAN_PACK_SKILL_NAME);
+    expect(manifest.optionalPacks["frontend-craft"].skillName).toBe(
+      SANE_FRONTEND_CRAFT_PACK_SKILL_NAME
+    );
+  });
+
+  it("router skill renders from the checked-in core template", () => {
+    const roles = roleGuidance();
+    const packs: GuidancePacks = {
+      caveman: true,
+      cavemem: false,
+      rtk: true,
+      frontendCraft: false
+    };
+    const manifest = readCoreManifest();
+    const template = readCoreAsset(manifest.assets.routerSkill);
+    const body = createSaneRouterSkill(packs, roles);
+    const expected = renderTemplate(template, {
+      COORDINATOR_MODEL: roles.coordinatorModel,
+      COORDINATOR_REASONING: roles.coordinatorReasoning,
+      EXECUTION_MODEL: roles.executionModel,
+      EXECUTION_REASONING: roles.executionReasoning,
+      SIDECAR_MODEL: roles.sidecarModel,
+      SIDECAR_REASONING: roles.sidecarReasoning,
+      VERIFIER_MODEL: roles.verifierModel,
+      VERIFIER_REASONING: roles.verifierReasoning,
+      REALTIME_MODEL: roles.realtimeModel,
+      REALTIME_REASONING: roles.realtimeReasoning,
+      ENABLED_PACK_ROUTER_NOTES: [
+        "- caveman pack active: prefer terse, token-efficient prose when normal clarity still holds",
+        "- rtk pack active: if RTK policy is present, route shell work through RTK instead of raw shell"
+      ].join("\n")
+    });
+
+    expect(body).toBe(expected);
+    expect(body).toContain("custom agents");
+    expect(body).not.toContain("{{");
+  });
+
+  it("global overlay renders from the checked-in core template", () => {
+    const roles = roleGuidance();
+    const packs: GuidancePacks = {
+      caveman: false,
+      cavemem: true,
+      rtk: false,
+      frontendCraft: true
+    };
+    const manifest = readCoreManifest();
+    const template = readCoreAsset(manifest.assets.globalOverlay);
+    const body = createSaneGlobalAgentsOverlay(packs, roles);
+    const expected = renderTemplate(template, {
+      COORDINATOR_MODEL: roles.coordinatorModel,
+      COORDINATOR_REASONING: roles.coordinatorReasoning,
+      EXECUTION_MODEL: roles.executionModel,
+      EXECUTION_REASONING: roles.executionReasoning,
+      SIDECAR_MODEL: roles.sidecarModel,
+      SIDECAR_REASONING: roles.sidecarReasoning,
+      VERIFIER_MODEL: roles.verifierModel,
+      VERIFIER_REASONING: roles.verifierReasoning,
+      REALTIME_MODEL: roles.realtimeModel,
+      REALTIME_REASONING: roles.realtimeReasoning,
+      ENABLED_PACK_OVERLAY_NOTES: [
+        "- cavemem pack active: prefer compact durable memory and handoff summaries",
+        "- frontend-craft pack active: for frontend work, avoid generic AI aesthetics and push for stronger craft"
+      ].join("\n")
+    });
+
+    expect(body).toBe(expected);
+    expect(body).toContain("cavemem pack active");
+    expect(body).toContain("frontend-craft pack active");
+    expect(body).not.toContain("caveman pack active");
+    expect(body).not.toContain("rtk pack active");
+    expect(body).not.toContain("{{");
+  });
+
+  it("optional pack skills resolve directly from checked-in files", () => {
+    const manifest = readCoreManifest();
+    const cases: Array<[string, string]> = [
+      ["caveman", SANE_CAVEMAN_PACK_SKILL_NAME],
+      ["frontend-craft", SANE_FRONTEND_CRAFT_PACK_SKILL_NAME]
+    ];
+
+    for (const [pack, name] of cases) {
+      expect(optionalPackSkillName(pack)).toBe(name);
+      expect(createOptionalPackSkill(pack)).toBe(
+        readCoreAsset(manifest.optionalPacks[pack].skillPath)
+      );
+    }
+
+    const frontendCraft = createOptionalPackSkill("frontend-craft");
+    expect(frontendCraft).toContain("Taste-inspired frontend craft");
+    expect(frontendCraft).toContain("gpt-taste");
+    expect(frontendCraft).toContain("DESIGN_VARIANCE");
+    expect(frontendCraft).toContain("avoid generic AI frontend aesthetics");
+  });
+
+  it("custom agent templates render from checked-in files", () => {
+    const roles = roleGuidance();
+    const manifest = readCoreManifest();
+
+    const agent = createSaneAgentTemplate(roles);
+    const reviewer = createSaneReviewerAgentTemplate(roles);
+    const explorer = createSaneExplorerAgentTemplate(roles);
+    const expectedAgent = renderTemplate(readCoreAsset(manifest.assets.agents.primary), {
+      MODEL: roles.coordinatorModel,
+      MODEL_REASONING: roles.coordinatorReasoning
+    });
+    const expectedReviewer = renderTemplate(readCoreAsset(manifest.assets.agents.reviewer), {
+      MODEL: roles.verifierModel,
+      MODEL_REASONING: roles.verifierReasoning
+    });
+    const expectedExplorer = renderTemplate(readCoreAsset(manifest.assets.agents.explorer), {
+      MODEL: roles.sidecarModel,
+      MODEL_REASONING: roles.sidecarReasoning
+    });
+
+    expect(agent).toBe(expectedAgent);
+    expect(agent).toContain(`name = "${SANE_AGENT_NAME.replace("-", "_")}"`);
+    expect(agent).toContain(`model = "${roles.coordinatorModel}"`);
+    expect(reviewer).toBe(expectedReviewer);
+    expect(reviewer).toContain(`name = "${SANE_REVIEWER_AGENT_NAME.replace("-", "_")}"`);
+    expect(reviewer).toContain(`model = "${roles.verifierModel}"`);
+    expect(explorer).toBe(expectedExplorer);
+    expect(explorer).toContain(`name = "${SANE_EXPLORER_AGENT_NAME.replace("-", "_")}"`);
+    expect(explorer).toContain(`model = "${roles.sidecarModel}"`);
+    expect(agent).not.toContain("{{");
+    expect(reviewer).not.toContain("{{");
+    expect(explorer).not.toContain("{{");
+  });
+});

@@ -49,9 +49,9 @@ Current managed targets are:
 8. narrow explicit opt-in profile management for user-level Codex config at `~/.codex/config.toml`
 
 Current managed export behavior also depends on local config:
-- exported `sane-router` skill content can reflect enabled guidance packs and current model-role defaults
-- exported global `AGENTS.md` overlay can reflect enabled guidance packs and current model-role defaults
-- status/doctor should flag those assets as invalid when current exports drift from enabled guidance-pack or model-role config
+- exported `sane-router` skill content can reflect enabled guidance packs and current routing defaults
+- exported global `AGENTS.md` overlay can reflect enabled guidance packs and current routing defaults
+- status/doctor should flag those assets as invalid when current exports drift from enabled guidance-pack or routing config
 - enabled optional packs can materialize as additional managed user skills during `export_user_skills`
 - enabled optional packs can materialize as additional managed repo skills during `export_repo_skills`
 - repo-local AGENTS overlay export reuses the same guidance body as the global overlay, but with repo-scoped markers and opt-in behavior
@@ -69,7 +69,7 @@ These are the backend actions the TUI is allowed to call in the current phase.
 
 - `show_config`
   - read config from `.sane/config.local.toml`
-  - display current model-role defaults
+  - display current routing defaults
 
 - `show_codex_config`
   - read `~/.codex/config.toml` if present
@@ -88,6 +88,7 @@ These are the backend actions the TUI is allowed to call in the current phase.
 
 - `preview_integrations_profile`
   - compute read-only recommended integrations changes separately from the core profile
+  - return structured audit details for install/config surfaces (recommended adds, existing entries, skips, and touched config scopes)
   - current recommended set:
     - `context7`
     - `playwright`
@@ -102,6 +103,7 @@ These are the backend actions the TUI is allowed to call in the current phase.
     - `mcp_servers.grep_app`
   - leave `opensrc` outside the default recommended profile
   - preserve all unrelated user config
+  - emit post-apply structured audit details that match preview categories
 
 - `preview_cloudflare_profile`
   - compute read-only optional provider profile changes for Cloudflare
@@ -135,7 +137,8 @@ These are the backend actions the TUI is allowed to call in the current phase.
 - `preview_policy`
   - internal/backend inspection only for now
   - render canonical adaptive-policy scenarios into typed output
-  - include the current configured coordinator / sidecar / verifier plan for each scenario
+  - include editable role defaults plus derived routing classes for each scenario
+  - keep typed scenario/orchestration/trace payloads available for internal history/state plumbing even if current user-facing render stays compact
   - exist to verify obligation rules without pretending live orchestration is complete
 
 ### Doctor / Status
@@ -239,9 +242,11 @@ Current implementation note:
 - inventory is now explicitly scoped as either `local runtime` or `codex-native`
 - current TUI status panel renders those two groups separately
 - current hooks target is user-level only and uses the `sane` binary itself as the managed `SessionStart` command
+- current Windows behavior marks hooks as unavailable/invalid and should steer users toward WSL for hook-enabled flows
 - current custom-agents target installs two read-only managed agents: `sane-reviewer` and `sane-explorer`
 - current Codex config work supports narrow explicit opt-in writes for the core profile
 - current integrations profile work supports narrow explicit opt-in writes for recommended MCP servers only
+- current install/inspect integrations UI consumes the structured integrations audit payload instead of rebuilding its own diff logic
 - current Cloudflare profile work supports separate explicit opt-in provider-profile writes only
 
 ## TUI Boundary Rule

@@ -1,0 +1,10 @@
+{
+  "name": "@sane/state",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vp test run",
+    "test:watch": "vp test",
+    "typecheck": "tsc --project tsconfig.json"
+  }
+}

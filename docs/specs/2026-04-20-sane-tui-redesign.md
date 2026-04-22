@@ -1,10 +1,10 @@
 # Sane TUI Redesign
 
-Last updated: 2026-04-20
+Last updated: 2026-04-22
 
 Purpose:
 - replace the current cluttered terminal UI with a cleaner onboarding-first structure
-- keep `ratatui`
+- keep the TUI renderer-agnostic at the app-model boundary
 - make `Sane` feel intentionally designed instead of debug-panel driven
 
 Related:
@@ -21,6 +21,22 @@ The TUI should feel like:
 - not an internal backend demo
 
 ## Current Screen Model
+
+## Current TS Model Layers
+
+- shell layer
+  - `apps/sane-tui/src/shell.ts`
+  - `apps/sane-tui/src/shell-layer.ts`
+- view-model layer
+  - `apps/sane-tui/src/dashboard.ts`
+  - `apps/sane-tui/src/app-view.ts`
+  - `apps/sane-tui/src/result-panel-layer.ts`
+- editor-state layer
+  - `apps/sane-tui/src/preferences-editor-state.ts`
+- overlay layer
+  - `apps/sane-tui/src/overlay-models.ts`
+
+These layers are already implemented in TypeScript and should stay thin, typed, and renderer-friendly.
 
 ### 1. Welcome Shell
 
@@ -99,6 +115,7 @@ Content:
 
 - status summary
 - doctor result
+- runtime handoff state (`current-run`, `summary`, `brief`)
 - local config view
 - Codex config view
 - export drift view
@@ -116,6 +133,7 @@ Content:
 - global `AGENTS.md` block
 - hooks
 - custom agents (`sane-agent`, `sane-reviewer`, `sane-explorer`)
+- integrations-profile actions should render backend structured audit output directly so users can see exact recommended adds before apply, and inspect/install overview copy should consume that same typed audit state instead of parsing preview summaries
 - install all supported user-level items together
 
 ### 6. Repair
@@ -128,6 +146,7 @@ Content:
 - reinstall / repair runtime
 - backup Codex config
 - restore Codex config
+- explicit local telemetry reset
 - uninstall selected managed installs
 - uninstall all
 

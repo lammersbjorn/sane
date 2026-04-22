@@ -35,7 +35,7 @@ Owns:
 - managed hooks
 - managed custom agents
 - optional global `AGENTS.md` overlay
-- model-role defaults
+- routing defaults
 - privacy defaults
 
 Why `v1`:
@@ -75,18 +75,40 @@ Why `v1`:
 ### 5. `frontend-craft`
 
 Initial contents:
-- `uncodixfy`
+- `Taste Skill` / `gpt-taste`
 - `impeccable`
 
 Why bundled together in `v1`:
 - both serve the same broad user problem:
   avoiding generic AI frontend output
 - better as one install choice than two half-explained packs at launch
+- current upstream direction is stronger with `Taste Skill` than `Uncodixfy`:
+  - `Uncodixfy` is mostly a negative rule set that blocks common GPT UI habits
+  - `Taste Skill` is a broader frontend skill family with a general skill, GPT/Codex-oriented variant, redesign flow, and output-completeness companion
+  - `Taste Skill` explicitly positions `gpt-taste` / dedicated GPT variants for GPT/Codex use, while `Uncodixfy` stays closer to a single anti-pattern file
+- recommendation:
+  - replace `uncodixfy` as the primary upstream reference inside `frontend-craft`
+  - keep `frontend-craft` as one curated Sane pack, not a raw mirror of every upstream skill file
+
+Current references:
+- [Taste Skill site](https://www.tasteskill.dev/)
+- [Taste Skill GitHub](https://github.com/Leonxlnx/taste-skill)
+- [Leon Lin on X about Taste Skill overlap/design rules](https://x.com/LexnLin/status/2046715400843325685)
+- [Uncodixfy GitHub](https://github.com/cyxzdev/uncodixfy)
+
+Extra signal:
+- the public Taste positioning is not just "make it prettier"
+- it explicitly pushes:
+  - GPT/Codex-oriented `gpt-taste`
+  - design dials like variance / motion / density
+  - anti-slop patterns
+  - stronger authorship around layout and motion
+- that lines up better with Sane's `frontend-craft` goal than a narrower anti-pattern list
 
 ## Not Recommended As Separate `v1` Packs
 
 Do not split these yet:
-- `uncodixfy` standalone pack
+- `Taste Skill` standalone pack
 - `impeccable` standalone pack
 
 Reason:
@@ -193,5 +215,6 @@ Do not expose a public pack API yet.
 
 `R1` answer:
 - `v1` should ship a curated builtin set of five packs: `core`, `caveman`, `cavemem`, `rtk`, and `frontend-craft`.
-- `uncodixfy` and `impeccable` should stay bundled together initially under `frontend-craft`.
+- `frontend-craft` should use `Taste Skill` as the primary upstream inspiration/reference instead of `Uncodixfy`.
+- `Taste Skill`-style frontend direction and `impeccable` should stay bundled together initially under `frontend-craft`.
 - marketplace/plugin extensibility remains deferred until after `v1`.

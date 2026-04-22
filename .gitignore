@@ -1,4 +1,10 @@
 /target
 /.sane
+/node_modules
+/.turbo
+/.pnpm-store
+**/node_modules
+**/.vite
+coverage
 .DS_Store
 Thumbs.db

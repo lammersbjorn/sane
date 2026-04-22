@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { createDefaultLocalConfig } from "@sane/config";
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { applyCodexProfile, backupCodexConfig } from "@sane/control-plane/codex-config.js";
 import { exportAll } from "@sane/control-plane";

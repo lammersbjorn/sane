@@ -1,0 +1,39 @@
+{
+  "name": "core",
+  "assets": {
+    "routerSkill": "skills/sane-router.md.tmpl",
+    "globalOverlay": "overlays/global-agents.md.tmpl",
+    "repoOverlay": "overlays/repo-agents.md.tmpl",
+    "agents": {
+      "primary": "agents/sane-agent.toml.tmpl",
+      "reviewer": "agents/sane-reviewer.toml.tmpl",
+      "explorer": "agents/sane-explorer.toml.tmpl"
+    }
+  },
+  "optionalPacks": {
+    "caveman": {
+      "skillName": "sane-caveman",
+      "skillPath": "skills/optional/sane-caveman.md",
+      "routerNote": "- caveman pack active: prefer terse, token-efficient prose when normal clarity still holds",
+      "overlayNote": "- caveman pack active: default to terse, token-aware prose when it does not reduce correctness"
+    },
+    "cavemem": {
+      "skillName": "sane-cavemem",
+      "skillPath": "skills/optional/sane-cavemem.md",
+      "routerNote": "- cavemem pack active: keep durable summaries compact and high-signal during long sessions",
+      "overlayNote": "- cavemem pack active: prefer compact durable memory and handoff summaries"
+    },
+    "rtk": {
+      "skillName": "sane-rtk",
+      "skillPath": "skills/optional/sane-rtk.md",
+      "routerNote": "- rtk pack active: if RTK policy is present, route shell work through RTK instead of raw shell",
+      "overlayNote": "- rtk pack active: when RTK policy exists, prefer RTK-routed shell execution"
+    },
+    "frontend-craft": {
+      "skillName": "sane-frontend-craft",
+      "skillPath": "skills/optional/sane-frontend-craft.md",
+      "routerNote": "- frontend-craft pack active: avoid generic AI frontend output; prefer distinctive, production-grade interface craft",
+      "overlayNote": "- frontend-craft pack active: for frontend work, avoid generic AI aesthetics and push for stronger craft"
+    }
+  }
+}

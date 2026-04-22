@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { appendJsonlRecord, createDecisionRecord, stringifyDecisionRecord } from "@sane/state";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { loadAppView } from "@/app-view.js";
 import { createTuiShell, moveSelection, runSelectedAction, selectSection } from "@/shell.js";
@@ -75,6 +75,39 @@ describe("app view", () => {
     expect(view.sectionOverviewLines.join("\n")).toContain("integrations audit");
     expect(view.sectionOverviewLines.join("\n")).toContain("install bundle");
     expect(view.sectionOverviewLines.join("\n")).toContain("export drift view");
+  });
+
+  it("uses inspect overview selector instead of unpacking inspect status bundle in app-view", async () => {
+    vi.resetModules();
+    vi.doMock("@/inspect-screen.js", () => {
+      const inspectModel: Record<string, unknown> = {
+        summary: "Inspect",
+        actions: [],
+        overviewLines: ["from-model-overview-lines"]
+      };
+      Object.defineProperty(inspectModel, "statusBundle", {
+        get() {
+          throw new Error("app-view read inspect.statusBundle directly");
+        }
+      });
+
+      return {
+        loadInspectScreen: vi.fn(() => inspectModel),
+        inspectOverviewLines: vi.fn(() => ["from-inspect-overview-selector"])
+      };
+    });
+
+    const { loadAppView: loadAppViewWithMock } = await import("@/app-view.js");
+    const inspectScreen = await import("@/inspect-screen.js");
+    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
+    selectSection(shell, "inspect");
+
+    const view = loadAppViewWithMock(shell);
+
+    expect(view.sectionOverviewLines).toEqual(["from-inspect-overview-selector"]);
+    expect(vi.mocked(inspectScreen.inspectOverviewLines)).toHaveBeenCalledTimes(1);
+    vi.doUnmock("@/inspect-screen.js");
+    vi.resetModules();
   });
 
   it("surfaces invalid install drift in Inspect guidance", () => {
