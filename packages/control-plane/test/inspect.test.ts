@@ -44,6 +44,7 @@ describe("inspect snapshot", () => {
     expect(snapshot.statusBundle.primary.runtime?.status.displayString()).toBe("installed");
     expect(snapshot.status.summary).toContain("managed targets inspected");
     expect(snapshot.doctor.summary).toContain("hooks: installed");
+    expect(snapshot.doctorHeadline).toBe("runtime: ok");
     expect(snapshot.runtimeSummary.summary).toContain("runtime-summary:");
     expect(snapshot.runtimeHistory).toEqual({
       events: 0,
@@ -125,5 +126,6 @@ describe("inspect snapshot", () => {
       tsUnix: 1_700_000_003,
       summary: "policy preview: rendered adaptive obligation scenarios"
     });
+    expect(snapshot.doctorHeadline).toBe("runtime: ok");
   });
 });

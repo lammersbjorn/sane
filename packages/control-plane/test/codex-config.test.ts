@@ -12,11 +12,16 @@ import {
   applyOpencodeProfile,
   backupCodexConfig,
   inspectCloudflareProfileAudit,
+  inspectCloudflareProfileApplyResult,
+  inspectCloudflareProfileStatus,
   inspectCodexConfigBackupSnapshot,
   inspectCodexProfileAudit,
   inspectIntegrationsProfileAudit,
+  inspectIntegrationsProfileApplyResult,
   inspectIntegrationsProfileStatus,
   inspectOpencodeProfileAudit,
+  inspectOpencodeProfileApplyResult,
+  inspectOpencodeProfileStatus,
   previewCloudflareProfile,
   previewCodexProfile,
   previewIntegrationsProfile,
@@ -244,6 +249,27 @@ describe("codex config control plane", () => {
     expect(inspectIntegrationsProfileStatus(codexPaths)).toBe("installed");
   });
 
+  it("reports typed integrations-profile apply result without scraping apply summary strings", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    expect(inspectIntegrationsProfileApplyResult(codexPaths)).toMatchObject({
+      status: "ready",
+      recommendedChangeCount: 3,
+      appliedKeys: ["mcp_servers.context7", "mcp_servers.playwright", "mcp_servers.grep_app"]
+    });
+
+    applyIntegrationsProfile(projectPaths, codexPaths);
+
+    expect(inspectIntegrationsProfileApplyResult(codexPaths)).toMatchObject({
+      status: "already_satisfied",
+      recommendedChangeCount: 0,
+      appliedKeys: []
+    });
+  });
+
   it("reports structured cloudflare-profile audit state without scraping preview strings", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
@@ -265,6 +291,40 @@ describe("codex config control plane", () => {
     });
   });
 
+  it("reports cloudflare-profile status through a narrow helper", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    expect(inspectCloudflareProfileStatus(codexPaths)).toBe("missing");
+
+    applyCloudflareProfile(projectPaths, codexPaths);
+
+    expect(inspectCloudflareProfileStatus(codexPaths)).toBe("installed");
+  });
+
+  it("reports typed cloudflare-profile apply result without scraping apply summary strings", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    expect(inspectCloudflareProfileApplyResult(codexPaths)).toMatchObject({
+      status: "ready",
+      recommendedChangeCount: 1,
+      appliedKeys: ["mcp_servers.cloudflare-api"]
+    });
+
+    applyCloudflareProfile(projectPaths, codexPaths);
+
+    expect(inspectCloudflareProfileApplyResult(codexPaths)).toMatchObject({
+      status: "already_satisfied",
+      recommendedChangeCount: 0,
+      appliedKeys: []
+    });
+  });
+
   it("reports structured opencode-profile audit state without scraping preview strings", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
@@ -283,6 +343,40 @@ describe("codex config control plane", () => {
       status: "installed",
       recommendedChangeCount: 0,
       target: "opensrc"
+    });
+  });
+
+  it("reports opencode-profile status through a narrow helper", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    expect(inspectOpencodeProfileStatus(codexPaths)).toBe("missing");
+
+    applyOpencodeProfile(projectPaths, codexPaths);
+
+    expect(inspectOpencodeProfileStatus(codexPaths)).toBe("installed");
+  });
+
+  it("reports typed opencode-profile apply result without scraping apply summary strings", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    expect(inspectOpencodeProfileApplyResult(codexPaths)).toMatchObject({
+      status: "ready",
+      recommendedChangeCount: 1,
+      appliedKeys: ["mcp_servers.opensrc"]
+    });
+
+    applyOpencodeProfile(projectPaths, codexPaths);
+
+    expect(inspectOpencodeProfileApplyResult(codexPaths)).toMatchObject({
+      status: "already_satisfied",
+      recommendedChangeCount: 0,
+      appliedKeys: []
     });
   });
 

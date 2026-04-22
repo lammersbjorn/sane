@@ -48,7 +48,7 @@ export function inspectOverviewLines(snapshot: InspectScreenSnapshot): string[] 
     `status counts: installed ${counts.installed}, configured ${counts.configured}, disabled ${counts.disabled}, missing ${counts.missing}, invalid ${counts.invalid}, drift ${snapshot.statusBundle.driftItems.length}`,
     `primary surfaces: runtime ${primary.runtime}, codex ${primary.codexConfig}, user ${primary.userSkills}, hooks ${primary.hooks}, custom-agents ${primary.customAgents}`,
     `install bundle: ${snapshot.statusBundle.primary.installBundle}`,
-    `doctor result: ${snapshot.doctor.summary.split("\n")[0] ?? "no doctor output"}`,
+    `doctor result: ${snapshot.doctorHeadline}`,
     `runtime summary (read-only local visibility): ${snapshot.runtimeSummary.summary}`,
     `runtime history (read-only local visibility): events ${snapshot.runtimeHistory.events}, decisions ${snapshot.runtimeHistory.decisions}, artifacts ${snapshot.runtimeHistory.artifacts}`,
     formatLatestPolicyPreviewLine(snapshot.latestPolicyPreview),

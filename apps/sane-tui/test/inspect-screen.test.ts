@@ -115,6 +115,7 @@ describe("inspect screen model", () => {
         }
       },
       doctor: { summary: "doctor: hooks invalid" },
+      doctorHeadline: "doctor: hooks invalid",
       runtimeSummary: { summary: "runtime-summary: no local handoff state" },
       runtimeHistory: { events: 0, decisions: 0, artifacts: 0 },
       latestPolicyPreview: { status: "missing" },
@@ -170,6 +171,7 @@ describe("inspect screen model", () => {
     expect(screen.statusBundle.primary.runtime?.status.displayString()).toBe("installed");
     expect(screen.status.summary).toContain("managed targets inspected");
     expect(screen.doctor.summary).toContain("hooks: installed");
+    expect(screen.doctorHeadline).toBe("runtime: ok");
     expect(screen.runtimeSummary.summary).toContain("runtime-summary:");
     expect(screen.runtimeSummary.details.join("\n")).toContain("current-run:");
     expect(screen.localConfig.summary).toContain("config: ok");

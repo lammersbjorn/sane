@@ -74,6 +74,7 @@ export interface InspectSnapshot {
   };
   statusBundle: ReturnType<typeof inspectStatusBundle>;
   doctor: ReturnType<typeof doctor>;
+  doctorHeadline: string;
   runtimeSummary: ReturnType<typeof showRuntimeSummary>;
   runtimeHistory: {
     events: number;
@@ -183,6 +184,7 @@ export function showRuntimeProgress(paths: ProjectPaths): RuntimeProgressSnapsho
 export function inspectSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): InspectSnapshot {
   const statusBundle = inspectStatusBundle(paths, codexPaths);
   const runtimeState = inspectRuntimeStateSnapshot(paths);
+  const doctorResult = doctorForStatusBundle(paths, codexPaths, statusBundle);
 
   return {
     status: {
@@ -190,7 +192,8 @@ export function inspectSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): In
       inventory: statusBundle.inventory
     },
     statusBundle,
-    doctor: doctorForStatusBundle(paths, codexPaths, statusBundle),
+    doctor: doctorResult,
+    doctorHeadline: doctorSummaryHeadline(doctorResult),
     runtimeSummary: buildRuntimeSummary(paths, runtimeState),
     runtimeHistory: runtimeState.historyCounts,
     latestPolicyPreview: runtimeState.latestPolicyPreview,
@@ -266,6 +269,10 @@ function buildRuntimeSummary(paths: ProjectPaths, runtimeState: RuntimeStateSnap
     details,
     pathsTouched: runtimeStatePaths(paths)
   });
+}
+
+function doctorSummaryHeadline(result: ReturnType<typeof doctor>): string {
+  return result.summary.split("\n")[0] ?? "no doctor output";
 }
 
 export function inspectLatestPolicyPreview(paths: ProjectPaths): LatestPolicyPreviewSnapshot {
