@@ -120,8 +120,10 @@ Implemented:
 - invalid Codex/integrations/cloudflare/opencode previews now say `blocked by invalid config` instead of pretending there are `0 recommended change(s)`
 - Start Here onboarding can now derive from a preloaded typed status bundle, and app-view threads shell status bundle through that path instead of forcing a fresh onboarding status-bundle rebuild
 - Install can now derive from a preloaded typed status bundle too, and app-view threads shell status bundle through that path instead of forcing a second install status-bundle rebuild
+- Repair can now derive from a preloaded typed status bundle too, and app-view threads shell status bundle through that path when the repair section is opened instead of forcing another repair status-bundle rebuild
 - install/repair action rows now use one shared TUI builder and preserve typed status objects instead of flattening them into strings at screen load time
 - TUI Inspect now shows read-only policy-preview snapshot visibility derived from the latest current run instead of command-only access
+- Inspect overview presentation now lives in a shared control-plane presenter, with drift/provenance formatting pulled out of the TUI screen layer
 - TUI now requires confirmation for risky apply/restore/uninstall actions
 - TUI repair now exposes local telemetry reset as a first-class confirmed action instead of only a privacy-editor shortcut
 - TUI inspect now exposes read-only runtime handoff state for `current-run`, `summary`, and `brief`

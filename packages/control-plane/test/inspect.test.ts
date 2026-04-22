@@ -7,7 +7,12 @@ import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { appendJsonlRecord, createDecisionRecord, stringifyDecisionRecord } from "@sane/state";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 
-import { applyCodexProfile, inspectSnapshot, installRuntime } from "../src/index.js";
+import {
+  applyCodexProfile,
+  formatInspectOverviewLines,
+  inspectSnapshot,
+  installRuntime
+} from "../src/index.js";
 import { exportHooks } from "../src/hooks-custom-agents.js";
 import { saveConfig } from "../src/preferences.js";
 
@@ -74,6 +79,13 @@ describe("inspect snapshot", () => {
     expect(snapshot.driftItems).toEqual([]);
     expect(snapshot.policyPreview.summary).toBe(
       "policy preview: rendered adaptive obligation scenarios"
+    );
+    const overview = formatInspectOverviewLines(snapshot).join("\n");
+
+    expect(overview).toContain("status counts:");
+    expect(overview).toContain("primary surfaces:");
+    expect(overview).toContain(
+      "optional pack provenance: caveman configured (sane-caveman; derived from caveman); cavemem disabled (no skills; derived from cavemem); rtk disabled (no skills; internal); frontend-craft disabled (design-taste-frontend + impeccable; derived from taste-skill + impeccable)"
     );
   });
 
@@ -170,5 +182,10 @@ describe("inspect snapshot", () => {
       latestArtifact: null
     });
     expect(snapshot.doctorHeadline).toBe("runtime: ok");
+    const overview = formatInspectOverviewLines(snapshot).join("\n");
+
+    expect(overview).toContain("export drift view: config, hooks");
+    expect(overview).toContain("config: invalid");
+    expect(overview).toContain("hooks: invalid (repair ~/.codex/hooks.json or remove conflicting JSON)");
   });
 });

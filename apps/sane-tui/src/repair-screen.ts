@@ -10,10 +10,12 @@ import { uninstallGlobalAgents, uninstallUserSkills } from "@sane/control-plane/
 import { uninstallCustomAgents, uninstallHooks } from "@sane/control-plane/hooks-custom-agents.js";
 import { uninstallOpencodeAgents } from "@sane/control-plane/opencode-native.js";
 import {
+  inspectRepairStatusFromStatusBundle,
   inspectRepairStatus,
   type RepairActionStatus,
   type RepairActionStatusId
 } from "@sane/control-plane/repair-status.js";
+import { inspectStatusBundle } from "@sane/control-plane/inventory.js";
 import { uninstallRepoAgents, uninstallRepoSkills } from "@sane/control-plane";
 import { installRuntime } from "@sane/control-plane";
 import { resetTelemetryData } from "@sane/control-plane/preferences.js";
@@ -51,8 +53,14 @@ export interface RepairScreenModel {
   };
 }
 
-export function loadRepairScreen(paths: ProjectPaths, codexPaths: CodexPaths): RepairScreenModel {
-  const status = inspectRepairStatus(paths, codexPaths);
+export function loadRepairScreen(
+  paths: ProjectPaths,
+  codexPaths: CodexPaths,
+  statusBundle?: ReturnType<typeof inspectStatusBundle>
+): RepairScreenModel {
+  const status = statusBundle
+    ? inspectRepairStatusFromStatusBundle(paths, codexPaths, statusBundle)
+    : inspectRepairStatus(paths, codexPaths);
   const actions = buildRepairActionRows(listSectionActions("repair"), status.actionStatus);
 
   return {

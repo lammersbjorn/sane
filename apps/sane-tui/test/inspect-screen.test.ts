@@ -9,7 +9,7 @@ import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { applyCodexProfile } from "@sane/control-plane/codex-config.js";
 import { exportHooks } from "@sane/control-plane/hooks-custom-agents.js";
-import { installRuntime } from "@sane/control-plane";
+import { formatInspectOverviewLines as formatSharedInspectOverviewLines, installRuntime } from "@sane/control-plane";
 import { saveConfig } from "@sane/control-plane/preferences.js";
 import { inspectOverviewLines, loadInspectScreen } from "@/inspect-screen.js";
 
@@ -29,7 +29,7 @@ afterEach(() => {
 
 describe("inspect screen model", () => {
   it("includes hook repair hints in overview lines", () => {
-    const lines = inspectOverviewLines({
+    const snapshot = {
       statusBundle: {
         counts: {
           installed: 0,
@@ -143,7 +143,8 @@ describe("inspect screen model", () => {
           repairHint: "Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows."
         }
       ]
-    } as any);
+    } as any;
+    const lines = inspectOverviewLines(snapshot);
 
     expect(lines).toContain(
       "hooks: invalid (Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows.)"
@@ -151,6 +152,7 @@ describe("inspect screen model", () => {
     expect(lines).toContain(
       "optional pack provenance: caveman configured (sane-caveman; derived from caveman); cavemem disabled (no skills; derived from cavemem); rtk disabled (no skills; internal); frontend-craft disabled (design-taste-frontend + impeccable; derived from taste-skill + impeccable)"
     );
+    expect(lines).toEqual(formatSharedInspectOverviewLines(snapshot));
   });
 
   it("aggregates backend inspect surfaces for the TUI", () => {
@@ -254,7 +256,7 @@ describe("inspect screen model", () => {
     });
     expect(screen.driftItems).toEqual([]);
     expect(screen.policyPreview.summary).toBe("policy preview: rendered adaptive obligation scenarios");
-    expect(screen.overviewLines).toEqual(inspectOverviewLines(screen));
+    expect(screen.overviewLines).toEqual(formatSharedInspectOverviewLines(screen));
     expect(screen.overviewLines.join("\n")).toContain("status counts:");
     expect(screen.overviewLines.join("\n")).toContain("primary surfaces:");
     expect(screen.overviewLines.join("\n")).toContain("doctor result:");

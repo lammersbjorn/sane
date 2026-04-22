@@ -301,6 +301,7 @@ export * from "./codex-config.js";
 export * from "./bundles.js";
 export * from "./history.js";
 export * from "./inventory.js";
+export * from "./inspect-presenter.js";
 export * from "./opencode-native.js";
 export * from "./policy-preview.js";
 export * from "./policy-preview-presenter.js";

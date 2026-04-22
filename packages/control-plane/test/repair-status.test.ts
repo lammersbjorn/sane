@@ -9,8 +9,12 @@ import { afterEach, describe, expect, it } from "vite-plus/test";
 import { applyCodexProfile, backupCodexConfig } from "../src/codex-config.js";
 import { CORE_INSTALL_BUNDLE_TARGETS } from "../src/core-install-bundle-targets.js";
 import { exportAll } from "../src/index.js";
-import { inspectRepairStatus } from "../src/repair-status.js";
+import {
+  inspectRepairStatus,
+  inspectRepairStatusFromStatusBundle
+} from "../src/repair-status.js";
 import { installRuntime } from "../src/index.js";
+import { inspectStatusBundle } from "../src/inventory.js";
 import { saveConfig } from "../src/preferences.js";
 
 const tempDirs: string[] = [];
@@ -110,5 +114,25 @@ describe("repair status snapshot", () => {
         uninstall_all: { kind: "installed", label: "installed" }
       })
     });
+  });
+
+  it("keeps bundle-based repair snapshot aligned with the wrapper helper", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const config = createDefaultLocalConfig();
+
+    installRuntime(paths, codexPaths);
+    saveConfig(paths, config);
+    applyCodexProfile(paths, codexPaths);
+    backupCodexConfig(paths, codexPaths);
+    exportAll(paths, codexPaths);
+
+    const bundle = inspectStatusBundle(paths, codexPaths);
+
+    expect(inspectRepairStatusFromStatusBundle(paths, codexPaths, bundle)).toEqual(
+      inspectRepairStatus(paths, codexPaths)
+    );
   });
 });

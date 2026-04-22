@@ -50,7 +50,14 @@ export function inspectRepairStatus(
   paths: ProjectPaths,
   codexPaths: CodexPaths
 ): RepairStatusSnapshot {
-  const statusBundle = inspectStatusBundle(paths, codexPaths);
+  return inspectRepairStatusFromStatusBundle(paths, codexPaths, inspectStatusBundle(paths, codexPaths));
+}
+
+export function inspectRepairStatusFromStatusBundle(
+  paths: ProjectPaths,
+  _codexPaths: CodexPaths,
+  statusBundle: ReturnType<typeof inspectStatusBundle>
+): RepairStatusSnapshot {
   const telemetry = inspectTelemetrySnapshot(paths);
   const backups = inspectCodexConfigBackupSnapshot(paths);
   const restoreStatus = backups.restoreAvailable ? statusDto("available") : statusDto("missing");

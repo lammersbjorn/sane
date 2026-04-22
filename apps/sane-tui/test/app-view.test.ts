@@ -169,6 +169,31 @@ describe("app view", () => {
     vi.resetModules();
   });
 
+  it("threads shell status bundle into repair when the repair section is opened", async () => {
+    vi.resetModules();
+    vi.doMock("@/repair-screen.js", async () => {
+      const actual = await vi.importActual<typeof import("@/repair-screen.js")>("@/repair-screen.js");
+      return {
+        ...actual,
+        loadRepairScreen: vi.fn(actual.loadRepairScreen)
+      };
+    });
+
+    const { loadAppView: loadAppViewWithSpy } = await import("@/app-view.js");
+    const repairScreen = await import("@/repair-screen.js");
+    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
+    selectSection(shell, "repair");
+
+    loadAppViewWithSpy(shell);
+
+    expect(vi.mocked(repairScreen.loadRepairScreen)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(repairScreen.loadRepairScreen).mock.calls[0]?.[2]).toBe(
+      shell.statusSnapshot.statusBundle
+    );
+    vi.doUnmock("@/repair-screen.js");
+    vi.resetModules();
+  });
+
   it("surfaces invalid install drift in Inspect guidance", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();

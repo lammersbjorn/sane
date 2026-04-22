@@ -4,12 +4,14 @@ import { join } from "node:path";
 
 import { createDefaultLocalConfig } from "@sane/config";
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { applyCodexProfile, backupCodexConfig } from "@sane/control-plane/codex-config.js";
 import { exportAll } from "@sane/control-plane";
 import { installRuntime } from "@sane/control-plane";
+import * as inventory from "@sane/control-plane/inventory.js";
 import { saveConfig } from "@sane/control-plane/preferences.js";
+import * as repairStatus from "@sane/control-plane/repair-status.js";
 import { loadRepairScreen } from "@/repair-screen.js";
 
 const tempDirs: string[] = [];
@@ -153,5 +155,22 @@ describe("repair screen model", () => {
       kind: "installed",
       label: "installed"
     });
+  });
+
+  it("uses the preloaded status bundle path when provided", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const bundle = inventory.inspectStatusBundle(paths, codexPaths);
+    const fromBundleSpy = vi.spyOn(repairStatus, "inspectRepairStatusFromStatusBundle");
+    const wrapperSpy = vi.spyOn(repairStatus, "inspectRepairStatus");
+
+    const screen = loadRepairScreen(paths, codexPaths, bundle);
+
+    expect(fromBundleSpy).toHaveBeenCalledTimes(1);
+    expect(fromBundleSpy).toHaveBeenCalledWith(paths, codexPaths, bundle);
+    expect(wrapperSpy).not.toHaveBeenCalled();
+    expect(screen.installBundle).toBe("missing");
   });
 });
