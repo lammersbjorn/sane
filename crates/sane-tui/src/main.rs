@@ -24,8 +24,8 @@ use sane_core::{
     OperationKind, OperationResult, OperationRewriteMetadata, SANE_AGENT_NAME,
     SANE_EXPLORER_AGENT_NAME, SANE_GLOBAL_AGENTS_BEGIN, SANE_GLOBAL_AGENTS_END,
     SANE_REPO_AGENTS_BEGIN, SANE_REPO_AGENTS_END, SANE_REVIEWER_AGENT_NAME, SANE_ROUTER_SKILL_NAME,
-    sane_agent, sane_explorer_agent, sane_global_agents_overlay, sane_optional_pack_skill,
-    sane_optional_pack_skill_name, sane_reviewer_agent, sane_router_skill,
+    sane_agent, sane_explorer_agent, sane_global_agents_overlay, sane_optional_pack_skill_names,
+    sane_optional_pack_skills, sane_reviewer_agent, sane_router_skill,
 };
 use sane_platform::{CodexPaths, ProjectPaths, detect_platform};
 use sane_policy::{
@@ -3433,7 +3433,9 @@ fn format_guidance_packs(packs: GuidancePacks) -> String {
     enabled.join(", ")
 }
 
-fn enabled_optional_pack_skills(packs: GuidancePacks) -> Vec<(&'static str, String)> {
+fn enabled_optional_pack_skills(
+    packs: GuidancePacks,
+) -> Vec<(String, String, Vec<(String, String)>)> {
     ["caveman", "cavemem", "rtk", "frontend-craft"]
         .into_iter()
         .filter(|name| match *name {
@@ -3443,7 +3445,19 @@ fn enabled_optional_pack_skills(packs: GuidancePacks) -> Vec<(&'static str, Stri
             "frontend-craft" => packs.frontend_craft,
             _ => false,
         })
-        .filter_map(|name| sane_optional_pack_skill(name).map(|body| (name, body)))
+        .flat_map(|name| {
+            sane_optional_pack_skills(name).into_iter().map(|skill| {
+                (
+                    skill.name,
+                    skill.content,
+                    skill
+                        .resources
+                        .into_iter()
+                        .map(|resource| (resource.path, resource.content))
+                        .collect::<Vec<_>>(),
+                )
+            })
+        })
         .collect()
 }
 
@@ -4001,26 +4015,49 @@ fn pack_skill_status(
     codex_paths: &CodexPaths,
     pack_name: &str,
 ) -> InventoryStatus {
-    let Some(skill_name) = sane_optional_pack_skill_name(pack_name) else {
+    let expected_skills = sane_optional_pack_skills(pack_name);
+    if expected_skills.is_empty() {
         return InventoryStatus::Configured;
-    };
-    let Some(expected) = sane_optional_pack_skill(pack_name) else {
-        return InventoryStatus::Configured;
-    };
-    let user_skill_path = codex_paths
-        .user_skills_dir
-        .join(skill_name)
-        .join("SKILL.md");
-    let repo_skill_path = paths.repo_skills_dir.join(skill_name).join("SKILL.md");
+    }
 
-    for skill_path in [&user_skill_path, &repo_skill_path] {
-        if !skill_path.exists() {
-            continue;
+    for skills_root in [&codex_paths.user_skills_dir, &paths.repo_skills_dir] {
+        let mut found_any = false;
+        let mut matched_all = true;
+
+        for skill in &expected_skills {
+            let skill_dir = skills_root.join(&skill.name);
+            let skill_path = skill_dir.join("SKILL.md");
+            let skill_dir_present = skill_dir.exists();
+
+            match fs::read_to_string(&skill_path) {
+                Ok(body) => {
+                    found_any = true;
+                    if body != skill.content {
+                        return InventoryStatus::Invalid;
+                    }
+
+                    for resource in &skill.resources {
+                        match fs::read_to_string(skill_dir.join(&resource.path)) {
+                            Ok(body) if body == resource.content => {}
+                            Ok(_) | Err(_) => return InventoryStatus::Invalid,
+                        }
+                    }
+                }
+                Err(_) => {
+                    if skill_dir_present {
+                        return InventoryStatus::Invalid;
+                    }
+                    matched_all = false;
+                }
+            }
         }
 
-        match fs::read_to_string(skill_path) {
-            Ok(body) if body == expected => return InventoryStatus::Installed,
-            Ok(_) | Err(_) => return InventoryStatus::Configured,
+        if matched_all && found_any {
+            return InventoryStatus::Installed;
+        }
+
+        if found_any {
+            return InventoryStatus::Configured;
         }
     }
 
@@ -4289,21 +4326,30 @@ fn export_skills_target(
     fs::write(&skill_path, sane_router_skill(packs, &roles)).map_err(|error| error.to_string())?;
     let mut paths_touched = vec![skill_path.display().to_string()];
 
-    for (pack_name, content) in enabled_optional_pack_skills(packs) {
-        let skill_name = sane_optional_pack_skill_name(pack_name).expect("pack skill name");
-        let pack_dir = skills_root.join(skill_name);
+    for (skill_name, content, resources) in enabled_optional_pack_skills(packs) {
+        let pack_dir = skills_root.join(&skill_name);
         fs::create_dir_all(&pack_dir).map_err(|error| error.to_string())?;
         let pack_path = pack_dir.join("SKILL.md");
         fs::write(&pack_path, content).map_err(|error| error.to_string())?;
         paths_touched.push(pack_path.display().to_string());
+
+        for (resource_path, resource_content) in resources {
+            let full_path = pack_dir.join(&resource_path);
+            if let Some(parent) = full_path.parent() {
+                fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+            }
+            fs::write(&full_path, resource_content).map_err(|error| error.to_string())?;
+            paths_touched.push(full_path.display().to_string());
+        }
     }
 
     for pack_name in disabled_optional_pack_names(packs) {
-        let skill_name = sane_optional_pack_skill_name(pack_name).expect("pack skill name");
-        let pack_dir = skills_root.join(skill_name);
-        if pack_dir.exists() {
-            fs::remove_dir_all(&pack_dir).map_err(|error| error.to_string())?;
-            paths_touched.push(pack_dir.display().to_string());
+        for skill_name in sane_optional_pack_skill_names(pack_name) {
+            let pack_dir = skills_root.join(skill_name);
+            if pack_dir.exists() {
+                fs::remove_dir_all(&pack_dir).map_err(|error| error.to_string())?;
+                paths_touched.push(pack_dir.display().to_string());
+            }
         }
     }
 
@@ -4463,7 +4509,7 @@ fn uninstall_skills_target(
     let skill_path = skill_dir.join("SKILL.md");
     let optional_dirs = ["caveman", "cavemem", "rtk", "frontend-craft"]
         .into_iter()
-        .filter_map(sane_optional_pack_skill_name)
+        .flat_map(sane_optional_pack_skill_names)
         .map(|name| skills_root.join(name))
         .collect::<Vec<_>>();
 
@@ -5045,8 +5091,7 @@ fn write_codex_config(path: &Path, config: &TomlValue) -> Result<(), String> {
 
 fn read_codex_config(path: &Path) -> Result<TomlValue, String> {
     let body = fs::read_to_string(path).map_err(|error| error.to_string())?;
-    toml::from_str::<TomlValue>(&body)
-        .map_err(|error| format!("invalid config.toml: {error}"))
+    toml::from_str::<TomlValue>(&body).map_err(|error| format!("invalid config.toml: {error}"))
 }
 
 fn write_codex_config_backup(
@@ -6027,8 +6072,21 @@ mod tests {
             .path()
             .join(".agents")
             .join("skills")
-            .join("sane-frontend-craft")
+            .join("design-taste-frontend")
             .join("SKILL.md");
+        let impeccable_path = home
+            .path()
+            .join(".agents")
+            .join("skills")
+            .join("impeccable")
+            .join("SKILL.md");
+        let impeccable_reference_path = home
+            .path()
+            .join(".agents")
+            .join("skills")
+            .join("impeccable")
+            .join("reference")
+            .join("typography.md");
         let body = std::fs::read_to_string(skill_path).unwrap();
 
         assert!(body.contains("caveman pack active"));
@@ -6038,6 +6096,8 @@ mod tests {
         assert!(caveman_path.exists());
         assert!(rtk_path.exists());
         assert!(frontend_craft_path.exists());
+        assert!(impeccable_path.exists());
+        assert!(impeccable_reference_path.exists());
     }
 
     #[test]

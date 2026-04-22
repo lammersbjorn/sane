@@ -3,7 +3,8 @@ pub const SANE_ROUTER_SKILL_NAME: &str = "sane-router";
 pub const SANE_CAVEMAN_PACK_SKILL_NAME: &str = "sane-caveman";
 pub const SANE_CAVEMEM_PACK_SKILL_NAME: &str = "sane-cavemem";
 pub const SANE_RTK_PACK_SKILL_NAME: &str = "sane-rtk";
-pub const SANE_FRONTEND_CRAFT_PACK_SKILL_NAME: &str = "sane-frontend-craft";
+pub const SANE_FRONTEND_CRAFT_PACK_SKILL_NAME: &str = "design-taste-frontend";
+pub const SANE_FRONTEND_REVIEW_PACK_SKILL_NAME: &str = "impeccable";
 pub const SANE_AGENT_NAME: &str = "sane-agent";
 pub const SANE_REVIEWER_AGENT_NAME: &str = "sane-reviewer";
 pub const SANE_EXPLORER_AGENT_NAME: &str = "sane-explorer";
@@ -11,6 +12,32 @@ pub const SANE_GLOBAL_AGENTS_BEGIN: &str = "<!-- sane:global-agents:start -->";
 pub const SANE_GLOBAL_AGENTS_END: &str = "<!-- sane:global-agents:end -->";
 pub const SANE_REPO_AGENTS_BEGIN: &str = "<!-- sane:repo-agents:start -->";
 pub const SANE_REPO_AGENTS_END: &str = "<!-- sane:repo-agents:end -->";
+
+const DESIGN_TASTE_FRONTEND_BODY: &str =
+    include_str!("../../../packs/core/skills/vendor/frontend/taste-skill/SKILL.md");
+const IMPECCABLE_BODY: &str =
+    include_str!("../../../packs/core/skills/vendor/frontend/impeccable/SKILL.md");
+const IMPECCABLE_COLOR_AND_CONTRAST: &str = include_str!(
+    "../../../packs/core/skills/vendor/frontend/impeccable/reference/color-and-contrast.md"
+);
+const IMPECCABLE_CRAFT: &str =
+    include_str!("../../../packs/core/skills/vendor/frontend/impeccable/reference/craft.md");
+const IMPECCABLE_INTERACTION_DESIGN: &str = include_str!(
+    "../../../packs/core/skills/vendor/frontend/impeccable/reference/interaction-design.md"
+);
+const IMPECCABLE_MOTION_DESIGN: &str = include_str!(
+    "../../../packs/core/skills/vendor/frontend/impeccable/reference/motion-design.md"
+);
+const IMPECCABLE_RESPONSIVE_DESIGN: &str = include_str!(
+    "../../../packs/core/skills/vendor/frontend/impeccable/reference/responsive-design.md"
+);
+const IMPECCABLE_SPATIAL_DESIGN: &str = include_str!(
+    "../../../packs/core/skills/vendor/frontend/impeccable/reference/spatial-design.md"
+);
+const IMPECCABLE_TYPOGRAPHY: &str =
+    include_str!("../../../packs/core/skills/vendor/frontend/impeccable/reference/typography.md");
+const IMPECCABLE_UX_WRITING: &str =
+    include_str!("../../../packs/core/skills/vendor/frontend/impeccable/reference/ux-writing.md");
 
 struct OptionalPackSpec {
     key: &'static str,
@@ -20,6 +47,19 @@ struct OptionalPackSpec {
     bullets: &'static [&'static str],
     router_note: &'static str,
     overlay_note: &'static str,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ManagedSkillResource {
+    pub path: String,
+    pub content: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ManagedSkillAsset {
+    pub name: String,
+    pub content: String,
+    pub resources: Vec<ManagedSkillResource>,
 }
 
 const OPTIONAL_PACKS: &[OptionalPackSpec] = &[
@@ -72,8 +112,8 @@ const OPTIONAL_PACKS: &[OptionalPackSpec] = &[
             "- prefer distinctive, production-grade interface craft",
             "- keep frontend output intentional, polished, and high-signal",
         ],
-        router_note: "- frontend-craft pack active: avoid generic AI frontend output; prefer distinctive, production-grade interface craft",
-        overlay_note: "- frontend-craft pack active: for frontend work, avoid generic AI aesthetics and push for stronger craft",
+        router_note: "- frontend-craft pack active: use `design-taste-frontend` for implementation/restyling and `impeccable` for critique/review tasks",
+        overlay_note: "- frontend-craft pack active: for frontend work, pick the real task-specific frontend skills (`design-taste-frontend`, `impeccable`) instead of vague pack wrappers",
     },
 ];
 
@@ -380,11 +420,85 @@ pub fn sane_global_agents_overlay(packs: GuidancePacks, roles: &ModelRoleGuidanc
 }
 
 pub fn sane_optional_pack_skill_name(pack: &str) -> Option<&'static str> {
-    optional_pack_spec(pack).map(|spec| spec.skill_name)
+    sane_optional_pack_skill_names(pack).into_iter().next()
 }
 
 pub fn sane_optional_pack_skill(pack: &str) -> Option<String> {
-    optional_pack_spec(pack).map(OptionalPackSpec::skill_body)
+    sane_optional_pack_skills(pack)
+        .into_iter()
+        .next()
+        .map(|skill| skill.content)
+}
+
+pub fn sane_optional_pack_skill_names(pack: &str) -> Vec<&'static str> {
+    match pack {
+        "frontend-craft" => vec![
+            SANE_FRONTEND_CRAFT_PACK_SKILL_NAME,
+            SANE_FRONTEND_REVIEW_PACK_SKILL_NAME,
+        ],
+        _ => optional_pack_spec(pack)
+            .map(|spec| vec![spec.skill_name])
+            .unwrap_or_default(),
+    }
+}
+
+pub fn sane_optional_pack_skills(pack: &str) -> Vec<ManagedSkillAsset> {
+    match pack {
+        "frontend-craft" => vec![
+            ManagedSkillAsset {
+                name: SANE_FRONTEND_CRAFT_PACK_SKILL_NAME.to_string(),
+                content: DESIGN_TASTE_FRONTEND_BODY.to_string(),
+                resources: vec![],
+            },
+            ManagedSkillAsset {
+                name: SANE_FRONTEND_REVIEW_PACK_SKILL_NAME.to_string(),
+                content: IMPECCABLE_BODY.to_string(),
+                resources: vec![
+                    ManagedSkillResource {
+                        path: "reference/color-and-contrast.md".to_string(),
+                        content: IMPECCABLE_COLOR_AND_CONTRAST.to_string(),
+                    },
+                    ManagedSkillResource {
+                        path: "reference/craft.md".to_string(),
+                        content: IMPECCABLE_CRAFT.to_string(),
+                    },
+                    ManagedSkillResource {
+                        path: "reference/interaction-design.md".to_string(),
+                        content: IMPECCABLE_INTERACTION_DESIGN.to_string(),
+                    },
+                    ManagedSkillResource {
+                        path: "reference/motion-design.md".to_string(),
+                        content: IMPECCABLE_MOTION_DESIGN.to_string(),
+                    },
+                    ManagedSkillResource {
+                        path: "reference/responsive-design.md".to_string(),
+                        content: IMPECCABLE_RESPONSIVE_DESIGN.to_string(),
+                    },
+                    ManagedSkillResource {
+                        path: "reference/spatial-design.md".to_string(),
+                        content: IMPECCABLE_SPATIAL_DESIGN.to_string(),
+                    },
+                    ManagedSkillResource {
+                        path: "reference/typography.md".to_string(),
+                        content: IMPECCABLE_TYPOGRAPHY.to_string(),
+                    },
+                    ManagedSkillResource {
+                        path: "reference/ux-writing.md".to_string(),
+                        content: IMPECCABLE_UX_WRITING.to_string(),
+                    },
+                ],
+            },
+        ],
+        _ => optional_pack_spec(pack)
+            .map(|spec| {
+                vec![ManagedSkillAsset {
+                    name: spec.skill_name.to_string(),
+                    content: spec.skill_body(),
+                    resources: vec![],
+                }]
+            })
+            .unwrap_or_default(),
+    }
 }
 
 pub fn sane_reviewer_agent(roles: &ModelRoleGuidance) -> String {
@@ -401,6 +515,8 @@ Review with Sane philosophy:
 - focus on real bugs, regressions, safety gaps, and missing tests
 - be terse and specific
 - cite concrete files and behavior
+- when optional packs expose dedicated review skills, prefer them over generic pack guidance
+- frontend example: use `impeccable` for frontend critique instead of reusing the build skill
 - do not propose speculative churn
 """
 "#,
@@ -423,6 +539,8 @@ Work with Sane philosophy:
 - commands and rituals optional
 - prefer the lightest process that still gets the result done
 - adapt model/subagent use to the task
+- when optional packs expose multiple concrete skills, pick the most task-specific one instead of leaning on a vague pack umbrella
+- frontend example: use `design-taste-frontend` for implementation/restyling and `impeccable` for critique/audit
 - keep repo mutation explicit
 - verify meaningful changes before claiming success
 """
@@ -458,7 +576,8 @@ Explore with Sane philosophy:
 mod tests {
     use super::{
         GuidancePacks, ModelRoleGuidance, OPTIONAL_PACKS, sane_global_agents_overlay,
-        sane_optional_pack_skill, sane_optional_pack_skill_name, sane_router_skill,
+        sane_optional_pack_skill, sane_optional_pack_skill_name, sane_optional_pack_skill_names,
+        sane_optional_pack_skills, sane_router_skill,
     };
 
     fn role_guidance() -> ModelRoleGuidance {
@@ -497,9 +616,31 @@ mod tests {
     }
 
     #[test]
-    fn optional_pack_skill_uses_stable_heading() {
+    fn optional_pack_skill_exports_expected_bundles() {
         for spec in OPTIONAL_PACKS {
             let body = sane_optional_pack_skill(spec.key).expect("known pack");
+
+            if spec.key == "frontend-craft" {
+                let skills = sane_optional_pack_skills(spec.key);
+                assert_eq!(
+                    sane_optional_pack_skill_names(spec.key),
+                    vec!["design-taste-frontend", "impeccable"]
+                );
+                assert_eq!(
+                    sane_optional_pack_skill_name(spec.key),
+                    Some("design-taste-frontend")
+                );
+                assert_eq!(skills.len(), 2);
+                assert!(body.contains("# High-Agency Frontend Skill"));
+                assert!(skills[1].content.contains("name: impeccable"));
+                assert!(
+                    skills[1]
+                        .resources
+                        .iter()
+                        .any(|resource| resource.path == "reference/typography.md")
+                );
+                continue;
+            }
 
             assert_eq!(
                 sane_optional_pack_skill_name(spec.key),
