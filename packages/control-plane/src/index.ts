@@ -211,7 +211,7 @@ export function inspectSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): In
     runtimeHistory: runtimeState.historyCounts,
     runtimeHistoryPreview: runtimeState.historyPreview,
     latestPolicyPreview: runtimeState.latestPolicyPreview,
-    localConfig: showConfig(paths),
+    localConfig: showConfig(paths, codexPaths),
     codexConfig: showCodexConfig(codexPaths),
     integrationsAudit: inspectIntegrationsProfileAudit(codexPaths),
     integrationsApply: inspectIntegrationsProfileApplyResult(codexPaths),

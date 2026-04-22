@@ -340,7 +340,7 @@ function executeUiCommand(
     case "install_runtime":
       return executeOperation(paths, () => installRuntime(paths, codexPaths));
     case "show_config":
-      return executeOperation(paths, () => showConfig(paths));
+      return executeOperation(paths, () => showConfig(paths, codexPaths));
     case "show_codex_config":
       return executeOperation(paths, () => showCodexConfig(codexPaths));
     case "show_runtime_summary":

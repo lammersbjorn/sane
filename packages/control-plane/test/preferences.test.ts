@@ -64,6 +64,30 @@ describe("preferences control plane", () => {
     ]);
   });
 
+  it("shows derived routing and telemetry file details when codex context is available", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const config = createDefaultLocalConfig();
+
+    saveConfig(paths, config);
+    const result = showConfig(paths, codexPaths);
+
+    expect(result.details).toEqual([
+      "version: 1",
+      "coordinator: gpt-5.4 (high)",
+      "sidecar: gpt-5.4-mini (medium)",
+      "verifier: gpt-5.4 (high)",
+      "explorer: gpt-5.4-mini (low) (derived)",
+      "execution: gpt-5.3-codex (medium) (derived)",
+      "realtime: gpt-5.3-codex-spark (low) (derived)",
+      "telemetry files: summary missing, events missing, queue missing",
+      "telemetry: off",
+      "packs: core"
+    ]);
+  });
+
   it("saves config with rewrite metadata and creates telemetry files when enabled", () => {
     const projectRoot = makeTempDir();
     const paths = createProjectPaths(projectRoot);

@@ -65,6 +65,9 @@ describe("inspect snapshot", () => {
       summary: null
     });
     expect(snapshot.localConfig.summary).toContain("config: ok");
+    expect(snapshot.localConfig.details).toContain("explorer: gpt-5.4-mini (low) (derived)");
+    expect(snapshot.localConfig.details).toContain("execution: gpt-5.3-codex (medium) (derived)");
+    expect(snapshot.localConfig.details).toContain("realtime: gpt-5.3-codex-spark (low) (derived)");
     expect(snapshot.codexConfig.summary).toContain("codex-config: ok");
     expect(snapshot.integrationsAudit.status).toBe("missing");
     expect(snapshot.integrationsPreview.summary).toContain("integrations-profile preview");

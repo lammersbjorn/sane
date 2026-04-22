@@ -227,6 +227,28 @@ function selectedActionHelpLines(
     ];
   }
 
+  if (action.id === "show_config") {
+    const model = inspect();
+    return [
+      `Selected action: ${action.label}`,
+      "",
+      ...action.help,
+      "",
+      ...model.localConfig.details
+    ];
+  }
+
+  if (action.id === "show_codex_config") {
+    const model = inspect();
+    return [
+      `Selected action: ${action.label}`,
+      "",
+      ...action.help,
+      "",
+      ...model.codexConfig.details
+    ];
+  }
+
   if (action.id === "preview_policy") {
     const model = inspect();
     return [

@@ -5,7 +5,9 @@ import { join } from "node:path";
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { appendJsonlRecord, createDecisionRecord, stringifyDecisionRecord } from "@sane/state";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
-import { installRuntime } from "@sane/control-plane";
+import { applyCodexProfile, installRuntime } from "@sane/control-plane";
+import { createDefaultLocalConfig } from "@sane/config";
+import { saveConfig } from "@sane/control-plane/preferences.js";
 
 import { loadAppView } from "@/app-view.js";
 import { createTuiShell, moveSelection, runSelectedAction, selectSection } from "@/shell.js";
@@ -229,6 +231,49 @@ describe("app view", () => {
     expect(view.selectedHelpLines.join("\n")).toContain("latest event (read-only local visibility):");
     expect(view.selectedHelpLines.join("\n")).toContain("latest decision (read-only local visibility):");
     expect(view.selectedHelpLines.join("\n")).toContain("latest artifact (read-only local visibility):");
+  });
+
+  it("surfaces enriched local config payload in Preferences guidance", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    saveConfig(paths, createDefaultLocalConfig());
+
+    const shell = createTuiShell(paths, codexPaths);
+    selectSection(shell, "preferences");
+    for (let index = 0; index < 3; index += 1) {
+      moveSelection(shell, "action", 1);
+    }
+
+    const view = loadAppView(shell);
+
+    expect(view.selectedAction.id).toBe("show_config");
+    expect(view.selectedHelpLines.join("\n")).toContain("version: 1");
+    expect(view.selectedHelpLines.join("\n")).toContain("explorer: gpt-5.4-mini (low) (derived)");
+    expect(view.selectedHelpLines.join("\n")).toContain("execution: gpt-5.3-codex (medium) (derived)");
+    expect(view.selectedHelpLines.join("\n")).toContain("realtime: gpt-5.3-codex-spark (low) (derived)");
+  });
+
+  it("surfaces codex config payload in Preferences guidance", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    saveConfig(paths, createDefaultLocalConfig());
+    applyCodexProfile(paths, codexPaths);
+
+    const shell = createTuiShell(paths, codexPaths);
+    selectSection(shell, "preferences");
+    for (let index = 0; index < 4; index += 1) {
+      moveSelection(shell, "action", 1);
+    }
+
+    const view = loadAppView(shell);
+
+    expect(view.selectedAction.id).toBe("show_codex_config");
+    expect(view.selectedHelpLines.join("\n")).toContain("model:");
+    expect(view.selectedHelpLines.join("\n")).toContain("reasoning:");
   });
 
   it("surfaces the latest typed policy snapshot in Inspect guidance", () => {

@@ -48,7 +48,7 @@ export interface TelemetrySnapshot {
   queuePresent: boolean;
 }
 
-export function showConfig(paths: ProjectPaths): OperationResult {
+export function showConfig(paths: ProjectPaths, codexPaths?: CodexPaths): OperationResult {
   const configState = inspectSavedLocalConfig(paths);
   if (configState.kind !== "loaded") {
     return new OperationResult({
@@ -76,7 +76,10 @@ export function showConfig(paths: ProjectPaths): OperationResult {
   return new OperationResult({
     kind: OperationKind.ShowConfig,
     summary: `config: ok at ${paths.configPath}`,
-    details: configDetails(config),
+    details: configDetails(
+      config,
+      codexPaths ? inspectPreferencesSnapshot(paths, codexPaths) : null
+    ),
     pathsTouched: [paths.configPath],
     inventory: [
       {
@@ -194,16 +197,46 @@ export function inspectTelemetrySnapshot(paths: ProjectPaths): TelemetrySnapshot
   };
 }
 
-function configDetails(config: LocalConfig): string[] {
-  return [
+function configDetails(
+  config: LocalConfig,
+  preferences: PreferencesSnapshot | null
+): string[] {
+  const lines = [
     `version: ${config.version}`,
     `coordinator: ${config.models.coordinator.model} (${config.models.coordinator.reasoningEffort})`,
     `sidecar: ${config.models.sidecar.model} (${config.models.sidecar.reasoningEffort})`,
     `verifier: ${config.models.verifier.model} (${config.models.verifier.reasoningEffort})`,
-    `derived routing: inspect Preferences for explorer, execution, and realtime defaults from detected model availability`,
     `telemetry: ${config.privacy.telemetry}`,
     `packs: ${enabledPackNames(config.packs).join(", ")}`
   ];
+
+  if (!preferences) {
+    lines.splice(
+      4,
+      0,
+      `derived routing: inspect Preferences for explorer, execution, and realtime defaults from detected model availability`
+    );
+    return lines;
+  }
+
+  lines.splice(
+    4,
+    0,
+    `explorer: ${formatPreset(preferences.subagents.explorer)} (derived)`,
+    `execution: ${formatPreset(preferences.derivedRouting.execution)} (derived)`,
+    `realtime: ${formatPreset(preferences.derivedRouting.realtime)} (derived)`,
+    `telemetry files: summary ${presentFlag(preferences.telemetryFiles.summaryPresent)}, events ${presentFlag(preferences.telemetryFiles.eventsPresent)}, queue ${presentFlag(preferences.telemetryFiles.queuePresent)}`
+  );
+
+  return lines;
+}
+
+function formatPreset(preset: ModelPreset): string {
+  return `${preset.model} (${preset.reasoningEffort})`;
+}
+
+function presentFlag(value: boolean): string {
+  return value ? "present" : "missing";
 }
 
 function ensureTelemetryFiles(paths: ProjectPaths, level: TelemetryLevel): void {
