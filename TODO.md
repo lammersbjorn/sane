@@ -93,7 +93,7 @@ Implemented:
 - policy explanations now include typed orchestration guidance and stable rule traces for canonical scenarios
 - internal backend policy preview now carries typed scenario/orchestration/trace payloads in `OperationResult` and persists them into decision history without changing TUI copy
 - policy preview history now has typed shared context helpers, tail-first latest-preview lookup, and runtime-summary plumbing for the latest valid snapshot
-- inspect/app-view now surface the latest persisted policy-preview snapshot through a bounded typed read path instead of re-parsing runtime-summary copy, and this remains an inspect-only read surface
+- inspect/app-view now surface the latest persisted current-run-derived policy-preview snapshot through a bounded typed read path instead of re-parsing runtime-summary copy, and this remains a read-only Inspect surface
 - runtime summary/inspect now surface bounded `.sane` history counts for `events`, `decisions`, and `artifacts` through canonical layered-state bundle `historyCounts`, without adding a new log-browsing surface
 - startup last-event reads now go through control-plane history helper instead of direct TUI peek logic, keeping history access on one typed bounded path
 - preferences, telemetry presence, and Codex backup-availability reads now go through control-plane snapshot helpers instead of ad hoc TUI file checks
@@ -103,7 +103,7 @@ Implemented:
 - research note locked: OpenAI docs publish strong positioning but not one hard benchmark table across these Codex workflow classes
 - integrations profile preview/apply now emits structured audit payloads, and install-screen integrations UI consumes that audit directly for read-before-write visibility
 - inspect/app-view now also consume typed integrations audit state instead of inferring optional-tool status from preview summary text, and this remains inspect-only visibility
-- TUI now exposes adaptive policy inspection directly instead of leaving it command-only
+- TUI Inspect now shows read-only policy-preview snapshot visibility derived from the latest current run instead of command-only access
 - TUI now requires confirmation for risky apply/restore/uninstall actions
 - TUI repair now exposes local telemetry reset as a first-class confirmed action instead of only a privacy-editor shortcut
 - TUI inspect now exposes read-only runtime handoff state for `current-run`, `summary`, and `brief`

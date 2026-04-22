@@ -78,7 +78,7 @@ Today, `Sane` can manage:
 - optional built-in pack skills
 - the separate recommended integrations profile for Codex tools like `Context7`, `Playwright`, and `grep.app`
 - structured integrations audit output in install/apply/inspect flows so recommended adds are reviewable before write without summary-string guessing
-- bounded latest policy-preview snapshot visibility in inspect/runtime surfaces so routing state stays inspectable without becoming a user-facing orchestration mode
+- bounded latest current-run-derived policy-preview snapshot visibility in read-only Inspect/runtime surfaces so routing state stays inspectable without becoming a user-facing orchestration mode
 - bounded runtime-history counts for `.sane/events.jsonl`, `.sane/decisions.jsonl`, and `.sane/artifacts.jsonl` in inspect/runtime surfaces
 - optional repo-local shared skills when a repo actually needs shared targeted behavior
 - optional additive guidance blocks in global or repo `AGENTS.md`, with repo `AGENTS.md` reserved for explicit broad guidance
@@ -113,7 +113,7 @@ It exists so `Sane` can answer practical questions like:
 | --- | --- |
 | Better starting defaults | Task-shaped routing classes (`explorer` / `implementation` / `verifier` / `realtime`) with documented-vs-runtime support kept separate. |
 | Safer changes | Preview, backup, apply, restore, uninstall, and local telemetry reset. |
-| Runtime handoff truth | Read-only inspect view for `current-run`, `summary`, and `brief` state. |
+| Runtime handoff truth | Read-only Inspect view for `current-run`, `summary`, and `brief` state, plus latest current-run-derived policy-preview snapshot visibility. |
 | Optional guidance packs | `core`, `caveman`, `cavemem`, `rtk`, and `frontend-craft`. |
 | Useful integrations | Separate recommended integrations profile for `Context7`, `Playwright`, and `grep.app`, with structured audit details shown before apply. |
 | Provider-specific add-ons | Separate opt-in Cloudflare profile plus separate opt-in Opencode compatibility profile. |

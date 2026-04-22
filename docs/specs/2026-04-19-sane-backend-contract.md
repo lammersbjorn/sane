@@ -151,8 +151,9 @@ These are the backend actions the TUI is allowed to call in the current phase.
   - internal/backend inspection only for now
   - render canonical adaptive-policy scenarios into typed output
   - include editable role defaults plus derived routing classes for each scenario
+  - persist the latest preview snapshot so Inspect can show read-only, current-run-derived policy visibility
   - keep typed scenario/orchestration/trace payloads available for internal history/state plumbing even if current user-facing render stays compact
-  - exist to verify obligation rules without pretending live orchestration is complete
+  - exist to verify obligation rules without presenting a shipped live orchestration runtime
 
 ### Doctor / Status
 
@@ -261,6 +262,7 @@ Current implementation note:
 - current Codex config work supports narrow explicit opt-in writes for the core profile
 - current integrations profile work supports narrow explicit opt-in writes for recommended MCP servers only
 - current install/inspect integrations UI consumes the structured integrations audit payload instead of rebuilding its own diff logic
+- current Inspect policy visibility is read-only and sourced from the latest current-run-derived preview snapshot
 - current Cloudflare profile work supports separate explicit opt-in provider-profile writes only
 - current Opencode compatibility profile work supports separate explicit opt-in compatibility-profile writes only
 - current OpenCode-agent work supports separate explicit opt-in compatibility exports only and stays outside `export_all`

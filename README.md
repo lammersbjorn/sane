@@ -42,6 +42,7 @@ At a high level, `Sane` gives you:
 - a guided TUI for onboarding, settings, install, inspection, and repair
 - a thin local `.sane/` runtime for config, state, and backups
 - managed Codex-native surfaces such as skills, `AGENTS.md` overlays, hooks, custom agents, and narrow config diffs
+- read-only Inspect visibility for runtime state, including the latest current-run-derived policy-preview snapshot
 
 > [!TIP]
 > The goal is simple: use `Sane` to set things up, then keep using Codex normally.
@@ -189,7 +190,7 @@ If you want the longer user-story version, read [docs/what-sane-does.md](./docs/
 
 | Status | Scope |
 | --- | --- |
-| In place today | Onboarding-first TUI, local `.sane/` runtime, config preview/apply/restore, recommended integrations profile, opt-in Cloudflare profile, opt-in Opencode compatibility profile, managed skills, additive `AGENTS.md` overlays, hooks, custom agents, optional OpenCode agent export, status/doctor, uninstall. |
+| In place today | Onboarding-first TUI, local `.sane/` runtime, read-only Inspect visibility (including latest current-run-derived policy-preview snapshot), config preview/apply/restore, recommended integrations profile, opt-in Cloudflare profile, opt-in Opencode compatibility profile, managed skills, additive `AGENTS.md` overlays, hooks, custom agents, optional OpenCode agent export, status/doctor, uninstall. |
 | Planned later | Packaging and distribution polish, broader adaptive orchestration, exact long-term pack set, and a later end-to-end outcome runner / one-shot flow. |
 
 > [!IMPORTANT]
