@@ -192,7 +192,7 @@ describe("hooks and custom agents", () => {
 
     expect(inventory.status).toBe(InventoryStatus.Invalid);
     expect(inventory.repairHint).toBe(
-      "Codex hooks are currently disabled on Windows; try WSL for hook-enabled flows"
+      "Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows."
     );
   });
 });

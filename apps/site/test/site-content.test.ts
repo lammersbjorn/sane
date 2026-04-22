@@ -1,70 +1,53 @@
 import {
-  adjacentPeers,
-  antiClaims,
-  closestPeers,
-  flowSteps,
-  heroProofs,
+  bottomColumns,
+  diagramInputs,
+  diagramOutputs,
+  heroBadges,
+  heroTitle,
   installCommand,
-  pageLinks,
-  packageBoundaries,
-  philosophyPrinciples,
-  primaryCtas,
-  policyClasses
+  lowerCards,
+  navLinks,
+  setupRail
 } from "../src/content/site-content";
 
 describe("@sane/site content", () => {
-  it("keeps the core trust-and-recovery messaging intact", () => {
-    expect(heroProofs).toContain("Preview before apply");
-    expect(heroProofs).toContain("Backup, restore, and scoped uninstall");
-    expect(heroProofs).toContain("No required daily wrapper");
+  it("keeps the hero message tied to the current Sane frame", () => {
+    expect(heroTitle).toBe("The control plane for Codex.");
+    expect(heroBadges).toContain("Not another runtime");
+    expect(heroBadges).toContain("Plain-language first");
   });
 
-  it("keeps the peer frame focused on verified framework and control-layer products", () => {
-    expect(closestPeers.map((item) => item.name)).toEqual([
-      "Superpowers",
-      "gstack",
-      "Everything Claude Code",
-      "OpenAgentsControl"
-    ]);
-
-    expect(adjacentPeers.map((item) => item.name)).toEqual([
-      "OpenAgents",
-      "OpenCastle",
-      "oh-my-opencode",
-      "gitagent"
-    ]);
-  });
-
-  it("preserves the product philosophy and implementation boundaries", () => {
-    expect(flowSteps.map((item) => item.title)).toEqual([
+  it("keeps the reference-matched information architecture intact", () => {
+    expect(setupRail.map((item) => item.title)).toEqual([
       "Setup",
       "Inspect",
       "Repair"
     ]);
 
-    expect(policyClasses).toEqual([
-      "explorer",
-      "implementation",
-      "verifier",
-      "realtime"
+    expect(lowerCards.map((card) => card.title)).toEqual([
+      "Managed surfaces",
+      "Closest peers",
+      "Install from source"
     ]);
-
-    expect(philosophyPrinciples).toHaveLength(6);
-    expect(antiClaims).toContain("Not another runtime.");
-    expect(packageBoundaries).toContain("@sane/control-plane");
-    expect(installCommand).toContain("cargo run -p sane");
   });
 
-  it("keeps exported nav and install links aligned with the single-page app", () => {
-    expect(pageLinks).toEqual([
-      { href: "#top", label: "Home" },
-      { href: "#stitched-surface", label: "Philosophy" },
-      { href: "#soft-structuralism", label: "How It Works" }
+  it("preserves diagram and footer content that sells reversibility", () => {
+    expect(diagramInputs.map((item) => item.title)).toEqual([
+      "Files",
+      "Diffs",
+      "Hooks",
+      "Skills"
     ]);
 
-    expect(primaryCtas[0]).toEqual({
-      label: "Install from source",
-      href: "#install-reference"
-    });
+    expect(diagramOutputs.map((item) => item.title)).toEqual([
+      "Preview",
+      "Backup",
+      "Restore",
+      "Uninstall"
+    ]);
+
+    expect(bottomColumns[2]?.title).toBe("Why Sane is narrower");
+    expect(navLinks.at(-1)?.label).toBe("GitHub");
+    expect(installCommand).toContain("cargo run -p sane");
   });
 });

@@ -241,7 +241,7 @@ export function inspectHooksInventory(
       scope: InventoryScope.CodexNative,
       status: InventoryStatus.Invalid,
       path: codexPaths.hooksJson,
-      repairHint: "Codex hooks are currently disabled on Windows; try WSL for hook-enabled flows"
+      repairHint: "Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows."
     };
   }
 

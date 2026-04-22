@@ -28,6 +28,54 @@ afterEach(() => {
 });
 
 describe("inspect screen model", () => {
+  it("includes hook repair hints in overview lines", () => {
+    const lines = inspectOverviewLines({
+      statusBundle: {
+        counts: {
+          installed: 0,
+          configured: 0,
+          disabled: 0,
+          missing: 0,
+          invalid: 1
+        },
+        driftItems: [
+          {
+            name: "hooks",
+            status: "invalid",
+            repairHint: "Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows."
+          }
+        ],
+        primary: {
+          runtime: null,
+          codexConfig: null,
+          userSkills: null,
+          hooks: null,
+          customAgents: null,
+          installBundle: "missing"
+        }
+      },
+      doctor: { summary: "doctor: hooks invalid" },
+      runtimeSummary: { summary: "runtime-summary: no local handoff state" },
+      runtimeHistory: { events: 0, decisions: 0, artifacts: 0 },
+      latestPolicyPreview: { status: "missing" },
+      localConfig: { summary: "config: ok" },
+      codexConfig: { summary: "codex-config: ok" },
+      integrationsAudit: { status: "missing", recommendedChangeCount: 0 },
+      integrationsPreview: { summary: "integrations-profile preview" },
+      driftItems: [
+        {
+          name: "hooks",
+          status: "invalid",
+          repairHint: "Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows."
+        }
+      ]
+    } as any);
+
+    expect(lines).toContain(
+      "hooks: invalid (Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows.)"
+    );
+  });
+
   it("aggregates backend inspect surfaces for the TUI", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();

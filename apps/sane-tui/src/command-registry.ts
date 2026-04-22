@@ -532,7 +532,8 @@ export const COMMAND_METADATA_REGISTRY = {
       help: [
         "Add or refresh Sane's entries in `~/.codex/hooks.json`.",
         "",
-        "Use this if you want Sane's optional Codex hook behavior enabled."
+        "Use this if you want Sane's optional Codex hook behavior enabled.",
+        "On native Windows, Codex hooks are unavailable; use WSL for hook-enabled flows."
       ],
       confirmation: null,
       successNoticeTitle: "Installed",

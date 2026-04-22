@@ -1,77 +1,38 @@
 import {
   ArrowRight,
   ArrowUpRight,
-  ClockCounterClockwise,
-  Files,
+  Cube,
+  Eye,
   GithubLogo,
-  Lifebuoy,
-  ShieldCheck,
-  SlidersHorizontal,
+  MagnifyingGlass,
+  Package,
   Stack,
-  TerminalWindow,
-  Wrench
+  Wrench,
+  UploadSimple
 } from "@phosphor-icons/react";
-import type { ReactNode } from "react";
+import { motion } from "motion/react";
 
+import { Button } from "./components/ui/button";
+import { Card } from "./components/ui/card";
 import {
-  adjacentPeers,
-  antiClaims,
-  buildStoryHref,
-  closestPeers,
-  flowSteps,
-  heroProofs,
-  howItWorksLayers,
-  howItWorksSteps,
+  bottomColumns,
+  commandPreview,
+  diagramInputs,
+  diagramOutputs,
+  footerStatement,
+  heroActions,
+  heroBadges,
+  heroBody,
+  heroSubBody,
+  heroTitle,
   installCommand,
-  installNotes,
-  integrations,
-  managedSurfaces,
-  packageBoundaries,
-  philosophyPrinciples,
-  policyClasses,
-  practicalChanges,
-  primaryCtas,
-  runtimeArtifacts
+  installMeta,
+  lowerCards,
+  navLinks,
+  setupRail
 } from "./content/site-content";
 
-const concepts = [
-  {
-    id: "control-room",
-    number: "01",
-    name: "Control Room",
-    note: "Tactical dark UI. Setup and recovery feel operational, not promotional."
-  },
-  {
-    id: "black-ledger",
-    number: "02",
-    name: "Black Ledger",
-    note: "Editorial dark document. Heavy on scope, reversibility, and boundaries."
-  },
-  {
-    id: "hardware-drawer",
-    number: "03",
-    name: "Hardware Drawer",
-    note: "Machined modular system. Every surface feels like a part you can inspect."
-  },
-  {
-    id: "soft-structuralism",
-    number: "04",
-    name: "Soft Structuralism",
-    note: "Calm premium dark mode. Big type, low chrome, anti-wrapper confidence."
-  },
-  {
-    id: "field-manual",
-    number: "05",
-    name: "Field Manual",
-    note: "Brutalist documentation system. Clear procedures, hard separators, recovery first."
-  },
-  {
-    id: "stitched-surface",
-    number: "06",
-    name: "Stitched Surface",
-    note: "Layered premium bento. Sane as a thin surface added to Codex, not a replacement."
-  }
-] as const;
+const lowerIcons = [Package, Stack, UploadSimple] as const;
 
 export function App() {
   return (
@@ -82,598 +43,343 @@ export function App() {
           <div className="site-nav-shell">
             <a
               href="#top"
-              className="flex items-center gap-3 text-sm font-medium tracking-[0.18em] text-stone-100 uppercase"
+              className="flex items-center gap-3 text-[2.1rem] font-semibold tracking-[-0.05em] text-stone-50"
             >
-              <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-[0.72rem] text-stone-50">
-                S
+              <span className="brand-mark">
+                <Stack size={20} weight="regular" />
               </span>
               Sane
             </a>
-            <nav className="hidden items-center gap-2 lg:flex">
-              {concepts.map((concept) => (
+
+            <nav className="hidden items-center gap-10 xl:flex">
+              {navLinks.map((link) => (
                 <a
-                  key={concept.id}
-                  href={`#${concept.id}`}
-                  className="nav-pill"
+                  key={link.label}
+                  href={link.href}
+                  className="nav-link"
                 >
-                  {concept.number}
-                  <span>{concept.name}</span>
+                  {link.label}
                 </a>
               ))}
             </nav>
-            <a
-              href={primaryCtas[1].href}
-              className="button-secondary inline-flex items-center justify-center gap-2"
-            >
-              <GithubLogo size={18} weight="fill" />
-              GitHub
-            </a>
+
+            <div className="hidden items-center gap-4 lg:flex">
+              <div className="command-pill">
+                <span className="text-emerald-300">$</span>
+                <code>{commandPreview}</code>
+              </div>
+              <a
+                href="https://github.com/lammersbjorn/sane"
+                className="icon-button"
+                aria-label="View Sane on GitHub"
+              >
+                <GithubLogo size={22} weight="fill" />
+              </a>
+            </div>
           </div>
         </header>
 
         <section
           id="top"
-          className="section-shell grid min-h-[92dvh] gap-10 pb-16 pt-14 md:pb-24 md:pt-20 lg:grid-cols-12 lg:items-end"
+          className="section-shell grid min-h-[88dvh] gap-10 pb-10 pt-14 xl:grid-cols-[1.02fr_0.98fr] xl:items-center xl:pb-14"
         >
-          <div className="lg:col-span-7">
-            <p className="eyebrow">Six dark directions for the Sane site</p>
-            <h1 className="mt-6 max-w-5xl text-[clamp(3.1rem,7vw,6.8rem)] leading-[0.9] font-bold tracking-[-0.06em] text-stone-100">
-              Same product truth. Six completely different ways to sell it.
-            </h1>
-            <p className="mt-8 max-w-[66ch] text-lg leading-8 text-stone-300 md:text-xl">
-              All six keep Sane accurate: onboarding-first setup, inspect, and
-              repair for Codex. No wrapper ritual. No fake runtime. Just very
-              different ways to frame trust, reversibility, and control.
-            </p>
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-              <a
-                href="#control-room"
-                className="button-primary inline-flex items-center justify-center gap-2"
-              >
-                Compare concepts
-                <ArrowRight size={18} weight="bold" />
-              </a>
-              <a
-                href="#install-reference"
-                className="button-secondary inline-flex items-center justify-center gap-2"
-              >
-                Keep install CTA in view
-              </a>
+          <div className="hero-copy">
+            <div className="eyebrow-row">
+              <span className="eyebrow-dot" />
+              <span>Onboarding-first by design</span>
             </div>
-            <div className="mt-12 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {heroProofs.map((point) => (
-                <div
-                  key={point}
-                  className="rounded-full border border-white/12 bg-white/5 px-4 py-3 text-sm text-stone-300"
-                >
-                  {point}
-                </div>
+
+            <h1 className="hero-title">
+              {heroTitle.split("Codex").map((part, index, array) => (
+                <span key={`${part}-${index}`}>
+                  {part}
+                  {index < array.length - 1 ? (
+                    <span className="hero-title-accent">Codex</span>
+                  ) : null}
+                </span>
+              ))}
+            </h1>
+
+            <p className="hero-lead">{heroBody}</p>
+            <p className="hero-sublead">{heroSubBody}</p>
+
+            <div className="hero-badge-row">
+              {heroBadges.map((badge) => (
+                <span key={badge} className="hero-badge">
+                  {badge}
+                </span>
               ))}
             </div>
+
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+              <Button asChild>
+                <a href={heroActions[0].href}>
+                  <span className="font-mono text-base">{">_"}</span>
+                  {heroActions[0].label}
+                </a>
+              </Button>
+              <Button asChild variant="secondary">
+                <a href={heroActions[1].href}>
+                  {heroActions[1].label}
+                  <ArrowUpRight size={18} weight="bold" />
+                </a>
+              </Button>
+            </div>
+
+            <div className="hero-meta">
+              <code>npm i -g @sane/cli</code>
+              <span className="divider-dot" />
+              <span className="text-emerald-300">Open Source</span>
+            </div>
           </div>
-          <div className="lg:col-span-5">
-            <ConceptIndex />
-          </div>
+
+          <HeroDiagram />
         </section>
 
-        <div className="concept-stack">
-          <ConceptSection
-            id="control-room"
-            number="01"
-            name="Control Room"
-            note="Operational, tactical, and explicit about status."
-            className="concept-control-room"
-          >
-            <div className="grid gap-6 lg:grid-cols-12">
-              <div className="lg:col-span-7">
-                <p className="concept-kicker">Onboard. Inspect. Repair. Restore.</p>
-                <h2 className="concept-title">
-                  Make Codex easier to trust under real operating conditions.
-                </h2>
-                <p className="concept-body">
-                  This version treats Sane like an ops console for setup and
-                  recovery. It foregrounds runtime truth, touched files, and
-                  repair posture before anything aspirational.
-                </p>
-                <div className="mt-8 grid gap-4 md:grid-cols-2">
-                  {practicalChanges.slice(0, 2).map((item) => (
-                    <article key={item.before} className="tactical-panel">
-                      <p className="micro-label text-rose-300">Without Sane</p>
-                      <p className="mt-3 text-sm leading-7 text-stone-300">{item.before}</p>
-                      <p className="micro-label mt-6 text-emerald-300">With Sane</p>
-                      <p className="mt-3 text-sm leading-7 text-stone-100">{item.after}</p>
-                    </article>
-                  ))}
-                </div>
-              </div>
-              <div className="lg:col-span-5">
-                <div className="system-panel">
-                  <div className="system-row">
-                    <span className="system-dot system-dot-live" />
-                    <span>documented models != spawnable-here support</span>
-                  </div>
-                  <div className="system-row">
-                    <span className="system-dot system-dot-warn" />
-                    <span>managed writes stay narrow and reversible</span>
-                  </div>
-                  <div className="system-row">
-                    <span className="system-dot system-dot-live" />
-                    <span>normal Codex prompting flow stays untouched</span>
-                  </div>
-                  <div className="mt-6 grid gap-3">
-                    {flowSteps.map((step) => (
-                      <div key={step.title} className="system-card">
-                        <p className="micro-label text-stone-400">{step.title}</p>
-                        <p className="mt-2 text-sm leading-7 text-stone-200">{step.body}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="mt-6 grid gap-4 xl:grid-cols-4">
-              <MetricPanel
-                icon={<SlidersHorizontal size={20} weight="duotone" />}
-                title="Policy classes"
-                items={policyClasses}
-              />
-              <MetricPanel
-                icon={<ShieldCheck size={20} weight="duotone" />}
-                title="Managed surfaces"
-                items={managedSurfaces.slice(0, 4)}
-              />
-              <MetricPanel
-                icon={<Files size={20} weight="duotone" />}
-                title="Runtime visibility"
-                items={runtimeArtifacts.slice(0, 4)}
-              />
-              <MetricPanel
-                icon={<Lifebuoy size={20} weight="duotone" />}
-                title="Recommended adds"
-                items={integrations.recommended}
-              />
-            </div>
-          </ConceptSection>
-
-          <ConceptSection
-            id="black-ledger"
-            number="02"
-            name="Black Ledger"
-            note="Single-column narrative. Calm, careful, deliberate."
-            className="concept-black-ledger"
-          >
-            <div className="ledger-shell">
-              <p className="concept-kicker">What Sane changes. What it leaves alone. What you can undo.</p>
-              <h2 className="concept-title max-w-4xl">
-                A careful site that reads like a boundary document, not a hype page.
-              </h2>
-              <p className="concept-body max-w-[70ch]">
-                This direction leans into the reality that Sane earns trust by
-                being inspectable. It sells scope control, additive behavior,
-                and recovery paths in plain language.
-              </p>
-              <div className="mt-12 grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
-                <div className="space-y-8">
-                  <NarrativeBlock
-                    label="What it changes"
-                    body="Skills, overlays, hooks, custom agents, recommended integrations, and a narrow Codex profile can all be previewed and applied as explicit surfaces."
-                  />
-                  <NarrativeBlock
-                    label="What it leaves alone"
-                    body="Normal prompting, unrelated repo files, and user content outside Sane-managed blocks remain outside the product’s write scope."
-                  />
-                  <NarrativeBlock
-                    label="What you can undo"
-                    body="Preview, backup, restore, uninstall, and doctor are part of the story, not an afterthought hidden after the install step."
-                  />
-                </div>
-                <div className="space-y-4">
-                  {antiClaims.map((claim) => (
-                    <div key={claim} className="ledger-callout">
-                      {claim}
+        <section className="section-shell">
+          <Card className="rail-card">
+            <div className="grid gap-4 xl:grid-cols-[1fr_auto_1fr_auto_1fr] xl:items-center">
+              {setupRail.map((item, index) => (
+                <div key={item.title} className="contents">
+                  <div className="rail-step">
+                    <div className="rail-icon">
+                      {index === 0 ? (
+                        <UploadSimple size={34} weight="regular" />
+                      ) : index === 1 ? (
+                        <MagnifyingGlass size={34} weight="regular" />
+                      ) : (
+                        <Wrench size={34} weight="regular" />
+                      )}
                     </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </ConceptSection>
-
-          <ConceptSection
-            id="hardware-drawer"
-            number="03"
-            name="Hardware Drawer"
-            note="Machined modules, square edges, one part per job."
-            className="concept-hardware-drawer"
-          >
-            <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-              <div>
-                <p className="concept-kicker">Open the drawer. Review the part. Apply only what you need.</p>
-                <h2 className="concept-title">
-                  Sane as a modular toolkit instead of a single sweeping promise.
-                </h2>
-                <p className="concept-body">
-                  This version frames the product as a set of bounded parts:
-                  defaults, integrations, exports, and repair. Good fit if we
-                  want the site to feel mechanical and exact.
-                </p>
-              </div>
-              <div className="drawer-stack">
-                <DrawerPanel
-                  title="Defaults"
-                  body="Preview a narrow Codex profile for model, reasoning effort, and hook support."
-                />
-                <DrawerPanel
-                  title="Integrations"
-                  body="Keep the recommended integrations profile separate from the core Codex profile."
-                />
-                <DrawerPanel
-                  title="Exports"
-                  body="Manage skills, overlays, hooks, and custom agents as explicit Codex-native pieces."
-                />
-                <DrawerPanel
-                  title="Repair"
-                  body="Use inspect, doctor, restore, and uninstall to recover without broad repo mutation."
-                />
-              </div>
-            </div>
-          </ConceptSection>
-
-          <ConceptSection
-            id="soft-structuralism"
-            number="04"
-            name="Soft Structuralism"
-            note="Premium, quiet, wide, and anti-theater."
-            className="concept-soft-structuralism"
-          >
-            <div className="grid gap-8 xl:grid-cols-[1.1fr_0.9fr] xl:items-center">
-              <div>
-                <p className="concept-kicker">Better defaults without process theater.</p>
-                <h2 className="concept-title max-w-4xl">
-                  A dark mode that feels calm enough for everyone, not just terminal maximalists.
-                </h2>
-                <p className="concept-body max-w-[65ch]">
-                  This is the broadest-market direction. It keeps the trust and
-                  reversibility message, but feels less like infrastructure and
-                  more like an exact premium product page.
-                </p>
-              </div>
-              <div className="soft-glass">
-                <div className="soft-glass-inner">
-                  <p className="micro-label text-emerald-300">Three-layer split</p>
-                  <div className="mt-5 space-y-4">
-                    {howItWorksLayers.map((layer) => (
-                      <div key={layer.title} className="soft-row">
-                        <p className="text-sm font-medium text-stone-100">{layer.title}</p>
-                        <p className="mt-2 text-sm leading-7 text-stone-300">{layer.body}</p>
-                      </div>
-                    ))}
+                    <div>
+                      <p className="rail-count">{item.step}</p>
+                      <h2 className="rail-title">{item.title}</h2>
+                      <p className="rail-body">{item.body}</p>
+                    </div>
                   </div>
+                  {index < setupRail.length - 1 ? (
+                    <div className="rail-arrow" aria-hidden="true">
+                      <ArrowRight size={20} weight="bold" />
+                    </div>
+                  ) : null}
                 </div>
-              </div>
-            </div>
-            <div className="mt-8 grid gap-4 md:grid-cols-3">
-              {philosophyPrinciples.slice(0, 3).map((item) => (
-                <article key={item.title} className="soft-panel">
-                  <p className="text-lg font-semibold tracking-tight text-stone-100">{item.title}</p>
-                  <p className="mt-4 text-sm leading-7 text-stone-300">{item.body}</p>
-                </article>
               ))}
             </div>
-          </ConceptSection>
+          </Card>
+        </section>
 
-          <ConceptSection
-            id="field-manual"
-            number="05"
-            name="Field Manual"
-            note="Brutalist documentation with procedural confidence."
-            className="concept-field-manual"
-          >
-            <div className="manual-grid">
-              <div className="manual-main">
-                <p className="concept-kicker">How it works. What it writes. How to recover.</p>
-                <h2 className="concept-title">
-                  The site reads like an annotated operating manual.
-                </h2>
-                <p className="concept-body">
-                  This direction is more opinionated and more technical. It
-                  works if we want Sane to feel like the trustworthy manual for
-                  managing Codex behavior.
-                </p>
-              </div>
-              <aside className="manual-side">
-                <p className="micro-label text-rose-300">Checklist</p>
-                <ol className="manual-list">
-                  {howItWorksSteps.map((step) => (
-                    <li key={step}>{step}</li>
-                  ))}
-                </ol>
-              </aside>
-            </div>
-            <div className="mt-8 grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
-              <div className="manual-card">
-                <p className="micro-label text-stone-400">What gets written</p>
-                <div className="mt-4 space-y-3">
-                  {managedSurfaces.slice(0, 6).map((surface) => (
-                    <div key={surface} className="manual-row">
-                      <span className="manual-mark">/</span>
-                      <code>{surface}</code>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="manual-card">
-                <p className="micro-label text-stone-400">Current package split</p>
-                <div className="mt-4 grid gap-3 md:grid-cols-2">
-                  {packageBoundaries.map((item) => (
-                    <div key={item} className="manual-row">
-                      <span className="manual-mark">#</span>
-                      <code>{item}</code>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </ConceptSection>
+        <section className="section-shell py-6 md:py-8">
+          <div className="grid gap-4 xl:grid-cols-[1.18fr_0.98fr_1fr]">
+            {lowerCards.map((card, index) => {
+              const Icon = lowerIcons[index];
 
-          <ConceptSection
-            id="stitched-surface"
-            number="06"
-            name="Stitched Surface"
-            note="Asymmetric premium bento with a clear integration story."
-            className="concept-stitched-surface"
-          >
-            <div className="stitch-grid">
-              <article className="stitch-hero">
-                <p className="concept-kicker">Small local runtime. Native Codex surfaces. Reversible changes.</p>
-                <h2 className="concept-title max-w-3xl">
-                  A premium product page that still tells the truth about what Sane actually is.
-                </h2>
-                <p className="concept-body max-w-[60ch]">
-                  This is the strongest “ship it” marketing direction if we want
-                  something cleaner and more premium without losing the
-                  setup-repair wedge.
-                </p>
-                <div className="mt-8 flex flex-wrap gap-3">
-                  {heroProofs.slice(0, 4).map((proof) => (
-                    <span key={proof} className="stitch-chip">
-                      {proof}
-                    </span>
-                  ))}
-                </div>
-              </article>
-              <article className="stitch-card">
-                <div className="flex items-center gap-3 text-stone-100">
-                  <Stack size={20} weight="duotone" />
-                  <p className="text-lg font-semibold tracking-tight">Closest peers</p>
-                </div>
-                <div className="mt-5 space-y-4">
-                  {closestPeers.slice(0, 3).map((peer) => (
-                    <div key={peer.name} className="stitch-peer">
-                      <div>
-                        <p className="text-sm font-medium text-stone-100">{peer.name}</p>
-                        <p className="mt-1 text-sm leading-6 text-stone-300">{peer.category}</p>
+              if (card.title === "Install from source") {
+                return (
+                  <Card key={card.title} className="lower-card p-6">
+                    <div className="card-header">
+                      <div className="card-icon-wrap">
+                        <Icon size={20} weight="regular" />
                       </div>
-                      <a href={peer.href} className="peer-link">
-                        <ArrowUpRight size={16} weight="bold" />
+                      <h3 className="card-title">{card.title}</h3>
+                    </div>
+
+                    <pre className="install-block">
+                      <code>{installCommand}</code>
+                    </pre>
+
+                    <div className="install-footer">
+                      <span>{installMeta[0]}</span>
+                      <a
+                        href="https://github.com/lammersbjorn/sane"
+                        className="inline-flex items-center gap-2 text-emerald-300 transition hover:text-emerald-200"
+                      >
+                        {installMeta[2]}
+                        <ArrowRight size={16} weight="bold" />
                       </a>
                     </div>
-                  ))}
-                </div>
-              </article>
-              <article className="stitch-card">
-                <div className="flex items-center gap-3 text-stone-100">
-                  <ClockCounterClockwise size={20} weight="duotone" />
-                  <p className="text-lg font-semibold tracking-tight">Recovery rails</p>
-                </div>
-                <div className="mt-5 space-y-3">
-                  {["preview", "backup", "restore", "doctor", "uninstall"].map((item) => (
-                    <div key={item} className="stitch-row">
-                      <span className="stitch-dot" />
-                      <span>{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </article>
-              <article className="stitch-card stitch-card-wide" id="install-reference">
-                <div className="flex items-center gap-3 text-stone-100">
-                  <TerminalWindow size={20} weight="duotone" />
-                  <p className="text-lg font-semibold tracking-tight">Install reference</p>
-                </div>
-                <pre className="code-block mt-6">
-                  <code>{installCommand}</code>
-                </pre>
-                <div className="mt-6 flex flex-wrap gap-3">
-                  {installNotes.map((note) => (
-                    <span key={note} className="stitch-chip">
-                      {note}
-                    </span>
-                  ))}
-                </div>
-              </article>
-            </div>
-          </ConceptSection>
-        </div>
+                  </Card>
+                );
+              }
 
-        <section className="section-shell pb-24 pt-10 md:pb-32">
-          <div className="footer-panel">
-            <div>
-              <p className="eyebrow">Research frame kept current</p>
-              <p className="mt-5 max-w-[68ch] text-base leading-7 text-stone-300">
-                Peer set now centers on skill packs, harnesses, and control
-                layers like Superpowers, gstack, Everything Claude Code,
-                OpenAgentsControl, and OpenAgents. Unverified names stayed out.
-              </p>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <CompactList
-                title="Verified close peers"
-                icon={<Wrench size={18} weight="duotone" />}
-                items={closestPeers.map((peer) => peer.name)}
-              />
-              <CompactList
-                title="Adjacent peers"
-                icon={<Files size={18} weight="duotone" />}
-                items={adjacentPeers.map((peer) => peer.name)}
-              />
-            </div>
-            <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-              <a
-                href={primaryCtas[1].href}
-                className="button-primary inline-flex items-center justify-center gap-2"
-              >
-                <GithubLogo size={18} weight="fill" />
-                View repository
-              </a>
-              <a
-                href={buildStoryHref}
-                className="button-secondary inline-flex items-center justify-center gap-2"
-              >
-                BuildStory project note
-                <ArrowUpRight size={18} weight="bold" />
-              </a>
-            </div>
+              return (
+                <Card key={card.title} className="lower-card p-6">
+                  <div className="card-header">
+                    <div className="card-icon-wrap">
+                      <Icon size={20} weight="regular" />
+                    </div>
+                    <h3 className="card-title">{card.title}</h3>
+                  </div>
+
+                  {card.title === "Managed surfaces" ? (
+                    <div className="managed-grid">
+                      <div className="managed-list">
+                        {card.items.map((item) => (
+                          <div key={item.label} className="managed-item">
+                            <p className="managed-label">{item.label}</p>
+                            <p className="managed-body">{item.body}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <StackPreview />
+                    </div>
+                  ) : (
+                    <div className="peer-grid">
+                      <div className="space-y-4">
+                        {card.items.map((item) => (
+                          <div key={item.label} className="peer-item">
+                            <p className="peer-label">{item.label}</p>
+                            <p className="peer-body">{item.body}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="peer-summary">
+                        <p className="text-[1.7rem] leading-[1.1] font-medium tracking-[-0.04em] text-emerald-300">
+                          Sane is purpose-built for Codex.
+                        </p>
+                        <p className="mt-6 text-base leading-8 text-stone-400">
+                          Onboarding-first. Reversible by default. Plain-language first. Not a runtime.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
           </div>
         </section>
+
+        <section className="section-shell border-t border-white/8 pb-10 pt-12 md:pb-16 md:pt-14">
+          <div className="grid gap-8 xl:grid-cols-3">
+            <article id="why" className="bottom-column">
+              <h2 className="bottom-title">{bottomColumns[0].title}</h2>
+              <p className="bottom-body">{bottomColumns[0].body}</p>
+              <Button asChild variant="ghost" className="mt-8">
+                <a href="#how">
+                  {bottomColumns[0].cta}
+                  <ArrowRight size={16} weight="bold" />
+                </a>
+              </Button>
+            </article>
+
+            <article id="peers" className="bottom-column column-divider">
+              <h2 className="bottom-title">{bottomColumns[1].title}</h2>
+              <div className="mt-8 space-y-6">
+                {bottomColumns[1].list?.map((item) => (
+                  <div key={item.label} className="bottom-list-item">
+                    <p className="bottom-list-label">{item.label}</p>
+                    <p className="bottom-list-body">{item.body}</p>
+                  </div>
+                ))}
+              </div>
+            </article>
+
+            <article id="how" className="bottom-column column-divider">
+              <h2 className="bottom-title">{bottomColumns[2].title}</h2>
+              <p className="bottom-body">{bottomColumns[2].body}</p>
+              <Button asChild variant="ghost" className="mt-8">
+                <a href={heroActions[1].href}>
+                  {bottomColumns[2].cta}
+                  <ArrowRight size={16} weight="bold" />
+                </a>
+              </Button>
+            </article>
+          </div>
+        </section>
+
+        <footer className="section-shell border-t border-white/8 pb-12 pt-8 md:pb-16">
+          <div className="footer-shell">
+            <div className="footer-mark">S</div>
+            <div>
+              <h2 className="text-[2.4rem] leading-none tracking-[-0.05em] text-stone-100">
+                {footerStatement.title}
+              </h2>
+              <p className="mt-3 text-base leading-8 text-stone-400">
+                {footerStatement.body}
+              </p>
+            </div>
+          </div>
+        </footer>
       </div>
     </main>
   );
 }
 
-type ConceptSectionProps = {
-  id: string;
-  number: string;
-  name: string;
-  note: string;
-  className: string;
-  children: ReactNode;
-};
-
-function ConceptSection({
-  id,
-  number,
-  name,
-  note,
-  className,
-  children
-}: ConceptSectionProps) {
+function HeroDiagram() {
   return (
-    <section id={id} className={`section-shell concept-frame ${className}`}>
-      <div className="concept-header">
-        <div>
-          <p className="concept-id">
-            {number}
-            <span>{name}</span>
-          </p>
-          <p className="mt-3 max-w-[62ch] text-sm leading-7 text-stone-400">{note}</p>
-        </div>
-        <a href="#top" className="back-link">
-          Back to picker
-          <ArrowUpRight size={16} weight="bold" />
-        </a>
-      </div>
-      {children}
-    </section>
-  );
-}
+    <motion.div
+      className="diagram-shell"
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+    >
+      <div className="diagram-grid" aria-hidden="true" />
 
-function ConceptIndex() {
-  return (
-    <div className="concept-index">
-      <p className="micro-label text-stone-400">Pick a direction to expand later</p>
-      <div className="mt-6 grid gap-3">
-        {concepts.map((concept) => (
-          <a key={concept.id} href={`#${concept.id}`} className="concept-index-row">
-            <div>
-              <p className="text-sm font-medium tracking-[0.14em] text-stone-100 uppercase">
-                {concept.number} {concept.name}
-              </p>
-              <p className="mt-2 text-sm leading-7 text-stone-400">{concept.note}</p>
+      <div className="diagram-rail diagram-rail-left">
+        {diagramInputs.map((item, index) => (
+          <Card key={item.title} className="diagram-card">
+            <div className="diagram-card-inner">
+              <p className="diagram-card-title">{item.title}</p>
+              <p className="diagram-card-meta">{item.meta}</p>
             </div>
-            <ArrowRight size={18} weight="bold" className="text-stone-500" />
-          </a>
+            <span className={`connector connector-left connector-left-${index + 1}`} />
+          </Card>
         ))}
       </div>
-    </div>
-  );
-}
 
-type MetricPanelProps = {
-  icon: ReactNode;
-  title: string;
-  items: readonly string[];
-};
-
-function MetricPanel({ icon, title, items }: MetricPanelProps) {
-  return (
-    <article className="tactical-panel">
-      <div className="flex items-center gap-3 text-stone-100">
-        {icon}
-        <p className="text-base font-semibold tracking-tight">{title}</p>
-      </div>
-      <div className="mt-5 space-y-3">
-        {items.map((item) => (
-          <div key={item} className="tactical-row">
-            <span className="tactical-tick" />
-            <span className="font-mono text-sm text-stone-300">{item}</span>
+      <div className="diagram-center">
+        <motion.div
+          className="center-stack"
+          animate={{ y: [0, -5, 0] }}
+          transition={{ duration: 5.2, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <div className="center-layer center-layer-1" />
+          <div className="center-layer center-layer-2" />
+          <div className="center-layer center-layer-3" />
+          <div className="center-core">
+            <Cube size={42} weight="regular" />
           </div>
+        </motion.div>
+        <div className="center-tag">Sane</div>
+        <div className="reversible-pill">Reversible by default</div>
+      </div>
+
+      <div className="diagram-rail diagram-rail-right">
+        {diagramOutputs.map((item, index) => (
+          <Card key={item.title} className="diagram-card">
+            <div className="diagram-card-inner">
+              <p className="diagram-card-title">{item.title}</p>
+              <p className="diagram-card-meta">{item.meta}</p>
+            </div>
+            <span className={`connector connector-right connector-right-${index + 1}`} />
+            <div className="diagram-output-icon">
+              {index === 0 ? (
+                <Eye size={18} weight="regular" />
+              ) : index === 1 ? (
+                <Package size={18} weight="regular" />
+              ) : index === 2 ? (
+                <ArrowRight size={18} weight="bold" />
+              ) : (
+                <Wrench size={18} weight="regular" />
+              )}
+            </div>
+          </Card>
         ))}
       </div>
-    </article>
+    </motion.div>
   );
 }
 
-type NarrativeBlockProps = {
-  label: string;
-  body: string;
-};
-
-function NarrativeBlock({ label, body }: NarrativeBlockProps) {
+function StackPreview() {
   return (
-    <article className="narrative-block">
-      <p className="micro-label text-stone-500">{label}</p>
-      <p className="mt-4 text-base leading-8 text-stone-200">{body}</p>
-    </article>
-  );
-}
-
-type DrawerPanelProps = {
-  title: string;
-  body: string;
-};
-
-function DrawerPanel({ title, body }: DrawerPanelProps) {
-  return (
-    <article className="drawer-panel">
-      <div className="drawer-handle" />
-      <div>
-        <p className="text-sm font-medium tracking-[0.18em] text-stone-100 uppercase">{title}</p>
-        <p className="mt-3 text-sm leading-7 text-stone-300">{body}</p>
-      </div>
-    </article>
-  );
-}
-
-type CompactListProps = {
-  title: string;
-  icon: ReactNode;
-  items: readonly string[];
-};
-
-function CompactList({ title, icon, items }: CompactListProps) {
-  return (
-    <article className="compact-panel">
-      <div className="flex items-center gap-3 text-stone-100">
-        {icon}
-        <p className="text-base font-semibold tracking-tight">{title}</p>
-      </div>
-      <div className="mt-5 flex flex-wrap gap-2">
-        {items.map((item) => (
-          <span key={item} className="compact-chip">
-            {item}
-          </span>
-        ))}
-      </div>
-    </article>
+    <div className="stack-preview" aria-hidden="true">
+      <div className="stack-card stack-card-1" />
+      <div className="stack-card stack-card-2" />
+      <div className="stack-card stack-card-3" />
+      <div className="stack-card stack-card-4" />
+      <div className="stack-line stack-line-1" />
+      <div className="stack-line stack-line-2" />
+      <div className="stack-line stack-line-3" />
+    </div>
   );
 }
 
@@ -685,6 +391,7 @@ function BackgroundWash() {
     >
       <div className="wash-orb wash-orb-primary" />
       <div className="wash-orb wash-orb-secondary" />
+      <div className="wash-rings" />
       <div className="wash-grid" />
       <div className="wash-noise" />
     </div>

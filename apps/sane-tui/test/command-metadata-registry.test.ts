@@ -91,6 +91,9 @@ describe("command metadata registry", () => {
       ".sane/state/summary.json",
       ".sane/state/decisions.jsonl"
     ]);
+    expect(getCommandSpec("export_hooks").help.at(-1)).toBe(
+      "On native Windows, Codex hooks are unavailable; use WSL for hook-enabled flows."
+    );
   });
 
   it("tracks risky confirmation copy and notice titles", () => {
