@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { createRecommendedLocalConfig, detectCodexEnvironment, readLocalConfig } from "@sane/config";
+import { createRecommendedLocalConfig, detectCodexEnvironment } from "@sane/config";
 import { InventoryScope, InventoryStatus, OperationKind, OperationResult } from "@sane/core";
 import {
   createOptionalPackSkills,
@@ -16,6 +16,7 @@ import { CORE_INSTALL_BUNDLE_TARGETS } from "./core-install-bundle-targets.js";
 import { inspectCodexConfigInventory } from "./codex-config.js";
 import { inspectCodexSkillsAndAgents } from "./codex-native.js";
 import { inspectCustomAgentsInventory, inspectHooksInventory } from "./hooks-custom-agents.js";
+import { inspectSavedLocalConfig } from "./local-config.js";
 import { inspectOpencodeAgentsInventory } from "./opencode-native.js";
 import { showRuntimeStatus } from "./index.js";
 
@@ -336,15 +337,7 @@ function loadConfigState(paths: ProjectPaths, codexPaths: CodexPaths):
   | { kind: "missing" }
   | { kind: "invalid" }
   | { kind: "loaded"; config: ReturnType<typeof createRecommendedLocalConfig> } {
-  if (!existsSync(paths.configPath)) {
-    return { kind: "missing" };
-  }
-
-  try {
-    return { kind: "loaded", config: readLocalConfig(paths.configPath) };
-  } catch {
-    return { kind: "invalid" };
-  }
+  return inspectSavedLocalConfig(paths);
 }
 
 function findInventory(inventory: InventoryItem[], name: string): InventoryItem {

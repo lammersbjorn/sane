@@ -3,8 +3,7 @@ import { join } from "node:path";
 
 import {
   createRecommendedLocalConfig,
-  detectCodexEnvironment,
-  readLocalConfig
+  detectCodexEnvironment
 } from "@sane/config";
 import {
   InventoryScope,
@@ -22,6 +21,8 @@ import {
   type ModelRoleGuidance
 } from "@sane/framework-assets";
 import { type CodexPaths, type ProjectPaths } from "@sane/platform";
+
+import { recommendedLocalConfigFromEnvironment } from "./local-config.js";
 
 export function exportOpencodeAgents(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
   const roles = activeModelRoutingGuidance(paths, codexPaths);
@@ -157,11 +158,10 @@ function loadOrDefaultConfig(
   paths: ProjectPaths,
   environment: ReturnType<typeof detectCodexEnvironment>
 ) {
-  try {
-    return readLocalConfig(paths.configPath);
-  } catch {
-    return createRecommendedLocalConfig(environment);
-  }
+  return recommendedLocalConfigFromEnvironment(
+    paths,
+    createRecommendedLocalConfig(environment)
+  );
 }
 
 function fileExists(path: string): boolean {

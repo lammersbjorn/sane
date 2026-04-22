@@ -2,7 +2,6 @@ import {
   createRecommendedLocalConfig,
   createRecommendedModelRoutingPresets,
   detectCodexEnvironment,
-  readLocalConfig
 } from "@sane/config";
 import {
   InventoryScope,
@@ -28,6 +27,8 @@ import { type CodexPaths, type ProjectPaths } from "@sane/platform";
 
 import { existsSync, mkdirSync, readFileSync, rmSync, rmSync as removeSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+
+import { recommendedLocalConfigFromEnvironment } from "./local-config.js";
 
 const OPTIONAL_PACK_NAMES = ["caveman", "cavemem", "rtk", "frontend-craft"] as const;
 
@@ -498,11 +499,10 @@ function activeGuidance(paths: ProjectPaths, codexPaths: CodexPaths): {
 }
 
 function loadOrDefaultConfig(paths: ProjectPaths, codexPaths: CodexPaths, environment = detectCodexEnvironment(codexPaths.modelsCacheJson, codexPaths.authJson)) {
-  try {
-    return readLocalConfig(paths.configPath);
-  } catch {
-    return createRecommendedLocalConfig(environment);
-  }
+  return recommendedLocalConfigFromEnvironment(
+    paths,
+    createRecommendedLocalConfig(environment)
+  );
 }
 
 function formatGuidancePacks(packs: GuidancePacks): string {

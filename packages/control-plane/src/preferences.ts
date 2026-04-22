@@ -4,7 +4,6 @@ import {
   createRecommendedLocalConfig,
   detectCodexEnvironment,
   enabledPackNames,
-  readLocalConfig,
   stringifyLocalConfig,
   type LocalConfig,
   type TelemetryLevel
@@ -18,6 +17,8 @@ import {
 } from "@sane/core";
 import { ensureRuntimeDirs, type CodexPaths, type ProjectPaths } from "@sane/platform";
 import { writeCanonicalWithBackupResult } from "@sane/state";
+
+import { inspectSavedLocalConfig, loadOrRecommendedLocalConfig } from "./local-config.js";
 
 export interface PreferencesSnapshot {
   source: "local" | "recommended";
@@ -40,25 +41,30 @@ export interface TelemetrySnapshot {
 }
 
 export function showConfig(paths: ProjectPaths): OperationResult {
-  if (!existsSync(paths.configPath)) {
+  const configState = inspectSavedLocalConfig(paths);
+  if (configState.kind !== "loaded") {
     return new OperationResult({
       kind: OperationKind.ShowConfig,
-      summary: `config: missing at ${paths.configPath}`,
+      summary:
+        configState.kind === "missing"
+          ? `config: missing at ${paths.configPath}`
+          : `config: invalid at ${paths.configPath}`,
       details: [],
       pathsTouched: [paths.configPath],
       inventory: [
         {
           name: "config",
           scope: InventoryScope.LocalRuntime,
-          status: InventoryStatus.Missing,
+          status:
+            configState.kind === "missing" ? InventoryStatus.Missing : InventoryStatus.Invalid,
           path: paths.configPath,
-          repairHint: "run `install`"
+          repairHint: configState.kind === "missing" ? "run `install`" : "repair config first"
         }
       ]
     });
   }
 
-  const config = readLocalConfig(paths.configPath);
+  const config = configState.config;
   return new OperationResult({
     kind: OperationKind.ShowConfig,
     summary: `config: ok at ${paths.configPath}`,
@@ -149,20 +155,13 @@ export function inspectEditablePreferencesConfig(
   const recommended = createRecommendedLocalConfig(
     detectCodexEnvironment(codexPaths.modelsCacheJson, codexPaths.authJson)
   );
+  const current = loadOrRecommendedLocalConfig(paths, recommended);
 
-  try {
-    return {
-      source: "local",
-      current: readLocalConfig(paths.configPath),
-      recommended
-    };
-  } catch {
-    return {
-      source: "recommended",
-      current: recommended,
-      recommended
-    };
-  }
+  return {
+    source: inspectSavedLocalConfig(paths).kind === "loaded" ? "local" : "recommended",
+    current,
+    recommended
+  };
 }
 
 export function inspectTelemetrySnapshot(paths: ProjectPaths): TelemetrySnapshot {

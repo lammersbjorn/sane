@@ -55,6 +55,17 @@ export interface RuntimeProgressSnapshot {
   verificationStatus: string;
 }
 
+interface RuntimeStateSnapshot {
+  current: CurrentRunState | null;
+  summary: RunSummary | null;
+  brief: string | null;
+  historyCounts: LayeredStateHistoryCounts;
+  latestPolicyPreview: LatestPolicyPreviewSnapshot;
+  currentRunStatus: InventoryStatus;
+  summaryStatus: InventoryStatus;
+  briefStatus: InventoryStatus;
+}
+
 export interface InspectSnapshot {
   status: {
     summary: string;
@@ -157,13 +168,11 @@ export function doctorRuntime(paths: ProjectPaths): OperationResult {
 }
 
 export function showRuntimeHistory(paths: ProjectPaths): LayeredStateHistoryCounts {
-  const layered = tryLoadLayeredState(paths);
-  return layered?.historyCounts ?? { events: 0, decisions: 0, artifacts: 0 };
+  return inspectRuntimeStateSnapshot(paths).historyCounts;
 }
 
 export function showRuntimeProgress(paths: ProjectPaths): RuntimeProgressSnapshot | null {
-  const layered = tryLoadLayeredState(paths);
-  const current = layered?.currentRun;
+  const current = inspectRuntimeStateSnapshot(paths).current;
 
   if (!current) {
     return null;
@@ -177,7 +186,7 @@ export function showRuntimeProgress(paths: ProjectPaths): RuntimeProgressSnapsho
 
 export function inspectSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): InspectSnapshot {
   const statusBundle = inspectStatusBundle(paths, codexPaths);
-  const layered = tryLoadLayeredState(paths);
+  const runtimeState = inspectRuntimeStateSnapshot(paths);
 
   return {
     status: {
@@ -187,8 +196,8 @@ export function inspectSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): In
     statusBundle,
     doctor: doctor(paths, codexPaths),
     runtimeSummary: showRuntimeSummary(paths),
-    runtimeHistory: layered?.historyCounts ?? { events: 0, decisions: 0, artifacts: 0 },
-    latestPolicyPreview: layered?.latestPolicyPreview ?? inspectLatestPolicyPreview(paths),
+    runtimeHistory: runtimeState.historyCounts,
+    latestPolicyPreview: runtimeState.latestPolicyPreview,
     localConfig: showConfig(paths),
     codexConfig: showCodexConfig(codexPaths),
     integrationsAudit: inspectIntegrationsProfileAudit(codexPaths),
@@ -204,12 +213,8 @@ export function inspectSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): In
 }
 
 export function showRuntimeSummary(paths: ProjectPaths): OperationResult {
-  const layered = tryLoadLayeredState(paths);
-  const current = layered?.currentRun;
-  const summary = layered?.summary;
-  const brief = layered?.brief;
-  const latestPolicyPreview = layered?.latestPolicyPreview ?? inspectLatestPolicyPreview(paths);
-  const historyCounts = layered?.historyCounts ?? { events: 0, decisions: 0, artifacts: 0 };
+  const runtimeState = inspectRuntimeStateSnapshot(paths);
+  const { current, summary, brief, latestPolicyPreview, historyCounts } = runtimeState;
   const details = [
     `current-run: ${current ? "present" : "missing"} at ${paths.currentRunPath}`,
     `summary: ${summary ? "present" : "missing"} at ${paths.summaryPath}`,
@@ -271,15 +276,7 @@ export function showRuntimeSummary(paths: ProjectPaths): OperationResult {
 }
 
 export function inspectLatestPolicyPreview(paths: ProjectPaths): LatestPolicyPreviewSnapshot {
-  const layered = tryLoadLayeredState(paths);
-  return layered?.latestPolicyPreview ?? {
-    status: "missing",
-    scenarioCount: 0,
-    scenarioIds: [],
-    scenarios: [],
-    tsUnix: null,
-    summary: null
-  };
+  return inspectRuntimeStateSnapshot(paths).latestPolicyPreview;
 }
 
 export * from "./codex-config.js";
@@ -306,6 +303,39 @@ function tryLoadLayeredState(paths: ProjectPaths): LayeredStateBundle | null {
   } catch {
     return null;
   }
+}
+
+function inspectRuntimeStateSnapshot(paths: ProjectPaths): RuntimeStateSnapshot {
+  const layeredState = tryLoadLayeredState(paths);
+  const current =
+    layeredState?.currentRun ??
+    safeRead(() => readCurrentRunState(paths.currentRunPath));
+  const summary =
+    layeredState?.summary ??
+    safeRead(() => readRunSummary(paths.summaryPath));
+  const brief =
+    layeredState?.brief ??
+    safeRead(() => readFileSync(paths.briefPath, "utf8"));
+  const stateDirPresent = existsSync(paths.stateDir);
+
+  return {
+    current,
+    summary,
+    brief,
+    historyCounts: layeredState?.historyCounts ?? { events: 0, decisions: 0, artifacts: 0 },
+    latestPolicyPreview: layeredState?.latestPolicyPreview ?? missingLatestPolicyPreview(),
+    currentRunStatus: !stateDirPresent
+      ? InventoryStatus.Missing
+      : current
+        ? InventoryStatus.Installed
+        : readStatus(() => readCurrentRunState(paths.currentRunPath)),
+    summaryStatus: !stateDirPresent
+      ? InventoryStatus.Missing
+      : summary
+        ? InventoryStatus.Installed
+        : readStatus(() => readRunSummary(paths.summaryPath)),
+    briefStatus: brief ? InventoryStatus.Installed : fileStatus(paths.briefPath)
+  };
 }
 
 function ensureInstallRuntimeBaseline(
@@ -404,20 +434,7 @@ function recommendedLocalConfig(codexPaths: CodexPaths): LocalConfig {
 }
 
 function inspectRuntimeInventory(paths: ProjectPaths) {
-  const layeredState = tryLoadLayeredState(paths);
-  const currentRunStatus = !existsSync(paths.stateDir)
-    ? InventoryStatus.Missing
-    : layeredState?.currentRun
-      ? InventoryStatus.Installed
-      : readStatus(() => readCurrentRunState(paths.currentRunPath));
-  const summaryStatus = !existsSync(paths.stateDir)
-    ? InventoryStatus.Missing
-    : layeredState?.summary
-      ? InventoryStatus.Installed
-      : readStatus(() => readRunSummary(paths.summaryPath));
-  const briefStatus = layeredState?.brief
-    ? InventoryStatus.Installed
-    : fileStatus(paths.briefPath);
+  const runtimeState = inspectRuntimeStateSnapshot(paths);
 
   return [
     {
@@ -437,21 +454,21 @@ function inspectRuntimeInventory(paths: ProjectPaths) {
     {
       name: "current-run",
       scope: InventoryScope.LocalRuntime,
-      status: currentRunStatus,
+      status: runtimeState.currentRunStatus,
       path: paths.currentRunPath,
       repairHint: repairHintForPath(paths.currentRunPath)
     },
     {
       name: "summary",
       scope: InventoryScope.LocalRuntime,
-      status: summaryStatus,
+      status: runtimeState.summaryStatus,
       path: paths.summaryPath,
       repairHint: repairHintForPath(paths.summaryPath)
     },
     {
       name: "brief",
       scope: InventoryScope.LocalRuntime,
-      status: briefStatus,
+      status: runtimeState.briefStatus,
       path: paths.briefPath,
       repairHint: repairHintForPath(paths.briefPath)
     }
@@ -633,6 +650,25 @@ function readStatus(read: () => unknown): InventoryStatus {
 
 function fileStatus(path: string): InventoryStatus {
   return existsSync(path) ? InventoryStatus.Installed : InventoryStatus.Missing;
+}
+
+function missingLatestPolicyPreview(): LatestPolicyPreviewSnapshot {
+  return {
+    status: "missing",
+    scenarioCount: 0,
+    scenarioIds: [],
+    scenarios: [],
+    tsUnix: null,
+    summary: null
+  };
+}
+
+function safeRead<T>(reader: () => T): T | null {
+  try {
+    return reader();
+  } catch {
+    return null;
+  }
 }
 
 function repairHintForPath(path: string): string | null {

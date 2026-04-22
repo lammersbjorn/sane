@@ -3,8 +3,7 @@ import {
   createDefaultModelRoutingPresets,
   createRecommendedModelRoutingPresets,
   createRecommendedSubagentPreset,
-  detectCodexEnvironment,
-  readLocalConfig
+  detectCodexEnvironment
 } from "@sane/config";
 import {
   OperationKind,
@@ -25,7 +24,14 @@ import {
   policyRuleAsString,
   type PolicyInput
 } from "@sane/policy";
-import { readCurrentRunState, type CurrentRunState } from "@sane/state";
+import {
+  createCanonicalStatePaths,
+  loadLayeredStateBundle,
+  readCurrentRunState,
+  type CurrentRunState
+} from "@sane/state";
+
+import { loadOrDefaultLocalConfig } from "./local-config.js";
 
 export function previewPolicy(paths: ProjectPaths, env: HomeDirEnv = process.env): OperationResult {
   const config = loadOrDefaultConfig(paths);
@@ -47,11 +53,7 @@ export function previewPolicy(paths: ProjectPaths, env: HomeDirEnv = process.env
 }
 
 function loadOrDefaultConfig(paths: ProjectPaths) {
-  try {
-    return readLocalConfig(paths.configPath);
-  } catch {
-    return createDefaultLocalConfig();
-  }
+  return loadOrDefaultLocalConfig(paths);
 }
 
 function renderPolicyPreviewLine(
@@ -105,15 +107,42 @@ function buildPolicyPreview(paths: ProjectPaths): PolicyPreviewPayload {
 }
 
 function buildCurrentRunInspectScenario(paths: ProjectPaths): PolicyPreviewScenario | null {
-  try {
-    const currentRun = readCurrentRunState(paths.currentRunPath);
-    const input = mapCurrentRunToPolicyInput(currentRun);
+  const currentRun = loadCurrentRunInspectState(paths);
+  if (!currentRun) {
+    return null;
+  }
 
-    return buildScenarioPreview(
-      "current-run-inspect",
-      "inspect-only scenario derived from current-run state",
-      input
+  const input = mapCurrentRunToPolicyInput(currentRun);
+
+  return buildScenarioPreview(
+    "current-run-inspect",
+    "inspect-only scenario derived from current-run state",
+    input
+  );
+}
+
+function loadCurrentRunInspectState(paths: ProjectPaths): CurrentRunState | null {
+  try {
+    const layered = loadLayeredStateBundle(
+      createCanonicalStatePaths(
+        paths.configPath,
+        paths.summaryPath,
+        paths.currentRunPath,
+        paths.briefPath,
+        paths.eventsPath,
+        paths.decisionsPath,
+        paths.artifactsPath
+      )
     );
+    if (layered.currentRun) {
+      return layered.currentRun;
+    }
+  } catch {
+    // Fall through to direct read.
+  }
+
+  try {
+    return readCurrentRunState(paths.currentRunPath);
   } catch {
     return null;
   }

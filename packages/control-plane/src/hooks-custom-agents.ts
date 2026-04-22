@@ -4,8 +4,7 @@ import { join } from "node:path";
 import {
   createRecommendedLocalConfig,
   createRecommendedModelRoutingPresets,
-  detectCodexEnvironment,
-  readLocalConfig
+  detectCodexEnvironment
 } from "@sane/config";
 import { InventoryScope, InventoryStatus, OperationKind, OperationResult } from "@sane/core";
 import {
@@ -24,6 +23,7 @@ import {
   buildManagedSessionStartHookCommand,
   isManagedSessionStartHookCommand
 } from "./session-start-hook.js";
+import { recommendedLocalConfigFromEnvironment } from "./local-config.js";
 
 export function exportCustomAgents(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
   const roles = activeModelRoutingGuidance(paths, codexPaths);
@@ -304,11 +304,10 @@ function loadOrDefaultConfig(
   paths: ProjectPaths,
   environment: ReturnType<typeof detectCodexEnvironment>
 ) {
-  try {
-    return readLocalConfig(paths.configPath);
-  } catch {
-    return createRecommendedLocalConfig(environment);
-  }
+  return recommendedLocalConfigFromEnvironment(
+    paths,
+    createRecommendedLocalConfig(environment)
+  );
 }
 
 function readHooksJson(path: string): Record<string, any> {
