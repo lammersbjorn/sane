@@ -37,6 +37,7 @@ import {
   showCodexConfig
 } from "./codex-config.js";
 import { doctor, doctorForStatusBundle, inspectDoctorSnapshot, inspectStatusBundle } from "./inventory.js";
+import { formatLatestPolicyPreviewLines } from "./policy-preview-presenter.js";
 import { previewPolicy, previewPolicyForCurrentRun } from "./policy-preview.js";
 import { showConfig } from "./preferences.js";
 import { inspectSavedLocalConfig } from "./local-config.js";
@@ -256,13 +257,7 @@ function buildRuntimeSummary(paths: ProjectPaths, runtimeState: RuntimeStateSnap
   }
 
   if (latestPolicyPreview.status === "present") {
-    details.push(`latest policy preview: ${latestPolicyPreview.scenarioCount} scenarios`);
-    if (latestPolicyPreview.tsUnix !== null && latestPolicyPreview.summary) {
-      details.push(
-        `latest policy preview provenance: ts ${latestPolicyPreview.tsUnix}, summary ${latestPolicyPreview.summary}`
-      );
-    }
-    details.push(...latestPolicyPreviewInputLines(latestPolicyPreview));
+    details.push(...formatLatestPolicyPreviewLines(latestPolicyPreview, { mode: "runtime-summary" }));
   }
 
   return new OperationResult({
@@ -286,6 +281,7 @@ export * from "./history.js";
 export * from "./inventory.js";
 export * from "./opencode-native.js";
 export * from "./policy-preview.js";
+export * from "./policy-preview-presenter.js";
 export * from "./preferences.js";
 
 function inspectRuntimeStateSnapshot(paths: ProjectPaths): RuntimeStateSnapshot {
@@ -451,22 +447,6 @@ function doctorStatus(
   return item
     ? presentManagedStatus(managedStatusKindFromInventory(item.status)).label
     : "unknown";
-}
-
-function latestPolicyPreviewInputLines(preview: LatestPolicyPreviewSnapshot): string[] {
-  if (preview.status !== "present") {
-    return [];
-  }
-
-  return preview.scenarios.flatMap((scenario) => {
-    if (!scenario.input) {
-      return [];
-    }
-
-    return [
-      `latest policy input ${scenario.id}: intent ${scenario.input.intent ?? "unknown"}, task ${scenario.input.taskShape ?? "unknown"}, risk ${scenario.input.risk ?? "unknown"}, ambiguity ${scenario.input.ambiguity ?? "unknown"}, parallelism ${scenario.input.parallelism ?? "unknown"}, context ${scenario.input.contextPressure ?? "unknown"}, run ${scenario.input.runState ?? "unknown"}`
-    ];
-  });
 }
 
 function installPathsTouched(paths: ProjectPaths): string[] {
