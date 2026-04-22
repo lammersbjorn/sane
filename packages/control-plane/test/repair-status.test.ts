@@ -7,6 +7,7 @@ import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { applyCodexProfile, backupCodexConfig } from "../src/codex-config.js";
+import { CORE_INSTALL_BUNDLE_TARGETS } from "../src/core-install-bundle-targets.js";
 import { exportAll } from "../src/index.js";
 import { inspectRepairStatus } from "../src/repair-status.js";
 import { installRuntime } from "../src/index.js";
@@ -27,6 +28,9 @@ afterEach(() => {
 });
 
 describe("repair status snapshot", () => {
+  const actionIdForTarget = (target: (typeof CORE_INSTALL_BUNDLE_TARGETS)[number]) =>
+    `uninstall_${target.replaceAll("-", "_")}` as const;
+
   it("reports missing restore/telemetry/install state on fresh setup", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
@@ -39,10 +43,9 @@ describe("repair status snapshot", () => {
         install_runtime: "missing",
         restore_codex_config: "missing",
         reset_telemetry_data: "missing",
-        uninstall_user_skills: "missing",
-        uninstall_global_agents: "missing",
-        uninstall_hooks: "missing",
-        uninstall_custom_agents: "missing",
+        ...Object.fromEntries(
+          CORE_INSTALL_BUNDLE_TARGETS.map((target) => [actionIdForTarget(target), "missing"])
+        ),
         uninstall_opencode_agents: "missing",
         uninstall_all: "missing"
       })
@@ -68,10 +71,9 @@ describe("repair status snapshot", () => {
         backup_codex_config: "installed",
         restore_codex_config: "available",
         reset_telemetry_data: "present",
-        uninstall_user_skills: "installed",
-        uninstall_global_agents: "installed",
-        uninstall_hooks: "installed",
-        uninstall_custom_agents: "installed",
+        ...Object.fromEntries(
+          CORE_INSTALL_BUNDLE_TARGETS.map((target) => [actionIdForTarget(target), "installed"])
+        ),
         uninstall_opencode_agents: "missing",
         uninstall_all: "installed"
       })

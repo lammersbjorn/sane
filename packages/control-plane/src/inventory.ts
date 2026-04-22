@@ -7,6 +7,7 @@ import { createOptionalPackSkill, optionalPackSkillName } from "@sane/framework-
 import { type CodexPaths, type ProjectPaths } from "@sane/platform";
 import { listCanonicalBackupSiblings } from "@sane/state";
 
+import { CORE_INSTALL_BUNDLE_TARGETS } from "./core-install-bundle-targets.js";
 import { inspectCodexConfigInventory } from "./codex-config.js";
 import { inspectCodexSkillsAndAgents } from "./codex-native.js";
 import { inspectCustomAgentsInventory, inspectHooksInventory } from "./hooks-custom-agents.js";
@@ -264,8 +265,9 @@ function findInventoryOrNull(inventory: InventoryItem[], name: string): Inventor
 }
 
 function bundleInstallState(inventory: InventoryItem[]): "installed" | "missing" {
-  const names = ["user-skills", "global-agents", "hooks", "custom-agents"] as const;
-  return names.every((name) => findInventory(inventory, name).status === InventoryStatus.Installed)
+  return CORE_INSTALL_BUNDLE_TARGETS.every(
+    (name) => findInventory(inventory, name).status === InventoryStatus.Installed
+  )
     ? "installed"
     : "missing";
 }

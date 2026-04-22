@@ -1,6 +1,7 @@
 import { type CodexPaths, type ProjectPaths } from "@sane/platform";
 
 import { inspectCodexConfigBackupSnapshot } from "./codex-config.js";
+import { CORE_INSTALL_BUNDLE_TARGETS } from "./core-install-bundle-targets.js";
 import { inspectStatusBundle } from "./inventory.js";
 import { inspectTelemetrySnapshot } from "./preferences.js";
 
@@ -58,8 +59,9 @@ function statusFor(
 }
 
 function uninstallAllStatus(inventory: ReturnType<typeof inspectStatusBundle>["inventory"]): string {
-  const names = ["user-skills", "global-agents", "hooks", "custom-agents"] as const;
-  return names.some((name) => inventory.find((item) => item.name === name)?.status.displayString() === "installed")
+  return CORE_INSTALL_BUNDLE_TARGETS.some(
+    (name) => inventory.find((item) => item.name === name)?.status.displayString() === "installed"
+  )
     ? "installed"
     : "missing";
 }

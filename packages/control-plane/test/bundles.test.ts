@@ -8,6 +8,7 @@ import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { exportAll, uninstallAll } from "../src/bundles.js";
+import { CORE_INSTALL_BUNDLE_TARGETS } from "../src/core-install-bundle-targets.js";
 import { saveConfig } from "../src/preferences.js";
 
 const tempDirs: string[] = [];
@@ -25,6 +26,15 @@ afterEach(() => {
 });
 
 describe("bundled install/remove operations", () => {
+  it("exposes the canonical managed target order for install bundle operations", () => {
+    expect(CORE_INSTALL_BUNDLE_TARGETS).toEqual([
+      "user-skills",
+      "global-agents",
+      "hooks",
+      "custom-agents"
+    ]);
+  });
+
   it("exports current managed user-level targets together", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();

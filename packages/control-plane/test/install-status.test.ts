@@ -6,6 +6,7 @@ import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { applyIntegrationsProfile } from "../src/codex-config.js";
+import { CORE_INSTALL_BUNDLE_TARGETS } from "../src/core-install-bundle-targets.js";
 import { exportAll } from "../src/index.js";
 import { inspectInstallStatus } from "../src/install-status.js";
 
@@ -33,7 +34,7 @@ describe("install status snapshot", () => {
     expect(inspectInstallStatus(paths, codexPaths)).toEqual(
       expect.objectContaining({
         bundleStatus: "missing",
-        missingTargets: ["user-skills", "global-agents", "hooks", "custom-agents"],
+        missingTargets: [...CORE_INSTALL_BUNDLE_TARGETS],
         recommendedActionId: "export_all",
         actionStatus: expect.objectContaining({
           export_user_skills: "missing",

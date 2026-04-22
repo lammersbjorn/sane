@@ -2,6 +2,7 @@ import { InventoryStatus } from "@sane/core";
 import { type CodexPaths, type ProjectPaths } from "@sane/platform";
 
 import { inspectIntegrationsProfileStatus } from "./codex-config.js";
+import { CORE_INSTALL_BUNDLE_TARGETS } from "./core-install-bundle-targets.js";
 import { inspectStatusBundle } from "./inventory.js";
 
 export type InstallActionStatusId =
@@ -67,8 +68,7 @@ function inventoryStatus(
 function missingBundleTargets(
   inventory: ReturnType<typeof inspectStatusBundle>["codexNative"]
 ): string[] {
-  const needed = ["user-skills", "global-agents", "hooks", "custom-agents"] as const;
-  return needed.filter(
+  return CORE_INSTALL_BUNDLE_TARGETS.filter(
     (name) => inventory.find((item) => item.name === name)?.status !== InventoryStatus.Installed
   );
 }

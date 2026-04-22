@@ -1,19 +1,16 @@
 import { OperationKind, OperationResult } from "@sane/core";
 import { type CodexPaths, type ProjectPaths } from "@sane/platform";
 
-import { exportGlobalAgents, exportUserSkills, uninstallGlobalAgents, uninstallUserSkills } from "./codex-native.js";
-import { exportCustomAgents, exportHooks, uninstallCustomAgents, uninstallHooks } from "./hooks-custom-agents.js";
+import {
+  exportCoreInstallBundleTargets,
+  uninstallCoreInstallBundleTargets
+} from "./core-install-bundle-targets.js";
 
 export function exportAll(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
   return mergeResults(
     OperationKind.ExportAll,
     "export all: installed managed targets",
-    [
-      exportUserSkills(paths, codexPaths),
-      exportGlobalAgents(paths, codexPaths),
-      exportHooks(codexPaths),
-      exportCustomAgents(paths, codexPaths)
-    ]
+    exportCoreInstallBundleTargets(paths, codexPaths)
   );
 }
 
@@ -21,12 +18,7 @@ export function uninstallAll(codexPaths: CodexPaths): OperationResult {
   return mergeResults(
     OperationKind.UninstallAll,
     "uninstall all: removed Sane's Codex changes",
-    [
-      uninstallUserSkills(codexPaths),
-      uninstallGlobalAgents(codexPaths),
-      uninstallHooks(codexPaths),
-      uninstallCustomAgents(codexPaths)
-    ]
+    uninstallCoreInstallBundleTargets(codexPaths)
   );
 }
 
