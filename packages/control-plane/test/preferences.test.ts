@@ -11,6 +11,7 @@ import {
   inspectEditablePreferencesConfig,
   inspectTelemetrySnapshot,
   inspectPreferencesSnapshot,
+  inspectPrivacyTransparencySnapshot,
   resetTelemetryData,
   saveConfig,
   showConfig
@@ -290,6 +291,20 @@ describe("preferences control plane", () => {
         eventsPresent: true,
         queuePresent: true
       }
+    });
+
+    expect(inspectPrivacyTransparencySnapshot(paths, "product-improvement")).toEqual({
+      consent: "product-improvement",
+      dir: paths.telemetryDir,
+      telemetry: {
+        dirPresent: true,
+        summaryPresent: true,
+        eventsPresent: true,
+        queuePresent: true
+      },
+      summaryPath: paths.telemetrySummaryPath,
+      eventsPath: paths.telemetryEventsPath,
+      queuePath: paths.telemetryQueuePath
     });
   });
 });

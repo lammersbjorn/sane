@@ -1,5 +1,5 @@
 import { PICKER_MODELS, REASONING_EFFORTS, enabledPackNames as configEnabledPackNames } from "@sane/config";
-import { inspectTelemetrySnapshot } from "@sane/control-plane/preferences.js";
+import { inspectPrivacyTransparencySnapshot } from "@sane/control-plane/preferences.js";
 import { optionalPackSkillNames } from "@sane/framework-assets";
 
 import {
@@ -189,23 +189,23 @@ function configFieldExplanation(field: ConfigFieldId): string {
 
 function privacyLines(shell: TuiShell): string[] {
   const config = shell.activeEditor as PrivacyEditorState;
-  const telemetry = inspectTelemetrySnapshot(shell.paths);
-  const summaryPath = shell.paths.telemetrySummaryPath;
-  const eventsPath = shell.paths.telemetryEventsPath;
-  const queuePath = shell.paths.telemetryQueuePath;
+  const transparency = inspectPrivacyTransparencySnapshot(
+    shell.paths,
+    config.config.privacy.telemetry
+  );
 
   return [
-    `consent: ${config.config.privacy.telemetry}`,
-    `dir: ${shell.paths.telemetryDir}`,
-    `summary.json: ${telemetry.summaryPresent ? "present" : "missing"}`,
-    `events.jsonl: ${telemetry.eventsPresent ? "present" : "missing"}`,
-    `queue.jsonl: ${telemetry.queuePresent ? "present" : "missing"}`,
+    `consent: ${transparency.consent}`,
+    `dir: ${transparency.dir}`,
+    `summary.json: ${transparency.telemetry.summaryPresent ? "present" : "missing"}`,
+    `events.jsonl: ${transparency.telemetry.eventsPresent ? "present" : "missing"}`,
+    `queue.jsonl: ${transparency.telemetry.queuePresent ? "present" : "missing"}`,
     "",
     "No remote upload logic yet.",
     "Issue reporting stays separate.",
-    `summary path: ${summaryPath}`,
-    `events path: ${eventsPath}`,
-    `queue path: ${queuePath}`
+    `summary path: ${transparency.summaryPath}`,
+    `events path: ${transparency.eventsPath}`,
+    `queue path: ${transparency.queuePath}`
   ];
 }
 

@@ -48,6 +48,15 @@ export interface TelemetrySnapshot {
   queuePresent: boolean;
 }
 
+export interface PrivacyTransparencySnapshot {
+  consent: TelemetryLevel;
+  dir: string;
+  telemetry: TelemetrySnapshot;
+  summaryPath: string;
+  eventsPath: string;
+  queuePath: string;
+}
+
 export function showConfig(paths: ProjectPaths, codexPaths?: CodexPaths): OperationResult {
   const configState = inspectSavedLocalConfig(paths);
   if (configState.kind !== "loaded") {
@@ -194,6 +203,20 @@ export function inspectTelemetrySnapshot(paths: ProjectPaths): TelemetrySnapshot
     summaryPresent: existsSync(paths.telemetrySummaryPath),
     eventsPresent: existsSync(paths.telemetryEventsPath),
     queuePresent: existsSync(paths.telemetryQueuePath)
+  };
+}
+
+export function inspectPrivacyTransparencySnapshot(
+  paths: ProjectPaths,
+  consent: TelemetryLevel
+): PrivacyTransparencySnapshot {
+  return {
+    consent,
+    dir: paths.telemetryDir,
+    telemetry: inspectTelemetrySnapshot(paths),
+    summaryPath: paths.telemetrySummaryPath,
+    eventsPath: paths.telemetryEventsPath,
+    queuePath: paths.telemetryQueuePath
   };
 }
 
