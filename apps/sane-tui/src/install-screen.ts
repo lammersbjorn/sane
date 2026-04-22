@@ -14,11 +14,15 @@ import {
 } from "@sane/control-plane/hooks-custom-agents.js";
 import { executeOperation } from "@sane/control-plane/history.js";
 import {
+  type InstallActionStatus,
+  inspectInstallStatusFromStatusBundle,
   inspectInstallStatus,
   type InstallActionStatusId
 } from "@sane/control-plane/install-status.js";
+import { inspectStatusBundle } from "@sane/control-plane/inventory.js";
 import { exportOpencodeAgents } from "@sane/control-plane/opencode-native.js";
 import { listSectionActions } from "@/command-registry.js";
+import { buildInstallActionRows } from "@/section-action-rows.js";
 
 export interface InstallScreenModel {
   summary: "Install";
@@ -45,21 +49,21 @@ export interface InstallScreenModel {
 export interface InstallAction {
   id: InstallActionStatusId;
   title: string;
-  status: string;
+  status: InstallActionStatus;
   repoMutation: boolean;
   includes?: string[];
 }
 
-export function loadInstallScreen(paths: ProjectPaths, codexPaths: CodexPaths): InstallScreenModel {
-  const status = inspectInstallStatus(paths, codexPaths);
+export function loadInstallScreen(
+  paths: ProjectPaths,
+  codexPaths: CodexPaths,
+  statusBundle?: ReturnType<typeof inspectStatusBundle>
+): InstallScreenModel {
+  const status = statusBundle
+    ? inspectInstallStatusFromStatusBundle(paths, codexPaths, statusBundle)
+    : inspectInstallStatus(paths, codexPaths);
   const inventory = status.inventory;
-  const actions = listSectionActions("install").map((action) => ({
-    id: action.id as InstallAction["id"],
-    title: action.label,
-    status: status.actionStatus[action.id as InstallActionStatusId].label,
-    repoMutation: action.repoMutation,
-    includes: action.includes
-  }));
+  const actions = buildInstallActionRows(listSectionActions("install"), status.actionStatus);
 
   return {
     summary: "Install",

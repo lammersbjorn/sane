@@ -3,10 +3,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { applyIntegrationsProfile } from "@sane/control-plane/codex-config.js";
 import { exportAll } from "@sane/control-plane";
+import * as inventory from "@sane/control-plane/inventory.js";
+import * as installStatus from "@sane/control-plane/install-status.js";
 import { loadInstallScreen } from "@/install-screen.js";
 
 const tempDirs: string[] = [];
@@ -63,12 +65,14 @@ describe("install screen model", () => {
       "hooks",
       "custom-agents"
     ]);
-    expect(screen.actions.find((action) => action.id === "apply_integrations_profile")?.status).toBe(
-      "missing"
-    );
-    expect(screen.actions.find((action) => action.id === "export_opencode_agents")?.status).toBe(
-      "missing"
-    );
+    expect(screen.actions.find((action) => action.id === "apply_integrations_profile")?.status).toEqual({
+      kind: "missing",
+      label: "missing"
+    });
+    expect(screen.actions.find((action) => action.id === "export_opencode_agents")?.status).toEqual({
+      kind: "missing",
+      label: "missing"
+    });
   });
 
   it("reflects installed user bundle state after export-all", () => {
@@ -85,18 +89,22 @@ describe("install screen model", () => {
     expect(screen.missingTargets).toEqual([]);
     expect(screen.integrationsStatus).toEqual({ kind: "missing", label: "missing" });
     expect(screen.integrationsRecommendedChangeCount).toBe(3);
-    expect(screen.actions.find((action) => action.id === "export_user_skills")?.status).toBe(
-      "installed"
-    );
-    expect(screen.actions.find((action) => action.id === "export_global_agents")?.status).toBe(
-      "installed"
-    );
-    expect(screen.actions.find((action) => action.id === "export_hooks")?.status).toBe(
-      "installed"
-    );
-    expect(screen.actions.find((action) => action.id === "export_custom_agents")?.status).toBe(
-      "installed"
-    );
+    expect(screen.actions.find((action) => action.id === "export_user_skills")?.status).toEqual({
+      kind: "installed",
+      label: "installed"
+    });
+    expect(screen.actions.find((action) => action.id === "export_global_agents")?.status).toEqual({
+      kind: "installed",
+      label: "installed"
+    });
+    expect(screen.actions.find((action) => action.id === "export_hooks")?.status).toEqual({
+      kind: "installed",
+      label: "installed"
+    });
+    expect(screen.actions.find((action) => action.id === "export_custom_agents")?.status).toEqual({
+      kind: "installed",
+      label: "installed"
+    });
   });
 
   it("reflects integrations-profile apply status after the codex tools are written", () => {
@@ -110,9 +118,10 @@ describe("install screen model", () => {
 
     expect(screen.integrationsStatus).toEqual({ kind: "installed", label: "installed" });
     expect(screen.integrationsRecommendedChangeCount).toBe(0);
-    expect(screen.actions.find((action) => action.id === "apply_integrations_profile")?.status).toBe(
-      "installed"
-    );
+    expect(screen.actions.find((action) => action.id === "apply_integrations_profile")?.status).toEqual({
+      kind: "installed",
+      label: "installed"
+    });
   });
 
   it("clears the recommendation once the bundle and integrations audit are both satisfied", () => {
@@ -128,9 +137,10 @@ describe("install screen model", () => {
     expect(screen.integrationsStatus).toEqual({ kind: "installed", label: "installed" });
     expect(screen.integrationsRecommendedChangeCount).toBe(0);
     expect(screen.bundleStatus).toBe("installed");
-    expect(screen.actions.find((action) => action.id === "apply_integrations_profile")?.status).toBe(
-      "installed"
-    );
+    expect(screen.actions.find((action) => action.id === "apply_integrations_profile")?.status).toEqual({
+      kind: "installed",
+      label: "installed"
+    });
     expect(screen.recommendedActionId).toBeNull();
   });
 
@@ -147,8 +157,26 @@ describe("install screen model", () => {
 
     expect(screen.integrationsStatus).toEqual({ kind: "invalid", label: "invalid" });
     expect(screen.integrationsRecommendedChangeCount).toBe(0);
-    expect(screen.actions.find((action) => action.id === "apply_integrations_profile")?.status).toBe(
-      "invalid"
-    );
+    expect(screen.actions.find((action) => action.id === "apply_integrations_profile")?.status).toEqual({
+      kind: "invalid",
+      label: "invalid"
+    });
+  });
+
+  it("uses the preloaded status bundle path when provided", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const bundle = inventory.inspectStatusBundle(paths, codexPaths);
+    const fromBundleSpy = vi.spyOn(installStatus, "inspectInstallStatusFromStatusBundle");
+    const wrapperSpy = vi.spyOn(installStatus, "inspectInstallStatus");
+
+    const screen = loadInstallScreen(paths, codexPaths, bundle);
+
+    expect(fromBundleSpy).toHaveBeenCalledTimes(1);
+    expect(fromBundleSpy).toHaveBeenCalledWith(paths, codexPaths, bundle);
+    expect(wrapperSpy).not.toHaveBeenCalled();
+    expect(screen.recommendedActionId).toBe("export_all");
   });
 });

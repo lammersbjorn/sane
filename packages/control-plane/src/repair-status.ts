@@ -44,6 +44,8 @@ export interface RepairStatusSnapshot {
   actionStatus: Record<RepairActionStatusId, RepairActionStatus>;
 }
 
+export type RepairActionStatusMap = RepairStatusSnapshot["actionStatus"];
+
 export function inspectRepairStatus(
   paths: ProjectPaths,
   codexPaths: CodexPaths

@@ -11,17 +11,19 @@ import { uninstallCustomAgents, uninstallHooks } from "@sane/control-plane/hooks
 import { uninstallOpencodeAgents } from "@sane/control-plane/opencode-native.js";
 import {
   inspectRepairStatus,
+  type RepairActionStatus,
   type RepairActionStatusId
 } from "@sane/control-plane/repair-status.js";
 import { uninstallRepoAgents, uninstallRepoSkills } from "@sane/control-plane";
 import { installRuntime } from "@sane/control-plane";
 import { resetTelemetryData } from "@sane/control-plane/preferences.js";
 import { listSectionActions } from "@/command-registry.js";
+import { buildRepairActionRows } from "@/section-action-rows.js";
 
 export interface RepairScreenAction {
   id: RepairActionStatusId;
   title: string;
-  status: string;
+  status: RepairActionStatus;
   confirmation: string | null;
 }
 
@@ -51,12 +53,7 @@ export interface RepairScreenModel {
 
 export function loadRepairScreen(paths: ProjectPaths, codexPaths: CodexPaths): RepairScreenModel {
   const status = inspectRepairStatus(paths, codexPaths);
-  const actions = listSectionActions("repair").map((action) => ({
-    id: action.id as RepairScreenAction["id"],
-    title: action.label,
-    status: status.actionStatus[action.id as RepairActionStatusId].label,
-    confirmation: action.confirmation?.impactCopy ?? null
-  }));
+  const actions = buildRepairActionRows(listSectionActions("repair"), status.actionStatus);
 
   return {
     summary: "Repair",

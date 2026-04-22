@@ -386,6 +386,39 @@ describe("codex config control plane", () => {
     expect(installedFamily.opencode).toEqual(inspectOpencodeProfileSnapshot(codexPaths));
   });
 
+  it("reports invalid family snapshot members consistently from one broken config", () => {
+    const homeDir = makeTempDir();
+    const codexPaths = createCodexPaths(homeDir);
+
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+    writeFileSync(codexPaths.configToml, 'model = "gpt-5.4"\ninvalid = [\n', "utf8");
+
+    const family = inspectCodexProfileFamilySnapshot(codexPaths);
+
+    expect(family).toMatchObject({
+      core: {
+        audit: { status: "invalid", recommendedChangeCount: 0 },
+        apply: { status: "blocked_invalid", recommendedChangeCount: 0 },
+        preview: { summary: "codex-profile preview: blocked by invalid config" }
+      },
+      integrations: {
+        audit: { status: "invalid", recommendedChangeCount: 0 },
+        apply: { status: "blocked_invalid", recommendedChangeCount: 0 },
+        preview: { summary: "integrations-profile preview: blocked by invalid config" }
+      },
+      cloudflare: {
+        audit: { status: "invalid", recommendedChangeCount: 0 },
+        apply: { status: "blocked_invalid", recommendedChangeCount: 0 },
+        preview: { summary: "cloudflare-profile preview: blocked by invalid config" }
+      },
+      opencode: {
+        audit: { status: "invalid", recommendedChangeCount: 0 },
+        apply: { status: "blocked_invalid", recommendedChangeCount: 0 },
+        preview: { summary: "opencode-profile preview: blocked by invalid config" }
+      }
+    });
+  });
+
   it("reports typed integrations-profile apply result without scraping apply summary strings", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();

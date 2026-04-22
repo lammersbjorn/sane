@@ -38,11 +38,20 @@ export interface InstallStatusSnapshot {
   actionStatus: Record<InstallActionStatusId, InstallActionStatus>;
 }
 
+export type InstallActionStatusMap = InstallStatusSnapshot["actionStatus"];
+
 export function inspectInstallStatus(
   paths: ProjectPaths,
   codexPaths: CodexPaths
 ): InstallStatusSnapshot {
-  const statusBundle = inspectStatusBundle(paths, codexPaths);
+  return inspectInstallStatusFromStatusBundle(paths, codexPaths, inspectStatusBundle(paths, codexPaths));
+}
+
+export function inspectInstallStatusFromStatusBundle(
+  _paths: ProjectPaths,
+  codexPaths: CodexPaths,
+  statusBundle: ReturnType<typeof inspectStatusBundle>
+): InstallStatusSnapshot {
   const inventory = statusBundle.codexNative;
   const integrationsProfile = inspectIntegrationsProfileSnapshot(codexPaths);
   const missingTargets = missingBundleTargets(inventory);

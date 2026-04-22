@@ -121,29 +121,37 @@ describe("repair screen model", () => {
       "hooks",
       "custom-agents"
     ]);
-    expect(screen.actions.find((action) => action.id === "backup_codex_config")?.status).toBe(
-      "installed"
-    );
-    expect(screen.actions.find((action) => action.id === "restore_codex_config")?.status).toBe(
-      "available"
-    );
-    expect(screen.actions.find((action) => action.id === "reset_telemetry_data")?.status).toBe(
-      "present"
-    );
-    expect(screen.actions.find((action) => action.id === "uninstall_user_skills")?.status).toBe(
-      "installed"
-    );
-    expect(screen.actions.find((action) => action.id === "uninstall_global_agents")?.status).toBe(
-      "installed"
-    );
-    expect(screen.actions.find((action) => action.id === "uninstall_hooks")?.status).toBe(
-      "installed"
-    );
-    expect(screen.actions.find((action) => action.id === "uninstall_custom_agents")?.status).toBe(
-      "installed"
-    );
-    expect(screen.actions.find((action) => action.id === "uninstall_all")?.status).toBe(
-      "installed"
-    );
+    expect(screen.actions.find((action) => action.id === "backup_codex_config")?.status).toEqual({
+      kind: "installed",
+      label: "installed"
+    });
+    expect(screen.actions.find((action) => action.id === "restore_codex_config")?.status).toEqual({
+      kind: "available",
+      label: "available"
+    });
+    expect(screen.actions.find((action) => action.id === "reset_telemetry_data")?.status).toEqual({
+      kind: "present",
+      label: "present"
+    });
+    expect(screen.actions.find((action) => action.id === "uninstall_user_skills")?.status).toEqual({
+      kind: "installed",
+      label: "installed"
+    });
+    expect(screen.actions.find((action) => action.id === "uninstall_global_agents")?.status).toEqual({
+      kind: "installed",
+      label: "installed"
+    });
+    expect(screen.actions.find((action) => action.id === "uninstall_hooks")?.status).toEqual({
+      kind: "installed",
+      label: "installed"
+    });
+    expect(screen.actions.find((action) => action.id === "uninstall_custom_agents")?.status).toEqual({
+      kind: "installed",
+      label: "installed"
+    });
+    expect(screen.actions.find((action) => action.id === "uninstall_all")?.status).toEqual({
+      kind: "installed",
+      label: "installed"
+    });
   });
 });

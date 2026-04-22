@@ -8,7 +8,11 @@ import { afterEach, describe, expect, it } from "vite-plus/test";
 import { applyIntegrationsProfile } from "../src/codex-config.js";
 import { CORE_INSTALL_BUNDLE_TARGETS } from "../src/core-install-bundle-targets.js";
 import { exportAll } from "../src/index.js";
-import { inspectInstallStatus } from "../src/install-status.js";
+import {
+  inspectInstallStatus,
+  inspectInstallStatusFromStatusBundle
+} from "../src/install-status.js";
+import { inspectStatusBundle } from "../src/inventory.js";
 
 const tempDirs: string[] = [];
 
@@ -109,6 +113,22 @@ describe("install status snapshot", () => {
           apply_integrations_profile: { kind: "invalid", label: "invalid" }
         })
       })
+    );
+  });
+
+  it("keeps bundle-based install snapshot aligned with the wrapper helper", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    exportAll(paths, codexPaths);
+    applyIntegrationsProfile(paths, codexPaths);
+
+    const bundle = inspectStatusBundle(paths, codexPaths);
+
+    expect(inspectInstallStatusFromStatusBundle(paths, codexPaths, bundle)).toEqual(
+      inspectInstallStatus(paths, codexPaths)
     );
   });
 });

@@ -127,10 +127,17 @@ export interface CodexProfileFamilySnapshot {
   opencode: OpencodeProfileSnapshot;
 }
 
-export function showCodexConfig(codexPaths: CodexPaths): OperationResult {
-  const inventory = inspectCodexConfigInventory(codexPaths);
+interface CodexConfigContext {
+  codexPaths: CodexPaths;
+  inventory: ReturnType<typeof inspectCodexConfigInventory>;
+  recommended: LocalConfig;
+  config: TomlTable | null;
+}
 
-  if (inventory.status === InventoryStatus.Missing) {
+export function showCodexConfig(codexPaths: CodexPaths): OperationResult {
+  const context = inspectCodexConfigContext(codexPaths);
+
+  if (context.inventory.status === InventoryStatus.Missing) {
     return new OperationResult({
       kind: OperationKind.ShowCodexConfig,
       summary: `codex-config: missing at ${codexPaths.configToml}`,
@@ -139,16 +146,16 @@ export function showCodexConfig(codexPaths: CodexPaths): OperationResult {
         "use `apply codex-profile` or `apply integrations-profile` to create one"
       ],
       pathsTouched: [codexPaths.configToml],
-      inventory: [inventory]
+      inventory: [context.inventory]
     });
   }
 
   return new OperationResult({
     kind: OperationKind.ShowCodexConfig,
     summary: `codex-config: ok at ${codexPaths.configToml}`,
-    details: codexConfigDetails(readCodexConfig(codexPaths.configToml)),
+    details: codexConfigDetails(context.config ?? {}),
     pathsTouched: [codexPaths.configToml],
-    inventory: [inventory]
+    inventory: [context.inventory]
   });
 }
 
@@ -191,30 +198,33 @@ export function backupCodexConfig(paths: ProjectPaths, codexPaths: CodexPaths): 
 }
 
 export function previewCodexProfile(codexPaths: CodexPaths): OperationResult {
-  const audit = inspectCodexProfileAudit(codexPaths);
+  const context = inspectCodexConfigContext(codexPaths);
+  const audit = inspectCodexProfileAuditFromContext(context);
   return previewCodexProfileFromAudit(codexPaths, audit);
 }
 
 export function previewIntegrationsProfile(codexPaths: CodexPaths): OperationResult {
-  const audit = inspectIntegrationsProfileAudit(codexPaths);
+  const context = inspectCodexConfigContext(codexPaths);
+  const audit = inspectIntegrationsProfileAuditFromContext(context);
   return previewIntegrationsProfileFromAudit(codexPaths, audit);
 }
 
 export function previewCloudflareProfile(codexPaths: CodexPaths): OperationResult {
-  const audit = inspectCloudflareProfileAudit(codexPaths);
+  const context = inspectCodexConfigContext(codexPaths);
+  const audit = inspectCloudflareProfileAuditFromContext(context);
   return previewCloudflareProfileFromAudit(codexPaths, audit);
 }
 
 export function previewOpencodeProfile(codexPaths: CodexPaths): OperationResult {
-  const audit = inspectOpencodeProfileAudit(codexPaths);
+  const context = inspectCodexConfigContext(codexPaths);
+  const audit = inspectOpencodeProfileAuditFromContext(context);
   return previewOpencodeProfileFromAudit(codexPaths, audit);
 }
 
 export function applyCodexProfile(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
   ensureRuntimeDirs(paths);
-  const recommended = recommendedLocalConfig(codexPaths);
-  const inventory = inspectCodexConfigInventory(codexPaths);
-  const applyResult = inspectCodexProfileApplyResult(codexPaths);
+  const context = inspectCodexConfigContext(codexPaths);
+  const applyResult = inspectCodexProfileApplyResultFromContext(context);
 
   if (applyResult.status === "blocked_invalid") {
     return new OperationResult({
@@ -222,17 +232,18 @@ export function applyCodexProfile(paths: ProjectPaths, codexPaths: CodexPaths): 
       summary: "codex-profile apply: blocked by invalid config",
       details: applyResult.details,
       pathsTouched: [codexPaths.configToml],
-      inventory: [inventory]
+      inventory: [context.inventory]
     });
   }
 
   const backupPath =
-    inventory.status === InventoryStatus.Installed ? writeCodexConfigBackup(paths, codexPaths) : null;
-  const config =
-    inventory.status === InventoryStatus.Installed ? readCodexConfig(codexPaths.configToml) : {};
+    context.inventory.status === InventoryStatus.Installed
+      ? writeCodexConfigBackup(paths, codexPaths)
+      : null;
+  const config = cloneTable(context.config ?? {});
   const details = [...applyResult.details];
 
-  applyCoreCodexProfileToValue(config, recommended);
+  applyCoreCodexProfileToValue(config, context.recommended);
   writeCodexConfig(codexPaths.configToml, config);
 
   details.push("applied keys: model, model_reasoning_effort, features.codex_hooks");
@@ -249,8 +260,8 @@ export function applyCodexProfile(paths: ProjectPaths, codexPaths: CodexPaths): 
 
 export function applyIntegrationsProfile(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
   ensureRuntimeDirs(paths);
-  const inventory = inspectCodexConfigInventory(codexPaths);
-  const applyResult = inspectIntegrationsProfileApplyResult(codexPaths);
+  const context = inspectCodexConfigContext(codexPaths);
+  const applyResult = inspectIntegrationsProfileApplyResultFromContext(context);
 
   if (applyResult.status === "blocked_invalid") {
     return new OperationResult({
@@ -258,28 +269,27 @@ export function applyIntegrationsProfile(paths: ProjectPaths, codexPaths: CodexP
       summary: "integrations-profile apply: blocked by invalid config",
       details: applyResult.details,
       pathsTouched: [codexPaths.configToml],
-      inventory: [inventory]
+      inventory: [context.inventory]
     });
   }
 
-  const currentConfig =
-    inventory.status === InventoryStatus.Installed ? readCodexConfig(codexPaths.configToml) : {};
   const details = [...applyResult.details];
-
-  const updatedConfig = cloneTable(currentConfig);
+  const updatedConfig = cloneTable(context.config ?? {});
   if (applyResult.status === "already_satisfied") {
     return new OperationResult({
       kind: OperationKind.ApplyIntegrationsProfile,
       summary: "integrations-profile apply: already satisfied",
       details,
       pathsTouched: [codexPaths.configToml],
-      inventory: [inventory]
+      inventory: [context.inventory]
     });
   }
   applyIntegrationsProfileToValue(updatedConfig);
 
   const backupPath =
-    inventory.status === InventoryStatus.Installed ? writeCodexConfigBackup(paths, codexPaths) : null;
+    context.inventory.status === InventoryStatus.Installed
+      ? writeCodexConfigBackup(paths, codexPaths)
+      : null;
   writeCodexConfig(codexPaths.configToml, updatedConfig);
 
   details.push(`applied keys: ${applyResult.appliedKeys.join(", ")}`);
@@ -296,37 +306,7 @@ export function applyIntegrationsProfile(paths: ProjectPaths, codexPaths: CodexP
 }
 
 export function inspectIntegrationsProfileAudit(codexPaths: CodexPaths): IntegrationsProfileAudit {
-  const inventory = inspectCodexConfigInventory(codexPaths);
-
-  if (inventory.status === InventoryStatus.Invalid) {
-    return {
-      status: "invalid",
-      recommendedChangeCount: 0,
-      recommendedTargets: [],
-      optionalTargets: ["opensrc"],
-      details: [
-        "cannot preview integrations profile until ~/.codex/config.toml parses cleanly",
-        "repair current config first"
-      ]
-    };
-  }
-
-  if (inventory.status === InventoryStatus.Missing) {
-    return {
-      status: "missing",
-      recommendedChangeCount: 3,
-      recommendedTargets: ["context7", "playwright", "grep.app"],
-      optionalTargets: ["opensrc"],
-      details: [
-        "context7: missing -> recommended",
-        "playwright: missing -> recommended",
-        "grep.app: missing -> recommended",
-        "opensrc: optional, not in default recommended profile"
-      ]
-    };
-  }
-
-  return integrationProfileAuditFromConfig(readCodexConfig(codexPaths.configToml));
+  return inspectIntegrationsProfileAuditFromContext(inspectCodexConfigContext(codexPaths));
 }
 
 export function inspectIntegrationsProfileStatus(codexPaths: CodexPaths): IntegrationsProfileStatus {
@@ -336,68 +316,11 @@ export function inspectIntegrationsProfileStatus(codexPaths: CodexPaths): Integr
 export function inspectIntegrationsProfileApplyResult(
   codexPaths: CodexPaths
 ): IntegrationsProfileApplyResult {
-  const inventory = inspectCodexConfigInventory(codexPaths);
-  if (inventory.status === InventoryStatus.Invalid) {
-    return {
-      status: "blocked_invalid",
-      recommendedChangeCount: 0,
-      appliedKeys: [],
-      details: [
-        "repair ~/.codex/config.toml first",
-        "Sane only writes after a clean parse"
-      ]
-    };
-  }
-
-  const currentConfig =
-    inventory.status === InventoryStatus.Installed ? readCodexConfig(codexPaths.configToml) : {};
-  const appliedKeys: IntegrationsProfileAppliedKey[] = applyIntegrationsProfileToValue(
-    cloneTable(currentConfig)
-  );
-  const audit = inspectIntegrationsProfileAudit(codexPaths);
-  return {
-    status: appliedKeys.length === 0 ? "already_satisfied" : "ready",
-    recommendedChangeCount: audit.recommendedChangeCount,
-    appliedKeys,
-    details: [...audit.details]
-  };
+  return inspectIntegrationsProfileApplyResultFromContext(inspectCodexConfigContext(codexPaths));
 }
 
 export function inspectCodexProfileAudit(codexPaths: CodexPaths): CodexProfileAudit {
-  const recommended = recommendedLocalConfig(codexPaths);
-  const inventory = inspectCodexConfigInventory(codexPaths);
-
-  if (inventory.status === InventoryStatus.Invalid) {
-    return {
-      status: "invalid",
-      recommendedChangeCount: 0,
-      changes: [],
-      details: [
-        "cannot preview managed profile until ~/.codex/config.toml parses cleanly",
-        "repair current config first"
-      ]
-    };
-  }
-
-  if (inventory.status === InventoryStatus.Missing) {
-    return codexProfileAuditFromCurrentValues(recommended, {
-      model: null,
-      modelReasoningEffort: null,
-      codexHooks: null
-    }, "missing");
-  }
-
-  const config = readCodexConfig(codexPaths.configToml);
-  const features = asTomlTable(config.features);
-  return codexProfileAuditFromCurrentValues(
-    recommended,
-    {
-      model: asString(config.model),
-      modelReasoningEffort: asString(config.model_reasoning_effort),
-      codexHooks: displayHooks(features?.codex_hooks)
-    },
-    "missing"
-  );
+  return inspectCodexProfileAuditFromContext(inspectCodexConfigContext(codexPaths));
 }
 
 export function inspectCodexProfileStatus(codexPaths: CodexPaths): CodexProfileStatus {
@@ -405,57 +328,11 @@ export function inspectCodexProfileStatus(codexPaths: CodexPaths): CodexProfileS
 }
 
 export function inspectCodexProfileApplyResult(codexPaths: CodexPaths): CodexProfileApplyResult {
-  const inventory = inspectCodexConfigInventory(codexPaths);
-  if (inventory.status === InventoryStatus.Invalid) {
-    return {
-      status: "blocked_invalid",
-      recommendedChangeCount: 0,
-      appliedKeys: [],
-      details: [
-        "repair ~/.codex/config.toml first",
-        "Sane only writes after a clean parse"
-      ]
-    };
-  }
-
-  const audit = inspectCodexProfileAudit(codexPaths);
-  return {
-    status: audit.recommendedChangeCount === 0 ? "already_satisfied" : "ready",
-    recommendedChangeCount: audit.recommendedChangeCount,
-    appliedKeys: audit.changes.map((change) => change.key),
-    details: codexProfileApplyDetails(audit)
-  };
+  return inspectCodexProfileApplyResultFromContext(inspectCodexConfigContext(codexPaths));
 }
 
 export function inspectCloudflareProfileAudit(codexPaths: CodexPaths): CloudflareProfileAudit {
-  const inventory = inspectCodexConfigInventory(codexPaths);
-
-  if (inventory.status === InventoryStatus.Invalid) {
-    return {
-      status: "invalid",
-      recommendedChangeCount: 0,
-      target: "cloudflare-api",
-      details: [
-        "cannot preview cloudflare profile until ~/.codex/config.toml parses cleanly",
-        "repair current config first"
-      ]
-    };
-  }
-
-  if (inventory.status === InventoryStatus.Missing) {
-    return {
-      status: "missing",
-      recommendedChangeCount: 1,
-      target: "cloudflare-api",
-      details: [
-        "cloudflare-api: missing -> optional provider profile",
-        "oauth and permissions stay explicit at connect time",
-        "note: not part of the broad recommended integrations profile"
-      ]
-    };
-  }
-
-  return cloudflareProfileAuditFromConfig(readCodexConfig(codexPaths.configToml));
+  return inspectCloudflareProfileAuditFromContext(inspectCodexConfigContext(codexPaths));
 }
 
 export function inspectCloudflareProfileStatus(codexPaths: CodexPaths): CloudflareProfileStatus {
@@ -463,62 +340,11 @@ export function inspectCloudflareProfileStatus(codexPaths: CodexPaths): Cloudfla
 }
 
 export function inspectCloudflareProfileApplyResult(codexPaths: CodexPaths): CloudflareProfileApplyResult {
-  const inventory = inspectCodexConfigInventory(codexPaths);
-  if (inventory.status === InventoryStatus.Invalid) {
-    return {
-      status: "blocked_invalid",
-      recommendedChangeCount: 0,
-      appliedKeys: [],
-      details: [
-        "repair ~/.codex/config.toml first",
-        "Sane only writes after a clean parse"
-      ]
-    };
-  }
-
-  const currentConfig =
-    inventory.status === InventoryStatus.Installed ? readCodexConfig(codexPaths.configToml) : {};
-  const appliedKeys: CloudflareProfileAppliedKey[] = applyCloudflareProfileToValue(
-    cloneTable(currentConfig)
-  );
-  const audit = inspectCloudflareProfileAudit(codexPaths);
-  return {
-    status: appliedKeys.length === 0 ? "already_satisfied" : "ready",
-    recommendedChangeCount: audit.recommendedChangeCount,
-    appliedKeys,
-    details: [...audit.details]
-  };
+  return inspectCloudflareProfileApplyResultFromContext(inspectCodexConfigContext(codexPaths));
 }
 
 export function inspectOpencodeProfileAudit(codexPaths: CodexPaths): OpencodeProfileAudit {
-  const inventory = inspectCodexConfigInventory(codexPaths);
-
-  if (inventory.status === InventoryStatus.Invalid) {
-    return {
-      status: "invalid",
-      recommendedChangeCount: 0,
-      target: "opensrc",
-      details: [
-        "cannot preview opencode compatibility profile until ~/.codex/config.toml parses cleanly",
-        "repair current config first"
-      ]
-    };
-  }
-
-  if (inventory.status === InventoryStatus.Missing) {
-    return {
-      status: "missing",
-      recommendedChangeCount: 1,
-      target: "opensrc",
-      details: [
-        "opensrc: missing -> optional Opencode compatibility profile",
-        "note: not part of Sane's default recommended integrations",
-        "note: this keeps Codex config additive and leaves broader Opencode setup separate"
-      ]
-    };
-  }
-
-  return opencodeProfileAuditFromConfig(readCodexConfig(codexPaths.configToml));
+  return inspectOpencodeProfileAuditFromContext(inspectCodexConfigContext(codexPaths));
 }
 
 export function inspectOpencodeProfileStatus(codexPaths: CodexPaths): OpencodeProfileStatus {
@@ -526,37 +352,13 @@ export function inspectOpencodeProfileStatus(codexPaths: CodexPaths): OpencodePr
 }
 
 export function inspectOpencodeProfileApplyResult(codexPaths: CodexPaths): OpencodeProfileApplyResult {
-  const inventory = inspectCodexConfigInventory(codexPaths);
-  if (inventory.status === InventoryStatus.Invalid) {
-    return {
-      status: "blocked_invalid",
-      recommendedChangeCount: 0,
-      appliedKeys: [],
-      details: [
-        "repair ~/.codex/config.toml first",
-        "Sane only writes after a clean parse"
-      ]
-    };
-  }
-
-  const currentConfig =
-    inventory.status === InventoryStatus.Installed ? readCodexConfig(codexPaths.configToml) : {};
-  const appliedKeys: OpencodeProfileAppliedKey[] = applyOpencodeProfileToValue(
-    cloneTable(currentConfig)
-  );
-  const audit = inspectOpencodeProfileAudit(codexPaths);
-  return {
-    status: appliedKeys.length === 0 ? "already_satisfied" : "ready",
-    recommendedChangeCount: audit.recommendedChangeCount,
-    appliedKeys,
-    details: [...audit.details]
-  };
+  return inspectOpencodeProfileApplyResultFromContext(inspectCodexConfigContext(codexPaths));
 }
 
 export function applyCloudflareProfile(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
   ensureRuntimeDirs(paths);
-  const inventory = inspectCodexConfigInventory(codexPaths);
-  const applyResult = inspectCloudflareProfileApplyResult(codexPaths);
+  const context = inspectCodexConfigContext(codexPaths);
+  const applyResult = inspectCloudflareProfileApplyResultFromContext(context);
 
   if (applyResult.status === "blocked_invalid") {
     return new OperationResult({
@@ -564,28 +366,27 @@ export function applyCloudflareProfile(paths: ProjectPaths, codexPaths: CodexPat
       summary: "cloudflare-profile apply: blocked by invalid config",
       details: applyResult.details,
       pathsTouched: [codexPaths.configToml],
-      inventory: [inventory]
+      inventory: [context.inventory]
     });
   }
 
-  const currentConfig =
-    inventory.status === InventoryStatus.Installed ? readCodexConfig(codexPaths.configToml) : {};
   const details = [...applyResult.details];
-
-  const updatedConfig = cloneTable(currentConfig);
+  const updatedConfig = cloneTable(context.config ?? {});
   if (applyResult.status === "already_satisfied") {
     return new OperationResult({
       kind: OperationKind.ApplyCloudflareProfile,
       summary: "cloudflare-profile apply: already satisfied",
       details,
       pathsTouched: [codexPaths.configToml],
-      inventory: [inventory]
+      inventory: [context.inventory]
     });
   }
   applyCloudflareProfileToValue(updatedConfig);
 
   const backupPath =
-    inventory.status === InventoryStatus.Installed ? writeCodexConfigBackup(paths, codexPaths) : null;
+    context.inventory.status === InventoryStatus.Installed
+      ? writeCodexConfigBackup(paths, codexPaths)
+      : null;
   writeCodexConfig(codexPaths.configToml, updatedConfig);
 
   details.push(`applied keys: ${applyResult.appliedKeys.join(", ")}`);
@@ -603,8 +404,8 @@ export function applyCloudflareProfile(paths: ProjectPaths, codexPaths: CodexPat
 
 export function applyOpencodeProfile(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
   ensureRuntimeDirs(paths);
-  const inventory = inspectCodexConfigInventory(codexPaths);
-  const applyResult = inspectOpencodeProfileApplyResult(codexPaths);
+  const context = inspectCodexConfigContext(codexPaths);
+  const applyResult = inspectOpencodeProfileApplyResultFromContext(context);
 
   if (applyResult.status === "blocked_invalid") {
     return new OperationResult({
@@ -612,28 +413,27 @@ export function applyOpencodeProfile(paths: ProjectPaths, codexPaths: CodexPaths
       summary: "opencode-profile apply: blocked by invalid config",
       details: applyResult.details,
       pathsTouched: [codexPaths.configToml],
-      inventory: [inventory]
+      inventory: [context.inventory]
     });
   }
 
-  const currentConfig =
-    inventory.status === InventoryStatus.Installed ? readCodexConfig(codexPaths.configToml) : {};
   const details = [...applyResult.details];
-
-  const updatedConfig = cloneTable(currentConfig);
+  const updatedConfig = cloneTable(context.config ?? {});
   if (applyResult.status === "already_satisfied") {
     return new OperationResult({
       kind: OperationKind.ApplyOpencodeProfile,
       summary: "opencode-profile apply: already satisfied",
       details,
       pathsTouched: [codexPaths.configToml],
-      inventory: [inventory]
+      inventory: [context.inventory]
     });
   }
   applyOpencodeProfileToValue(updatedConfig);
 
   const backupPath =
-    inventory.status === InventoryStatus.Installed ? writeCodexConfigBackup(paths, codexPaths) : null;
+    context.inventory.status === InventoryStatus.Installed
+      ? writeCodexConfigBackup(paths, codexPaths)
+      : null;
   writeCodexConfig(codexPaths.configToml, updatedConfig);
 
   details.push(`applied keys: ${applyResult.appliedKeys.join(", ")}`);
@@ -659,10 +459,11 @@ export function inspectCodexConfigBackupSnapshot(paths: ProjectPaths): CodexConf
 }
 
 export function inspectCodexProfileSnapshot(codexPaths: CodexPaths): CodexProfileSnapshot {
-  const audit = inspectCodexProfileAudit(codexPaths);
+  const context = inspectCodexConfigContext(codexPaths);
+  const audit = inspectCodexProfileAuditFromContext(context);
   return {
     audit,
-    apply: inspectCodexProfileApplyResult(codexPaths),
+    apply: inspectCodexProfileApplyResultFromContext(context),
     preview: previewCodexProfileFromAudit(codexPaths, audit)
   };
 }
@@ -670,28 +471,31 @@ export function inspectCodexProfileSnapshot(codexPaths: CodexPaths): CodexProfil
 export function inspectIntegrationsProfileSnapshot(
   codexPaths: CodexPaths
 ): IntegrationsProfileSnapshot {
-  const audit = inspectIntegrationsProfileAudit(codexPaths);
+  const context = inspectCodexConfigContext(codexPaths);
+  const audit = inspectIntegrationsProfileAuditFromContext(context);
   return {
     audit,
-    apply: inspectIntegrationsProfileApplyResult(codexPaths),
+    apply: inspectIntegrationsProfileApplyResultFromContext(context),
     preview: previewIntegrationsProfileFromAudit(codexPaths, audit)
   };
 }
 
 export function inspectCloudflareProfileSnapshot(codexPaths: CodexPaths): CloudflareProfileSnapshot {
-  const audit = inspectCloudflareProfileAudit(codexPaths);
+  const context = inspectCodexConfigContext(codexPaths);
+  const audit = inspectCloudflareProfileAuditFromContext(context);
   return {
     audit,
-    apply: inspectCloudflareProfileApplyResult(codexPaths),
+    apply: inspectCloudflareProfileApplyResultFromContext(context),
     preview: previewCloudflareProfileFromAudit(codexPaths, audit)
   };
 }
 
 export function inspectOpencodeProfileSnapshot(codexPaths: CodexPaths): OpencodeProfileSnapshot {
-  const audit = inspectOpencodeProfileAudit(codexPaths);
+  const context = inspectCodexConfigContext(codexPaths);
+  const audit = inspectOpencodeProfileAuditFromContext(context);
   return {
     audit,
-    apply: inspectOpencodeProfileApplyResult(codexPaths),
+    apply: inspectOpencodeProfileApplyResultFromContext(context),
     preview: previewOpencodeProfileFromAudit(codexPaths, audit)
   };
 }
@@ -699,11 +503,33 @@ export function inspectOpencodeProfileSnapshot(codexPaths: CodexPaths): Opencode
 export function inspectCodexProfileFamilySnapshot(
   codexPaths: CodexPaths
 ): CodexProfileFamilySnapshot {
+  const context = inspectCodexConfigContext(codexPaths);
+  const coreAudit = inspectCodexProfileAuditFromContext(context);
+  const integrationsAudit = inspectIntegrationsProfileAuditFromContext(context);
+  const cloudflareAudit = inspectCloudflareProfileAuditFromContext(context);
+  const opencodeAudit = inspectOpencodeProfileAuditFromContext(context);
+
   return {
-    core: inspectCodexProfileSnapshot(codexPaths),
-    integrations: inspectIntegrationsProfileSnapshot(codexPaths),
-    cloudflare: inspectCloudflareProfileSnapshot(codexPaths),
-    opencode: inspectOpencodeProfileSnapshot(codexPaths)
+    core: {
+      audit: coreAudit,
+      apply: inspectCodexProfileApplyResultFromContext(context),
+      preview: previewCodexProfileFromAudit(codexPaths, coreAudit)
+    },
+    integrations: {
+      audit: integrationsAudit,
+      apply: inspectIntegrationsProfileApplyResultFromContext(context),
+      preview: previewIntegrationsProfileFromAudit(codexPaths, integrationsAudit)
+    },
+    cloudflare: {
+      audit: cloudflareAudit,
+      apply: inspectCloudflareProfileApplyResultFromContext(context),
+      preview: previewCloudflareProfileFromAudit(codexPaths, cloudflareAudit)
+    },
+    opencode: {
+      audit: opencodeAudit,
+      apply: inspectOpencodeProfileApplyResultFromContext(context),
+      preview: previewOpencodeProfileFromAudit(codexPaths, opencodeAudit)
+    }
   };
 }
 
@@ -754,6 +580,16 @@ function recommendedLocalConfig(codexPaths: CodexPaths): LocalConfig {
   return createRecommendedLocalConfig(
     detectCodexEnvironment(codexPaths.modelsCacheJson, codexPaths.authJson)
   );
+}
+
+function inspectCodexConfigContext(codexPaths: CodexPaths): CodexConfigContext {
+  const inventory = inspectCodexConfigInventory(codexPaths);
+  return {
+    codexPaths,
+    inventory,
+    recommended: recommendedLocalConfig(codexPaths),
+    config: inventory.status === InventoryStatus.Installed ? readCodexConfig(codexPaths.configToml) : null
+  };
 }
 
 function inspectConfigStatus(path: string) {
@@ -819,9 +655,14 @@ function previewCodexProfileFromAudit(
   codexPaths: CodexPaths,
   audit: CodexProfileAudit
 ): OperationResult {
+  const summary =
+    audit.status === "invalid"
+      ? "codex-profile preview: blocked by invalid config"
+      : `codex-profile preview: ${audit.recommendedChangeCount} recommended change(s)`;
+
   return new OperationResult({
     kind: OperationKind.PreviewCodexProfile,
-    summary: `codex-profile preview: ${audit.recommendedChangeCount} recommended change(s)`,
+    summary,
     details: audit.details,
     pathsTouched: [codexPaths.configToml],
     inventory: [inspectCodexConfigInventory(codexPaths)]
@@ -832,9 +673,14 @@ function previewIntegrationsProfileFromAudit(
   codexPaths: CodexPaths,
   audit: IntegrationsProfileAudit
 ): OperationResult {
+  const summary =
+    audit.status === "invalid"
+      ? "integrations-profile preview: blocked by invalid config"
+      : `integrations-profile preview: ${audit.recommendedChangeCount} recommended change(s)`;
+
   return new OperationResult({
     kind: OperationKind.PreviewIntegrationsProfile,
-    summary: `integrations-profile preview: ${audit.recommendedChangeCount} recommended change(s)`,
+    summary,
     details: audit.details,
     pathsTouched: [codexPaths.configToml],
     inventory: [inspectCodexConfigInventory(codexPaths)]
@@ -845,9 +691,14 @@ function previewCloudflareProfileFromAudit(
   codexPaths: CodexPaths,
   audit: CloudflareProfileAudit
 ): OperationResult {
+  const summary =
+    audit.status === "invalid"
+      ? "cloudflare-profile preview: blocked by invalid config"
+      : `cloudflare-profile preview: ${audit.recommendedChangeCount} recommended change(s)`;
+
   return new OperationResult({
     kind: OperationKind.PreviewCloudflareProfile,
-    summary: `cloudflare-profile preview: ${audit.recommendedChangeCount} recommended change(s)`,
+    summary,
     details: audit.details,
     pathsTouched: [codexPaths.configToml],
     inventory: [inspectCodexConfigInventory(codexPaths)]
@@ -858,13 +709,246 @@ function previewOpencodeProfileFromAudit(
   codexPaths: CodexPaths,
   audit: OpencodeProfileAudit
 ): OperationResult {
+  const summary =
+    audit.status === "invalid"
+      ? "opencode-profile preview: blocked by invalid config"
+      : `opencode-profile preview: ${audit.recommendedChangeCount} recommended change(s)`;
+
   return new OperationResult({
     kind: OperationKind.PreviewOpencodeProfile,
-    summary: `opencode-profile preview: ${audit.recommendedChangeCount} recommended change(s)`,
+    summary,
     details: audit.details,
     pathsTouched: [codexPaths.configToml],
     inventory: [inspectCodexConfigInventory(codexPaths)]
   });
+}
+
+function inspectIntegrationsProfileAuditFromContext(
+  context: CodexConfigContext
+): IntegrationsProfileAudit {
+  if (context.inventory.status === InventoryStatus.Invalid) {
+    return {
+      status: "invalid",
+      recommendedChangeCount: 0,
+      recommendedTargets: [],
+      optionalTargets: ["opensrc"],
+      details: [
+        "cannot preview integrations profile until ~/.codex/config.toml parses cleanly",
+        "repair current config first"
+      ]
+    };
+  }
+
+  if (context.inventory.status === InventoryStatus.Missing) {
+    return {
+      status: "missing",
+      recommendedChangeCount: 3,
+      recommendedTargets: ["context7", "playwright", "grep.app"],
+      optionalTargets: ["opensrc"],
+      details: [
+        "context7: missing -> recommended",
+        "playwright: missing -> recommended",
+        "grep.app: missing -> recommended",
+        "opensrc: optional, not in default recommended profile"
+      ]
+    };
+  }
+
+  return integrationProfileAuditFromConfig(context.config ?? {});
+}
+
+function inspectIntegrationsProfileApplyResultFromContext(
+  context: CodexConfigContext
+): IntegrationsProfileApplyResult {
+  if (context.inventory.status === InventoryStatus.Invalid) {
+    return {
+      status: "blocked_invalid",
+      recommendedChangeCount: 0,
+      appliedKeys: [],
+      details: [
+        "repair ~/.codex/config.toml first",
+        "Sane only writes after a clean parse"
+      ]
+    };
+  }
+
+  const appliedKeys = applyIntegrationsProfileToValue(cloneTable(context.config ?? {}));
+  const audit = inspectIntegrationsProfileAuditFromContext(context);
+  return {
+    status: appliedKeys.length === 0 ? "already_satisfied" : "ready",
+    recommendedChangeCount: audit.recommendedChangeCount,
+    appliedKeys,
+    details: [...audit.details]
+  };
+}
+
+function inspectCodexProfileAuditFromContext(context: CodexConfigContext): CodexProfileAudit {
+  if (context.inventory.status === InventoryStatus.Invalid) {
+    return {
+      status: "invalid",
+      recommendedChangeCount: 0,
+      changes: [],
+      details: [
+        "cannot preview managed profile until ~/.codex/config.toml parses cleanly",
+        "repair current config first"
+      ]
+    };
+  }
+
+  if (context.inventory.status === InventoryStatus.Missing) {
+    return codexProfileAuditFromCurrentValues(
+      context.recommended,
+      {
+        model: null,
+        modelReasoningEffort: null,
+        codexHooks: null
+      },
+      "missing"
+    );
+  }
+
+  const features = asTomlTable(context.config?.features);
+  return codexProfileAuditFromCurrentValues(
+    context.recommended,
+    {
+      model: asString(context.config?.model),
+      modelReasoningEffort: asString(context.config?.model_reasoning_effort),
+      codexHooks: displayHooks(features?.codex_hooks)
+    },
+    "missing"
+  );
+}
+
+function inspectCodexProfileApplyResultFromContext(context: CodexConfigContext): CodexProfileApplyResult {
+  if (context.inventory.status === InventoryStatus.Invalid) {
+    return {
+      status: "blocked_invalid",
+      recommendedChangeCount: 0,
+      appliedKeys: [],
+      details: [
+        "repair ~/.codex/config.toml first",
+        "Sane only writes after a clean parse"
+      ]
+    };
+  }
+
+  const audit = inspectCodexProfileAuditFromContext(context);
+  return {
+    status: audit.recommendedChangeCount === 0 ? "already_satisfied" : "ready",
+    recommendedChangeCount: audit.recommendedChangeCount,
+    appliedKeys: audit.changes.map((change) => change.key),
+    details: codexProfileApplyDetails(audit)
+  };
+}
+
+function inspectCloudflareProfileAuditFromContext(
+  context: CodexConfigContext
+): CloudflareProfileAudit {
+  if (context.inventory.status === InventoryStatus.Invalid) {
+    return {
+      status: "invalid",
+      recommendedChangeCount: 0,
+      target: "cloudflare-api",
+      details: [
+        "cannot preview cloudflare profile until ~/.codex/config.toml parses cleanly",
+        "repair current config first"
+      ]
+    };
+  }
+
+  if (context.inventory.status === InventoryStatus.Missing) {
+    return {
+      status: "missing",
+      recommendedChangeCount: 1,
+      target: "cloudflare-api",
+      details: [
+        "cloudflare-api: missing -> optional provider profile",
+        "oauth and permissions stay explicit at connect time",
+        "note: not part of the broad recommended integrations profile"
+      ]
+    };
+  }
+
+  return cloudflareProfileAuditFromConfig(context.config ?? {});
+}
+
+function inspectCloudflareProfileApplyResultFromContext(
+  context: CodexConfigContext
+): CloudflareProfileApplyResult {
+  if (context.inventory.status === InventoryStatus.Invalid) {
+    return {
+      status: "blocked_invalid",
+      recommendedChangeCount: 0,
+      appliedKeys: [],
+      details: [
+        "repair ~/.codex/config.toml first",
+        "Sane only writes after a clean parse"
+      ]
+    };
+  }
+
+  const appliedKeys = applyCloudflareProfileToValue(cloneTable(context.config ?? {}));
+  const audit = inspectCloudflareProfileAuditFromContext(context);
+  return {
+    status: appliedKeys.length === 0 ? "already_satisfied" : "ready",
+    recommendedChangeCount: audit.recommendedChangeCount,
+    appliedKeys,
+    details: [...audit.details]
+  };
+}
+
+function inspectOpencodeProfileAuditFromContext(context: CodexConfigContext): OpencodeProfileAudit {
+  if (context.inventory.status === InventoryStatus.Invalid) {
+    return {
+      status: "invalid",
+      recommendedChangeCount: 0,
+      target: "opensrc",
+      details: [
+        "cannot preview opencode compatibility profile until ~/.codex/config.toml parses cleanly",
+        "repair current config first"
+      ]
+    };
+  }
+
+  if (context.inventory.status === InventoryStatus.Missing) {
+    return {
+      status: "missing",
+      recommendedChangeCount: 1,
+      target: "opensrc",
+      details: [
+        "opensrc: missing -> optional Opencode compatibility profile",
+        "note: not part of Sane's default recommended integrations",
+        "note: this keeps Codex config additive and leaves broader Opencode setup separate"
+      ]
+    };
+  }
+
+  return opencodeProfileAuditFromConfig(context.config ?? {});
+}
+
+function inspectOpencodeProfileApplyResultFromContext(
+  context: CodexConfigContext
+): OpencodeProfileApplyResult {
+  if (context.inventory.status === InventoryStatus.Invalid) {
+    return {
+      status: "blocked_invalid",
+      recommendedChangeCount: 0,
+      appliedKeys: [],
+      details: [
+        "repair ~/.codex/config.toml first",
+        "Sane only writes after a clean parse"
+      ]
+    };
+  }
+
+  const appliedKeys = applyOpencodeProfileToValue(cloneTable(context.config ?? {}));
+  const audit = inspectOpencodeProfileAuditFromContext(context);
+  return {
+    status: appliedKeys.length === 0 ? "already_satisfied" : "ready",
+    recommendedChangeCount: audit.recommendedChangeCount,
+    appliedKeys,
+    details: [...audit.details]
+  };
 }
 
 function applyCoreCodexProfileToValue(config: TomlTable, recommended: LocalConfig): void {

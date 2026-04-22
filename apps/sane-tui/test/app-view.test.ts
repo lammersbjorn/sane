@@ -57,9 +57,17 @@ describe("app view", () => {
         loadGetStartedScreen: vi.fn(actual.loadGetStartedScreen)
       };
     });
+    vi.doMock("@/install-screen.js", async () => {
+      const actual = await vi.importActual<typeof import("@/install-screen.js")>("@/install-screen.js");
+      return {
+        ...actual,
+        loadInstallScreen: vi.fn(actual.loadInstallScreen)
+      };
+    });
 
     const { loadAppView: loadAppViewWithSpy } = await import("@/app-view.js");
     const getStartedScreen = await import("@/get-started-screen.js");
+    const installScreen = await import("@/install-screen.js");
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
 
     loadAppViewWithSpy(shell);
@@ -68,7 +76,12 @@ describe("app view", () => {
     expect(vi.mocked(getStartedScreen.loadGetStartedScreen).mock.calls[0]?.[2]).toBe(
       shell.statusSnapshot.statusBundle
     );
+    expect(vi.mocked(installScreen.loadInstallScreen)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(installScreen.loadInstallScreen).mock.calls[0]?.[2]).toBe(
+      shell.statusSnapshot.statusBundle
+    );
     vi.doUnmock("@/get-started-screen.js");
+    vi.doUnmock("@/install-screen.js");
     vi.resetModules();
   });
 
