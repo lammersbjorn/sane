@@ -12,6 +12,7 @@ import { exportGlobalAgents, exportUserSkills } from "../src/codex-native.js";
 import { exportCustomAgents, exportHooks } from "../src/hooks-custom-agents.js";
 import {
   doctor,
+  inspectDoctorSnapshot,
   inspectOnboardingSnapshot,
   inspectStatusBundle,
   showStatus
@@ -193,6 +194,7 @@ describe("full inventory and doctor", () => {
 
     const status = showStatus(paths, codexPaths);
     const doctorResult = doctor(paths, codexPaths);
+    const doctorSnapshot = inspectDoctorSnapshot(paths, codexPaths);
 
     expect(status.inventory.find((item) => item.name === "pack-caveman")?.status).toBe(
       InventoryStatus.Installed
@@ -222,6 +224,8 @@ describe("full inventory and doctor", () => {
     expect(doctorResult.summary).toContain("hooks: installed");
     expect(doctorResult.summary).toContain("custom-agents: installed");
     expect(doctorResult.summary).toContain("opencode-agents: missing");
+    expect(doctorSnapshot.headline).toBe("runtime: ok");
+    expect(doctorSnapshot.lines[0]).toBe("runtime: ok");
   });
 
   it("does not mark a multi-skill pack installed when only one exported skill matches", () => {

@@ -35,7 +35,7 @@ import {
   previewIntegrationsProfile,
   showCodexConfig
 } from "./codex-config.js";
-import { doctor, doctorForStatusBundle, inspectStatusBundle } from "./inventory.js";
+import { doctor, doctorForStatusBundle, inspectDoctorSnapshot, inspectStatusBundle } from "./inventory.js";
 import { previewPolicy, previewPolicyForCurrentRun } from "./policy-preview.js";
 import { showConfig } from "./preferences.js";
 import { inspectSavedLocalConfig } from "./local-config.js";
@@ -186,6 +186,7 @@ export function inspectSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): In
   const statusBundle = inspectStatusBundle(paths, codexPaths);
   const runtimeState = inspectRuntimeStateSnapshot(paths);
   const doctorResult = doctorForStatusBundle(paths, codexPaths, statusBundle);
+  const doctorSnapshot = inspectDoctorSnapshot(paths, codexPaths, statusBundle);
 
   return {
     status: {
@@ -194,7 +195,7 @@ export function inspectSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): In
     },
     statusBundle,
     doctor: doctorResult,
-    doctorHeadline: doctorSummaryHeadline(doctorResult),
+    doctorHeadline: doctorSnapshot.headline,
     runtimeSummary: buildRuntimeSummary(paths, runtimeState),
     runtimeHistory: runtimeState.historyCounts,
     latestPolicyPreview: runtimeState.latestPolicyPreview,
@@ -270,10 +271,6 @@ function buildRuntimeSummary(paths: ProjectPaths, runtimeState: RuntimeStateSnap
     details,
     pathsTouched: runtimeStatePaths(paths)
   });
-}
-
-function doctorSummaryHeadline(result: ReturnType<typeof doctor>): string {
-  return result.summary.split("\n")[0] ?? "no doctor output";
 }
 
 export function inspectLatestPolicyPreview(paths: ProjectPaths): LatestPolicyPreviewSnapshot {

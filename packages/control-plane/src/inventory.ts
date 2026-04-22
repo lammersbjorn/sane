@@ -94,6 +94,11 @@ export interface OnboardingSnapshot {
   primaryStatuses: StatusBundle["primary"]["status"];
 }
 
+export interface DoctorSnapshot {
+  headline: string;
+  lines: string[];
+}
+
 export function showStatus(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
   const bundle = inspectStatusBundle(paths, codexPaths);
 
@@ -115,39 +120,53 @@ export function doctorForStatusBundle(
   codexPaths: CodexPaths,
   bundle: StatusBundle
 ): OperationResult {
-  const configBackups = listCanonicalBackupSiblings(paths.configPath);
-  const summaryBackups = listCanonicalBackupSiblings(paths.summaryPath);
+  const snapshot = inspectDoctorSnapshot(paths, codexPaths, bundle);
 
   return new OperationResult({
     kind: OperationKind.Doctor,
-    summary: [
-      `runtime: ${doctorStatus(findInventory(bundle.inventory, "runtime"))}`,
-      `config: ${doctorStatus(findInventory(bundle.inventory, "config"))}`,
-      `config-backups: ${canonicalBackupHistorySummary(configBackups)}`,
-      `current-run: ${doctorStatus(findInventory(bundle.inventory, "current-run"))}`,
-      `summary: ${doctorStatus(findInventory(bundle.inventory, "summary"))}`,
-      `summary-backups: ${canonicalBackupHistorySummary(summaryBackups)}`,
-      `brief: ${doctorStatus(findInventory(bundle.inventory, "brief"))}`,
-      `pack-core: ${doctorStatus(findInventory(bundle.inventory, "pack-core"))}`,
-      `pack-caveman: ${doctorStatus(findInventory(bundle.inventory, "pack-caveman"))}`,
-      `pack-cavemem: ${doctorStatus(findInventory(bundle.inventory, "pack-cavemem"))}`,
-      `pack-rtk: ${doctorStatus(findInventory(bundle.inventory, "pack-rtk"))}`,
-      `pack-frontend-craft: ${doctorStatus(findInventory(bundle.inventory, "pack-frontend-craft"))}`,
-      `codex-config: ${doctorStatus(findInventory(bundle.inventory, "codex-config"))}`,
-      `user-skills: ${doctorStatus(findInventory(bundle.inventory, "user-skills"))}`,
-      `repo-skills: ${doctorStatus(findInventory(bundle.inventory, "repo-skills"))}`,
-      `repo-agents: ${doctorStatus(findInventory(bundle.inventory, "repo-agents"))}`,
-      `global-agents: ${doctorStatus(findInventory(bundle.inventory, "global-agents"))}`,
-      `hooks: ${doctorStatus(findInventory(bundle.inventory, "hooks"))}`,
-      `custom-agents: ${doctorStatus(findInventory(bundle.inventory, "custom-agents"))}`,
-      `opencode-agents: ${doctorStatus(findInventory(bundle.inventory, "opencode-agents"))}`,
-      `root: ${paths.runtimeRoot}`,
-      `codex-home: ${codexPaths.codexHome}`
-    ].join("\n"),
+    summary: snapshot.lines.join("\n"),
     details: [],
     pathsTouched: collectPathsTouched(bundle.inventory),
     inventory: bundle.inventory
   });
+}
+
+export function inspectDoctorSnapshot(
+  paths: ProjectPaths,
+  codexPaths: CodexPaths,
+  bundle: StatusBundle = inspectStatusBundle(paths, codexPaths)
+): DoctorSnapshot {
+  const configBackups = listCanonicalBackupSiblings(paths.configPath);
+  const summaryBackups = listCanonicalBackupSiblings(paths.summaryPath);
+  const lines = [
+    `runtime: ${doctorStatus(findInventory(bundle.inventory, "runtime"))}`,
+    `config: ${doctorStatus(findInventory(bundle.inventory, "config"))}`,
+    `config-backups: ${canonicalBackupHistorySummary(configBackups)}`,
+    `current-run: ${doctorStatus(findInventory(bundle.inventory, "current-run"))}`,
+    `summary: ${doctorStatus(findInventory(bundle.inventory, "summary"))}`,
+    `summary-backups: ${canonicalBackupHistorySummary(summaryBackups)}`,
+    `brief: ${doctorStatus(findInventory(bundle.inventory, "brief"))}`,
+    `pack-core: ${doctorStatus(findInventory(bundle.inventory, "pack-core"))}`,
+    `pack-caveman: ${doctorStatus(findInventory(bundle.inventory, "pack-caveman"))}`,
+    `pack-cavemem: ${doctorStatus(findInventory(bundle.inventory, "pack-cavemem"))}`,
+    `pack-rtk: ${doctorStatus(findInventory(bundle.inventory, "pack-rtk"))}`,
+    `pack-frontend-craft: ${doctorStatus(findInventory(bundle.inventory, "pack-frontend-craft"))}`,
+    `codex-config: ${doctorStatus(findInventory(bundle.inventory, "codex-config"))}`,
+    `user-skills: ${doctorStatus(findInventory(bundle.inventory, "user-skills"))}`,
+    `repo-skills: ${doctorStatus(findInventory(bundle.inventory, "repo-skills"))}`,
+    `repo-agents: ${doctorStatus(findInventory(bundle.inventory, "repo-agents"))}`,
+    `global-agents: ${doctorStatus(findInventory(bundle.inventory, "global-agents"))}`,
+    `hooks: ${doctorStatus(findInventory(bundle.inventory, "hooks"))}`,
+    `custom-agents: ${doctorStatus(findInventory(bundle.inventory, "custom-agents"))}`,
+    `opencode-agents: ${doctorStatus(findInventory(bundle.inventory, "opencode-agents"))}`,
+    `root: ${paths.runtimeRoot}`,
+    `codex-home: ${codexPaths.codexHome}`
+  ];
+
+  return {
+    headline: lines[0] ?? "no doctor output",
+    lines
+  };
 }
 
 export function inspectStatusBundle(paths: ProjectPaths, codexPaths: CodexPaths): StatusBundle {
