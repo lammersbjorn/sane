@@ -368,9 +368,14 @@ describe("framework asset parity", () => {
     expect(agent).toBe(expectedAgent);
     expect(agent).toContain(`name = "${SANE_AGENT_NAME.replace("-", "_")}"`);
     expect(agent).toContain(`model = "${roles.coordinatorModel}"`);
+    expect(agent).toContain("pick the most task-specific one");
+    expect(agent).toContain("sane-frontend-craft");
+    expect(agent).toContain("sane-frontend-review");
     expect(reviewer).toBe(expectedReviewer);
     expect(reviewer).toContain(`name = "${SANE_REVIEWER_AGENT_NAME.replace("-", "_")}"`);
     expect(reviewer).toContain(`model = "${roles.verifierModel}"`);
+    expect(reviewer).toContain("dedicated review skills");
+    expect(reviewer).toContain("sane-frontend-review");
     expect(explorer).toBe(expectedExplorer);
     expect(explorer).toContain(`name = "${SANE_EXPLORER_AGENT_NAME.replace("-", "_")}"`);
     expect(explorer).toContain(`model = "${roles.sidecarModel}"`);
