@@ -58,6 +58,24 @@ Do not mix them.
 - Temporary bridge code is allowed only to preserve behavior while landing parity.
 - Migration work must not be used to reopen product philosophy, add wrapper ritual, or widen repo self-hosting guidance.
 
+## Remaining Rust-Owned Scope
+
+Keep this explicit and ordered by migration value:
+
+1. Policy-preview cutover
+   - `packages/control-plane/src/policy-preview.ts` is the current source of truth.
+   - `crates/sane-tui/src/main.rs` still has a legacy `debug policy-preview` path; treat it as migration-only until it can be removed.
+2. Rust workspace bootstrap retirement
+   - keep only the minimal bootstrap / cutover scaffolding needed to land the TS-first stack split.
+3. Leftover Rust compatibility glue
+   - remove only after the TS path owns the user-visible behavior and tests.
+
+## Git Progress Tracking
+
+- Track implementation progress with git while executing this plan.
+- Check `git status --short` and relevant diffs between slices so progress stays visible in the worktree, not only in chat.
+- Use git-backed milestones when explicitly requested, but do not make commits a hard requirement for every slice.
+
 ## Self-Hosting Boundary
 
 For `Sane`'s own repo only:

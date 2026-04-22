@@ -54,7 +54,9 @@ Implemented:
   - `@sane/platform`
   - `@sane/policy`
   - `@sane/state`
-- Rust workspace bootstrap
+- current policy-preview source of truth is `packages/control-plane/src/policy-preview.ts`; the TS TUI layers consume it directly
+- legacy Rust `debug policy-preview` in `crates/sane-tui/src/main.rs` remains migration-only, not the product source of truth
+- Rust workspace bootstrap remains migration scaffolding only
 - public GitHub repo
 - dual license
 - repo-owned commit-msg hook
@@ -218,7 +220,7 @@ pnpm check
   - preserve normal fallback for `implementation` / `verifier` / unavailable-plan cases
 - [ ] Exact contents/split of `Sane`'s own minimal self-hosting `AGENTS.md` vs repo skill files
 - [ ] Exact self-hosting milestone checklist
-- [ ] Exact TypeScript package split and Rust retirement/cutover checklist
+- [ ] Exact TypeScript package split and Rust retirement/cutover checklist, ordered highest-to-lowest migration value: policy-preview cutover, Rust workspace bootstrap retirement, leftover compatibility glue cleanup
 - [ ] Exact post-`v1` packaging automation sequence
 - [ ] Exact default attribution surface if onboarding opt-in ships:
   - README badge
