@@ -192,6 +192,7 @@ function selectedActionHelpLines(
       "",
       ...action.help,
       "",
+      "Runtime handoff visibility is read-only and current-run-derived.",
       ...model.runtimeSummary.details
     ];
   }
@@ -204,8 +205,8 @@ function selectedActionHelpLines(
       ...action.help,
       "",
       model.latestPolicyPreview.status === "present"
-        ? `latest snapshot: present (${model.latestPolicyPreview.scenarioCount} scenarios: ${model.latestPolicyPreview.scenarioIds.join(", ")})`
-        : "latest snapshot: missing",
+        ? `latest snapshot: present (current-run-derived read-only view; ${model.latestPolicyPreview.scenarioCount} scenarios: ${model.latestPolicyPreview.scenarioIds.join(", ")})`
+        : "latest snapshot: missing (current-run-derived read-only view)",
       ...model.policyPreview.details
     ];
   }

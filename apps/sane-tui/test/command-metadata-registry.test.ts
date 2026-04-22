@@ -79,7 +79,7 @@ describe("command metadata registry", () => {
     expect(listSectionActions("get_started").at(-1)?.label).toBe("6. Install Sane into Codex");
     expect(listSectionActions("install").at(-1)?.label).toBe("Install optional Sane agents for OpenCode");
     expect(getCommandSpec("show_runtime_summary").help[0]).toBe(
-      "Show a read-only summary of local runtime handoff state."
+      "Show a read-only summary of local current-run-derived handoff state."
     );
   });
 

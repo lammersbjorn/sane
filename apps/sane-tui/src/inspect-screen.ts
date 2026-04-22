@@ -48,11 +48,11 @@ export function inspectOverviewLines(snapshot: InspectScreenSnapshot): string[] 
     `primary surfaces: runtime ${statusValue(snapshot.statusBundle.primary.runtime)}, codex ${statusValue(snapshot.statusBundle.primary.codexConfig)}, user ${statusValue(snapshot.statusBundle.primary.userSkills)}, hooks ${statusValue(snapshot.statusBundle.primary.hooks)}, custom-agents ${statusValue(snapshot.statusBundle.primary.customAgents)}`,
     `install bundle: ${snapshot.statusBundle.primary.installBundle}`,
     `doctor result: ${snapshot.doctor.summary.split("\n")[0] ?? "no doctor output"}`,
-    `runtime summary: ${snapshot.runtimeSummary.summary}`,
-    `runtime history: events ${snapshot.runtimeHistory.events}, decisions ${snapshot.runtimeHistory.decisions}, artifacts ${snapshot.runtimeHistory.artifacts}`,
+    `runtime summary (read-only local visibility): ${snapshot.runtimeSummary.summary}`,
+    `runtime history (read-only local visibility): events ${snapshot.runtimeHistory.events}, decisions ${snapshot.runtimeHistory.decisions}, artifacts ${snapshot.runtimeHistory.artifacts}`,
     snapshot.latestPolicyPreview.status === "present"
-      ? `latest policy snapshot: present (${snapshot.latestPolicyPreview.scenarioCount} scenarios: ${snapshot.latestPolicyPreview.scenarioIds.join(", ")})`
-      : "latest policy snapshot: missing",
+      ? `latest policy snapshot: present (current-run-derived read-only view; ${snapshot.latestPolicyPreview.scenarioCount} scenarios: ${snapshot.latestPolicyPreview.scenarioIds.join(", ")})`
+      : "latest policy snapshot: missing (current-run-derived read-only view)",
     `local config view: ${snapshot.localConfig.summary}`,
     `Codex config view: ${snapshot.codexConfig.summary}`,
     `integrations audit: ${snapshot.integrationsAudit.status} (${snapshot.integrationsAudit.recommendedChangeCount} recommended changes)`,

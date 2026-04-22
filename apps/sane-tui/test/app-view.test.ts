@@ -157,6 +157,9 @@ describe("app view", () => {
     const view = loadAppView(shell);
 
     expect(view.selectedAction.id).toBe("show_runtime_summary");
+    expect(view.selectedHelpLines.join("\n")).toContain(
+      "Runtime handoff visibility is read-only and current-run-derived."
+    );
     expect(view.selectedHelpLines.join("\n")).toContain("current-run:");
     expect(view.selectedHelpLines.join("\n")).toContain("summary:");
     expect(view.selectedHelpLines.join("\n")).toContain("brief:");
@@ -188,7 +191,7 @@ describe("app view", () => {
     const view = loadAppView(shell);
 
     expect(view.sectionOverviewLines.join("\n")).toContain(
-      "latest policy snapshot: present (2 scenarios: simple-question, multi-file-feature)"
+      "latest policy snapshot: present (current-run-derived read-only view; 2 scenarios: simple-question, multi-file-feature)"
     );
   });
 
@@ -202,7 +205,9 @@ describe("app view", () => {
     const view = loadAppView(shell);
 
     expect(view.selectedAction.id).toBe("preview_policy");
-    expect(view.selectedHelpLines.join("\n")).toContain("latest snapshot: missing");
+    expect(view.selectedHelpLines.join("\n")).toContain(
+      "latest snapshot: missing (current-run-derived read-only view)"
+    );
     expect(view.selectedHelpLines.join("\n")).toContain("simple-question:");
     expect(view.selectedHelpLines.join("\n")).toContain("direct_answer");
     expect(view.selectedHelpLines.join("\n")).toContain("explorer=");

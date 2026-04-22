@@ -149,10 +149,11 @@ export const COMMAND_METADATA_REGISTRY = {
       tabLabel: "Inspect",
       docLabel: "Inspect",
       description: [
-        "Inspect before you change anything.",
-        "Inspect includes status summary, doctor result, runtime handoff state, local config view, Codex config view, and export drift view.",
+        "Inspect is read-only visibility before you change anything.",
+        "Inspect includes status summary, doctor result, current-run-derived handoff visibility, local config view, Codex config view, and export drift view.",
         "Use status and doctor to see what is installed, stale, disabled, or broken.",
-        "View Sane config and Codex settings before applying changes."
+        "View Sane config and Codex settings before applying changes.",
+        "Inspect does not orchestrate runtime work."
       ]
     },
     {
@@ -216,10 +217,11 @@ export const COMMAND_METADATA_REGISTRY = {
       kind: "backend",
       backendKind: OperationKind.ShowRuntimeSummary,
       help: [
-        "Show a read-only summary of local runtime handoff state.",
+        "Show a read-only summary of local current-run-derived handoff state.",
         "",
+        "Visibility only. No files are changed and no runtime orchestration runs.",
         "This reads current-run, summary, and brief state from `.sane/`.",
-        "Use it when you want a compact view of what Sane thinks is happening locally."
+        "Use it when you want a compact view of what Sane has recorded locally."
       ],
       confirmation: null,
       successNoticeTitle: null,
@@ -253,16 +255,16 @@ export const COMMAND_METADATA_REGISTRY = {
       kind: "backend",
       backendKind: OperationKind.PreviewPolicy,
       help: [
-        "Show Sane's current adaptive routing policy preview.",
+        "Show Sane's current-run-derived adaptive routing policy preview.",
         "",
-        "Preview only. No files are changed.",
+        "Visibility only. No files are changed and no runtime orchestration runs.",
         "It shows per-scenario obligations plus routing defaults.",
         "Editable coordinator/sidecar/verifier defaults are shown alongside derived execution and realtime-iteration classes."
       ],
       confirmation: null,
       successNoticeTitle: null,
       repoMutation: false,
-      filesTouched: [".sane/current-run.json", ".sane/summary.json"]
+      filesTouched: [".sane/current-run.json", ".sane/state/summary.json", ".sane/state/decisions.jsonl"]
     },
     backup_codex_config: {
       id: "backup_codex_config",
@@ -747,6 +749,7 @@ export const COMMAND_METADATA_REGISTRY = {
       help: [
         "Show everything Sane currently manages.",
         "",
+        "Visibility only. No files are changed.",
         "Use status and doctor to see what is installed, stale, disabled, or broken."
       ],
       confirmation: null,
@@ -761,6 +764,7 @@ export const COMMAND_METADATA_REGISTRY = {
       help: [
         "Check Sane's local project files and Codex installs.",
         "",
+        "Visibility only. No files are changed.",
         "Use this when something feels broken, stale, or only partly installed.",
         "Doctor points at missing, invalid, or drifted Sane-managed pieces."
       ],
