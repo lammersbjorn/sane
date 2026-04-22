@@ -62,6 +62,7 @@ interface CorePackManifest {
       skills?: Array<{
         name: string;
         path: string;
+        taskKinds?: string[];
       }>;
       routerNote: string;
       overlayNote: string;
@@ -167,6 +168,10 @@ describe("framework asset parity", () => {
       ENABLED_PACK_ROUTER_NOTES: [
         "- caveman pack active: prefer terse, token-efficient prose when normal clarity still holds",
         "- rtk pack active: if RTK policy is present, route shell work through RTK instead of raw shell"
+      ].join("\n"),
+      ENABLED_PACK_SKILL_SELECTIONS: [
+        "- caveman task picks: communication, brevity, token-efficiency -> sane-caveman",
+        "- rtk task picks: shell, command-execution, rtk-policy -> sane-rtk"
       ].join("\n")
     });
 
@@ -200,6 +205,11 @@ describe("framework asset parity", () => {
       ENABLED_PACK_OVERLAY_NOTES: [
         "- cavemem pack active: prefer compact durable memory and handoff summaries",
         "- frontend-craft pack active: for frontend work, pick the dedicated build vs review skill instead of generic AI aesthetics"
+      ].join("\n"),
+      ENABLED_PACK_SKILL_SELECTIONS: [
+        "- cavemem task picks: memory, handoff, long-session -> sane-cavemem",
+        "- frontend-craft task picks: implementation, restyle, frontend-build -> sane-frontend-craft",
+        "- frontend-craft task picks: review, audit, critique, polish -> sane-frontend-review"
       ].join("\n")
     });
 

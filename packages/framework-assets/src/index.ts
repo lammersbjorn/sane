@@ -81,6 +81,7 @@ interface CorePackManifestEntry {
   skills?: Array<{
     name: string;
     path: string;
+    taskKinds?: string[];
   }>;
   routerNote: string;
   overlayNote: string;
@@ -139,7 +140,8 @@ export function createSaneRouterSkill(packs: GuidancePacks, roles: ModelRoutingG
     REALTIME_REASONING: roles.realtimeReasoning,
     ENABLED_PACK_ROUTER_NOTES: enabledPackEntries(packs)
       .map(([, entry]) => entry.routerNote)
-      .join("\n")
+      .join("\n"),
+    ENABLED_PACK_SKILL_SELECTIONS: enabledPackSkillSelections(packs)
   });
 }
 
@@ -160,7 +162,8 @@ export function createSaneGlobalAgentsOverlay(
     REALTIME_REASONING: roles.realtimeReasoning,
     ENABLED_PACK_OVERLAY_NOTES: enabledPackEntries(packs)
       .map(([, entry]) => entry.overlayNote)
-      .join("\n")
+      .join("\n"),
+    ENABLED_PACK_SKILL_SELECTIONS: enabledPackSkillSelections(packs)
   });
 }
 
@@ -176,7 +179,7 @@ export function optionalPackSkillNames(pack: string): string[] {
   return optionalPackSkills(pack).map((skill) => skill.name);
 }
 
-export function optionalPackSkills(pack: string): Array<{ name: string; path: string }> {
+export function optionalPackSkills(pack: string): Array<{ name: string; path: string; taskKinds?: string[] }> {
   const entry = CORE_PACK_MANIFEST.optionalPacks[pack];
   if (!entry) {
     return [];
@@ -191,6 +194,13 @@ export function optionalPackSkills(pack: string): Array<{ name: string; path: st
   }
 
   return [];
+}
+
+export function optionalPackSkillSelections(pack: string): Array<{ name: string; taskKinds: string[] }> {
+  return optionalPackSkills(pack).map((skill) => ({
+    name: skill.name,
+    taskKinds: Array.isArray(skill.taskKinds) ? skill.taskKinds : []
+  }));
 }
 
 export function createOptionalPackSkills(pack: string): Array<{ name: string; content: string }> {
@@ -274,6 +284,21 @@ function enabledPackEntries(
   packs: GuidancePacks
 ): Array<[string, CorePackManifest["optionalPacks"][string]]> {
   return Object.entries(CORE_PACK_MANIFEST.optionalPacks).filter(([key]) => isPackEnabled(key, packs));
+}
+
+function enabledPackSkillSelections(packs: GuidancePacks): string {
+  return enabledPackEntries(packs)
+    .flatMap(([pack, entry]) =>
+      optionalPackSkills(pack).flatMap((skill) => {
+        const taskKinds = Array.isArray(skill.taskKinds) ? skill.taskKinds : [];
+        if (taskKinds.length === 0) {
+          return [];
+        }
+
+        return [`- ${pack} task picks: ${taskKinds.join(", ")} -> ${skill.name}`];
+      })
+    )
+    .join("\n");
 }
 
 function isPackEnabled(pack: string, packs: GuidancePacks): boolean {

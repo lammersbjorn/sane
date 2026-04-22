@@ -22,7 +22,8 @@
       "skills": [
         {
           "name": "sane-caveman",
-          "path": "skills/optional/sane-caveman.md"
+          "path": "skills/optional/sane-caveman.md",
+          "taskKinds": ["communication", "brevity", "token-efficiency"]
         }
       ],
       "routerNote": "- caveman pack active: prefer terse, token-efficient prose when normal clarity still holds",
@@ -49,7 +50,8 @@
       "skills": [
         {
           "name": "sane-cavemem",
-          "path": "skills/optional/sane-cavemem.md"
+          "path": "skills/optional/sane-cavemem.md",
+          "taskKinds": ["memory", "handoff", "long-session"]
         }
       ],
       "routerNote": "- cavemem pack active: keep durable summaries compact and high-signal during long sessions",
@@ -76,7 +78,8 @@
       "skills": [
         {
           "name": "sane-rtk",
-          "path": "skills/optional/sane-rtk.md"
+          "path": "skills/optional/sane-rtk.md",
+          "taskKinds": ["shell", "command-execution", "rtk-policy"]
         }
       ],
       "routerNote": "- rtk pack active: if RTK policy is present, route shell work through RTK instead of raw shell",
@@ -93,11 +96,13 @@
       "skills": [
         {
           "name": "sane-frontend-craft",
-          "path": "skills/optional/sane-frontend-craft.md"
+          "path": "skills/optional/sane-frontend-craft.md",
+          "taskKinds": ["implementation", "restyle", "frontend-build"]
         },
         {
           "name": "sane-frontend-review",
-          "path": "skills/optional/sane-frontend-review.md"
+          "path": "skills/optional/sane-frontend-review.md",
+          "taskKinds": ["review", "audit", "critique", "polish"]
         }
       ],
       "routerNote": "- frontend-craft pack active: use `sane-frontend-craft` for implementation and `sane-frontend-review` for critique/review tasks instead of one blended frontend skill",
