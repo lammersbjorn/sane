@@ -1,6 +1,6 @@
 import { presentManagedStatus, type ManagedStatusKind } from "@sane/control-plane/status-presenter.js";
 import * as getStartedScreen from "@/get-started-screen.js";
-import { currentAction, currentActions, currentSection, projectLabel, recommendedNextStep, type TuiShell } from "@/shell.js";
+import { currentAction, currentActions, currentSection, projectLabel, type TuiShell } from "@/shell.js";
 
 export interface DashboardChip {
   id: string;
@@ -24,14 +24,19 @@ export interface DashboardView {
   chips: DashboardChip[];
 }
 
-export function loadDashboardView(shell: TuiShell): DashboardView {
-  const getStarted = getStartedScreen.loadGetStartedScreen(shell.paths, shell.codexPaths);
+export function loadDashboardView(
+  shell: TuiShell,
+  getStarted: ReturnType<typeof getStartedScreen.loadGetStartedScreen> = getStartedScreen.loadGetStartedScreen(
+    shell.paths,
+    shell.codexPaths
+  )
+): DashboardView {
 
   return {
     title: "Sane",
     subtitle: "Codex-native onboarding and setup",
     projectLabel: projectLabel(shell),
-    recommendedNextStep: recommendedNextStep(shell),
+    recommendedNextStep: getStarted.recommendedNextStep,
     recommendedActionId: getStarted.recommendedActionId,
     attentionItems: getStarted.attentionItems,
     sections: shell.sections,

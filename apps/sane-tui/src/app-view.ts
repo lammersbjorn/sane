@@ -42,8 +42,8 @@ export interface SaneTuiAppView {
 }
 
 export function loadAppView(shell: TuiShell): SaneTuiAppView {
-  const dashboard = loadDashboardView(shell);
   const getStarted = loadGetStartedScreen(shell.paths, shell.codexPaths);
+  const dashboard = loadDashboardView(shell, getStarted);
   const install = loadInstallScreen(shell.paths, shell.codexPaths);
   const inspect = lazy(() => loadInspectScreen(shell.paths, shell.codexPaths));
   const preferences = lazy(() => loadPreferencesScreen(shell.paths, shell.codexPaths));
