@@ -1,6 +1,6 @@
 import { showRuntimeSummary } from "@sane/control-plane";
 import { inspectStatusBundle } from "@sane/control-plane/inventory.js";
-import { loadGetStartedScreen } from "@/get-started-screen.js";
+import * as getStartedScreen from "@/get-started-screen.js";
 import { currentAction, currentActions, currentSection, projectLabel, recommendedNextStep, type TuiShell } from "@/shell.js";
 
 export interface DashboardChip {
@@ -15,7 +15,7 @@ export interface DashboardView {
   subtitle: "Codex-native onboarding and setup";
   projectLabel: string;
   recommendedNextStep: string;
-  recommendedActionId: ReturnType<typeof loadGetStartedScreen>["recommendedActionId"];
+  recommendedActionId: ReturnType<typeof getStartedScreen.loadGetStartedScreen>["recommendedActionId"];
   attentionItems: string[];
   sections: TuiShell["sections"];
   activeSection: ReturnType<typeof currentSection>;
@@ -26,8 +26,9 @@ export interface DashboardView {
 }
 
 export function loadDashboardView(shell: TuiShell): DashboardView {
-  const getStarted = loadGetStartedScreen(shell.paths, shell.codexPaths);
+  const getStarted = getStartedScreen.loadGetStartedScreen(shell.paths, shell.codexPaths);
   const statusBundle = inspectStatusBundle(shell.paths, shell.codexPaths);
+  const onboardingStatuses = parseOnboardingStatusLine(getStarted.statusLine);
 
   return {
     title: "Sane",
@@ -41,26 +42,29 @@ export function loadDashboardView(shell: TuiShell): DashboardView {
     actions: currentActions(shell),
     selectedAction: currentAction(shell),
     lastResult: shell.lastResult,
-    chips: buildStatusChips(shell, statusBundle)
+    chips: buildStatusChips(shell, statusBundle, onboardingStatuses)
   };
 }
 
-function buildStatusChips(shell: TuiShell, statusBundle: ReturnType<typeof inspectStatusBundle>): DashboardChip[] {
+function buildStatusChips(
+  shell: TuiShell,
+  statusBundle: ReturnType<typeof inspectStatusBundle>,
+  onboardingStatuses: Partial<Record<"runtime" | "codex-config" | "user-skills" | "hooks" | "install_bundle", string>>
+): DashboardChip[] {
   const wanted = [
-    ["runtime", statusBundle.primary.runtime],
-    ["codex-config", statusBundle.primary.codexConfig],
-    ["user-skills", statusBundle.primary.userSkills],
-    ["hooks", statusBundle.primary.hooks],
-    ["custom-agents", statusBundle.primary.customAgents]
+    ["runtime", "runtime"],
+    ["codex-config", "codex-config"],
+    ["user-skills", "user-skills"],
+    ["hooks", "hooks"]
   ] as const;
   const chips: DashboardChip[] = [];
 
-  for (const [name, item] of wanted) {
-    if (!item) {
+  for (const [name, inventoryName] of wanted) {
+    const value = onboardingStatuses[name] ?? inventoryStatusValue(statusBundle.inventory, inventoryName);
+    if (!value) {
       continue;
     }
 
-    const value = item.status.displayString();
     chips.push({
       id: name,
       label: chipLabel(name),
@@ -69,11 +73,23 @@ function buildStatusChips(shell: TuiShell, statusBundle: ReturnType<typeof inspe
     });
   }
 
+  const customAgentsValue = inventoryStatusValue(statusBundle.inventory, "custom-agents");
+  if (customAgentsValue) {
+    chips.push({
+      id: "custom-agents",
+      label: "Custom agents",
+      value: customAgentsValue,
+      tone: toneForValue(customAgentsValue)
+    });
+  }
+
+  const installBundleValue = onboardingStatuses.install_bundle ?? bundleStatusFromInventory(statusBundle.inventory);
+
   chips.push({
     id: "install_bundle",
     label: "Install bundle",
-    value: statusBundle.primary.installBundle,
-    tone: toneForValue(statusBundle.primary.installBundle)
+    value: installBundleValue,
+    tone: toneForValue(installBundleValue)
   });
 
   chips.push({
@@ -100,6 +116,53 @@ function buildStatusChips(shell: TuiShell, statusBundle: ReturnType<typeof inspe
   }
 
   return chips;
+}
+
+function parseOnboardingStatusLine(
+  statusLine: string
+): Partial<Record<"runtime" | "codex-config" | "user-skills" | "hooks" | "install_bundle", string>> {
+  const parsed: Partial<Record<"runtime" | "codex-config" | "user-skills" | "hooks" | "install_bundle", string>> = {};
+
+  for (const segment of statusLine.split("|")) {
+    const part = segment.trim();
+    if (part.startsWith("runtime ")) {
+      parsed.runtime = part.slice("runtime ".length).trim();
+      continue;
+    }
+    if (part.startsWith("codex-config ")) {
+      parsed["codex-config"] = part.slice("codex-config ".length).trim();
+      continue;
+    }
+    if (part.startsWith("user-skills ")) {
+      parsed["user-skills"] = part.slice("user-skills ".length).trim();
+      continue;
+    }
+    if (part.startsWith("hooks ")) {
+      parsed.hooks = part.slice("hooks ".length).trim();
+      continue;
+    }
+    if (part.startsWith("install bundle ")) {
+      parsed.install_bundle = part.slice("install bundle ".length).trim();
+    }
+  }
+
+  return parsed;
+}
+
+function inventoryStatusValue(
+  inventory: ReturnType<typeof inspectStatusBundle>["inventory"],
+  name: string
+): string | null {
+  return inventory.find((item) => item.name === name)?.status.displayString() ?? null;
+}
+
+function bundleStatusFromInventory(
+  inventory: ReturnType<typeof inspectStatusBundle>["inventory"]
+): "installed" | "missing" {
+  const names = ["user-skills", "global-agents", "hooks", "custom-agents"] as const;
+  return names.every((name) => inventoryStatusValue(inventory, name) === "installed")
+    ? "installed"
+    : "missing";
 }
 
 function chipLabel(name: string): string {

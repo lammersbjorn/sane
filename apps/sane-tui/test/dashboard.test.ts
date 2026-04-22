@@ -5,9 +5,11 @@ import { join } from "node:path";
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as controlPlane from "@sane/control-plane";
+import * as inventory from "@sane/control-plane/inventory.js";
 
 import { installRuntime } from "@sane/control-plane";
 import { loadDashboardView } from "@/dashboard.js";
+import * as getStarted from "@/get-started-screen.js";
 import { createTuiShell } from "@/shell.js";
 
 const tempDirs: string[] = [];
@@ -130,5 +132,57 @@ describe("dashboard view", () => {
       value: "failed",
       tone: "warn"
     });
+  });
+
+  it("prefers onboarding snapshot status line over status bundle primary shape for core chips", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const shell = createTuiShell(createProjectPaths(projectRoot), createCodexPaths(homeDir));
+
+    vi.spyOn(getStarted, "loadGetStartedScreen").mockReturnValue({
+      summary: "Get Started",
+      recommendedActionId: "install_runtime",
+      recommendedNextStep: "Create Sane's local project files first.",
+      attentionItems: [],
+      statusLine:
+        "runtime missing | codex-config missing | user-skills missing | hooks missing | install bundle missing",
+      steps: []
+    });
+    vi.spyOn(inventory, "inspectStatusBundle").mockReturnValue({
+      inventory: [
+        {
+          name: "custom-agents",
+          status: { displayString: () => "installed" }
+        }
+      ],
+      localRuntime: [],
+      codexNative: [],
+      driftItems: [],
+      counts: {
+        installed: 0,
+        configured: 0,
+        disabled: 0,
+        missing: 0,
+        invalid: 0,
+        present_without_sane_block: 0,
+        removed: 0
+      },
+      primary: {
+        runtime: { status: { displayString: () => "installed" } },
+        codexConfig: { status: { displayString: () => "installed" } },
+        userSkills: { status: { displayString: () => "installed" } },
+        hooks: { status: { displayString: () => "installed" } },
+        customAgents: { status: { displayString: () => "installed" } },
+        installBundle: "installed"
+      }
+    } as unknown as ReturnType<typeof inventory.inspectStatusBundle>);
+
+    const view = loadDashboardView(shell);
+
+    expect(view.chips.find((chip) => chip.id === "runtime")?.value).toBe("missing");
+    expect(view.chips.find((chip) => chip.id === "codex-config")?.value).toBe("missing");
+    expect(view.chips.find((chip) => chip.id === "user-skills")?.value).toBe("missing");
+    expect(view.chips.find((chip) => chip.id === "hooks")?.value).toBe("missing");
+    expect(view.chips.find((chip) => chip.id === "install_bundle")?.value).toBe("missing");
   });
 });
