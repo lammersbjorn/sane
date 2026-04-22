@@ -15,16 +15,22 @@ import {
 import { discoverCodexPaths, type HomeDirEnv, type ProjectPaths } from "@sane/platform";
 import {
   canonicalScenarios,
+  Intent,
+  Level,
+  Parallelism,
+  RunState,
+  TaskShape,
   explain,
   obligationAsString,
   policyRuleAsString
 } from "@sane/policy";
+import { readCurrentRunState } from "@sane/state";
 
 export function previewPolicy(paths: ProjectPaths, env: HomeDirEnv = process.env): OperationResult {
   const config = loadOrDefaultConfig(paths);
   const routing = loadDerivedRouting(paths, env);
   const subagents = buildSubagentRouting(paths, env);
-  const policyPreview = buildPolicyPreview();
+  const policyPreview = buildPolicyPreview(paths);
   const details = policyPreview.scenarios.map((scenario) =>
     renderPolicyPreviewLine(config, routing, subagents, scenario)
   );
@@ -85,28 +91,62 @@ function renderRolePlan(
   return parts.join(", ");
 }
 
-function buildPolicyPreview(): PolicyPreviewPayload {
-  return {
-    scenarios: canonicalScenarios().map((scenario) => {
-      const explanation = explain(scenario.input);
+function buildPolicyPreview(paths: ProjectPaths): PolicyPreviewPayload {
+  const scenarios = canonicalScenarios().map((scenario) =>
+    buildScenarioPreview(scenario.id, scenario.summary, scenario.input)
+  );
+  const currentRunScenario = buildCurrentRunInspectScenario(paths);
+  if (currentRunScenario) {
+    scenarios.push(currentRunScenario);
+  }
 
-      return {
-        id: scenario.id,
-        summary: scenario.summary,
-        obligations: explanation.decision.obligations.map(obligationAsString),
-        roles: explanation.roles,
-        orchestration: {
-          subagents: explanation.orchestration.subagents,
-          subagentReadiness: explanation.orchestration.subagentReadiness,
-          reviewPosture: explanation.orchestration.reviewPosture,
-          verifierTiming: explanation.orchestration.verifierTiming
-        },
-        trace: explanation.trace.map((entry) => ({
-          obligation: obligationAsString(entry.obligation),
-          rule: policyRuleAsString(entry.rule)
-        }))
-      };
-    })
+  return { scenarios };
+}
+
+function buildCurrentRunInspectScenario(paths: ProjectPaths): PolicyPreviewScenario | null {
+  try {
+    readCurrentRunState(paths.currentRunPath);
+  } catch {
+    return null;
+  }
+
+  return buildScenarioPreview(
+    "current-run-inspect",
+    "inspect-only scenario derived from current-run state",
+    {
+      intent: Intent.Inspect,
+      taskShape: TaskShape.Local,
+      risk: Level.Low,
+      ambiguity: Level.Low,
+      parallelism: Parallelism.None,
+      contextPressure: Level.Low,
+      runState: RunState.Executing
+    }
+  );
+}
+
+function buildScenarioPreview(
+  id: string,
+  summary: string,
+  input: Parameters<typeof explain>[0]
+): PolicyPreviewScenario {
+  const explanation = explain(input);
+
+  return {
+    id,
+    summary,
+    obligations: explanation.decision.obligations.map(obligationAsString),
+    roles: explanation.roles,
+    orchestration: {
+      subagents: explanation.orchestration.subagents,
+      subagentReadiness: explanation.orchestration.subagentReadiness,
+      reviewPosture: explanation.orchestration.reviewPosture,
+      verifierTiming: explanation.orchestration.verifierTiming
+    },
+    trace: explanation.trace.map((entry) => ({
+      obligation: obligationAsString(entry.obligation),
+      rule: policyRuleAsString(entry.rule)
+    }))
   };
 }
 

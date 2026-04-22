@@ -4,6 +4,7 @@ import { join } from "node:path";
 
 import { createDefaultLocalConfig } from "@sane/config";
 import { createProjectPaths } from "@sane/platform";
+import { writeCurrentRunState } from "@sane/state";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { previewPolicy } from "../src/policy-preview.js";
@@ -72,5 +73,49 @@ describe("policy preview", () => {
 
     expect(featureLine).toContain("execution=gpt-5.3-codex/medium");
     expect(featureLine).toContain("realtime=gpt-5.3-codex-spark/low");
+  });
+
+  it("adds a derived inspect-only current-run scenario when current-run exists", () => {
+    const projectRoot = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+
+    writeCurrentRunState(paths.currentRunPath, {
+      version: 2,
+      objective: "inspect runtime drift",
+      phase: "inspect",
+      activeTasks: ["inspect runtime drift"],
+      blockingQuestions: [],
+      verification: {
+        status: "pending",
+        summary: "inspection queued"
+      },
+      lastCompactionTsUnix: null,
+      extra: {}
+    });
+
+    const result = previewPolicy(paths);
+    const currentRunLine =
+      result.details.find((line) => line.startsWith("current-run-inspect:")) ?? "";
+    const currentRunScenario = result.policyPreview?.scenarios.find(
+      (scenario) => scenario.id === "current-run-inspect"
+    );
+
+    expect(result.details).toHaveLength(6);
+    expect(result.policyPreview?.scenarios).toHaveLength(6);
+    expect(currentRunLine).toContain("verify_light");
+    expect(currentRunScenario?.obligations).toEqual(["verify_light"]);
+  });
+
+  it("keeps canonical five scenarios when current-run is missing", () => {
+    const projectRoot = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+
+    const result = previewPolicy(paths);
+
+    expect(result.details).toHaveLength(5);
+    expect(result.policyPreview?.scenarios).toHaveLength(5);
+    expect(result.details.some((line) => line.startsWith("current-run-inspect:"))).toBe(false);
+    expect(result.policyPreview?.scenarios.some((scenario) => scenario.id === "current-run-inspect"))
+      .toBe(false);
   });
 });
