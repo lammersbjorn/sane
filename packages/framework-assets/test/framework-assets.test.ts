@@ -9,7 +9,9 @@ import {
   SANE_CAVEMAN_PACK_SKILL_NAME,
   SANE_EXPLORER_AGENT_NAME,
   SANE_FRONTEND_CRAFT_PACK_SKILL_NAME,
+  SANE_FRONTEND_REVIEW_PACK_SKILL_NAME,
   SANE_REVIEWER_AGENT_NAME,
+  createOptionalPackSkills,
   createDefaultGuidancePacks,
   createOptionalPackSkill,
   createSaneOpencodeAgentTemplate,
@@ -23,6 +25,7 @@ import {
   corePackAssetSourceProvenance,
   corePackAssetSourceProvenanceStyle,
   optionalPackSkillName,
+  optionalPackSkillNames,
   optionalPackProvenance,
   type GuidancePacks,
   type PackAssetProvenance,
@@ -54,8 +57,12 @@ interface CorePackManifest {
   optionalPacks: Record<
     string,
     {
-      skillName: string;
-      skillPath: string;
+      skillName?: string;
+      skillPath?: string;
+      skills?: Array<{
+        name: string;
+        path: string;
+      }>;
       routerNote: string;
       overlayNote: string;
       provenance: PackAssetProvenance;
@@ -99,6 +106,10 @@ function readCoreAsset(path: string): string {
   return readFileSync(resolve(CORE_PACK_ROOT, path), "utf8");
 }
 
+function manifestSkills(entry: CorePackManifest["optionalPacks"][string]) {
+  return entry.skills ?? (entry.skillName && entry.skillPath ? [{ name: entry.skillName, path: entry.skillPath }] : []);
+}
+
 function renderTemplate(template: string, replacements: Record<string, string>): string {
   return Object.entries(replacements).reduce(
     (body, [key, value]) => body.replaceAll(`{{${key}}}`, value),
@@ -120,9 +131,12 @@ describe("framework asset parity", () => {
     expect(manifest.assets.opencodeAgents.primary).toBe("agents/opencode/sane-agent.md.tmpl");
     expect(manifest.assets.opencodeAgents.reviewer).toBe("agents/opencode/sane-reviewer.md.tmpl");
     expect(manifest.assets.opencodeAgents.explorer).toBe("agents/opencode/sane-explorer.md.tmpl");
-    expect(manifest.optionalPacks.caveman.skillName).toBe(SANE_CAVEMAN_PACK_SKILL_NAME);
-    expect(manifest.optionalPacks["frontend-craft"].skillName).toBe(
+    expect(manifestSkills(manifest.optionalPacks.caveman)[0]?.name).toBe(SANE_CAVEMAN_PACK_SKILL_NAME);
+    expect(manifestSkills(manifest.optionalPacks["frontend-craft"])[0]?.name).toBe(
       SANE_FRONTEND_CRAFT_PACK_SKILL_NAME
+    );
+    expect(manifestSkills(manifest.optionalPacks["frontend-craft"])[1]?.name).toBe(
+      SANE_FRONTEND_REVIEW_PACK_SKILL_NAME
     );
     expect(manifest.optionalPacks.caveman.provenance.kind).toBe("derived");
     expect(manifest.optionalPacks["frontend-craft"].provenance.kind).toBe("derived");
@@ -185,7 +199,7 @@ describe("framework asset parity", () => {
       REALTIME_REASONING: roles.realtimeReasoning,
       ENABLED_PACK_OVERLAY_NOTES: [
         "- cavemem pack active: prefer compact durable memory and handoff summaries",
-        "- frontend-craft pack active: for frontend work, avoid generic AI aesthetics and push for stronger craft"
+        "- frontend-craft pack active: for frontend work, pick the dedicated build vs review skill instead of generic AI aesthetics"
       ].join("\n")
     });
 
@@ -207,15 +221,36 @@ describe("framework asset parity", () => {
     for (const [pack, name] of cases) {
       expect(optionalPackSkillName(pack)).toBe(name);
       expect(createOptionalPackSkill(pack)).toBe(
-        readCoreAsset(manifest.optionalPacks[pack].skillPath)
+        readCoreAsset(manifestSkills(manifest.optionalPacks[pack])[0]!.path)
       );
     }
 
     const frontendCraft = createOptionalPackSkill("frontend-craft");
-    expect(frontendCraft).toContain("Taste-inspired frontend craft");
+    expect(optionalPackSkillNames("frontend-craft")).toEqual([
+      SANE_FRONTEND_CRAFT_PACK_SKILL_NAME,
+      SANE_FRONTEND_REVIEW_PACK_SKILL_NAME
+    ]);
+    expect(createOptionalPackSkills("frontend-craft")).toEqual([
+      {
+        name: SANE_FRONTEND_CRAFT_PACK_SKILL_NAME,
+        content: readCoreAsset(manifestSkills(manifest.optionalPacks["frontend-craft"])[0]!.path)
+      },
+      {
+        name: SANE_FRONTEND_REVIEW_PACK_SKILL_NAME,
+        content: readCoreAsset(manifestSkills(manifest.optionalPacks["frontend-craft"])[1]!.path)
+      }
+    ]);
+    expect(frontendCraft).toContain("Taste-inspired frontend implementation craft");
     expect(frontendCraft).toContain("gpt-taste");
     expect(frontendCraft).toContain("DESIGN_VARIANCE");
     expect(frontendCraft).toContain("avoid generic AI frontend aesthetics");
+    expect(frontendCraft).toContain("sane-frontend-review");
+
+    const frontendReview = createOptionalPackSkills("frontend-craft")[1]?.content ?? "";
+    expect(frontendReview).toContain("Impeccable-style frontend review");
+    expect(frontendReview).toContain("anti-pattern sweep");
+    expect(frontendReview).toContain("findings first");
+    expect(frontendReview).toContain("code-linked findings");
   });
 
   it("exposes pinned provenance seam for optional packs", () => {
@@ -256,6 +291,21 @@ describe("framework asset parity", () => {
         }
       ]
     });
+    expect(optionalPackProvenance("cavemem")).toEqual({
+      kind: "derived",
+      note: "Sane-curated durable-memory pack derived from Cavemem's local-first memory model and README guidance, without mirroring its full MCP/runtime surface.",
+      updateStrategy: "manual-curated",
+      upstreams: [
+        {
+          name: "cavemem",
+          role: "primary",
+          url: "https://github.com/JuliusBrussee/cavemem",
+          ref: "v0.1.3",
+          path: "README.md",
+          license: "MIT"
+        }
+      ]
+    });
     expect(optionalPackProvenance("rtk")).toEqual({
       kind: "internal",
       note: "Sane-curated workflow pack for RTK-aware shell routing. Provenance stays repo-local for now.",
@@ -276,7 +326,7 @@ describe("framework asset parity", () => {
       manifest.assets.opencodeAgents.primary,
       manifest.assets.opencodeAgents.reviewer,
       manifest.assets.opencodeAgents.explorer,
-      ...Object.values(manifest.optionalPacks).map((entry) => entry.skillPath)
+      ...Object.values(manifest.optionalPacks).flatMap((entry) => manifestSkills(entry).map((skill) => skill.path))
     ];
 
     expect(manifest.assetSources?.style).toBe("pinned-upstream-link");

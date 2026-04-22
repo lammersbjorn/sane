@@ -4,9 +4,9 @@ import { join } from "node:path";
 import { createRecommendedLocalConfig, detectCodexEnvironment, readLocalConfig } from "@sane/config";
 import { InventoryScope, InventoryStatus, OperationKind, OperationResult } from "@sane/core";
 import {
-  createOptionalPackSkill,
+  createOptionalPackSkills,
+  optionalPackSkillNames,
   optionalPackProvenance,
-  optionalPackSkillName,
   type PackAssetProvenance
 } from "@sane/framework-assets";
 import { type CodexPaths, type ProjectPaths } from "@sane/platform";
@@ -36,6 +36,7 @@ export interface OptionalPackSnapshot {
   inventoryName: `pack-${OptionalPackName}`;
   status: InventoryStatusName;
   skillName: string | null;
+  skillNames: string[];
   provenance: PackAssetProvenance | null;
 }
 
@@ -250,7 +251,8 @@ function inspectOptionalPackSnapshots(inventory: InventoryItem[]): OptionalPackS
       name,
       inventoryName,
       status: inventoryStatusName(item),
-      skillName: optionalPackSkillName(name) ?? null,
+      skillName: optionalPackSkillNames(name)[0] ?? null,
+      skillNames: optionalPackSkillNames(name),
       provenance: optionalPackProvenance(name) ?? null
     };
   });
@@ -283,21 +285,34 @@ function packSkillStatus(
   codexPaths: CodexPaths,
   packName: OptionalPackName
 ) {
-  const skillName = optionalPackSkillName(packName);
-  const expected = createOptionalPackSkill(packName);
-  if (!skillName || !expected) {
+  const expectedSkills = createOptionalPackSkills(packName);
+  if (expectedSkills.length === 0) {
     return InventoryStatus.Configured;
   }
 
-  for (const skillPath of [
-    join(codexPaths.userSkillsDir, skillName, "SKILL.md"),
-    join(paths.repoSkillsDir, skillName, "SKILL.md")
-  ]) {
-    try {
-      const body = readFileSync(skillPath, "utf8");
-      return body === expected ? InventoryStatus.Installed : InventoryStatus.Configured;
-    } catch {
-      continue;
+  for (const skillsRoot of [codexPaths.userSkillsDir, paths.repoSkillsDir]) {
+    let foundAny = false;
+    let matchedAll = true;
+
+    for (const skill of expectedSkills) {
+      const skillPath = join(skillsRoot, skill.name, "SKILL.md");
+      try {
+        const body = readFileSync(skillPath, "utf8");
+        foundAny = true;
+        if (body !== skill.content) {
+          return InventoryStatus.Invalid;
+        }
+      } catch {
+        matchedAll = false;
+      }
+    }
+
+    if (matchedAll && foundAny) {
+      return InventoryStatus.Installed;
+    }
+
+    if (foundAny) {
+      return InventoryStatus.Configured;
     }
   }
 

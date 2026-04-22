@@ -19,6 +19,12 @@
     "caveman": {
       "skillName": "sane-caveman",
       "skillPath": "skills/optional/sane-caveman.md",
+      "skills": [
+        {
+          "name": "sane-caveman",
+          "path": "skills/optional/sane-caveman.md"
+        }
+      ],
       "routerNote": "- caveman pack active: prefer terse, token-efficient prose when normal clarity still holds",
       "overlayNote": "- caveman pack active: default to terse, token-aware prose when it does not reduce correctness",
       "provenance": {
@@ -40,17 +46,39 @@
     "cavemem": {
       "skillName": "sane-cavemem",
       "skillPath": "skills/optional/sane-cavemem.md",
+      "skills": [
+        {
+          "name": "sane-cavemem",
+          "path": "skills/optional/sane-cavemem.md"
+        }
+      ],
       "routerNote": "- cavemem pack active: keep durable summaries compact and high-signal during long sessions",
       "overlayNote": "- cavemem pack active: prefer compact durable memory and handoff summaries",
       "provenance": {
-        "kind": "internal",
-        "note": "Sane-specific durable-memory companion pack. No separate upstream skill tracked yet.",
-        "updateStrategy": "manual-curated"
+        "kind": "derived",
+        "note": "Sane-curated durable-memory pack derived from Cavemem's local-first memory model and README guidance, without mirroring its full MCP/runtime surface.",
+        "updateStrategy": "manual-curated",
+        "upstreams": [
+          {
+            "name": "cavemem",
+            "role": "primary",
+            "url": "https://github.com/JuliusBrussee/cavemem",
+            "ref": "v0.1.3",
+            "path": "README.md",
+            "license": "MIT"
+          }
+        ]
       }
     },
     "rtk": {
       "skillName": "sane-rtk",
       "skillPath": "skills/optional/sane-rtk.md",
+      "skills": [
+        {
+          "name": "sane-rtk",
+          "path": "skills/optional/sane-rtk.md"
+        }
+      ],
       "routerNote": "- rtk pack active: if RTK policy is present, route shell work through RTK instead of raw shell",
       "overlayNote": "- rtk pack active: when RTK policy exists, prefer RTK-routed shell execution",
       "provenance": {
@@ -62,8 +90,18 @@
     "frontend-craft": {
       "skillName": "sane-frontend-craft",
       "skillPath": "skills/optional/sane-frontend-craft.md",
-      "routerNote": "- frontend-craft pack active: avoid generic AI frontend output; prefer distinctive, production-grade interface craft",
-      "overlayNote": "- frontend-craft pack active: for frontend work, avoid generic AI aesthetics and push for stronger craft",
+      "skills": [
+        {
+          "name": "sane-frontend-craft",
+          "path": "skills/optional/sane-frontend-craft.md"
+        },
+        {
+          "name": "sane-frontend-review",
+          "path": "skills/optional/sane-frontend-review.md"
+        }
+      ],
+      "routerNote": "- frontend-craft pack active: use `sane-frontend-craft` for implementation and `sane-frontend-review` for critique/review tasks instead of one blended frontend skill",
+      "overlayNote": "- frontend-craft pack active: for frontend work, pick the dedicated build vs review skill instead of generic AI aesthetics",
       "provenance": {
         "kind": "derived",
         "note": "Sane-curated frontend pack built around Taste for implementation craft and Impeccable for review-shaped frontend quality guidance.",
@@ -178,6 +216,13 @@
       "skills/optional/sane-frontend-craft.md": {
         "repo": "https://github.com/lammersbjorn/sane",
         "path": "packs/core/skills/optional/sane-frontend-craft.md",
+        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
+        "license": "MIT OR Apache-2.0",
+        "updateStrategy": "pinned-manual"
+      },
+      "skills/optional/sane-frontend-review.md": {
+        "repo": "https://github.com/lammersbjorn/sane",
+        "path": "packs/core/skills/optional/sane-frontend-review.md",
         "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
         "license": "MIT OR Apache-2.0",
         "updateStrategy": "pinned-manual"

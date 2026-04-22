@@ -44,6 +44,7 @@ describe("inspect screen model", () => {
             inventoryName: "pack-caveman",
             status: "configured",
             skillName: "sane-caveman",
+            skillNames: ["sane-caveman"],
             provenance: {
               kind: "derived",
               note: "curated from caveman",
@@ -56,13 +57,20 @@ describe("inspect screen model", () => {
             inventoryName: "pack-cavemem",
             status: "disabled",
             skillName: "sane-cavemem",
-            provenance: { kind: "internal", note: "local", updateStrategy: "manual-curated" }
+            skillNames: ["sane-cavemem"],
+            provenance: {
+              kind: "derived",
+              note: "cavemem-derived",
+              updateStrategy: "manual-curated",
+              upstreams: [{ name: "cavemem", url: "https://github.com/JuliusBrussee/cavemem", ref: "v0.1.3" }]
+            }
           },
           {
             name: "rtk",
             inventoryName: "pack-rtk",
             status: "disabled",
             skillName: "sane-rtk",
+            skillNames: ["sane-rtk"],
             provenance: { kind: "internal", note: "local", updateStrategy: "manual-curated" }
           },
           {
@@ -70,6 +78,7 @@ describe("inspect screen model", () => {
             inventoryName: "pack-frontend-craft",
             status: "disabled",
             skillName: "sane-frontend-craft",
+            skillNames: ["sane-frontend-craft", "sane-frontend-review"],
             provenance: {
               kind: "derived",
               note: "taste + impeccable",
@@ -126,7 +135,7 @@ describe("inspect screen model", () => {
       "hooks: invalid (Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows.)"
     );
     expect(lines).toContain(
-      "optional pack provenance: caveman configured (derived from caveman); cavemem disabled (internal); rtk disabled (internal); frontend-craft disabled (derived from taste-skill + impeccable)"
+      "optional pack provenance: caveman configured (derived from caveman); cavemem disabled (derived from cavemem); rtk disabled (internal); frontend-craft disabled (derived from taste-skill + impeccable)"
     );
   });
 
@@ -179,6 +188,7 @@ describe("inspect screen model", () => {
       expect.objectContaining({
         name: "caveman",
         status: "configured",
+        skillNames: ["sane-caveman"],
         provenance: expect.objectContaining({
           kind: "derived"
         })
@@ -186,13 +196,15 @@ describe("inspect screen model", () => {
       expect.objectContaining({
         name: "cavemem",
         status: "disabled",
+        skillNames: ["sane-cavemem"],
         provenance: expect.objectContaining({
-          kind: "internal"
+          kind: "derived"
         })
       }),
       expect.objectContaining({
         name: "rtk",
         status: "disabled",
+        skillNames: ["sane-rtk"],
         provenance: expect.objectContaining({
           kind: "internal"
         })
@@ -200,6 +212,7 @@ describe("inspect screen model", () => {
       expect.objectContaining({
         name: "frontend-craft",
         status: "disabled",
+        skillNames: ["sane-frontend-craft", "sane-frontend-review"],
         provenance: expect.objectContaining({
           kind: "derived"
         })
@@ -223,7 +236,7 @@ describe("inspect screen model", () => {
     expect(screen.overviewLines.join("\n")).toContain("runtime history (read-only local visibility):");
     expect(screen.overviewLines.join("\n")).toContain("latest policy snapshot: missing (current-run-derived read-only view)");
     expect(screen.overviewLines.join("\n")).toContain(
-      "optional pack provenance: caveman configured (derived from caveman); cavemem disabled (internal); rtk disabled (internal); frontend-craft disabled (derived from taste-skill + impeccable)"
+      "optional pack provenance: caveman configured (derived from caveman); cavemem disabled (derived from cavemem); rtk disabled (internal); frontend-craft disabled (derived from taste-skill + impeccable)"
     );
   });
 

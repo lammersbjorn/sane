@@ -1,13 +1,14 @@
 ---
 name: sane-frontend-craft
-description: Frontend quality guidance pack for Sane. Push for stronger craft and avoid generic AI frontend output.
+description: Frontend implementation skill for Sane. Build distinctive, production-grade UI and avoid generic AI frontend output.
 ---
 
 # Sane frontend craft
 
 This managed skill is installed by Sane when the matching built-in pack is enabled.
+Use this one for frontend implementation and restyling work. For critique or audit work, use the separate `sane-frontend-review` skill from the same pack.
 
-Taste-inspired frontend craft for Codex.
+Taste-inspired frontend implementation craft for Codex.
 
 Default stance:
 
@@ -36,7 +37,7 @@ Variant guidance:
 - use `gpt-taste` posture for GPT/Codex work when stronger visual opinion, tighter anti-slop rules, and more assertive motion/layout choices are needed
 - use redesign-first posture when improving an existing product instead of rebuilding blindly
 - use output-enforcement posture when the model starts skipping implementation details or leaving TODO-shaped gaps
-- keep `impeccable`-style polish as a finishing layer, not a substitute for strong structure
+- when the task is review-first rather than build-first, hand off to `sane-frontend-review` instead of mixing implementation and critique in one pass
 
 Guardrails:
 

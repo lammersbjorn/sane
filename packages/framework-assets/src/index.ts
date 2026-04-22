@@ -8,6 +8,7 @@ export const SANE_CAVEMAN_PACK_SKILL_NAME = "sane-caveman";
 export const SANE_CAVEMEM_PACK_SKILL_NAME = "sane-cavemem";
 export const SANE_RTK_PACK_SKILL_NAME = "sane-rtk";
 export const SANE_FRONTEND_CRAFT_PACK_SKILL_NAME = "sane-frontend-craft";
+export const SANE_FRONTEND_REVIEW_PACK_SKILL_NAME = "sane-frontend-review";
 export const SANE_AGENT_NAME = "sane-agent";
 export const SANE_REVIEWER_AGENT_NAME = "sane-reviewer";
 export const SANE_EXPLORER_AGENT_NAME = "sane-explorer";
@@ -75,8 +76,12 @@ interface CorePackAssetSources {
 }
 
 interface CorePackManifestEntry {
-  skillName: string;
-  skillPath: string;
+  skillName?: string;
+  skillPath?: string;
+  skills?: Array<{
+    name: string;
+    path: string;
+  }>;
   routerNote: string;
   overlayNote: string;
   provenance: PackAssetProvenance;
@@ -160,16 +165,39 @@ export function createSaneGlobalAgentsOverlay(
 }
 
 export function optionalPackSkillName(pack: string): string | undefined {
-  return CORE_PACK_MANIFEST.optionalPacks[pack]?.skillName;
+  return optionalPackSkills(pack)[0]?.name;
 }
 
 export function createOptionalPackSkill(pack: string): string | undefined {
+  return createOptionalPackSkills(pack)[0]?.content;
+}
+
+export function optionalPackSkillNames(pack: string): string[] {
+  return optionalPackSkills(pack).map((skill) => skill.name);
+}
+
+export function optionalPackSkills(pack: string): Array<{ name: string; path: string }> {
   const entry = CORE_PACK_MANIFEST.optionalPacks[pack];
   if (!entry) {
-    return undefined;
+    return [];
   }
 
-  return readCoreAsset(entry.skillPath);
+  if (entry.skills && entry.skills.length > 0) {
+    return entry.skills;
+  }
+
+  if (entry.skillName && entry.skillPath) {
+    return [{ name: entry.skillName, path: entry.skillPath }];
+  }
+
+  return [];
+}
+
+export function createOptionalPackSkills(pack: string): Array<{ name: string; content: string }> {
+  return optionalPackSkills(pack).map((skill) => ({
+    name: skill.name,
+    content: readCoreAsset(skill.path)
+  }));
 }
 
 export function optionalPackProvenance(pack: string): PackAssetProvenance | undefined {

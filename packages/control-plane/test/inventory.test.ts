@@ -78,6 +78,7 @@ describe("full inventory and doctor", () => {
         inventoryName: "pack-caveman",
         status: "configured",
         skillName: "sane-caveman",
+        skillNames: ["sane-caveman"],
         provenance: expect.objectContaining({
           kind: "derived"
         })
@@ -87,8 +88,9 @@ describe("full inventory and doctor", () => {
         inventoryName: "pack-cavemem",
         status: "disabled",
         skillName: "sane-cavemem",
+        skillNames: ["sane-cavemem"],
         provenance: expect.objectContaining({
-          kind: "internal"
+          kind: "derived"
         })
       }),
       expect.objectContaining({
@@ -96,6 +98,7 @@ describe("full inventory and doctor", () => {
         inventoryName: "pack-rtk",
         status: "disabled",
         skillName: "sane-rtk",
+        skillNames: ["sane-rtk"],
         provenance: expect.objectContaining({
           kind: "internal"
         })
@@ -105,6 +108,7 @@ describe("full inventory and doctor", () => {
         inventoryName: "pack-frontend-craft",
         status: "disabled",
         skillName: "sane-frontend-craft",
+        skillNames: ["sane-frontend-craft", "sane-frontend-review"],
         provenance: expect.objectContaining({
           kind: "derived"
         })
@@ -218,6 +222,32 @@ describe("full inventory and doctor", () => {
     expect(doctorResult.summary).toContain("hooks: installed");
     expect(doctorResult.summary).toContain("custom-agents: installed");
     expect(doctorResult.summary).toContain("opencode-agents: missing");
+  });
+
+  it("does not mark a multi-skill pack installed when only one exported skill matches", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const config = createDefaultLocalConfig();
+    config.packs.frontendCraft = true;
+
+    installRuntime(paths, codexPaths);
+    saveConfig(paths, config);
+    exportUserSkills(paths, codexPaths);
+    rmSync(join(codexPaths.userSkillsDir, "sane-frontend-review"), { recursive: true, force: true });
+
+    const bundle = inspectStatusBundle(paths, codexPaths);
+
+    expect(bundle.optionalPacks.find((item) => item.name === "frontend-craft")).toEqual(
+      expect.objectContaining({
+        status: "configured",
+        skillNames: ["sane-frontend-craft", "sane-frontend-review"]
+      })
+    );
+    expect(bundle.inventory.find((item) => item.name === "pack-frontend-craft")?.status).toBe(
+      InventoryStatus.Configured
+    );
   });
 
   it("derives onboarding recommendations from a narrow backend snapshot", () => {

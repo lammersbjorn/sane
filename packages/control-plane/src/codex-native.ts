@@ -17,10 +17,10 @@ import {
   SANE_GLOBAL_AGENTS_END,
   SANE_REPO_AGENTS_BEGIN,
   SANE_REPO_AGENTS_END,
-  createOptionalPackSkill,
+  createOptionalPackSkills,
   createSaneGlobalAgentsOverlay,
   createSaneRouterSkill,
-  optionalPackSkillName,
+  optionalPackSkillNames,
   type GuidancePacks,
   type ModelRoutingGuidance
 } from "@sane/framework-assets";
@@ -182,21 +182,23 @@ function exportSkillsTarget(
   writeFileSync(skillPath, createSaneRouterSkill(packs, roles), "utf8");
   const pathsTouched = [skillPath];
 
-  for (const [packName, content] of enabledOptionalPackSkills(packs)) {
-    const name = optionalPackSkillName(packName)!;
-    const packDir = join(skillsRoot, name);
-    const packPath = join(packDir, "SKILL.md");
-    mkdirSync(packDir, { recursive: true });
-    writeFileSync(packPath, content, "utf8");
-    pathsTouched.push(packPath);
+  for (const [packName, skills] of enabledOptionalPackSkills(packs)) {
+    for (const skill of skills) {
+      const packDir = join(skillsRoot, skill.name);
+      const packPath = join(packDir, "SKILL.md");
+      mkdirSync(packDir, { recursive: true });
+      writeFileSync(packPath, skill.content, "utf8");
+      pathsTouched.push(packPath);
+    }
   }
 
   for (const packName of disabledOptionalPackNames(packs)) {
-    const name = optionalPackSkillName(packName)!;
-    const packDir = join(skillsRoot, name);
-    if (existsSync(packDir)) {
-      removeSync(packDir, { recursive: true, force: true });
-      pathsTouched.push(packDir);
+    for (const name of optionalPackSkillNames(packName)) {
+      const packDir = join(skillsRoot, name);
+      if (existsSync(packDir)) {
+        removeSync(packDir, { recursive: true, force: true });
+        pathsTouched.push(packDir);
+      }
     }
   }
 
@@ -270,8 +272,8 @@ function uninstallSkillsTarget(
 ): OperationResult {
   const skillDir = join(skillsRoot, "sane-router");
   const skillPath = join(skillDir, "SKILL.md");
-  const optionalDirs = OPTIONAL_PACK_NAMES.map((name) => optionalPackSkillName(name)!).map((name) =>
-    join(skillsRoot, name)
+  const optionalDirs = OPTIONAL_PACK_NAMES.flatMap((name) =>
+    optionalPackSkillNames(name).map((skillName) => join(skillsRoot, skillName))
   );
 
   if (!existsSync(skillDir) && optionalDirs.every((dir) => !existsSync(dir))) {
@@ -505,9 +507,11 @@ function formatGuidancePacks(packs: GuidancePacks): string {
   return enabled.join(", ");
 }
 
-function enabledOptionalPackSkills(packs: GuidancePacks): Array<[typeof OPTIONAL_PACK_NAMES[number], string]> {
+function enabledOptionalPackSkills(
+  packs: GuidancePacks
+): Array<[typeof OPTIONAL_PACK_NAMES[number], Array<{ name: string; content: string }>]> {
   return OPTIONAL_PACK_NAMES.filter((name) => isPackEnabled(name, packs))
-    .map((name) => [name, createOptionalPackSkill(name)!]);
+    .map((name) => [name, createOptionalPackSkills(name)]);
 }
 
 function disabledOptionalPackNames(packs: GuidancePacks): Array<typeof OPTIONAL_PACK_NAMES[number]> {

@@ -10,6 +10,7 @@ import {
   SANE_REPO_AGENTS_BEGIN,
   SANE_REPO_AGENTS_END,
   createOptionalPackSkill,
+  createOptionalPackSkills,
   createSaneGlobalAgentsOverlay,
   createSaneRouterSkill
 } from "@sane/framework-assets";
@@ -84,6 +85,29 @@ describe("codex-native skills and agents", () => {
     expect(readFileSync(cavemanPath, "utf8")).toBe(createOptionalPackSkill("caveman"));
   });
 
+  it("exports every skill file for a multi-skill optional pack", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const config = createDefaultLocalConfig();
+    config.packs.frontendCraft = true;
+    writeLocalConfig(projectPaths.configPath, config);
+
+    const result = exportUserSkills(projectPaths, codexPaths);
+    const exportedSkills = createOptionalPackSkills("frontend-craft");
+    const skillPaths = exportedSkills.map((skill) => join(codexPaths.userSkillsDir, skill.name, "SKILL.md"));
+
+    expect(skillPaths).toEqual([
+      join(codexPaths.userSkillsDir, "sane-frontend-craft", "SKILL.md"),
+      join(codexPaths.userSkillsDir, "sane-frontend-review", "SKILL.md")
+    ]);
+    expect(result.pathsTouched).toEqual(expect.arrayContaining(skillPaths));
+    for (const [index, skill] of exportedSkills.entries()) {
+      expect(readFileSync(skillPaths[index]!, "utf8")).toBe(skill.content);
+    }
+  });
+
   it("exports AGENTS blocks additively and uninstalls them without removing user content", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
@@ -139,6 +163,26 @@ describe("codex-native skills and agents", () => {
     expect(uninstallRepo.summary).toBe("uninstall repo-skills: removed sane-router");
     expect(uninstallUser.pathsTouched.some((path) => path.endsWith("/sane-router"))).toBe(true);
     expect(uninstallRepo.pathsTouched.some((path) => path.endsWith("/sane-cavemem"))).toBe(true);
+  });
+
+  it("uninstalls every generated skill directory for a multi-skill pack", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const config = createDefaultLocalConfig();
+    config.packs.frontendCraft = true;
+    writeLocalConfig(projectPaths.configPath, config);
+
+    exportUserSkills(projectPaths, codexPaths);
+    const uninstallUser = uninstallUserSkills(codexPaths);
+
+    expect(uninstallUser.pathsTouched).toEqual(
+      expect.arrayContaining([
+        join(codexPaths.userSkillsDir, "sane-frontend-craft"),
+        join(codexPaths.userSkillsDir, "sane-frontend-review")
+      ])
+    );
   });
 
   it("inspects codex-native skills and agents inventory with expected statuses", () => {
