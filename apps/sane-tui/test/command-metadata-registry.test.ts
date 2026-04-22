@@ -81,16 +81,42 @@ describe("command metadata registry", () => {
     expect(getCommandSpec("show_runtime_summary").help[0]).toBe(
       "Show a read-only summary of local current-run-derived handoff state."
     );
+    expect(getCommandSpec("show_runtime_summary").help[2]).toBe(
+      "Visibility only for managed surfaces. No runtime orchestration runs."
+    );
+    expect(getCommandSpec("show_runtime_summary").help[3]).toBe(
+      "This reads current-run, summary, brief, and local runtime history counts."
+    );
     expect(getCommandSpec("show_runtime_summary").filesTouched).toEqual([
       ".sane/state/current-run.json",
       ".sane/state/summary.json",
-      ".sane/BRIEF.md"
+      ".sane/BRIEF.md",
+      ".sane/state/events.jsonl",
+      ".sane/state/decisions.jsonl",
+      ".sane/state/artifacts.jsonl"
     ]);
     expect(getCommandSpec("preview_policy").filesTouched).toEqual([
       ".sane/state/current-run.json",
       ".sane/state/summary.json",
+      ".sane/BRIEF.md",
+      ".sane/state/events.jsonl",
       ".sane/state/decisions.jsonl"
     ]);
+    expect(getCommandSpec("preview_policy").help[2]).toBe(
+      "Visibility only for managed surfaces. No runtime orchestration runs."
+    );
+    expect(getCommandSpec("preview_policy").help[3]).toBe(
+      "Sane also records the latest preview into local runtime history for Inspect."
+    );
+    expect(getCommandSpec("preview_codex_profile").help[2]).toBe(
+      "Preview only for managed surfaces."
+    );
+    expect(getCommandSpec("show_status").help[2]).toBe(
+      "Visibility only for managed surfaces."
+    );
+    expect(getCommandSpec("doctor").help[2]).toBe(
+      "Visibility only for managed surfaces."
+    );
     expect(getCommandSpec("export_hooks").help.at(-1)).toBe(
       "On native Windows, Codex hooks are unavailable; use WSL for hook-enabled flows."
     );

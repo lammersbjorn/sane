@@ -25,19 +25,25 @@ import {
   type PolicyInput
 } from "@sane/policy";
 import {
-  createCanonicalStatePaths,
-  loadLayeredStateBundle,
-  readCurrentRunState,
   type CurrentRunState
 } from "@sane/state";
 
 import { loadOrDefaultLocalConfig } from "./local-config.js";
+import { loadRuntimeHandoffState } from "./runtime-state.js";
 
 export function previewPolicy(paths: ProjectPaths, env: HomeDirEnv = process.env): OperationResult {
+  return previewPolicyForCurrentRun(paths, loadCurrentRunInspectState(paths), env);
+}
+
+export function previewPolicyForCurrentRun(
+  paths: ProjectPaths,
+  currentRun: CurrentRunState | null,
+  env: HomeDirEnv = process.env
+): OperationResult {
   const config = loadOrDefaultConfig(paths);
   const routing = loadDerivedRouting(paths, env);
   const subagents = buildSubagentRouting(paths, env);
-  const policyPreview = buildPolicyPreview(paths);
+  const policyPreview = buildPolicyPreview(currentRun);
   const details = policyPreview.scenarios.map((scenario) =>
     renderPolicyPreviewLine(config, routing, subagents, scenario)
   );
@@ -94,11 +100,11 @@ function renderRolePlan(
   return parts.join(", ");
 }
 
-function buildPolicyPreview(paths: ProjectPaths): PolicyPreviewPayload {
+function buildPolicyPreview(currentRun: CurrentRunState | null): PolicyPreviewPayload {
   const scenarios = canonicalScenarios().map((scenario) =>
     buildScenarioPreview(scenario.id, scenario.summary, scenario.input)
   );
-  const currentRunScenario = buildCurrentRunInspectScenario(paths);
+  const currentRunScenario = currentRun ? buildCurrentRunInspectPreview(currentRun) : null;
   if (currentRunScenario) {
     scenarios.push(currentRunScenario);
   }
@@ -106,46 +112,8 @@ function buildPolicyPreview(paths: ProjectPaths): PolicyPreviewPayload {
   return { scenarios };
 }
 
-function buildCurrentRunInspectScenario(paths: ProjectPaths): PolicyPreviewScenario | null {
-  const currentRun = loadCurrentRunInspectState(paths);
-  if (!currentRun) {
-    return null;
-  }
-
-  const input = mapCurrentRunToPolicyInput(currentRun);
-
-  return buildScenarioPreview(
-    "current-run-inspect",
-    "inspect-only scenario derived from current-run state",
-    input
-  );
-}
-
 function loadCurrentRunInspectState(paths: ProjectPaths): CurrentRunState | null {
-  try {
-    const layered = loadLayeredStateBundle(
-      createCanonicalStatePaths(
-        paths.configPath,
-        paths.summaryPath,
-        paths.currentRunPath,
-        paths.briefPath,
-        paths.eventsPath,
-        paths.decisionsPath,
-        paths.artifactsPath
-      )
-    );
-    if (layered.currentRun) {
-      return layered.currentRun;
-    }
-  } catch {
-    // Fall through to direct read.
-  }
-
-  try {
-    return readCurrentRunState(paths.currentRunPath);
-  } catch {
-    return null;
-  }
+  return loadRuntimeHandoffState(paths).current;
 }
 
 function buildScenarioPreview(
@@ -158,6 +126,15 @@ function buildScenarioPreview(
   return {
     id,
     summary,
+    input: {
+      intent: input.intent,
+      taskShape: input.taskShape,
+      risk: input.risk,
+      ambiguity: input.ambiguity,
+      parallelism: input.parallelism,
+      contextPressure: input.contextPressure,
+      runState: input.runState
+    },
     obligations: explanation.decision.obligations.map(obligationAsString),
     roles: explanation.roles,
     orchestration: {
@@ -171,6 +148,16 @@ function buildScenarioPreview(
       rule: policyRuleAsString(entry.rule)
     }))
   };
+}
+
+export function buildCurrentRunInspectPreview(
+  currentRun: CurrentRunState
+): PolicyPreviewScenario {
+  return buildScenarioPreview(
+    "current-run-inspect",
+    "inspect-only scenario derived from current-run state",
+    mapCurrentRunToPolicyInput(currentRun)
+  );
 }
 
 function mapCurrentRunToPolicyInput(currentRun: CurrentRunState): PolicyInput {

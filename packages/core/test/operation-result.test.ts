@@ -50,6 +50,15 @@ describe("operation result rendering", () => {
           {
             id: "simple-question",
             summary: "simple low-risk question stays direct",
+            input: {
+              intent: "question",
+              taskShape: "trivial",
+              risk: "low",
+              ambiguity: "low",
+              parallelism: "none",
+              contextPressure: "low",
+              runState: "exploring"
+            },
             obligations: ["direct_answer"],
             roles: {
               coordinator: true,

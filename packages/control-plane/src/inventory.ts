@@ -106,7 +106,14 @@ export function showStatus(paths: ProjectPaths, codexPaths: CodexPaths): Operati
 }
 
 export function doctor(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
-  const bundle = inspectStatusBundle(paths, codexPaths);
+  return doctorForStatusBundle(paths, codexPaths, inspectStatusBundle(paths, codexPaths));
+}
+
+export function doctorForStatusBundle(
+  paths: ProjectPaths,
+  codexPaths: CodexPaths,
+  bundle: StatusBundle
+): OperationResult {
   const configBackups = listCanonicalBackupSiblings(paths.configPath);
   const summaryBackups = listCanonicalBackupSiblings(paths.summaryPath);
 

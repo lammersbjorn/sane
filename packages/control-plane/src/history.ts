@@ -1,11 +1,8 @@
-import { writeFileSync } from "node:fs";
-
 import { type LocalConfig } from "@sane/config";
 import { OperationKind, type OperationResult } from "@sane/core";
 import { type ProjectPaths } from "@sane/platform";
 import {
   appendJsonlRecord,
-  buildRunBrief,
   createDefaultRunSummary,
   createDefaultCurrentRunState,
   createArtifactRecord,
@@ -14,18 +11,16 @@ import {
   createPolicyPreviewDecisionContext,
   promoteRunSummary,
   parseEventRecordJson,
-  readCurrentRunState,
   readJsonlLastRecord,
-  readRunSummary,
   stringifyArtifactRecord,
   stringifyDecisionRecord,
   stringifyEventRecord,
-  writeRunSummary,
   type CurrentRunState,
   type RunSummary
 } from "@sane/state";
 
 import { saveConfig } from "./preferences.js";
+import { loadRuntimeHandoffState, writeRuntimeSummaryAndBrief } from "./runtime-state.js";
 
 export function readLastOperationSummary(paths: ProjectPaths): string | null {
   return readJsonlLastRecord(paths.eventsPath, parseEventRecordJson)?.summary ?? null;
@@ -47,16 +42,22 @@ export function executeOperation(
 }
 
 export function recordOperation(paths: ProjectPaths, result: OperationResult): void {
-  const current = currentRunState(paths);
-  const summary = persistOperationState(paths, result);
-  refreshBrief(paths, current, summary);
+  const handoff = loadRuntimeHandoffState(paths);
+  const current = handoff.current ?? createDefaultCurrentRunState("unknown");
+  persistOperationState(paths, result, handoff.summary, current);
 }
 
-function persistOperationState(paths: ProjectPaths, result: OperationResult): RunSummary {
+function persistOperationState(
+  paths: ProjectPaths,
+  result: OperationResult,
+  currentSummary: RunSummary | null,
+  current: CurrentRunState
+): void {
   appendOperationRecord(paths, result);
   appendDecisionRecord(paths, result);
   appendArtifactRecords(paths, result);
-  return promoteOperationSummary(paths, result);
+  const summary = promoteOperationSummary(result, currentSummary);
+  writeRuntimeSummaryAndBrief(paths, summary, current);
 }
 
 function appendOperationRecord(paths: ProjectPaths, result: OperationResult): void {
@@ -103,35 +104,15 @@ function appendArtifactRecords(paths: ProjectPaths, result: OperationResult): vo
   }
 }
 
-function promoteOperationSummary(paths: ProjectPaths, result: OperationResult): RunSummary {
-  const baseSummary = readOptionalSummary(paths) ?? createDefaultRunSummary();
-  const summary = promoteRunSummary(baseSummary, {
+function promoteOperationSummary(
+  result: OperationResult,
+  currentSummary: RunSummary | null
+): RunSummary {
+  const baseSummary = currentSummary ?? createDefaultRunSummary();
+  return promoteRunSummary(baseSummary, {
     pathsTouched: result.pathsTouched,
     milestone: operationMilestone(result.kind),
   });
-
-  writeRunSummary(paths.summaryPath, summary);
-  return summary;
-}
-
-function refreshBrief(paths: ProjectPaths, current: CurrentRunState, summary: RunSummary): void {
-  writeFileSync(paths.briefPath, buildRunBrief(summary, current), "utf8");
-}
-
-function currentRunState(paths: ProjectPaths): CurrentRunState {
-  try {
-    return readCurrentRunState(paths.currentRunPath);
-  } catch {
-    return createDefaultCurrentRunState("unknown");
-  }
-}
-
-function readOptionalSummary(paths: ProjectPaths): RunSummary | null {
-  try {
-    return readRunSummary(paths.summaryPath);
-  } catch {
-    return null;
-  }
 }
 
 function operationMilestone(kind: OperationKind): string | null {

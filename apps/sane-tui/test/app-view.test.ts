@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { appendJsonlRecord, createDecisionRecord, stringifyDecisionRecord } from "@sane/state";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { installRuntime } from "@sane/control-plane";
 
 import { loadAppView } from "@/app-view.js";
 import { createTuiShell, moveSelection, runSelectedAction, selectSection } from "@/shell.js";
@@ -209,6 +210,51 @@ describe("app view", () => {
     expect(view.selectedHelpLines.join("\n")).toContain("simple-question:");
     expect(view.selectedHelpLines.join("\n")).toContain("direct_answer");
     expect(view.selectedHelpLines.join("\n")).toContain("explorer=");
+  });
+
+  it("surfaces latest persisted policy input lines in the inspect policy action", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    installRuntime(paths, codexPaths);
+    const decision = createDecisionRecord(
+      "policy preview: rendered adaptive obligation scenarios",
+      "simple-question: direct_answer | coordinator=gpt-5.4/high",
+      [],
+      {
+        kind: "policy_preview",
+        scenarios: [
+          {
+            id: "simple-question",
+            input: {
+              intent: "question",
+              taskShape: "trivial",
+              risk: "low",
+              ambiguity: "low",
+              parallelism: "none",
+              contextPressure: "low",
+              runState: "exploring"
+            }
+          }
+        ]
+      }
+    );
+    decision.tsUnix = 1_700_000_005;
+    appendJsonlRecord(paths.decisionsPath, decision, stringifyDecisionRecord);
+
+    const shell = createTuiShell(paths, codexPaths);
+    selectSection(shell, "inspect");
+    for (let index = 0; index < 6; index += 1) {
+      moveSelection(shell, "action", 1);
+    }
+
+    const view = loadAppView(shell);
+
+    expect(view.selectedHelpLines.join("\n")).toContain(
+      "latest snapshot input simple-question: intent question, task trivial, risk low, ambiguity low, parallelism none, context low, run exploring"
+    );
   });
 
   it("surfaces integrations preview payload for the install apply action too", () => {

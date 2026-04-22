@@ -43,6 +43,7 @@ describe("installRuntime", () => {
     expect(result.details).toContain(`config write mode: first write`);
     expect(result.details).toContain(`current-run write mode: first write`);
     expect(result.details).toContain(`summary write mode: first write`);
+    expect(result.details).toContain(`brief write mode: first write`);
     expect(result.pathsTouched).toEqual([
       projectPaths.briefPath,
       projectPaths.configPath,
@@ -78,15 +79,18 @@ describe("installRuntime", () => {
     writeFileSync(projectPaths.configPath, "not = [valid");
     writeFileSync(projectPaths.currentRunPath, "{");
     writeFileSync(projectPaths.summaryPath, "{");
+    writeFileSync(projectPaths.briefPath, "# stale brief\n");
 
     const result = installRuntime(projectPaths, codexPaths);
 
     expect(result.details).toContain("config write mode: rewrite");
     expect(result.details).toContain("current-run write mode: rewrite");
     expect(result.details).toContain("summary write mode: rewrite");
+    expect(result.details).toContain("brief write mode: rewrite");
     expect(result.pathsTouched.some((path) => path.includes(".bak."))).toBe(true);
     expect(result.rewrite?.backupPath).toContain(".bak.");
     expect(readCurrentRunState(projectPaths.currentRunPath).phase).toBe("setup");
     expect(readRunSummary(projectPaths.summaryPath).version).toBe(2);
+    expect(readFileSync(projectPaths.briefPath, "utf8")).toContain("- Phase: setup");
   });
 });

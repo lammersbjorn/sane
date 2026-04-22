@@ -95,6 +95,7 @@ Implemented:
 - internal backend policy preview now carries typed scenario/orchestration/trace payloads in `OperationResult` and persists them into decision history without changing TUI copy
 - policy preview history now has typed shared context helpers, tail-first latest-preview lookup, and runtime-summary plumbing for the latest valid snapshot
 - inspect/app-view now surface the latest persisted current-run-derived policy-preview snapshot through a bounded typed read path instead of re-parsing runtime-summary copy, and this remains a read-only Inspect surface
+- Inspect/runtime-summary now also surface typed latest-policy input classification lines for that persisted snapshot, still read-only and inspect-only
 - runtime summary/inspect now surface bounded `.sane` history counts for `events`, `decisions`, and `artifacts` through canonical layered-state bundle `historyCounts`, without adding a new log-browsing surface
 - startup last-event reads now go through control-plane history helper instead of direct TUI peek logic, keeping history access on one typed bounded path
 - preferences, telemetry presence, and Codex backup-availability reads now go through control-plane snapshot helpers instead of ad hoc TUI file checks

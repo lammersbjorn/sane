@@ -7,7 +7,7 @@ import { createProjectPaths } from "@sane/platform";
 import { writeCurrentRunState } from "@sane/state";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 
-import { previewPolicy } from "../src/policy-preview.js";
+import { buildCurrentRunInspectPreview, previewPolicy } from "../src/policy-preview.js";
 import { saveConfig } from "../src/preferences.js";
 
 const tempDirs: string[] = [];
@@ -41,6 +41,15 @@ describe("policy preview", () => {
     expect(result.details[0]).toContain("realtime=");
     expect(result.policyPreview?.scenarios).toHaveLength(5);
     expect(result.policyPreview?.scenarios[0]?.id).toBe("simple-question");
+    expect(result.policyPreview?.scenarios[0]?.input).toEqual({
+      intent: "question",
+      taskShape: "trivial",
+      risk: "low",
+      ambiguity: "low",
+      parallelism: "none",
+      contextPressure: "low",
+      runState: "exploring"
+    });
     expect(result.policyPreview?.scenarios[0]?.trace[0]?.rule).toBe("keep_direct_answers_light");
   });
 
@@ -104,6 +113,57 @@ describe("policy preview", () => {
     expect(result.policyPreview?.scenarios).toHaveLength(6);
     expect(currentRunLine).toContain("verify_light");
     expect(currentRunScenario?.obligations).toEqual(["verify_light"]);
+    expect(currentRunScenario?.input).toEqual({
+      intent: "inspect",
+      taskShape: "local",
+      risk: "low",
+      ambiguity: "low",
+      parallelism: "none",
+      contextPressure: "medium",
+      runState: "exploring"
+    });
+  });
+
+  it("exposes a pure typed helper for current-run inspect preview derivation", () => {
+    const scenario = buildCurrentRunInspectPreview({
+      version: 2,
+      objective: "debug long-running indexing drift",
+      phase: "debug",
+      activeTasks: [
+        "reproduce index drift in staging",
+        "trace mismatch across ingestion workers",
+        "instrument retry and checkpoint paths",
+        "prepare rollback validation checklist"
+      ],
+      blockingQuestions: ["which shard boundary causes the replay loop?"],
+      verification: {
+        status: "pending",
+        summary: "awaiting replay run"
+      },
+      lastCompactionTsUnix: null,
+      extra: {}
+    });
+
+    expect(scenario.id).toBe("current-run-inspect");
+    expect(scenario.summary).toBe("inspect-only scenario derived from current-run state");
+    expect(scenario.input).toEqual({
+      intent: "debug",
+      taskShape: "long_running",
+      risk: "high",
+      ambiguity: "medium",
+      parallelism: "clear",
+      contextPressure: "high",
+      runState: "blocked"
+    });
+    expect(scenario.obligations).toEqual([
+      "debug_rigor",
+      "verify_light",
+      "planning",
+      "tdd",
+      "review",
+      "context_compaction",
+      "self_repair"
+    ]);
   });
 
   it("derives blocked debug long-running heuristics from current-run state", () => {

@@ -280,7 +280,21 @@ describe("inspect screen model", () => {
       [],
       {
         kind: "policy_preview",
-        scenarios: [{ id: "simple-question" }, { id: "multi-file-feature" }]
+        scenarios: [
+          {
+            id: "simple-question",
+            input: {
+              intent: "question",
+              taskShape: "trivial",
+              risk: "low",
+              ambiguity: "low",
+              parallelism: "none",
+              contextPressure: "low",
+              runState: "exploring"
+            }
+          },
+          { id: "multi-file-feature" }
+        ]
       }
     );
     decision.tsUnix = 1_700_000_004;
@@ -298,14 +312,31 @@ describe("inspect screen model", () => {
       scenarioCount: 2,
       scenarioIds: ["simple-question", "multi-file-feature"],
       scenarios: [
-        { id: "simple-question", summary: null, obligationCount: 0, traceCount: 0 },
-        { id: "multi-file-feature", summary: null, obligationCount: 0, traceCount: 0 }
+        {
+          id: "simple-question",
+          summary: null,
+          input: {
+            intent: "question",
+            taskShape: "trivial",
+            risk: "low",
+            ambiguity: "low",
+            parallelism: "none",
+            contextPressure: "low",
+            runState: "exploring"
+          },
+          obligationCount: 0,
+          traceCount: 0
+        },
+        { id: "multi-file-feature", summary: null, input: null, obligationCount: 0, traceCount: 0 }
       ],
       tsUnix: 1_700_000_004,
       summary: "policy preview: rendered adaptive obligation scenarios"
     });
     expect(screen.overviewLines.join("\n")).toContain(
       "latest policy snapshot: present (current-run-derived read-only view; ts 1700000004; summary policy preview: rendered adaptive obligation scenarios; 2 scenarios: simple-question, multi-file-feature)"
+    );
+    expect(screen.overviewLines.join("\n")).toContain(
+      "latest policy input simple-question: intent question, task trivial, risk low, ambiguity low, parallelism none, context low, run exploring"
     );
   });
 });

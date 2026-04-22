@@ -344,6 +344,45 @@ describe('typed record parity', () => {
     );
   });
 
+  it('preserves scenario input snapshots in typed policy preview contexts', () => {
+    const decision = createDecisionRecord(
+      'policy preview: rendered adaptive obligation scenarios',
+      'simple-question: direct_answer | coordinator=gpt-5.4/high',
+      [],
+      createPolicyPreviewDecisionContext([
+        {
+          id: 'simple-question',
+          input: {
+            intent: 'question',
+            taskShape: 'trivial',
+            risk: 'low',
+            ambiguity: 'low',
+            parallelism: 'none',
+            contextPressure: 'low',
+            runState: 'exploring',
+          },
+        },
+      ]),
+    );
+
+    expect(policyPreviewDecisionContext(decision)).toEqual(
+      createPolicyPreviewDecisionContext([
+        {
+          id: 'simple-question',
+          input: {
+            intent: 'question',
+            taskShape: 'trivial',
+            risk: 'low',
+            ambiguity: 'low',
+            parallelism: 'none',
+            contextPressure: 'low',
+            runState: 'exploring',
+          },
+        },
+      ]),
+    );
+  });
+
   it('ignores malformed policy preview context when scanning latest decision', () => {
     const dir = makeTempDir();
     const path = join(dir, 'decisions.jsonl');
@@ -409,7 +448,7 @@ describe('typed record parity', () => {
       status: 'present',
       scenarioCount: 1,
       scenarioIds: ['simple-question'],
-      scenarios: [{ id: 'simple-question', summary: null, obligationCount: 0, traceCount: 0 }],
+      scenarios: [{ id: 'simple-question', summary: null, input: null, obligationCount: 0, traceCount: 0 }],
       tsUnix: expect.any(Number),
       summary: 'policy preview: rendered adaptive obligation scenarios',
     });
@@ -423,7 +462,21 @@ describe('typed record parity', () => {
       'policy preview: rendered adaptive obligation scenarios',
       'simple-question: direct_answer | coordinator=gpt-5.4/high',
       [],
-      createPolicyPreviewDecisionContext([{ id: 'simple-question' }, { id: 'multi-file-feature' }]),
+      createPolicyPreviewDecisionContext([
+        {
+          id: 'simple-question',
+          input: {
+            intent: 'question',
+            taskShape: 'trivial',
+            risk: 'low',
+            ambiguity: 'low',
+            parallelism: 'none',
+            contextPressure: 'low',
+            runState: 'exploring',
+          },
+        },
+        { id: 'multi-file-feature' },
+      ]),
     );
     decision.tsUnix = 1_700_000_001;
 
@@ -438,8 +491,22 @@ describe('typed record parity', () => {
       scenarioCount: 2,
       scenarioIds: ['simple-question', 'multi-file-feature'],
       scenarios: [
-        { id: 'simple-question', summary: null, obligationCount: 0, traceCount: 0 },
-        { id: 'multi-file-feature', summary: null, obligationCount: 0, traceCount: 0 },
+        {
+          id: 'simple-question',
+          summary: null,
+          input: {
+            intent: 'question',
+            taskShape: 'trivial',
+            risk: 'low',
+            ambiguity: 'low',
+            parallelism: 'none',
+            contextPressure: 'low',
+            runState: 'exploring',
+          },
+          obligationCount: 0,
+          traceCount: 0,
+        },
+        { id: 'multi-file-feature', summary: null, input: null, obligationCount: 0, traceCount: 0 },
       ],
       tsUnix: 1_700_000_001,
       summary: 'policy preview: rendered adaptive obligation scenarios',
@@ -474,7 +541,7 @@ describe('typed record parity', () => {
       status: 'present',
       scenarioCount: 1,
       scenarioIds: ['simple-question'],
-      scenarios: [{ id: 'simple-question', summary: null, obligationCount: 0, traceCount: 0 }],
+      scenarios: [{ id: 'simple-question', summary: null, input: null, obligationCount: 0, traceCount: 0 }],
       tsUnix: 1_700_000_006,
       summary: 'policy preview: rendered adaptive obligation scenarios',
     });
@@ -529,7 +596,7 @@ describe('typed record parity', () => {
       status: 'present',
       scenarioCount: 1,
       scenarioIds: ['simple-question'],
-      scenarios: [{ id: 'simple-question', summary: null, obligationCount: 0, traceCount: 0 }],
+      scenarios: [{ id: 'simple-question', summary: null, input: null, obligationCount: 0, traceCount: 0 }],
       tsUnix: expect.any(Number),
       summary: 'policy preview: rendered adaptive obligation scenarios',
     });
@@ -584,7 +651,7 @@ describe('typed record parity', () => {
       status: 'present',
       scenarioCount: 1,
       scenarioIds: ['simple-question'],
-      scenarios: [{ id: 'simple-question', summary: null, obligationCount: 0, traceCount: 0 }],
+      scenarios: [{ id: 'simple-question', summary: null, input: null, obligationCount: 0, traceCount: 0 }],
       tsUnix: expect.any(Number),
       summary: 'policy preview: rendered adaptive obligation scenarios',
     });
@@ -873,8 +940,8 @@ describe('layered load parity', () => {
       scenarioCount: 2,
       scenarioIds: ['simple-question', 'multi-file-feature'],
       scenarios: [
-        { id: 'simple-question', summary: null, obligationCount: 0, traceCount: 0 },
-        { id: 'multi-file-feature', summary: null, obligationCount: 0, traceCount: 0 },
+        { id: 'simple-question', summary: null, input: null, obligationCount: 0, traceCount: 0 },
+        { id: 'multi-file-feature', summary: null, input: null, obligationCount: 0, traceCount: 0 },
       ],
       tsUnix: 1_700_000_123,
       summary: 'policy preview: rendered adaptive obligation scenarios',

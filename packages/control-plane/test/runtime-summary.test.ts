@@ -92,7 +92,21 @@ describe("showRuntimeSummary", () => {
       [],
       {
         kind: "policy_preview",
-        scenarios: [{ id: "simple-question" }, { id: "multi-file-feature" }]
+        scenarios: [
+          {
+            id: "simple-question",
+            input: {
+              intent: "question",
+              taskShape: "trivial",
+              risk: "low",
+              ambiguity: "low",
+              parallelism: "none",
+              contextPressure: "low",
+              runState: "exploring"
+            }
+          },
+          { id: "multi-file-feature" }
+        ]
       }
     );
     decision.tsUnix = 1_700_000_002;
@@ -108,14 +122,31 @@ describe("showRuntimeSummary", () => {
     expect(result.details).toContain(
       "latest policy preview provenance: ts 1700000002, summary policy preview: rendered adaptive obligation scenarios"
     );
+    expect(result.details).toContain(
+      "latest policy input simple-question: intent question, task trivial, risk low, ambiguity low, parallelism none, context low, run exploring"
+    );
     expect(result.details).toContain(`decisions: 1 at ${paths.decisionsPath}`);
     expect(inspectLatestPolicyPreview(paths)).toEqual({
       status: "present",
       scenarioCount: 2,
       scenarioIds: ["simple-question", "multi-file-feature"],
       scenarios: [
-        { id: "simple-question", summary: null, obligationCount: 0, traceCount: 0 },
-        { id: "multi-file-feature", summary: null, obligationCount: 0, traceCount: 0 }
+        {
+          id: "simple-question",
+          summary: null,
+          input: {
+            intent: "question",
+            taskShape: "trivial",
+            risk: "low",
+            ambiguity: "low",
+            parallelism: "none",
+            contextPressure: "low",
+            runState: "exploring"
+          },
+          obligationCount: 0,
+          traceCount: 0
+        },
+        { id: "multi-file-feature", summary: null, input: null, obligationCount: 0, traceCount: 0 }
       ],
       tsUnix: 1_700_000_002,
       summary: "policy preview: rendered adaptive obligation scenarios"

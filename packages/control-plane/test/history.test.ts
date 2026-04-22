@@ -138,6 +138,15 @@ describe("operation history plumbing", () => {
       scenarios: expect.arrayContaining([
         expect.objectContaining({
           summary: expect.any(String),
+          input: expect.objectContaining({
+            intent: expect.any(String),
+            taskShape: expect.any(String),
+            risk: expect.any(String),
+            ambiguity: expect.any(String),
+            parallelism: expect.any(String),
+            contextPressure: expect.any(String),
+            runState: expect.any(String)
+          }),
           roles: expect.objectContaining({
             coordinator: expect.any(Boolean),
             sidecar: expect.any(Boolean),

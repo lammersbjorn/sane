@@ -128,10 +128,21 @@ export interface PolicyPreviewDecisionContext extends JsonRecord {
 export interface PolicyPreviewDecisionScenarioInput {
   id: string;
   summary?: string | null;
+  input?: PolicyPreviewDecisionScenarioInputSnapshot | null;
   obligations?: string[];
   roles?: PolicyPreviewDecisionRolesInput | null;
   orchestration?: PolicyPreviewScenarioOrchestrationInput | null;
   trace?: PolicyPreviewDecisionTraceEntryInput[];
+}
+
+export interface PolicyPreviewDecisionScenarioInputSnapshot {
+  intent?: string | null;
+  taskShape?: string | null;
+  risk?: string | null;
+  ambiguity?: string | null;
+  parallelism?: string | null;
+  contextPressure?: string | null;
+  runState?: string | null;
 }
 
 export interface PolicyPreviewDecisionRolesInput {
@@ -156,6 +167,16 @@ export interface PolicyPreviewDecisionScenario {
   [key: string]: JsonValue;
   id: string;
   summary: string | null;
+  input: {
+    [key: string]: JsonValue;
+    intent: string | null;
+    taskShape: string | null;
+    risk: string | null;
+    ambiguity: string | null;
+    parallelism: string | null;
+    contextPressure: string | null;
+    runState: string | null;
+  } | null;
   obligations: string[];
   roles: {
     [key: string]: JsonValue;
@@ -180,6 +201,16 @@ export interface PolicyPreviewDecisionScenario {
 export interface LatestPolicyPreviewScenarioSnapshot {
   id: string;
   summary: string | null;
+  input: {
+    [key: string]: JsonValue;
+    intent: string | null;
+    taskShape: string | null;
+    risk: string | null;
+    ambiguity: string | null;
+    parallelism: string | null;
+    contextPressure: string | null;
+    runState: string | null;
+  } | null;
   obligationCount: number;
   traceCount: number;
 }
@@ -721,6 +752,7 @@ export function readLatestPolicyPreviewSnapshot(path: string): LatestPolicyPrevi
     scenarios: latestPolicyContext.scenarios.map((scenario) => ({
       id: scenario.id,
       summary: scenario.summary,
+      input: scenario.input,
       obligationCount: scenario.obligations.length,
       traceCount: scenario.trace.length,
     })),
@@ -782,6 +814,7 @@ function normalizePolicyPreviewScenario(
   return {
     id: scenario.id,
     summary: scenario.summary ?? null,
+    input: normalizePolicyPreviewScenarioInput(scenario.input),
     obligations: [...(scenario.obligations ?? [])],
     roles: normalizePolicyPreviewScenarioRoles(scenario.roles),
     orchestration: normalizePolicyPreviewScenarioOrchestration(scenario.orchestration),
@@ -791,6 +824,7 @@ function normalizePolicyPreviewScenario(
 
 function normalizePolicyPreviewScenarioRecord(record: JsonRecord): PolicyPreviewDecisionScenario {
   const id = asOptionalString(record.id);
+  const input = asOptionalJsonRecord(record.input);
   const roles = asOptionalJsonRecord(record.roles);
   const orchestration = asOptionalJsonRecord(record.orchestration);
   if (!id) {
@@ -800,6 +834,17 @@ function normalizePolicyPreviewScenarioRecord(record: JsonRecord): PolicyPreview
   return normalizePolicyPreviewScenario({
     id,
     summary: asOptionalString(record.summary) ?? null,
+    input: input
+      ? {
+          intent: asOptionalString(input.intent) ?? null,
+          taskShape: asOptionalString(input.taskShape) ?? null,
+          risk: asOptionalString(input.risk) ?? null,
+          ambiguity: asOptionalString(input.ambiguity) ?? null,
+          parallelism: asOptionalString(input.parallelism) ?? null,
+          contextPressure: asOptionalString(input.contextPressure) ?? null,
+          runState: asOptionalString(input.runState) ?? null,
+        }
+      : null,
     obligations: asOptionalStringArray(record.obligations) ?? [],
     roles: roles
       ? {
@@ -825,6 +870,24 @@ function normalizePolicyPreviewScenarioRecord(record: JsonRecord): PolicyPreview
         })
       : [],
   });
+}
+
+function normalizePolicyPreviewScenarioInput(
+  input: PolicyPreviewDecisionScenarioInputSnapshot | null | undefined,
+): PolicyPreviewDecisionScenario['input'] {
+  if (!input) {
+    return null;
+  }
+
+  return {
+    intent: input.intent ?? null,
+    taskShape: input.taskShape ?? null,
+    risk: input.risk ?? null,
+    ambiguity: input.ambiguity ?? null,
+    parallelism: input.parallelism ?? null,
+    contextPressure: input.contextPressure ?? null,
+    runState: input.runState ?? null,
+  };
 }
 
 function normalizePolicyPreviewScenarioRoles(

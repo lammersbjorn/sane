@@ -154,6 +154,7 @@ These are the backend actions the TUI is allowed to call in the current phase.
   - render canonical adaptive-policy scenarios into typed output
   - include editable role defaults plus derived routing classes for each scenario
   - persist the latest preview snapshot so Inspect can show read-only, current-run-derived policy visibility
+  - latest persisted snapshot may include typed input classification per scenario for Inspect/runtime-summary visibility
   - keep typed scenario/orchestration/trace payloads available for internal history/state plumbing even if current user-facing render stays compact
   - exist to verify obligation rules without presenting a shipped live orchestration runtime
 

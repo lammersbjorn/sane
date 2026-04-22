@@ -1,0 +1,162 @@
+import { readFileSync, writeFileSync } from "node:fs";
+
+import { type ProjectPaths } from "@sane/platform";
+import {
+  buildRunBrief,
+  type CanonicalRewriteResult,
+  createCanonicalStatePaths,
+  loadLayeredStateBundle,
+  readCurrentRunState,
+  readRunSummary,
+  stringifyCurrentRunState,
+  writeCanonicalWithBackupResult,
+  writeRunSummary,
+  type CurrentRunState,
+  type LayeredStateBundle,
+  type RunSummary
+} from "@sane/state";
+
+export interface RuntimeHandoffState {
+  layeredState: LayeredStateBundle | null;
+  current: CurrentRunState | null;
+  summary: RunSummary | null;
+  brief: string | null;
+}
+
+export interface RuntimeHandoffBaselineResult {
+  current: CurrentRunState;
+  summary: RunSummary;
+  currentRewrite: CanonicalRewriteResult | null;
+  summaryRewrite: CanonicalRewriteResult | null;
+  briefUpdated: boolean;
+  briefWriteMode: "preserved" | "first write" | "rewrite";
+}
+
+export function runtimeHandoffPaths(paths: ProjectPaths): string[] {
+  return [paths.currentRunPath, paths.summaryPath, paths.briefPath];
+}
+
+export function runtimeHistoryPaths(paths: ProjectPaths): string[] {
+  return [paths.eventsPath, paths.decisionsPath, paths.artifactsPath];
+}
+
+export function runtimeStatePaths(paths: ProjectPaths): string[] {
+  return [...runtimeHandoffPaths(paths), ...runtimeHistoryPaths(paths)];
+}
+
+export function writeRuntimeSummaryAndBrief(
+  paths: ProjectPaths,
+  summary: RunSummary,
+  current: CurrentRunState
+): void {
+  writeRunSummary(paths.summaryPath, summary);
+  writeFileSync(paths.briefPath, buildRunBrief(summary, current), "utf8");
+}
+
+export function createInstallCurrentRunState(): CurrentRunState {
+  return {
+    version: 2,
+    objective: "initialize sane runtime",
+    phase: "setup",
+    activeTasks: ["install sane runtime"],
+    blockingQuestions: [],
+    verification: {
+      status: "pending",
+      summary: "runtime scaffolding created"
+    },
+    lastCompactionTsUnix: null,
+    extra: {}
+  };
+}
+
+export function createInstallRunSummary(): RunSummary {
+  return {
+    version: 2,
+    acceptedDecisions: [],
+    completedMilestones: [],
+    constraints: [],
+    lastVerifiedOutputs: [],
+    filesTouched: [],
+    extra: {}
+  };
+}
+
+export function ensureRuntimeHandoffBaseline(
+  paths: ProjectPaths
+): RuntimeHandoffBaselineResult {
+  const handoff = loadRuntimeHandoffState(paths);
+  const defaultCurrent = createInstallCurrentRunState();
+  const defaultSummary = createInstallRunSummary();
+  const currentRewrite =
+    handoff.current === null
+      ? writeCanonicalWithBackupResult(paths.currentRunPath, defaultCurrent, {
+          format: "json",
+          stringify: stringifyCurrentRunState
+        })
+      : null;
+  const summaryRewrite =
+    handoff.summary === null
+      ? writeCanonicalWithBackupResult(paths.summaryPath, defaultSummary, {
+          format: "json"
+        })
+      : null;
+  const current = handoff.current ?? defaultCurrent;
+  const summary = handoff.summary ?? defaultSummary;
+  const briefUpdated = handoff.brief === null || currentRewrite !== null || summaryRewrite !== null;
+  const briefWriteMode =
+    handoff.brief === null
+      ? "first write"
+      : briefUpdated
+        ? "rewrite"
+        : "preserved";
+
+  if (briefUpdated) {
+    writeFileSync(paths.briefPath, buildRunBrief(summary, current), "utf8");
+  }
+
+  return {
+    current,
+    summary,
+    currentRewrite,
+    summaryRewrite,
+    briefUpdated,
+    briefWriteMode
+  };
+}
+
+export function loadRuntimeHandoffState(paths: ProjectPaths): RuntimeHandoffState {
+  const layeredState = tryLoadRuntimeStateBundle(paths);
+
+  return {
+    layeredState,
+    current: layeredState?.currentRun ?? safeRead(() => readCurrentRunState(paths.currentRunPath)),
+    summary: layeredState?.summary ?? safeRead(() => readRunSummary(paths.summaryPath)),
+    brief: layeredState?.brief ?? safeRead(() => readFileSync(paths.briefPath, "utf8"))
+  };
+}
+
+function tryLoadRuntimeStateBundle(paths: ProjectPaths): LayeredStateBundle | null {
+  try {
+    return loadLayeredStateBundle(
+      createCanonicalStatePaths(
+        paths.configPath,
+        paths.summaryPath,
+        paths.currentRunPath,
+        paths.briefPath,
+        paths.eventsPath,
+        paths.decisionsPath,
+        paths.artifactsPath
+      )
+    );
+  } catch {
+    return null;
+  }
+}
+
+function safeRead<T>(reader: () => T): T | null {
+  try {
+    return reader();
+  } catch {
+    return null;
+  }
+}

@@ -117,6 +117,8 @@ Content:
 - status summary
 - doctor result
 - runtime handoff state (`current-run`, `summary`, `brief`)
+- bounded local runtime history counts (`events`, `decisions`, `artifacts`)
+- latest persisted policy snapshot and typed input classification, read-only only
 - local config view
 - Codex config view
 - export drift view

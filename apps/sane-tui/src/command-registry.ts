@@ -219,14 +219,21 @@ export const COMMAND_METADATA_REGISTRY = {
       help: [
         "Show a read-only summary of local current-run-derived handoff state.",
         "",
-        "Visibility only. No files are changed and no runtime orchestration runs.",
-        "This reads `.sane/state/current-run.json`, `.sane/state/summary.json`, and `.sane/BRIEF.md`.",
+        "Visibility only for managed surfaces. No runtime orchestration runs.",
+        "This reads current-run, summary, brief, and local runtime history counts.",
         "Use it when you want a compact view of what Sane has recorded locally."
       ],
       confirmation: null,
       successNoticeTitle: null,
       repoMutation: false,
-      filesTouched: [".sane/state/current-run.json", ".sane/state/summary.json", ".sane/BRIEF.md"]
+      filesTouched: [
+        ".sane/state/current-run.json",
+        ".sane/state/summary.json",
+        ".sane/BRIEF.md",
+        ".sane/state/events.jsonl",
+        ".sane/state/decisions.jsonl",
+        ".sane/state/artifacts.jsonl"
+      ]
     },
     reset_telemetry_data: {
       id: "reset_telemetry_data",
@@ -257,14 +264,21 @@ export const COMMAND_METADATA_REGISTRY = {
       help: [
         "Show Sane's current-run-derived adaptive routing policy preview.",
         "",
-        "Visibility only. No files are changed and no runtime orchestration runs.",
+        "Visibility only for managed surfaces. No runtime orchestration runs.",
+        "Sane also records the latest preview into local runtime history for Inspect.",
         "It shows per-scenario obligations plus routing defaults.",
         "Editable coordinator/sidecar/verifier defaults are shown alongside derived execution and realtime-iteration classes."
       ],
       confirmation: null,
       successNoticeTitle: null,
       repoMutation: false,
-      filesTouched: [".sane/state/current-run.json", ".sane/state/summary.json", ".sane/state/decisions.jsonl"]
+      filesTouched: [
+        ".sane/state/current-run.json",
+        ".sane/state/summary.json",
+        ".sane/BRIEF.md",
+        ".sane/state/events.jsonl",
+        ".sane/state/decisions.jsonl"
+      ]
     },
     backup_codex_config: {
       id: "backup_codex_config",
@@ -287,7 +301,7 @@ export const COMMAND_METADATA_REGISTRY = {
       help: [
         "Show the Codex settings Sane recommends by default.",
         "",
-        "Preview only. No files are changed.",
+        "Preview only for managed surfaces.",
         "This shows the single-session Codex baseline Sane would write plus hook settings.",
         "That baseline is coordinator-shaped; broader execution and realtime routing stays derived outside config.toml."
       ],
@@ -303,7 +317,7 @@ export const COMMAND_METADATA_REGISTRY = {
       help: [
         "Show the optional integrations profile Sane recommends.",
         "",
-        "Preview only. No files are changed.",
+        "Preview only for managed surfaces.",
         "Today this is where recommended MCP and integration defaults are inspected before apply."
       ],
       confirmation: null,
@@ -318,7 +332,7 @@ export const COMMAND_METADATA_REGISTRY = {
       help: [
         "Show the optional Cloudflare provider profile.",
         "",
-        "Preview only. No files are changed.",
+        "Preview only for managed surfaces.",
         "Use this only if you want Cloudflare-specific tooling added to Codex config."
       ],
       confirmation: null,
@@ -333,7 +347,7 @@ export const COMMAND_METADATA_REGISTRY = {
       help: [
         "Show the optional Opencode compatibility profile.",
         "",
-        "Preview only. No files are changed.",
+        "Preview only for managed surfaces.",
         "Today this adds the optional opensrc MCP entry only.",
         "Broader Opencode-native config stays separate on purpose."
       ],
@@ -750,7 +764,7 @@ export const COMMAND_METADATA_REGISTRY = {
       help: [
         "Show everything Sane currently manages.",
         "",
-        "Visibility only. No files are changed.",
+        "Visibility only for managed surfaces.",
         "Use status and doctor to see what is installed, stale, disabled, or broken."
       ],
       confirmation: null,
@@ -765,7 +779,7 @@ export const COMMAND_METADATA_REGISTRY = {
       help: [
         "Check Sane's local project files and Codex installs.",
         "",
-        "Visibility only. No files are changed.",
+        "Visibility only for managed surfaces.",
         "Use this when something feels broken, stale, or only partly installed.",
         "Doctor points at missing, invalid, or drifted Sane-managed pieces."
       ],

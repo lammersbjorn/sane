@@ -92,9 +92,20 @@ export interface PolicyPreviewTraceEntry {
   rule: string;
 }
 
+export interface PolicyPreviewScenarioInput {
+  intent: string;
+  taskShape: string;
+  risk: string;
+  ambiguity: string;
+  parallelism: string;
+  contextPressure: string;
+  runState: string;
+}
+
 export interface PolicyPreviewScenario {
   id: string;
   summary: string;
+  input: PolicyPreviewScenarioInput;
   obligations: string[];
   roles: {
     coordinator: boolean;

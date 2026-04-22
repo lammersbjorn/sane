@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, statSync, writeFileSync } from "node:fs";
 
 import {
   createRecommendedLocalConfig,
@@ -20,17 +20,11 @@ import {
   type ProjectPaths
 } from "@sane/platform";
 import {
-  createCanonicalStatePaths,
-  loadLayeredStateBundle,
-  listCanonicalBackupSiblings,
-  readCurrentRunState,
-  readLocalStateConfig,
-  readRunSummary,
-  stringifyCurrentRunState,
-  writeCanonicalWithBackupResult,
   type CanonicalRewriteResult,
+  listCanonicalBackupSiblings,
+  readLocalStateConfig,
+  writeCanonicalWithBackupResult,
   type CurrentRunState,
-  type LayeredStateBundle,
   type LayeredStateHistoryCounts,
   type LatestPolicyPreviewSnapshot,
   type RunSummary
@@ -41,10 +35,16 @@ import {
   previewIntegrationsProfile,
   showCodexConfig
 } from "./codex-config.js";
-import { doctor, inspectStatusBundle } from "./inventory.js";
-import { previewPolicy } from "./policy-preview.js";
+import { doctor, doctorForStatusBundle, inspectStatusBundle } from "./inventory.js";
+import { previewPolicy, previewPolicyForCurrentRun } from "./policy-preview.js";
 import { showConfig } from "./preferences.js";
 import { inspectSavedLocalConfig } from "./local-config.js";
+import {
+  ensureRuntimeHandoffBaseline,
+  loadRuntimeHandoffState,
+  runtimeHistoryPaths,
+  runtimeStatePaths
+} from "./runtime-state.js";
 
 interface InstallCanonicalRewrite {
   name: "config" | "current-run" | "summary";
@@ -96,11 +96,8 @@ export interface InspectSnapshot {
 
 export function installRuntime(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
   ensureRuntimeDirs(paths);
-  const canonicalRewrites = ensureInstallRuntimeBaseline(paths, codexPaths);
-  const runtimeState = inspectRuntimeStateSnapshot(paths);
-  const current = runtimeState.current ?? installCurrentRunState();
-  const summary = runtimeState.summary ?? defaultRunSummary();
-  ensureFileWithDefault(paths.briefPath, buildBriefBody(summary, current));
+  const runtimeBaseline = ensureRuntimeHandoffBaseline(paths);
+  const canonicalRewrites = ensureInstallRuntimeBaseline(paths, codexPaths, runtimeBaseline);
 
   const details: string[] = [];
   for (const rewrite of canonicalRewrites) {
@@ -110,6 +107,7 @@ export function installRuntime(paths: ProjectPaths, codexPaths: CodexPaths): Ope
   details.push(`current-run: ${paths.currentRunPath}`);
   details.push(`summary: ${paths.summaryPath}`);
   details.push(`brief: ${paths.briefPath}`);
+  details.push(`brief write mode: ${runtimeBaseline.briefWriteMode}`);
 
   const pathsTouched = installPathsTouched(paths);
   for (const rewrite of canonicalRewrites) {
@@ -192,8 +190,8 @@ export function inspectSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): In
       inventory: statusBundle.inventory
     },
     statusBundle,
-    doctor: doctor(paths, codexPaths),
-    runtimeSummary: showRuntimeSummary(paths),
+    doctor: doctorForStatusBundle(paths, codexPaths, statusBundle),
+    runtimeSummary: buildRuntimeSummary(paths, runtimeState),
     runtimeHistory: runtimeState.historyCounts,
     latestPolicyPreview: runtimeState.latestPolicyPreview,
     localConfig: showConfig(paths),
@@ -206,12 +204,15 @@ export function inspectSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): In
       status: item.status.displayString(),
       repairHint: item.repairHint
     })),
-    policyPreview: previewPolicy(paths)
+    policyPreview: previewPolicyForCurrentRun(paths, runtimeState.current)
   };
 }
 
 export function showRuntimeSummary(paths: ProjectPaths): OperationResult {
-  const runtimeState = inspectRuntimeStateSnapshot(paths);
+  return buildRuntimeSummary(paths, inspectRuntimeStateSnapshot(paths));
+}
+
+function buildRuntimeSummary(paths: ProjectPaths, runtimeState: RuntimeStateSnapshot): OperationResult {
   const { current, summary, brief, latestPolicyPreview, historyCounts } = runtimeState;
   const details = [
     `current-run: ${current ? "present" : "missing"} at ${paths.currentRunPath}`,
@@ -253,6 +254,7 @@ export function showRuntimeSummary(paths: ProjectPaths): OperationResult {
         `latest policy preview provenance: ts ${latestPolicyPreview.tsUnix}, summary ${latestPolicyPreview.summary}`
       );
     }
+    details.push(...latestPolicyPreviewInputLines(latestPolicyPreview));
   }
 
   return new OperationResult({
@@ -262,14 +264,7 @@ export function showRuntimeSummary(paths: ProjectPaths): OperationResult {
         ? `runtime-summary: local handoff state at ${paths.runtimeRoot}`
         : `runtime-summary: no local handoff state at ${paths.runtimeRoot}`,
     details,
-    pathsTouched: [
-      paths.currentRunPath,
-      paths.summaryPath,
-      paths.briefPath,
-      paths.eventsPath,
-      paths.decisionsPath,
-      paths.artifactsPath
-    ]
+    pathsTouched: runtimeStatePaths(paths)
   });
 }
 
@@ -285,35 +280,10 @@ export * from "./opencode-native.js";
 export * from "./policy-preview.js";
 export * from "./preferences.js";
 
-function tryLoadLayeredState(paths: ProjectPaths): LayeredStateBundle | null {
-  try {
-    return loadLayeredStateBundle(
-      createCanonicalStatePaths(
-        paths.configPath,
-        paths.summaryPath,
-        paths.currentRunPath,
-        paths.briefPath,
-        paths.eventsPath,
-        paths.decisionsPath,
-        paths.artifactsPath
-      )
-    );
-  } catch {
-    return null;
-  }
-}
-
 function inspectRuntimeStateSnapshot(paths: ProjectPaths): RuntimeStateSnapshot {
-  const layeredState = tryLoadLayeredState(paths);
-  const current =
-    layeredState?.currentRun ??
-    safeRead(() => readCurrentRunState(paths.currentRunPath));
-  const summary =
-    layeredState?.summary ??
-    safeRead(() => readRunSummary(paths.summaryPath));
-  const brief =
-    layeredState?.brief ??
-    safeRead(() => readFileSync(paths.briefPath, "utf8"));
+  const handoff = loadRuntimeHandoffState(paths);
+  const layeredState = handoff.layeredState;
+  const { current, summary, brief } = handoff;
   const stateDirPresent = existsSync(paths.stateDir);
 
   return {
@@ -322,23 +292,16 @@ function inspectRuntimeStateSnapshot(paths: ProjectPaths): RuntimeStateSnapshot 
     brief,
     historyCounts: layeredState?.historyCounts ?? { events: 0, decisions: 0, artifacts: 0 },
     latestPolicyPreview: layeredState?.latestPolicyPreview ?? missingLatestPolicyPreview(),
-    currentRunStatus: !stateDirPresent
-      ? InventoryStatus.Missing
-      : current
-        ? InventoryStatus.Installed
-        : readStatus(() => readCurrentRunState(paths.currentRunPath)),
-    summaryStatus: !stateDirPresent
-      ? InventoryStatus.Missing
-      : summary
-        ? InventoryStatus.Installed
-        : readStatus(() => readRunSummary(paths.summaryPath)),
+    currentRunStatus: stateDirPresent ? runtimeLayerStatus(current) : InventoryStatus.Missing,
+    summaryStatus: stateDirPresent ? runtimeLayerStatus(summary) : InventoryStatus.Missing,
     briefStatus: brief ? InventoryStatus.Installed : fileStatus(paths.briefPath)
   };
 }
 
 function ensureInstallRuntimeBaseline(
   paths: ProjectPaths,
-  codexPaths: CodexPaths
+  codexPaths: CodexPaths,
+  runtimeBaseline: ReturnType<typeof ensureRuntimeHandoffBaseline>
 ): InstallCanonicalRewrite[] {
   const rewrites: InstallCanonicalRewrite[] = [];
   const configRewrite = ensureInstallConfig(paths, codexPaths);
@@ -346,19 +309,23 @@ function ensureInstallRuntimeBaseline(
     rewrites.push({ name: "config", metadata: configRewrite });
   }
 
-  const currentRunRewrite = ensureInstallCurrentRun(paths);
-  if (currentRunRewrite) {
-    rewrites.push({ name: "current-run", metadata: currentRunRewrite });
+  if (runtimeBaseline.currentRewrite) {
+    rewrites.push({
+      name: "current-run",
+      metadata: operationRewriteMetadata(runtimeBaseline.currentRewrite)
+    });
   }
 
-  const summaryRewrite = ensureInstallSummary(paths);
-  if (summaryRewrite) {
-    rewrites.push({ name: "summary", metadata: summaryRewrite });
+  if (runtimeBaseline.summaryRewrite) {
+    rewrites.push({
+      name: "summary",
+      metadata: operationRewriteMetadata(runtimeBaseline.summaryRewrite)
+    });
   }
 
-  ensureFileWithDefault(paths.eventsPath, "");
-  ensureFileWithDefault(paths.decisionsPath, "");
-  ensureFileWithDefault(paths.artifactsPath, "");
+  for (const path of runtimeHistoryPaths(paths)) {
+    ensureFileWithDefault(path, "");
+  }
 
   return rewrites;
 }
@@ -375,31 +342,6 @@ function ensureInstallConfig(
     writeCanonicalWithBackupResult(paths.configPath, recommendedLocalConfig(codexPaths), {
       format: "toml",
       stringify: stringifyLocalConfig
-    })
-  );
-}
-
-function ensureInstallCurrentRun(paths: ProjectPaths): OperationRewriteMetadata | null {
-  if (safeRead(() => readCurrentRunState(paths.currentRunPath))) {
-    return null;
-  }
-
-  return operationRewriteMetadata(
-    writeCanonicalWithBackupResult(paths.currentRunPath, installCurrentRunState(), {
-      format: "json",
-      stringify: stringifyCurrentRunState
-    })
-  );
-}
-
-function ensureInstallSummary(paths: ProjectPaths): OperationRewriteMetadata | null {
-  if (safeRead(() => readRunSummary(paths.summaryPath))) {
-    return null;
-  }
-
-  return operationRewriteMetadata(
-    writeCanonicalWithBackupResult(paths.summaryPath, defaultRunSummary(), {
-      format: "json"
     })
   );
 }
@@ -452,34 +394,6 @@ function inspectRuntimeInventory(paths: ProjectPaths) {
   ];
 }
 
-function installCurrentRunState(): CurrentRunState {
-  return {
-    version: 2,
-    objective: "initialize sane runtime",
-    phase: "setup",
-    activeTasks: ["install sane runtime"],
-    blockingQuestions: [],
-    verification: {
-      status: "pending",
-      summary: "runtime scaffolding created"
-    },
-    lastCompactionTsUnix: null,
-    extra: {}
-  };
-}
-
-function defaultRunSummary(): RunSummary {
-  return {
-    version: 2,
-    acceptedDecisions: [],
-    completedMilestones: [],
-    constraints: [],
-    lastVerifiedOutputs: [],
-    filesTouched: [],
-    extra: {}
-  };
-}
-
 function ensureFileWithDefault(path: string, defaultContents: string): void {
   try {
     writeFileSync(path, defaultContents, {
@@ -491,37 +405,6 @@ function ensureFileWithDefault(path: string, defaultContents: string): void {
       throw error;
     }
   }
-}
-
-function buildBriefBody(summary: RunSummary, current: CurrentRunState): string {
-  return [
-    "# Sane Brief",
-    "",
-    "## Current Run",
-    `- Objective: ${current.objective}`,
-    `- Phase: ${current.phase}`,
-    `- Verification: ${current.verification.status}`,
-    `- Last compaction: ${current.lastCompactionTsUnix ?? "none"}`,
-    "",
-    "## Active Tasks",
-    ...renderBullets(current.activeTasks),
-    "",
-    "## Blocking Questions",
-    ...renderBullets(current.blockingQuestions),
-    "",
-    "## Accepted Decisions",
-    ...renderBullets(summary.acceptedDecisions),
-    "",
-    "## Completed Milestones",
-    ...renderBullets(summary.completedMilestones),
-    "",
-    "## Last Verified Outputs",
-    ...renderBullets(summary.lastVerifiedOutputs),
-    "",
-    "## Files Touched",
-    ...renderBullets(summary.filesTouched),
-    ""
-  ].join("\n");
 }
 
 function canonicalBackupHistorySummary(backups: string[]): string {
@@ -560,24 +443,24 @@ function doctorStatus(
   return item?.status.displayString() ?? "unknown";
 }
 
-function renderBullets(items: string[]): string[] {
-  if (items.length === 0) {
-    return ["- none"];
+function latestPolicyPreviewInputLines(preview: LatestPolicyPreviewSnapshot): string[] {
+  if (preview.status !== "present") {
+    return [];
   }
 
-  return items.map((item) => `- ${item}`);
+  return preview.scenarios.flatMap((scenario) => {
+    if (!scenario.input) {
+      return [];
+    }
+
+    return [
+      `latest policy input ${scenario.id}: intent ${scenario.input.intent ?? "unknown"}, task ${scenario.input.taskShape ?? "unknown"}, risk ${scenario.input.risk ?? "unknown"}, ambiguity ${scenario.input.ambiguity ?? "unknown"}, parallelism ${scenario.input.parallelism ?? "unknown"}, context ${scenario.input.contextPressure ?? "unknown"}, run ${scenario.input.runState ?? "unknown"}`
+    ];
+  });
 }
 
 function installPathsTouched(paths: ProjectPaths): string[] {
-  return [
-    paths.configPath,
-    paths.currentRunPath,
-    paths.summaryPath,
-    paths.eventsPath,
-    paths.decisionsPath,
-    paths.artifactsPath,
-    paths.briefPath
-  ];
+  return [paths.configPath, ...runtimeStatePaths(paths)];
 }
 
 function appendNamedRewriteDetails(
@@ -627,6 +510,14 @@ function readStatus(read: () => unknown): InventoryStatus {
 
 function fileStatus(path: string): InventoryStatus {
   return existsSync(path) ? InventoryStatus.Installed : InventoryStatus.Missing;
+}
+
+function runtimeLayerStatus(value: unknown): InventoryStatus {
+  if (value) {
+    return InventoryStatus.Installed;
+  }
+
+  return InventoryStatus.Invalid;
 }
 
 function missingLatestPolicyPreview(): LatestPolicyPreviewSnapshot {
