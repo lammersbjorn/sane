@@ -26,6 +26,7 @@ import {
   writeCanonicalWithBackupResult,
   type CurrentRunState,
   type LayeredStateHistoryCounts,
+  type LayeredStateHistoryPreview,
   type LatestPolicyPreviewSnapshot,
   type RunSummary
 } from "@sane/state";
@@ -64,6 +65,7 @@ interface RuntimeStateSnapshot {
   summary: RunSummary | null;
   brief: string | null;
   historyCounts: LayeredStateHistoryCounts;
+  historyPreview: LayeredStateHistoryPreview;
   latestPolicyPreview: LatestPolicyPreviewSnapshot;
   currentRunStatus: InventoryStatus;
   summaryStatus: InventoryStatus;
@@ -84,6 +86,7 @@ export interface InspectSnapshot {
     decisions: number;
     artifacts: number;
   };
+  runtimeHistoryPreview: LayeredStateHistoryPreview;
   latestPolicyPreview: ReturnType<typeof inspectLatestPolicyPreview>;
   localConfig: ReturnType<typeof showConfig>;
   codexConfig: ReturnType<typeof showCodexConfig>;
@@ -201,6 +204,7 @@ export function inspectSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): In
     doctorHeadline: doctorSnapshot.headline,
     runtimeSummary: buildRuntimeSummary(paths, runtimeState),
     runtimeHistory: runtimeState.historyCounts,
+    runtimeHistoryPreview: runtimeState.historyPreview,
     latestPolicyPreview: runtimeState.latestPolicyPreview,
     localConfig: showConfig(paths),
     codexConfig: showCodexConfig(codexPaths),
@@ -222,14 +226,17 @@ export function showRuntimeSummary(paths: ProjectPaths): OperationResult {
 }
 
 function buildRuntimeSummary(paths: ProjectPaths, runtimeState: RuntimeStateSnapshot): OperationResult {
-  const { current, summary, brief, latestPolicyPreview, historyCounts } = runtimeState;
+  const { current, summary, brief, latestPolicyPreview, historyCounts, historyPreview } = runtimeState;
   const details = [
     `current-run: ${current ? "present" : "missing"} at ${paths.currentRunPath}`,
     `summary: ${summary ? "present" : "missing"} at ${paths.summaryPath}`,
     `brief: ${brief ? "present" : "missing"} at ${paths.briefPath}`,
     `events: ${historyCounts.events} at ${paths.eventsPath}`,
     `decisions: ${historyCounts.decisions} at ${paths.decisionsPath}`,
-    `artifacts: ${historyCounts.artifacts} at ${paths.artifactsPath}`
+    `artifacts: ${historyCounts.artifacts} at ${paths.artifactsPath}`,
+    `latest event (read-only local visibility): ${formatLatestHistoryEventPreview(historyPreview.latestEvent)}`,
+    `latest decision (read-only local visibility): ${formatLatestHistoryDecisionPreview(historyPreview.latestDecision)}`,
+    `latest artifact (read-only local visibility): ${formatLatestHistoryArtifactPreview(historyPreview.latestArtifact)}`
   ];
 
   if (current) {
@@ -295,6 +302,11 @@ function inspectRuntimeStateSnapshot(paths: ProjectPaths): RuntimeStateSnapshot 
     summary,
     brief,
     historyCounts: layeredState?.historyCounts ?? { events: 0, decisions: 0, artifacts: 0 },
+    historyPreview: layeredState?.historyPreview ?? {
+      latestEvent: null,
+      latestDecision: null,
+      latestArtifact: null
+    },
     latestPolicyPreview: layeredState?.latestPolicyPreview ?? missingLatestPolicyPreview(),
     currentRunStatus: stateDirPresent ? runtimeLayerStatus(current) : InventoryStatus.Missing,
     summaryStatus: stateDirPresent ? runtimeLayerStatus(summary) : InventoryStatus.Missing,
@@ -427,6 +439,36 @@ function canonicalBackupHistorySummary(backups: string[]): string {
 
 function joinSummaryList(values: string[]): string {
   return values.length === 0 ? "none" : values.join(", ");
+}
+
+function formatLatestHistoryEventPreview(
+  preview: RuntimeStateSnapshot["historyPreview"]["latestEvent"]
+): string {
+  if (!preview) {
+    return "missing";
+  }
+
+  return `ts ${preview.tsUnix}, action ${preview.action}, result ${preview.result}, summary ${preview.summary}`;
+}
+
+function formatLatestHistoryDecisionPreview(
+  preview: RuntimeStateSnapshot["historyPreview"]["latestDecision"]
+): string {
+  if (!preview) {
+    return "missing";
+  }
+
+  return `ts ${preview.tsUnix}, summary ${preview.summary}, rationale ${preview.rationale}`;
+}
+
+function formatLatestHistoryArtifactPreview(
+  preview: RuntimeStateSnapshot["historyPreview"]["latestArtifact"]
+): string {
+  if (!preview) {
+    return "missing";
+  }
+
+  return `ts ${preview.tsUnix}, kind ${preview.kind}, path ${preview.path}, summary ${preview.summary}`;
 }
 
 function briefPreviewLines(brief: string): string[] {

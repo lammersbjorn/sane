@@ -51,6 +51,11 @@ describe("inspect snapshot", () => {
       decisions: 0,
       artifacts: 0
     });
+    expect(snapshot.runtimeHistoryPreview).toEqual({
+      latestEvent: null,
+      latestDecision: null,
+      latestArtifact: null
+    });
     expect(snapshot.latestPolicyPreview).toEqual({
       status: "missing",
       scenarioCount: 0,
@@ -164,6 +169,15 @@ describe("inspect snapshot", () => {
       ],
       tsUnix: 1_700_000_003,
       summary: "policy preview: rendered adaptive obligation scenarios"
+    });
+    expect(snapshot.runtimeHistoryPreview).toEqual({
+      latestEvent: null,
+      latestDecision: {
+        tsUnix: 1_700_000_003,
+        summary: "policy preview: rendered adaptive obligation scenarios",
+        rationale: "simple-question: direct_answer | coordinator=gpt-5.4/high"
+      },
+      latestArtifact: null
     });
     expect(snapshot.doctorHeadline).toBe("runtime: ok");
   });

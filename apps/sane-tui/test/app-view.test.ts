@@ -85,6 +85,9 @@ describe("app view", () => {
     expect(view.sectionOverviewLines.join("\n")).toContain("doctor result");
     expect(view.sectionOverviewLines.join("\n")).toContain("runtime summary");
     expect(view.sectionOverviewLines.join("\n")).toContain("runtime history");
+    expect(view.sectionOverviewLines.join("\n")).toContain("latest event");
+    expect(view.sectionOverviewLines.join("\n")).toContain("latest decision");
+    expect(view.sectionOverviewLines.join("\n")).toContain("latest artifact");
     expect(view.sectionOverviewLines.join("\n")).toContain("latest policy snapshot");
     expect(view.sectionOverviewLines.join("\n")).toContain("local config view");
     expect(view.sectionOverviewLines.join("\n")).toContain("Codex config view");
@@ -217,6 +220,9 @@ describe("app view", () => {
     expect(view.selectedHelpLines.join("\n")).toContain("current-run:");
     expect(view.selectedHelpLines.join("\n")).toContain("summary:");
     expect(view.selectedHelpLines.join("\n")).toContain("brief:");
+    expect(view.selectedHelpLines.join("\n")).toContain("latest event (read-only local visibility):");
+    expect(view.selectedHelpLines.join("\n")).toContain("latest decision (read-only local visibility):");
+    expect(view.selectedHelpLines.join("\n")).toContain("latest artifact (read-only local visibility):");
   });
 
   it("surfaces the latest typed policy snapshot in Inspect guidance", () => {

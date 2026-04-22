@@ -54,6 +54,9 @@ export function inspectOverviewLines(snapshot: InspectScreenSnapshot): string[] 
     `doctor result: ${snapshot.doctorHeadline}`,
     `runtime summary (read-only local visibility): ${snapshot.runtimeSummary.summary}`,
     `runtime history (read-only local visibility): events ${snapshot.runtimeHistory.events}, decisions ${snapshot.runtimeHistory.decisions}, artifacts ${snapshot.runtimeHistory.artifacts}`,
+    `latest event (read-only local visibility): ${formatLatestHistoryEventOverview(snapshot.runtimeHistoryPreview.latestEvent)}`,
+    `latest decision (read-only local visibility): ${formatLatestHistoryDecisionOverview(snapshot.runtimeHistoryPreview.latestDecision)}`,
+    `latest artifact (read-only local visibility): ${formatLatestHistoryArtifactOverview(snapshot.runtimeHistoryPreview.latestArtifact)}`,
     ...formatInspectPolicyPreviewLines(snapshot),
     formatOptionalPackProvenanceLine(snapshot.statusBundle.optionalPacks),
     `local config view: ${snapshot.localConfig.summary}`,
@@ -133,4 +136,34 @@ function formatOptionalPackProvenanceLine(
   });
 
   return `optional pack provenance: ${summary.join("; ")}`;
+}
+
+function formatLatestHistoryEventOverview(
+  latestEvent: InspectScreenSnapshot["runtimeHistoryPreview"]["latestEvent"]
+): string {
+  if (!latestEvent) {
+    return "missing";
+  }
+
+  return `ts ${latestEvent.tsUnix}, action ${latestEvent.action}, result ${latestEvent.result}, summary ${latestEvent.summary}`;
+}
+
+function formatLatestHistoryDecisionOverview(
+  latestDecision: InspectScreenSnapshot["runtimeHistoryPreview"]["latestDecision"]
+): string {
+  if (!latestDecision) {
+    return "missing";
+  }
+
+  return `ts ${latestDecision.tsUnix}, summary ${latestDecision.summary}, rationale ${latestDecision.rationale}`;
+}
+
+function formatLatestHistoryArtifactOverview(
+  latestArtifact: InspectScreenSnapshot["runtimeHistoryPreview"]["latestArtifact"]
+): string {
+  if (!latestArtifact) {
+    return "missing";
+  }
+
+  return `ts ${latestArtifact.tsUnix}, kind ${latestArtifact.kind}, path ${latestArtifact.path}, summary ${latestArtifact.summary}`;
 }

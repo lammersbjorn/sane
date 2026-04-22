@@ -70,6 +70,26 @@ export interface LayeredStateHistoryCounts {
   artifacts: number;
 }
 
+export interface LayeredStateHistoryPreview {
+  latestEvent: {
+    tsUnix: number;
+    action: string;
+    summary: string;
+    result: string;
+  } | null;
+  latestDecision: {
+    tsUnix: number;
+    summary: string;
+    rationale: string;
+  } | null;
+  latestArtifact: {
+    tsUnix: number;
+    kind: string;
+    summary: string;
+    path: string;
+  } | null;
+}
+
 export interface CanonicalStatePaths {
   configPath: string;
   summaryPath: string;
@@ -86,6 +106,7 @@ export interface LayeredStateBundle {
   currentRun: CurrentRunState | null;
   brief: string | null;
   historyCounts: LayeredStateHistoryCounts;
+  historyPreview: LayeredStateHistoryPreview;
   latestPolicyPreview: LatestPolicyPreviewSnapshot;
 }
 
@@ -486,6 +507,31 @@ export function loadLayeredStateBundle(paths: CanonicalStatePaths): LayeredState
       decisions: countOptionalJsonlEntries(paths.decisionsPath),
       artifacts: countOptionalJsonlEntries(paths.artifactsPath),
     },
+    historyPreview: {
+      latestEvent: paths.eventsPath
+        ? readLatestValidJsonlRecord(paths.eventsPath, parseEventRecordJson, (record) => ({
+            tsUnix: record.tsUnix,
+            action: record.action,
+            summary: record.summary,
+            result: record.result,
+          }))
+        : null,
+      latestDecision: paths.decisionsPath
+        ? readLatestValidJsonlRecord(paths.decisionsPath, parseDecisionRecordJson, (record) => ({
+            tsUnix: record.tsUnix,
+            summary: record.summary,
+            rationale: record.rationale,
+          }))
+        : null,
+      latestArtifact: paths.artifactsPath
+        ? readLatestValidJsonlRecord(paths.artifactsPath, parseArtifactRecordJson, (record) => ({
+            tsUnix: record.tsUnix,
+            kind: record.kind,
+            summary: record.summary,
+            path: record.path,
+          }))
+        : null,
+    },
     latestPolicyPreview: paths.decisionsPath
       ? readLatestPolicyPreviewSnapshot(paths.decisionsPath)
       : missingLatestPolicyPreviewSnapshot(),
@@ -671,6 +717,32 @@ export function readJsonlLastRecord<T>(
 ): T | null {
   const records = readJsonlRecordsSlice(path, 0, null, parseLine);
   return records.at(-1) ?? null;
+}
+
+function readLatestValidJsonlRecord<T, R>(
+  path: string,
+  parseLine: (raw: string, path?: string) => T,
+  mapRecord: (record: T) => R,
+): R | null {
+  if (!existsSync(path)) {
+    return null;
+  }
+
+  const lines = readText(path).split(/\r?\n/);
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    const line = lines[index];
+    if (!line || line.trim().length === 0) {
+      continue;
+    }
+
+    try {
+      return mapRecord(parseLine(line, `${path}:${index + 1}`));
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
 }
 
 export function countJsonlEntries(path: string): number {

@@ -118,6 +118,11 @@ describe("inspect screen model", () => {
       doctorHeadline: "doctor: hooks invalid",
       runtimeSummary: { summary: "runtime-summary: no local handoff state" },
       runtimeHistory: { events: 0, decisions: 0, artifacts: 0 },
+      runtimeHistoryPreview: {
+        latestEvent: null,
+        latestDecision: null,
+        latestArtifact: null
+      },
       latestPolicyPreview: { status: "missing" },
       localConfig: { summary: "config: ok" },
       codexConfig: { summary: "codex-config: ok" },
@@ -200,6 +205,11 @@ describe("inspect screen model", () => {
       decisions: 0,
       artifacts: 0
     });
+    expect(screen.runtimeHistoryPreview).toEqual({
+      latestEvent: null,
+      latestDecision: null,
+      latestArtifact: null
+    });
     expect(screen.statusBundle.optionalPacks).toEqual([
       expect.objectContaining({
         name: "caveman",
@@ -250,6 +260,13 @@ describe("inspect screen model", () => {
     expect(screen.overviewLines.join("\n")).toContain("doctor result:");
     expect(screen.overviewLines.join("\n")).toContain("runtime summary (read-only local visibility):");
     expect(screen.overviewLines.join("\n")).toContain("runtime history (read-only local visibility):");
+    expect(screen.overviewLines.join("\n")).toContain("latest event (read-only local visibility): missing");
+    expect(screen.overviewLines.join("\n")).toContain(
+      "latest decision (read-only local visibility): missing"
+    );
+    expect(screen.overviewLines.join("\n")).toContain(
+      "latest artifact (read-only local visibility): missing"
+    );
     expect(screen.overviewLines.join("\n")).toContain("latest policy snapshot: missing (current-run-derived read-only view)");
     expect(screen.overviewLines.join("\n")).toContain(
       "current policy preview: policy preview: rendered adaptive obligation scenarios;"
@@ -335,6 +352,15 @@ describe("inspect screen model", () => {
       decisions: 1,
       artifacts: 0
     });
+    expect(screen.runtimeHistoryPreview).toEqual({
+      latestEvent: null,
+      latestDecision: {
+        tsUnix: 1_700_000_004,
+        summary: "policy preview: rendered adaptive obligation scenarios",
+        rationale: "simple-question: direct_answer | coordinator=gpt-5.4/high"
+      },
+      latestArtifact: null
+    });
     expect(screen.latestPolicyPreview).toEqual({
       status: "present",
       scenarioCount: 2,
@@ -381,6 +407,9 @@ describe("inspect screen model", () => {
     });
     expect(screen.overviewLines.join("\n")).toContain(
       "latest policy snapshot: present (current-run-derived read-only view; ts 1700000004; summary policy preview: rendered adaptive obligation scenarios; 2 scenarios: simple-question, multi-file-feature)"
+    );
+    expect(screen.overviewLines.join("\n")).toContain(
+      "latest decision (read-only local visibility): ts 1700000004, summary policy preview: rendered adaptive obligation scenarios, rationale simple-question: direct_answer | coordinator=gpt-5.4/high"
     );
     expect(screen.overviewLines.join("\n")).toContain(
       "latest policy input simple-question: intent question, task trivial, risk low, ambiguity low, parallelism none, context low, run exploring"

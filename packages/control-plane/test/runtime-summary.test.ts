@@ -5,8 +5,12 @@ import { join } from "node:path";
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import {
   appendJsonlRecord,
+  createArtifactRecord,
   createDecisionRecord,
-  stringifyDecisionRecord
+  createEventRecord,
+  stringifyArtifactRecord,
+  stringifyDecisionRecord,
+  stringifyEventRecord
 } from "@sane/state";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 
@@ -42,6 +46,9 @@ describe("showRuntimeSummary", () => {
     expect(result.details).toContain(`current-run: missing at ${paths.currentRunPath}`);
     expect(result.details).toContain(`summary: missing at ${paths.summaryPath}`);
     expect(result.details).toContain(`brief: missing at ${paths.briefPath}`);
+    expect(result.details).toContain("latest event (read-only local visibility): missing");
+    expect(result.details).toContain("latest decision (read-only local visibility): missing");
+    expect(result.details).toContain("latest artifact (read-only local visibility): missing");
     expect(result.pathsTouched).toEqual([
       paths.currentRunPath,
       paths.summaryPath,
@@ -67,6 +74,9 @@ describe("showRuntimeSummary", () => {
     expect(result.details).toContain(`events: 0 at ${paths.eventsPath}`);
     expect(result.details).toContain(`decisions: 0 at ${paths.decisionsPath}`);
     expect(result.details).toContain(`artifacts: 0 at ${paths.artifactsPath}`);
+    expect(result.details).toContain("latest event (read-only local visibility): missing");
+    expect(result.details).toContain("latest decision (read-only local visibility): missing");
+    expect(result.details).toContain("latest artifact (read-only local visibility): missing");
     expect(result.details).toContain("objective: initialize sane runtime");
     expect(result.details).toContain("phase: setup");
     expect(result.details).toContain("verification: pending (runtime scaffolding created)");
@@ -86,6 +96,19 @@ describe("showRuntimeSummary", () => {
     const paths = createProjectPaths(projectRoot);
 
     installRuntime(paths, createCodexPaths(homeDir));
+    const event = createEventRecord(
+      "runtime",
+      "install-runtime",
+      "ok",
+      "created runtime handoff baseline",
+      [paths.currentRunPath]
+    );
+    event.tsUnix = 1_700_000_001;
+    appendJsonlRecord(
+      paths.eventsPath,
+      event,
+      stringifyEventRecord
+    );
     const decision = createDecisionRecord(
       "policy preview: rendered adaptive obligation scenarios",
       "simple-question: direct_answer | coordinator=gpt-5.4/high",
@@ -124,6 +147,18 @@ describe("showRuntimeSummary", () => {
       decision,
       stringifyDecisionRecord
     );
+    const artifact = createArtifactRecord(
+      "brief",
+      paths.briefPath,
+      "regenerated concise brief",
+      [paths.briefPath]
+    );
+    artifact.tsUnix = 1_700_000_003;
+    appendJsonlRecord(
+      paths.artifactsPath,
+      artifact,
+      stringifyArtifactRecord
+    );
 
     const result = showRuntimeSummary(paths);
 
@@ -141,7 +176,18 @@ describe("showRuntimeSummary", () => {
     expect(result.details).toContain(
       "latest policy orchestration simple-question: subagents none, readiness not_needed, review inline_only, verifier inline"
     );
+    expect(result.details).toContain(
+      "latest event (read-only local visibility): ts 1700000001, action install-runtime, result ok, summary created runtime handoff baseline"
+    );
+    expect(result.details).toContain(
+      "latest decision (read-only local visibility): ts 1700000002, summary policy preview: rendered adaptive obligation scenarios, rationale simple-question: direct_answer | coordinator=gpt-5.4/high"
+    );
+    expect(result.details).toContain(
+      `latest artifact (read-only local visibility): ts 1700000003, kind brief, path ${paths.briefPath}, summary regenerated concise brief`
+    );
+    expect(result.details).toContain(`events: 1 at ${paths.eventsPath}`);
     expect(result.details).toContain(`decisions: 1 at ${paths.decisionsPath}`);
+    expect(result.details).toContain(`artifacts: 1 at ${paths.artifactsPath}`);
     expect(inspectLatestPolicyPreview(paths)).toEqual({
       status: "present",
       scenarioCount: 2,
