@@ -84,6 +84,9 @@ describe("inspect screen model", () => {
     expect(screen.overviewLines.join("\n")).toContain("status counts:");
     expect(screen.overviewLines.join("\n")).toContain("primary surfaces:");
     expect(screen.overviewLines.join("\n")).toContain("doctor result:");
+    expect(screen.overviewLines.join("\n")).toContain("runtime summary (read-only local visibility):");
+    expect(screen.overviewLines.join("\n")).toContain("runtime history (read-only local visibility):");
+    expect(screen.overviewLines.join("\n")).toContain("latest policy snapshot: missing (current-run-derived read-only view)");
   });
 
   it("surfaces invalid drift items for inspect consumers", () => {
@@ -146,5 +149,8 @@ describe("inspect screen model", () => {
       scenarioCount: 2,
       scenarioIds: ["simple-question", "multi-file-feature"]
     });
+    expect(screen.overviewLines.join("\n")).toContain(
+      "latest policy snapshot: present (current-run-derived read-only view; 2 scenarios: simple-question, multi-file-feature)"
+    );
   });
 });
