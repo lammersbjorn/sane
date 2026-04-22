@@ -16,12 +16,26 @@ export type InstallActionStatusId =
   | "export_opencode_agents"
   | "export_all";
 
+export type InstallActionStatusKind =
+  | "installed"
+  | "configured"
+  | "disabled"
+  | "missing"
+  | "invalid"
+  | "present_without_sane_block"
+  | "removed";
+
+export interface InstallActionStatus {
+  kind: InstallActionStatusKind;
+  label: string;
+}
+
 export interface InstallStatusSnapshot {
   inventory: ReturnType<typeof inspectStatusBundle>["codexNative"];
   bundleStatus: ReturnType<typeof inspectStatusBundle>["primary"]["installBundle"];
   missingTargets: string[];
   recommendedActionId: InstallActionStatusId | null;
-  actionStatus: Record<InstallActionStatusId, string>;
+  actionStatus: Record<InstallActionStatusId, InstallActionStatus>;
 }
 
 export function inspectInstallStatus(
@@ -49,11 +63,11 @@ export function inspectInstallStatus(
       export_repo_skills: inventoryStatus(inventory, "repo-skills"),
       export_repo_agents: inventoryStatus(inventory, "repo-agents"),
       export_global_agents: inventoryStatus(inventory, "global-agents"),
-      apply_integrations_profile: integrationStatus,
+      apply_integrations_profile: integrationsStatus(integrationStatus),
       export_hooks: inventoryStatus(inventory, "hooks"),
       export_custom_agents: inventoryStatus(inventory, "custom-agents"),
       export_opencode_agents: compatibilityStatus(statusBundle, "opencode-agents"),
-      export_all: bundleStatus
+      export_all: installBundleStatus(bundleStatus)
     }
   };
 }
@@ -61,8 +75,8 @@ export function inspectInstallStatus(
 function inventoryStatus(
   inventory: ReturnType<typeof inspectStatusBundle>["codexNative"],
   name: string
-): string {
-  return inventory.find((item) => item.name === name)?.status.displayString() ?? "missing";
+): InstallActionStatus {
+  return fromInventoryStatus(inventory.find((item) => item.name === name)?.status);
 }
 
 function missingBundleTargets(
@@ -76,6 +90,57 @@ function missingBundleTargets(
 function compatibilityStatus(
   statusBundle: ReturnType<typeof inspectStatusBundle>,
   name: string
-): string {
-  return statusBundle.compatibility.find((item) => item.name === name)?.status.displayString() ?? "missing";
+): InstallActionStatus {
+  return fromInventoryStatus(statusBundle.compatibility.find((item) => item.name === name)?.status);
+}
+
+function integrationsStatus(status: string): InstallActionStatus {
+  if (status === "installed") {
+    return statusDto("installed");
+  }
+
+  if (status === "invalid") {
+    return statusDto("invalid");
+  }
+
+  return statusDto("missing");
+}
+
+function installBundleStatus(status: string): InstallActionStatus {
+  return status === "installed" ? statusDto("installed") : statusDto("missing");
+}
+
+function fromInventoryStatus(status: InventoryStatus | undefined): InstallActionStatus {
+  if (status === InventoryStatus.Installed) {
+    return statusDto("installed");
+  }
+
+  if (status === InventoryStatus.Configured) {
+    return statusDto("configured");
+  }
+
+  if (status === InventoryStatus.Disabled) {
+    return statusDto("disabled");
+  }
+
+  if (status === InventoryStatus.Invalid) {
+    return statusDto("invalid");
+  }
+
+  if (status === InventoryStatus.PresentWithoutSaneBlock) {
+    return statusDto("present_without_sane_block");
+  }
+
+  if (status === InventoryStatus.Removed) {
+    return statusDto("removed");
+  }
+
+  return statusDto("missing");
+}
+
+function statusDto(kind: InstallActionStatusKind): InstallActionStatus {
+  return {
+    kind,
+    label: kind === "present_without_sane_block" ? "present without Sane block" : kind
+  };
 }

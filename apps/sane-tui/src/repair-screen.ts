@@ -9,26 +9,17 @@ import { executeOperation } from "@sane/control-plane/history.js";
 import { uninstallGlobalAgents, uninstallUserSkills } from "@sane/control-plane/codex-native.js";
 import { uninstallCustomAgents, uninstallHooks } from "@sane/control-plane/hooks-custom-agents.js";
 import { uninstallOpencodeAgents } from "@sane/control-plane/opencode-native.js";
-import { inspectRepairStatus } from "@sane/control-plane/repair-status.js";
+import {
+  inspectRepairStatus,
+  type RepairActionStatusId
+} from "@sane/control-plane/repair-status.js";
 import { uninstallRepoAgents, uninstallRepoSkills } from "@sane/control-plane";
 import { installRuntime } from "@sane/control-plane";
 import { resetTelemetryData } from "@sane/control-plane/preferences.js";
 import { listSectionActions } from "@/command-registry.js";
 
 export interface RepairScreenAction {
-  id:
-    | "install_runtime"
-    | "backup_codex_config"
-    | "restore_codex_config"
-    | "reset_telemetry_data"
-    | "uninstall_user_skills"
-    | "uninstall_repo_skills"
-    | "uninstall_global_agents"
-    | "uninstall_repo_agents"
-    | "uninstall_hooks"
-    | "uninstall_custom_agents"
-    | "uninstall_opencode_agents"
-    | "uninstall_all";
+  id: RepairActionStatusId;
   title: string;
   status: string;
   confirmation: string | null;
@@ -59,7 +50,7 @@ export function loadRepairScreen(paths: ProjectPaths, codexPaths: CodexPaths): R
   const actions = listSectionActions("repair").map((action) => ({
     id: action.id as RepairScreenAction["id"],
     title: action.label,
-    status: status.actionStatus[action.id as keyof typeof status.actionStatus],
+    status: status.actionStatus[action.id as RepairActionStatusId].label,
     confirmation: action.confirmation?.impactCopy ?? null
   }));
 

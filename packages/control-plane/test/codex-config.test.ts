@@ -11,10 +11,12 @@ import {
   applyIntegrationsProfile,
   applyOpencodeProfile,
   backupCodexConfig,
+  inspectCloudflareProfileAudit,
   inspectCodexConfigBackupSnapshot,
   inspectCodexProfileAudit,
   inspectIntegrationsProfileAudit,
   inspectIntegrationsProfileStatus,
+  inspectOpencodeProfileAudit,
   previewCloudflareProfile,
   previewCodexProfile,
   previewIntegrationsProfile,
@@ -242,6 +244,48 @@ describe("codex config control plane", () => {
     expect(inspectIntegrationsProfileStatus(codexPaths)).toBe("installed");
   });
 
+  it("reports structured cloudflare-profile audit state without scraping preview strings", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    expect(inspectCloudflareProfileAudit(codexPaths)).toMatchObject({
+      status: "missing",
+      recommendedChangeCount: 1,
+      target: "cloudflare-api"
+    });
+
+    applyCloudflareProfile(projectPaths, codexPaths);
+
+    expect(inspectCloudflareProfileAudit(codexPaths)).toMatchObject({
+      status: "installed",
+      recommendedChangeCount: 0,
+      target: "cloudflare-api"
+    });
+  });
+
+  it("reports structured opencode-profile audit state without scraping preview strings", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    expect(inspectOpencodeProfileAudit(codexPaths)).toMatchObject({
+      status: "missing",
+      recommendedChangeCount: 1,
+      target: "opensrc"
+    });
+
+    applyOpencodeProfile(projectPaths, codexPaths);
+
+    expect(inspectOpencodeProfileAudit(codexPaths)).toMatchObject({
+      status: "installed",
+      recommendedChangeCount: 0,
+      target: "opensrc"
+    });
+  });
+
   it("reports structured codex-profile audit state without scraping preview strings", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
@@ -289,5 +333,31 @@ describe("codex config control plane", () => {
       changes: [{ key: "model_reasoning_effort", current: "low", recommended: "high" }]
     });
     expect(preview.summary).toBe("codex-profile preview: 1 recommended change(s)");
+  });
+
+  it("keeps cloudflare-profile preview summary count aligned with structured audit", () => {
+    const homeDir = makeTempDir();
+    const codexPaths = createCodexPaths(homeDir);
+    const audit = inspectCloudflareProfileAudit(codexPaths);
+    const preview = previewCloudflareProfile(codexPaths);
+
+    expect(audit).toMatchObject({
+      status: "missing",
+      recommendedChangeCount: 1
+    });
+    expect(preview.summary).toBe("cloudflare-profile preview: 1 recommended change(s)");
+  });
+
+  it("keeps opencode-profile preview summary count aligned with structured audit", () => {
+    const homeDir = makeTempDir();
+    const codexPaths = createCodexPaths(homeDir);
+    const audit = inspectOpencodeProfileAudit(codexPaths);
+    const preview = previewOpencodeProfile(codexPaths);
+
+    expect(audit).toMatchObject({
+      status: "missing",
+      recommendedChangeCount: 1
+    });
+    expect(preview.summary).toBe("opencode-profile preview: 1 recommended change(s)");
   });
 });

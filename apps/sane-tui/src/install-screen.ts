@@ -13,7 +13,10 @@ import {
   exportHooks
 } from "@sane/control-plane/hooks-custom-agents.js";
 import { executeOperation } from "@sane/control-plane/history.js";
-import { inspectInstallStatus } from "@sane/control-plane/install-status.js";
+import {
+  inspectInstallStatus,
+  type InstallActionStatusId
+} from "@sane/control-plane/install-status.js";
 import { exportOpencodeAgents } from "@sane/control-plane/opencode-native.js";
 import { listSectionActions } from "@/command-registry.js";
 
@@ -38,16 +41,7 @@ export interface InstallScreenModel {
 }
 
 export interface InstallAction {
-  id:
-    | "export_user_skills"
-    | "export_repo_skills"
-    | "export_repo_agents"
-    | "export_global_agents"
-    | "apply_integrations_profile"
-    | "export_hooks"
-    | "export_custom_agents"
-    | "export_opencode_agents"
-    | "export_all";
+  id: InstallActionStatusId;
   title: string;
   status: string;
   repoMutation: boolean;
@@ -60,7 +54,7 @@ export function loadInstallScreen(paths: ProjectPaths, codexPaths: CodexPaths): 
   const actions = listSectionActions("install").map((action) => ({
     id: action.id as InstallAction["id"],
     title: action.label,
-    status: status.actionStatus[action.id as keyof typeof status.actionStatus],
+    status: status.actionStatus[action.id as InstallActionStatusId].label,
     repoMutation: action.repoMutation,
     includes: action.includes
   }));

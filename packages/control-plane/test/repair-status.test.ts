@@ -40,14 +40,17 @@ describe("repair status snapshot", () => {
     expect(inspectRepairStatus(paths, codexPaths)).toEqual({
       installBundle: "missing",
       actionStatus: expect.objectContaining({
-        install_runtime: "missing",
-        restore_codex_config: "missing",
-        reset_telemetry_data: "missing",
+        install_runtime: { kind: "missing", label: "missing" },
+        restore_codex_config: { kind: "missing", label: "missing" },
+        reset_telemetry_data: { kind: "missing", label: "missing" },
         ...Object.fromEntries(
-          CORE_INSTALL_BUNDLE_TARGETS.map((target) => [actionIdForTarget(target), "missing"])
+          CORE_INSTALL_BUNDLE_TARGETS.map((target) => [
+            actionIdForTarget(target),
+            { kind: "missing", label: "missing" }
+          ])
         ),
-        uninstall_opencode_agents: "missing",
-        uninstall_all: "missing"
+        uninstall_opencode_agents: { kind: "missing", label: "missing" },
+        uninstall_all: { kind: "missing", label: "missing" }
       })
     });
   });
@@ -68,14 +71,17 @@ describe("repair status snapshot", () => {
     expect(inspectRepairStatus(paths, codexPaths)).toEqual({
       installBundle: "installed",
       actionStatus: expect.objectContaining({
-        backup_codex_config: "installed",
-        restore_codex_config: "available",
-        reset_telemetry_data: "present",
+        backup_codex_config: { kind: "installed", label: "installed" },
+        restore_codex_config: { kind: "available", label: "available" },
+        reset_telemetry_data: { kind: "present", label: "present" },
         ...Object.fromEntries(
-          CORE_INSTALL_BUNDLE_TARGETS.map((target) => [actionIdForTarget(target), "installed"])
+          CORE_INSTALL_BUNDLE_TARGETS.map((target) => [
+            actionIdForTarget(target),
+            { kind: "installed", label: "installed" }
+          ])
         ),
-        uninstall_opencode_agents: "missing",
-        uninstall_all: "installed"
+        uninstall_opencode_agents: { kind: "missing", label: "missing" },
+        uninstall_all: { kind: "installed", label: "installed" }
       })
     });
   });

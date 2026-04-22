@@ -32,6 +32,24 @@ export interface CodexProfileAudit {
   details: string[];
 }
 
+export interface CloudflareProfileAudit {
+  status: "installed" | "missing" | "invalid";
+  recommendedChangeCount: number;
+  target: "cloudflare-api";
+  details: string[];
+}
+
+export type CloudflareProfileStatus = CloudflareProfileAudit["status"];
+
+export interface OpencodeProfileAudit {
+  status: "installed" | "missing" | "invalid";
+  recommendedChangeCount: number;
+  target: "opensrc";
+  details: string[];
+}
+
+export type OpencodeProfileStatus = OpencodeProfileAudit["status"];
+
 export interface CodexConfigBackupSnapshot {
   restoreAvailable: boolean;
 }
@@ -127,24 +145,12 @@ export function previewIntegrationsProfile(codexPaths: CodexPaths): OperationRes
 
 export function previewCloudflareProfile(codexPaths: CodexPaths): OperationResult {
   const inventory = inspectCodexConfigInventory(codexPaths);
-  const details =
-    inventory.status === InventoryStatus.Missing
-      ? [
-          "cloudflare-api: missing -> optional provider profile",
-          "oauth and permissions stay explicit at connect time",
-          "note: not part of the broad recommended integrations profile"
-        ]
-      : inventory.status === InventoryStatus.Invalid
-        ? [
-            "cannot preview cloudflare profile until ~/.codex/config.toml parses cleanly",
-            "repair current config first"
-          ]
-        : cloudflareProfilePreviewDetails(readCodexConfig(codexPaths.configToml));
+  const audit = inspectCloudflareProfileAudit(codexPaths);
 
   return new OperationResult({
     kind: OperationKind.PreviewCloudflareProfile,
-    summary: `cloudflare-profile preview: ${countChanges(details)} recommended change(s)`,
-    details,
+    summary: `cloudflare-profile preview: ${audit.recommendedChangeCount} recommended change(s)`,
+    details: audit.details,
     pathsTouched: [codexPaths.configToml],
     inventory: [inventory]
   });
@@ -152,24 +158,12 @@ export function previewCloudflareProfile(codexPaths: CodexPaths): OperationResul
 
 export function previewOpencodeProfile(codexPaths: CodexPaths): OperationResult {
   const inventory = inspectCodexConfigInventory(codexPaths);
-  const details =
-    inventory.status === InventoryStatus.Missing
-      ? [
-          "opensrc: missing -> optional Opencode compatibility profile",
-          "note: not part of Sane's default recommended integrations",
-          "note: this keeps Codex config additive and leaves broader Opencode setup separate"
-        ]
-      : inventory.status === InventoryStatus.Invalid
-        ? [
-            "cannot preview opencode compatibility profile until ~/.codex/config.toml parses cleanly",
-            "repair current config first"
-          ]
-        : opencodeProfilePreviewDetails(readCodexConfig(codexPaths.configToml));
+  const audit = inspectOpencodeProfileAudit(codexPaths);
 
   return new OperationResult({
     kind: OperationKind.PreviewOpencodeProfile,
-    summary: `opencode-profile preview: ${countChanges(details)} recommended change(s)`,
-    details,
+    summary: `opencode-profile preview: ${audit.recommendedChangeCount} recommended change(s)`,
+    details: audit.details,
     pathsTouched: [codexPaths.configToml],
     inventory: [inventory]
   });
@@ -340,6 +334,68 @@ export function inspectCodexProfileAudit(codexPaths: CodexPaths): CodexProfileAu
   );
 }
 
+export function inspectCloudflareProfileAudit(codexPaths: CodexPaths): CloudflareProfileAudit {
+  const inventory = inspectCodexConfigInventory(codexPaths);
+
+  if (inventory.status === InventoryStatus.Invalid) {
+    return {
+      status: "invalid",
+      recommendedChangeCount: 0,
+      target: "cloudflare-api",
+      details: [
+        "cannot preview cloudflare profile until ~/.codex/config.toml parses cleanly",
+        "repair current config first"
+      ]
+    };
+  }
+
+  if (inventory.status === InventoryStatus.Missing) {
+    return {
+      status: "missing",
+      recommendedChangeCount: 1,
+      target: "cloudflare-api",
+      details: [
+        "cloudflare-api: missing -> optional provider profile",
+        "oauth and permissions stay explicit at connect time",
+        "note: not part of the broad recommended integrations profile"
+      ]
+    };
+  }
+
+  return cloudflareProfileAuditFromConfig(readCodexConfig(codexPaths.configToml));
+}
+
+export function inspectOpencodeProfileAudit(codexPaths: CodexPaths): OpencodeProfileAudit {
+  const inventory = inspectCodexConfigInventory(codexPaths);
+
+  if (inventory.status === InventoryStatus.Invalid) {
+    return {
+      status: "invalid",
+      recommendedChangeCount: 0,
+      target: "opensrc",
+      details: [
+        "cannot preview opencode compatibility profile until ~/.codex/config.toml parses cleanly",
+        "repair current config first"
+      ]
+    };
+  }
+
+  if (inventory.status === InventoryStatus.Missing) {
+    return {
+      status: "missing",
+      recommendedChangeCount: 1,
+      target: "opensrc",
+      details: [
+        "opensrc: missing -> optional Opencode compatibility profile",
+        "note: not part of Sane's default recommended integrations",
+        "note: this keeps Codex config additive and leaves broader Opencode setup separate"
+      ]
+    };
+  }
+
+  return opencodeProfileAuditFromConfig(readCodexConfig(codexPaths.configToml));
+}
+
 export function applyCloudflareProfile(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
   ensureRuntimeDirs(paths);
   const inventory = inspectCodexConfigInventory(codexPaths);
@@ -359,14 +415,7 @@ export function applyCloudflareProfile(paths: ProjectPaths, codexPaths: CodexPat
 
   const currentConfig =
     inventory.status === InventoryStatus.Installed ? readCodexConfig(codexPaths.configToml) : {};
-  const details =
-    inventory.status === InventoryStatus.Installed
-      ? cloudflareProfilePreviewDetails(currentConfig)
-      : [
-          "cloudflare-api: missing -> optional provider profile",
-          "oauth and permissions stay explicit at connect time",
-          "note: not part of the broad recommended integrations profile"
-        ];
+  const details = [...inspectCloudflareProfileAudit(codexPaths).details];
 
   const updatedConfig = cloneTable(currentConfig);
   const appliedKeys = applyCloudflareProfileToValue(updatedConfig);
@@ -416,14 +465,7 @@ export function applyOpencodeProfile(paths: ProjectPaths, codexPaths: CodexPaths
 
   const currentConfig =
     inventory.status === InventoryStatus.Installed ? readCodexConfig(codexPaths.configToml) : {};
-  const details =
-    inventory.status === InventoryStatus.Installed
-      ? opencodeProfilePreviewDetails(currentConfig)
-      : [
-          "opensrc: missing -> optional Opencode compatibility profile",
-          "note: not part of Sane's default recommended integrations",
-          "note: this keeps Codex config additive and leaves broader Opencode setup separate"
-        ];
+  const details = [...inspectOpencodeProfileAudit(codexPaths).details];
 
   const updatedConfig = cloneTable(currentConfig);
   const appliedKeys = applyOpencodeProfileToValue(updatedConfig);
@@ -746,26 +788,38 @@ function integrationProfileAuditFromConfig(config: TomlTable): IntegrationsProfi
   };
 }
 
-function cloudflareProfilePreviewDetails(config: TomlTable): string[] {
+function cloudflareProfileAuditFromConfig(config: TomlTable): CloudflareProfileAudit {
   const mcpServers = asTomlTable(config.mcp_servers);
-  return [
-    hasTableKey(mcpServers, "cloudflare-api")
-      ? "cloudflare-api: keep installed"
-      : "cloudflare-api: missing -> optional provider profile",
-    "oauth and permissions stay explicit at connect time",
-    "note: not part of the broad recommended integrations profile"
-  ];
+  const hasCloudflare = hasTableKey(mcpServers, "cloudflare-api");
+  return {
+    status: hasCloudflare ? "installed" : "missing",
+    recommendedChangeCount: hasCloudflare ? 0 : 1,
+    target: "cloudflare-api",
+    details: [
+      hasCloudflare
+        ? "cloudflare-api: keep installed"
+        : "cloudflare-api: missing -> optional provider profile",
+      "oauth and permissions stay explicit at connect time",
+      "note: not part of the broad recommended integrations profile"
+    ]
+  };
 }
 
-function opencodeProfilePreviewDetails(config: TomlTable): string[] {
+function opencodeProfileAuditFromConfig(config: TomlTable): OpencodeProfileAudit {
   const mcpServers = asTomlTable(config.mcp_servers);
-  return [
-    hasTableKey(mcpServers, "opensrc")
-      ? "opensrc: keep installed"
-      : "opensrc: missing -> optional Opencode compatibility profile",
-    "note: not part of Sane's default recommended integrations",
-    "note: this keeps Codex config additive and leaves broader Opencode setup separate"
-  ];
+  const hasOpenSrc = hasTableKey(mcpServers, "opensrc");
+  return {
+    status: hasOpenSrc ? "installed" : "missing",
+    recommendedChangeCount: hasOpenSrc ? 0 : 1,
+    target: "opensrc",
+    details: [
+      hasOpenSrc
+        ? "opensrc: keep installed"
+        : "opensrc: missing -> optional Opencode compatibility profile",
+      "note: not part of Sane's default recommended integrations",
+      "note: this keeps Codex config additive and leaves broader Opencode setup separate"
+    ]
+  };
 }
 
 function pushProfileChange(details: string[], label: string, current: string, recommended: string): void {
@@ -804,10 +858,6 @@ function ensureChildTable(parent: TomlTable, key: string, errorMessage: string):
 
 function cloneTable(value: TomlTable): TomlTable {
   return JSON.parse(JSON.stringify(value)) as TomlTable;
-}
-
-function countChanges(details: string[]): number {
-  return details.filter((line) => line.includes("->")).length;
 }
 
 function sortedKeys(table: TomlTable | null | undefined): string[] {

@@ -1,3 +1,4 @@
+import { InventoryStatus } from "@sane/core";
 import { type CodexPaths, type ProjectPaths } from "@sane/platform";
 
 import { inspectCodexConfigBackupSnapshot } from "./codex-config.js";
@@ -19,9 +20,25 @@ export type RepairActionStatusId =
   | "uninstall_opencode_agents"
   | "uninstall_all";
 
+export type RepairActionStatusKind =
+  | "installed"
+  | "configured"
+  | "disabled"
+  | "missing"
+  | "invalid"
+  | "present_without_sane_block"
+  | "removed"
+  | "available"
+  | "present";
+
+export interface RepairActionStatus {
+  kind: RepairActionStatusKind;
+  label: string;
+}
+
 export interface RepairStatusSnapshot {
   installBundle: ReturnType<typeof inspectStatusBundle>["primary"]["installBundle"];
-  actionStatus: Record<RepairActionStatusId, string>;
+  actionStatus: Record<RepairActionStatusId, RepairActionStatus>;
 }
 
 export function inspectRepairStatus(
@@ -37,8 +54,8 @@ export function inspectRepairStatus(
     actionStatus: {
       install_runtime: statusFor(statusBundle.inventory, "runtime"),
       backup_codex_config: statusFor(statusBundle.inventory, "codex-config"),
-      restore_codex_config: backups.restoreAvailable ? "available" : "missing",
-      reset_telemetry_data: telemetry.dirPresent ? "present" : "missing",
+      restore_codex_config: backups.restoreAvailable ? statusDto("available") : statusDto("missing"),
+      reset_telemetry_data: telemetry.dirPresent ? statusDto("present") : statusDto("missing"),
       uninstall_user_skills: statusFor(statusBundle.inventory, "user-skills"),
       uninstall_repo_skills: statusFor(statusBundle.inventory, "repo-skills"),
       uninstall_global_agents: statusFor(statusBundle.inventory, "global-agents"),
@@ -54,14 +71,51 @@ export function inspectRepairStatus(
 function statusFor(
   inventory: ReturnType<typeof inspectStatusBundle>["inventory"],
   name: string
-): string {
-  return inventory.find((item) => item.name === name)?.status.displayString() ?? "missing";
+): RepairActionStatus {
+  return fromInventoryStatus(inventory.find((item) => item.name === name)?.status);
 }
 
-function uninstallAllStatus(inventory: ReturnType<typeof inspectStatusBundle>["inventory"]): string {
+function uninstallAllStatus(
+  inventory: ReturnType<typeof inspectStatusBundle>["inventory"]
+): RepairActionStatus {
   return CORE_INSTALL_BUNDLE_TARGETS.some(
     (name) => inventory.find((item) => item.name === name)?.status.displayString() === "installed"
   )
-    ? "installed"
-    : "missing";
+    ? statusDto("installed")
+    : statusDto("missing");
+}
+
+function fromInventoryStatus(status: InventoryStatus | undefined): RepairActionStatus {
+  if (status === InventoryStatus.Installed) {
+    return statusDto("installed");
+  }
+
+  if (status === InventoryStatus.Configured) {
+    return statusDto("configured");
+  }
+
+  if (status === InventoryStatus.Disabled) {
+    return statusDto("disabled");
+  }
+
+  if (status === InventoryStatus.Invalid) {
+    return statusDto("invalid");
+  }
+
+  if (status === InventoryStatus.PresentWithoutSaneBlock) {
+    return statusDto("present_without_sane_block");
+  }
+
+  if (status === InventoryStatus.Removed) {
+    return statusDto("removed");
+  }
+
+  return statusDto("missing");
+}
+
+function statusDto(kind: RepairActionStatusKind): RepairActionStatus {
+  return {
+    kind,
+    label: kind === "present_without_sane_block" ? "present without Sane block" : kind
+  };
 }

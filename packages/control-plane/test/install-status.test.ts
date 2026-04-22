@@ -37,13 +37,13 @@ describe("install status snapshot", () => {
         missingTargets: [...CORE_INSTALL_BUNDLE_TARGETS],
         recommendedActionId: "export_all",
         actionStatus: expect.objectContaining({
-          export_user_skills: "missing",
-          export_global_agents: "missing",
-          export_hooks: "missing",
-          export_custom_agents: "missing",
-          export_opencode_agents: "missing",
-          apply_integrations_profile: "missing",
-          export_all: "missing"
+          export_user_skills: { kind: "missing", label: "missing" },
+          export_global_agents: { kind: "missing", label: "missing" },
+          export_hooks: { kind: "missing", label: "missing" },
+          export_custom_agents: { kind: "missing", label: "missing" },
+          export_opencode_agents: { kind: "missing", label: "missing" },
+          apply_integrations_profile: { kind: "missing", label: "missing" },
+          export_all: { kind: "missing", label: "missing" }
         })
       })
     );
@@ -63,9 +63,9 @@ describe("install status snapshot", () => {
         missingTargets: [],
         recommendedActionId: "apply_integrations_profile",
         actionStatus: expect.objectContaining({
-          export_all: "installed",
-          export_opencode_agents: "missing",
-          apply_integrations_profile: "missing"
+          export_all: { kind: "installed", label: "installed" },
+          export_opencode_agents: { kind: "missing", label: "missing" },
+          apply_integrations_profile: { kind: "missing", label: "missing" }
         })
       })
     );
@@ -75,7 +75,7 @@ describe("install status snapshot", () => {
       expect.objectContaining({
         recommendedActionId: null,
         actionStatus: expect.objectContaining({
-          apply_integrations_profile: "installed"
+          apply_integrations_profile: { kind: "installed", label: "installed" }
         })
       })
     );
@@ -97,8 +97,8 @@ describe("install status snapshot", () => {
         missingTargets: [],
         recommendedActionId: "apply_integrations_profile",
         actionStatus: expect.objectContaining({
-          export_all: "installed",
-          apply_integrations_profile: "invalid"
+          export_all: { kind: "installed", label: "installed" },
+          apply_integrations_profile: { kind: "invalid", label: "invalid" }
         })
       })
     );
