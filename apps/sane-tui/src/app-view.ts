@@ -188,6 +188,7 @@ function selectedActionHelpLines(
       ...action.help,
       "",
       `audit: ${model.integrationsAudit.status} (${model.integrationsAudit.recommendedChangeCount} recommended changes)`,
+      `apply readiness: ${model.integrationsApply.status} (${model.integrationsApply.appliedKeys.length} keys)`,
       ...model.integrationsPreview.details
     ];
   }

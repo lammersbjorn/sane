@@ -31,6 +31,7 @@ import {
 } from "@sane/state";
 
 import {
+  inspectIntegrationsProfileApplyResult,
   inspectIntegrationsProfileAudit,
   previewIntegrationsProfile,
   showCodexConfig
@@ -86,6 +87,7 @@ export interface InspectSnapshot {
   localConfig: ReturnType<typeof showConfig>;
   codexConfig: ReturnType<typeof showCodexConfig>;
   integrationsAudit: ReturnType<typeof inspectIntegrationsProfileAudit>;
+  integrationsApply: ReturnType<typeof inspectIntegrationsProfileApplyResult>;
   integrationsPreview: ReturnType<typeof previewIntegrationsProfile>;
   driftItems: Array<{
     name: string;
@@ -202,6 +204,7 @@ export function inspectSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): In
     localConfig: showConfig(paths),
     codexConfig: showCodexConfig(codexPaths),
     integrationsAudit: inspectIntegrationsProfileAudit(codexPaths),
+    integrationsApply: inspectIntegrationsProfileApplyResult(codexPaths),
     integrationsPreview: previewIntegrationsProfile(codexPaths),
     driftItems: statusBundle.driftItems.map((item) => ({
       name: item.name,

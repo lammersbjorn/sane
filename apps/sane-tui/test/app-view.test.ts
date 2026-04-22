@@ -143,6 +143,7 @@ describe("app view", () => {
 
     expect(view.selectedAction.id).toBe("preview_integrations_profile");
     expect(view.selectedHelpLines.join("\n")).toContain("audit: missing");
+    expect(view.selectedHelpLines.join("\n")).toContain("apply readiness: ready (3 keys)");
     expect(view.selectedHelpLines.join("\n")).toContain("context7: missing -> recommended");
     expect(view.selectedHelpLines.join("\n")).toContain("playwright: missing -> recommended");
     expect(view.selectedHelpLines.join("\n")).toContain("grep.app: missing -> recommended");

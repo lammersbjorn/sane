@@ -122,6 +122,7 @@ describe("inspect screen model", () => {
       localConfig: { summary: "config: ok" },
       codexConfig: { summary: "codex-config: ok" },
       integrationsAudit: { status: "missing", recommendedChangeCount: 0 },
+      integrationsApply: { status: "ready", appliedKeys: [] },
       integrationsPreview: { summary: "integrations-profile preview" },
       driftItems: [
         {
@@ -181,6 +182,12 @@ describe("inspect screen model", () => {
     expect(screen.integrationsAudit.status).toBe("missing");
     expect(screen.integrationsAudit.recommendedChangeCount).toBe(3);
     expect(screen.integrationsAudit.recommendedTargets).toEqual(["context7", "playwright", "grep.app"]);
+    expect(screen.integrationsApply.status).toBe("ready");
+    expect(screen.integrationsApply.appliedKeys).toEqual([
+      "mcp_servers.context7",
+      "mcp_servers.playwright",
+      "mcp_servers.grep_app"
+    ]);
     expect(screen.runtimeHistory).toEqual({
       events: 0,
       decisions: 0,

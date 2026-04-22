@@ -56,6 +56,7 @@ export function inspectOverviewLines(snapshot: InspectScreenSnapshot): string[] 
     `local config view: ${snapshot.localConfig.summary}`,
     `Codex config view: ${snapshot.codexConfig.summary}`,
     `integrations audit: ${snapshot.integrationsAudit.status} (${snapshot.integrationsAudit.recommendedChangeCount} recommended changes)`,
+    `integrations apply: ${snapshot.integrationsApply.status} (${snapshot.integrationsApply.appliedKeys.length} keys)`,
     `integrations preview: ${snapshot.integrationsPreview.summary}`,
     snapshot.driftItems.length === 0
       ? "export drift view: no current drift detected"
