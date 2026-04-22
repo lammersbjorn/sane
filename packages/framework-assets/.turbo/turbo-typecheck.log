@@ -1,4 +1,0 @@
-
-> @sane/framework-assets@ typecheck /Users/bjorn/Code/labs/betteragents/packages/framework-assets
-> tsc --project tsconfig.json
-

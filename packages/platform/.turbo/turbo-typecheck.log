@@ -1,4 +1,0 @@
-
-> @sane/platform@ typecheck /Users/bjorn/Code/labs/betteragents/packages/platform
-> tsc --project tsconfig.json
-

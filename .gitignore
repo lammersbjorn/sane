@@ -2,6 +2,7 @@
 /.sane
 /node_modules
 /.turbo
+**/.turbo
 /.pnpm-store
 **/node_modules
 **/.vite
