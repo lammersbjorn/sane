@@ -179,6 +179,9 @@ describe("app view", () => {
 
     expect(view.selectedAction.id).toBe("preview_cloudflare_profile");
     expect(view.sectionOverviewLines.join("\n")).toContain("cloudflare profile: missing");
+    expect(view.sectionOverviewLines.join("\n")).toContain("explorer: gpt-5.4-mini/low");
+    expect(view.sectionOverviewLines.join("\n")).toContain("execution: gpt-5.3-codex/medium");
+    expect(view.sectionOverviewLines.join("\n")).toContain("realtime: gpt-5.3-codex-spark/low");
     expect(view.selectedHelpLines.join("\n")).toContain("audit: missing");
     expect(view.selectedHelpLines.join("\n")).toContain("apply readiness: ready (1 keys)");
     expect(view.selectedHelpLines.join("\n")).toContain(
@@ -197,6 +200,9 @@ describe("app view", () => {
 
     expect(view.selectedAction.id).toBe("apply_opencode_profile");
     expect(view.sectionOverviewLines.join("\n")).toContain("opencode profile: missing");
+    expect(view.sectionOverviewLines.join("\n")).toContain("explorer: gpt-5.4-mini/low");
+    expect(view.sectionOverviewLines.join("\n")).toContain("execution: gpt-5.3-codex/medium");
+    expect(view.sectionOverviewLines.join("\n")).toContain("realtime: gpt-5.3-codex-spark/low");
     expect(view.selectedHelpLines.join("\n")).toContain("audit: missing");
     expect(view.selectedHelpLines.join("\n")).toContain("apply readiness: ready (1 keys)");
     expect(view.selectedHelpLines.join("\n")).toContain(

@@ -2,10 +2,15 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 
 import {
   createRecommendedLocalConfig,
+  createRecommendedModelRoutingPresets,
+  createRecommendedSubagentRoutingPresets,
   detectCodexEnvironment,
   enabledPackNames,
   stringifyLocalConfig,
   type LocalConfig,
+  type ModelPreset,
+  type ModelRoutingPresets,
+  type SubagentRoutingPresets,
   type TelemetryLevel
 } from "@sane/config";
 import {
@@ -23,6 +28,8 @@ import { inspectSavedLocalConfig, loadOrRecommendedLocalConfig } from "./local-c
 export interface PreferencesSnapshot {
   source: "local" | "recommended";
   models: ReturnType<typeof createRecommendedLocalConfig>["models"];
+  derivedRouting: Pick<ModelRoutingPresets, "execution" | "realtime">;
+  subagents: Pick<SubagentRoutingPresets, "explorer" | "implementation" | "realtime">;
   telemetry: ReturnType<typeof createRecommendedLocalConfig>["privacy"]["telemetry"];
   enabledPacks: string[];
 }
@@ -140,9 +147,21 @@ export function inspectPreferencesSnapshot(
   codexPaths: CodexPaths
 ): PreferencesSnapshot {
   const snapshot = inspectEditablePreferencesConfig(paths, codexPaths);
+  const environment = detectCodexEnvironment(codexPaths.modelsCacheJson, codexPaths.authJson);
+  const routing = createRecommendedModelRoutingPresets(environment);
+  const subagents = createRecommendedSubagentRoutingPresets(environment);
   return {
     source: snapshot.source,
     models: snapshot.current.models,
+    derivedRouting: {
+      execution: routing.execution,
+      realtime: routing.realtime
+    },
+    subagents: {
+      explorer: subagents.explorer,
+      implementation: subagents.implementation,
+      realtime: subagents.realtime
+    },
     telemetry: snapshot.current.privacy.telemetry,
     enabledPacks: enabledPackNames(snapshot.current.packs)
   };
@@ -179,7 +198,7 @@ function configDetails(config: LocalConfig): string[] {
     `coordinator: ${config.models.coordinator.model} (${config.models.coordinator.reasoningEffort})`,
     `sidecar: ${config.models.sidecar.model} (${config.models.sidecar.reasoningEffort})`,
     `verifier: ${config.models.verifier.model} (${config.models.verifier.reasoningEffort})`,
-    `derived classes: execution and realtime iteration are resolved from detected model availability`,
+    `derived routing: inspect Preferences for explorer, execution, and realtime defaults from detected model availability`,
     `telemetry: ${config.privacy.telemetry}`,
     `packs: ${enabledPackNames(config.packs).join(", ")}`
   ];

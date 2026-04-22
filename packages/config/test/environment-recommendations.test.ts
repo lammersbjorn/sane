@@ -8,6 +8,7 @@ import {
   createDefaultLocalConfig,
   createRecommendedLocalConfig,
   createRecommendedModelRoutingPresets,
+  createRecommendedSubagentRoutingPresets,
   createRecommendedSubagentPreset,
   detectAvailableModelsFromJson,
   detectCodexEnvironment,
@@ -117,6 +118,56 @@ describe('environment-aware recommendations', () => {
     expect(routing.coordinator).toEqual({
       model: 'gpt-5.4',
       reasoningEffort: 'high',
+    });
+  });
+
+  it('derives task-shaped subagent presets from the same environment matrix', () => {
+    const environment: CodexEnvironment = {
+      availableModels: [
+        {
+          slug: 'gpt-5.4',
+          reasoningEfforts: ['medium', 'high', 'xhigh'],
+        },
+        {
+          slug: 'gpt-5.4-mini',
+          reasoningEfforts: ['low', 'medium'],
+        },
+        {
+          slug: 'gpt-5.3-codex',
+          reasoningEfforts: ['medium', 'high'],
+        },
+        {
+          slug: 'gpt-5.3-codex-spark',
+          reasoningEfforts: ['low', 'medium'],
+        },
+      ],
+    };
+
+    expect(createRecommendedSubagentPreset(environment, 'implementation')).toEqual({
+      model: 'gpt-5.3-codex',
+      reasoningEffort: 'medium',
+    });
+    expect(createRecommendedSubagentPreset(environment, 'realtime')).toEqual({
+      model: 'gpt-5.3-codex-spark',
+      reasoningEffort: 'low',
+    });
+    expect(createRecommendedSubagentRoutingPresets(environment)).toEqual({
+      explorer: {
+        model: 'gpt-5.4-mini',
+        reasoningEffort: 'low',
+      },
+      implementation: {
+        model: 'gpt-5.3-codex',
+        reasoningEffort: 'medium',
+      },
+      verifier: {
+        model: 'gpt-5.4',
+        reasoningEffort: 'high',
+      },
+      realtime: {
+        model: 'gpt-5.3-codex-spark',
+        reasoningEffort: 'low',
+      },
     });
   });
 

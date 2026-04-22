@@ -55,6 +55,13 @@ export interface ModelRoutingPresets {
   realtime: ModelPreset;
 }
 
+export interface SubagentRoutingPresets {
+  explorer: ModelPreset;
+  implementation: ModelPreset;
+  verifier: ModelPreset;
+  realtime: ModelPreset;
+}
+
 export type SubagentTaskClass =
   | 'explorer'
   | 'implementation'
@@ -301,6 +308,17 @@ export function createRecommendedLocalConfig(environment: CodexEnvironment): Loc
     models: createRecommendedModelRolePresets(environment),
     privacy: createDefaultPrivacyConfig(),
     packs: createDefaultPackConfig(),
+  };
+}
+
+export function createRecommendedSubagentRoutingPresets(
+  environment: CodexEnvironment,
+): SubagentRoutingPresets {
+  return {
+    explorer: createRecommendedSubagentPreset(environment, 'explorer'),
+    implementation: createRecommendedSubagentPreset(environment, 'implementation'),
+    verifier: createRecommendedSubagentPreset(environment, 'verifier'),
+    realtime: createRecommendedSubagentPreset(environment, 'realtime'),
   };
 }
 

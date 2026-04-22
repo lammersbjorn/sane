@@ -31,6 +31,8 @@ export interface PreferencesScreenModel {
   summary: "Preferences";
   source: ReturnType<typeof inspectPreferencesSnapshot>["source"];
   models: ReturnType<typeof inspectPreferencesSnapshot>["models"];
+  derivedRouting: ReturnType<typeof inspectPreferencesSnapshot>["derivedRouting"];
+  subagents: ReturnType<typeof inspectPreferencesSnapshot>["subagents"];
   telemetry: ReturnType<typeof inspectPreferencesSnapshot>["telemetry"];
   enabledPacks: string[];
   cloudflareAudit: ReturnType<typeof inspectCloudflareProfileAudit>;
@@ -63,6 +65,8 @@ export function loadPreferencesScreen(
     summary: "Preferences",
     source: snapshot.source,
     models: snapshot.models,
+    derivedRouting: snapshot.derivedRouting,
+    subagents: snapshot.subagents,
     telemetry: snapshot.telemetry,
     enabledPacks: snapshot.enabledPacks,
     cloudflareAudit: inspectCloudflareProfileAudit(codexPaths),

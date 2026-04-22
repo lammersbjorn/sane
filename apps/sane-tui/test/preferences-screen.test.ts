@@ -36,6 +36,11 @@ describe("preferences screen model", () => {
     expect(screen.source).toBe("recommended");
     expect(screen.models.coordinator.model).toBe("gpt-5.4");
     expect(screen.models.sidecar.model).toBe("gpt-5.4-mini");
+    expect(screen.derivedRouting.execution.model).toBe("gpt-5.3-codex");
+    expect(screen.derivedRouting.realtime.model).toBe("gpt-5.3-codex-spark");
+    expect(screen.subagents.explorer.model).toBe("gpt-5.4-mini");
+    expect(screen.subagents.implementation.model).toBe("gpt-5.3-codex");
+    expect(screen.subagents.realtime.model).toBe("gpt-5.3-codex-spark");
     expect(screen.telemetry).toBe("off");
     expect(screen.enabledPacks).toEqual(["core"]);
     expect(screen.cloudflareAudit.status).toBe("missing");
@@ -69,6 +74,9 @@ describe("preferences screen model", () => {
 
     expect(screen.source).toBe("local");
     expect(screen.models.coordinator.model).toBe("gpt-5.2-codex");
+    expect(screen.derivedRouting.execution.model).toBe("gpt-5.3-codex");
+    expect(screen.derivedRouting.realtime.model).toBe("gpt-5.3-codex-spark");
+    expect(screen.subagents.explorer.model).toBe("gpt-5.4-mini");
     expect(screen.enabledPacks).toEqual(["core", "caveman"]);
     expect(screen.cloudflarePreview.summary).toBe("cloudflare-profile preview: 1 recommended change(s)");
     expect(screen.opencodePreview.summary).toBe("opencode-profile preview: 1 recommended change(s)");

@@ -58,7 +58,7 @@ describe("preferences control plane", () => {
       "coordinator: gpt-5.4 (high)",
       "sidecar: gpt-5.4-mini (medium)",
       "verifier: gpt-5.4 (high)",
-      "derived classes: execution and realtime iteration are resolved from detected model availability",
+      "derived routing: inspect Preferences for explorer, execution, and realtime defaults from detected model availability",
       "telemetry: off",
       "packs: core, caveman"
     ]);
@@ -114,6 +114,30 @@ describe("preferences control plane", () => {
 
     expect(inspectPreferencesSnapshot(paths, codexPaths)).toMatchObject({
       source: "recommended",
+      derivedRouting: {
+        execution: {
+          model: "gpt-5.3-codex",
+          reasoningEffort: "medium"
+        },
+        realtime: {
+          model: "gpt-5.3-codex-spark",
+          reasoningEffort: "low"
+        }
+      },
+      subagents: {
+        explorer: {
+          model: "gpt-5.4-mini",
+          reasoningEffort: "low"
+        },
+        implementation: {
+          model: "gpt-5.3-codex",
+          reasoningEffort: "medium"
+        },
+        realtime: {
+          model: "gpt-5.3-codex-spark",
+          reasoningEffort: "low"
+        }
+      },
       telemetry: "off",
       enabledPacks: ["core"]
     });
@@ -127,6 +151,25 @@ describe("preferences control plane", () => {
       source: "local",
       telemetry: "off",
       enabledPacks: ["core", "caveman"],
+      derivedRouting: {
+        execution: {
+          model: "gpt-5.3-codex"
+        },
+        realtime: {
+          model: "gpt-5.3-codex-spark"
+        }
+      },
+      subagents: {
+        explorer: {
+          model: "gpt-5.4-mini"
+        },
+        implementation: {
+          model: "gpt-5.3-codex"
+        },
+        realtime: {
+          model: "gpt-5.3-codex-spark"
+        }
+      },
       models: {
         coordinator: {
           model: "gpt-5.2-codex"
