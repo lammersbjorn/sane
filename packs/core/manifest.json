@@ -30,8 +30,8 @@
       "overlayNote": "- caveman pack active: default to terse, token-aware prose when it does not reduce correctness",
       "provenance": {
         "kind": "derived",
-        "note": "Sane-curated adaptation of the Caveman plugin skill for builtin pack use.",
-        "updateStrategy": "manual-curated",
+        "note": "Pinned mirror of the upstream Caveman skill, exported under a Sane-managed name to avoid collisions with user-installed plugin skills.",
+        "updateStrategy": "pinned-manual",
         "upstreams": [
           {
             "name": "caveman",
@@ -45,20 +45,11 @@
       }
     },
     "cavemem": {
-      "skillName": "sane-cavemem",
-      "skillPath": "skills/optional/sane-cavemem.md",
-      "skills": [
-        {
-          "name": "sane-cavemem",
-          "path": "skills/optional/sane-cavemem.md",
-          "taskKinds": ["memory", "handoff", "long-session"]
-        }
-      ],
       "routerNote": "- cavemem pack active: keep durable summaries compact and high-signal during long sessions",
       "overlayNote": "- cavemem pack active: prefer compact durable memory and handoff summaries",
       "provenance": {
         "kind": "derived",
-        "note": "Sane-curated durable-memory pack derived from Cavemem's local-first memory model and README guidance, without mirroring its full MCP/runtime surface.",
+        "note": "Capability-only pack derived from Cavemem's local-first memory model and README guidance. No dedicated skill export until there is an upstream skill worth mirroring.",
         "updateStrategy": "manual-curated",
         "upstreams": [
           {
@@ -73,20 +64,11 @@
       }
     },
     "rtk": {
-      "skillName": "sane-rtk",
-      "skillPath": "skills/optional/sane-rtk.md",
-      "skills": [
-        {
-          "name": "sane-rtk",
-          "path": "skills/optional/sane-rtk.md",
-          "taskKinds": ["shell", "command-execution", "rtk-policy"]
-        }
-      ],
       "routerNote": "- rtk pack active: if RTK policy is present, route shell work through RTK instead of raw shell",
       "overlayNote": "- rtk pack active: when RTK policy exists, prefer RTK-routed shell execution",
       "provenance": {
         "kind": "internal",
-        "note": "Sane-curated workflow pack for RTK-aware shell routing. Provenance stays repo-local for now.",
+        "note": "Capability-only workflow pack for RTK-aware shell routing. No dedicated skill export until there is a concrete upstream skill worth mirroring.",
         "updateStrategy": "manual-curated"
       }
     },
@@ -110,6 +92,10 @@
             {
               "source": "skills/vendor/frontend/impeccable/reference/craft.md",
               "target": "reference/craft.md"
+            },
+            {
+              "source": "skills/vendor/frontend/impeccable/reference/extract.md",
+              "target": "reference/extract.md"
             },
             {
               "source": "skills/vendor/frontend/impeccable/reference/interaction-design.md",
@@ -233,24 +219,10 @@
         "updateStrategy": "pinned-manual"
       },
       "skills/optional/sane-caveman.md": {
-        "repo": "https://github.com/lammersbjorn/sane",
-        "path": "packs/core/skills/optional/sane-caveman.md",
-        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
-        "license": "MIT OR Apache-2.0",
-        "updateStrategy": "pinned-manual"
-      },
-      "skills/optional/sane-cavemem.md": {
-        "repo": "https://github.com/lammersbjorn/sane",
-        "path": "packs/core/skills/optional/sane-cavemem.md",
-        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
-        "license": "MIT OR Apache-2.0",
-        "updateStrategy": "pinned-manual"
-      },
-      "skills/optional/sane-rtk.md": {
-        "repo": "https://github.com/lammersbjorn/sane",
-        "path": "packs/core/skills/optional/sane-rtk.md",
-        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
-        "license": "MIT OR Apache-2.0",
+        "repo": "https://github.com/JuliusBrussee/caveman",
+        "path": "skills/caveman/SKILL.md",
+        "ref": "0.1.0",
+        "license": "MIT",
         "updateStrategy": "pinned-manual"
       },
       "skills/vendor/frontend/taste-skill/SKILL.md": {
@@ -277,6 +249,13 @@
       "skills/vendor/frontend/impeccable/reference/craft.md": {
         "repo": "https://github.com/pbakaus/impeccable",
         "path": "source/skills/impeccable/reference/craft.md",
+        "ref": "00d485659af82982aef0328d0419c49a2716d123",
+        "license": "Apache-2.0",
+        "updateStrategy": "pinned-manual"
+      },
+      "skills/vendor/frontend/impeccable/reference/extract.md": {
+        "repo": "https://github.com/pbakaus/impeccable",
+        "path": "source/skills/impeccable/reference/extract.md",
         "ref": "00d485659af82982aef0328d0419c49a2716d123",
         "license": "Apache-2.0",
         "updateStrategy": "pinned-manual"

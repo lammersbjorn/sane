@@ -88,8 +88,8 @@ describe("full inventory and doctor", () => {
         name: "cavemem",
         inventoryName: "pack-cavemem",
         status: "disabled",
-        skillName: "sane-cavemem",
-        skillNames: ["sane-cavemem"],
+        skillName: null,
+        skillNames: [],
         provenance: expect.objectContaining({
           kind: "derived"
         })
@@ -98,8 +98,8 @@ describe("full inventory and doctor", () => {
         name: "rtk",
         inventoryName: "pack-rtk",
         status: "disabled",
-        skillName: "sane-rtk",
-        skillNames: ["sane-rtk"],
+        skillName: null,
+        skillNames: [],
         provenance: expect.objectContaining({
           kind: "internal"
         })

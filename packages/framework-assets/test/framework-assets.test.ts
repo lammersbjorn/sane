@@ -174,13 +174,13 @@ describe("framework asset parity", () => {
         "- rtk pack active: if RTK policy is present, route shell work through RTK instead of raw shell"
       ].join("\n"),
       ENABLED_PACK_SKILL_SELECTIONS: [
-        "- caveman task picks: communication, brevity, token-efficiency -> sane-caveman",
-        "- rtk task picks: shell, command-execution, rtk-policy -> sane-rtk"
+        "- caveman task picks: communication, brevity, token-efficiency -> sane-caveman"
       ].join("\n")
     });
 
     expect(body).toBe(expected);
     expect(body).toContain("custom agents");
+    expect(body).toContain("Prefer task-specific skills first");
     expect(body).not.toContain("{{");
   });
 
@@ -211,7 +211,6 @@ describe("framework asset parity", () => {
         "- frontend-craft pack active: for frontend work, pick the real task-specific frontend skills (`design-taste-frontend`, `impeccable`) instead of vague pack wrappers"
       ].join("\n"),
       ENABLED_PACK_SKILL_SELECTIONS: [
-        "- cavemem task picks: memory, handoff, long-session -> sane-cavemem",
         "- frontend-craft task picks: implementation, restyle, frontend-build -> design-taste-frontend",
         "- frontend-craft task picks: review, audit, critique, polish -> impeccable"
       ].join("\n")
@@ -263,6 +262,10 @@ describe("framework asset parity", () => {
             content: readCoreAsset("skills/vendor/frontend/impeccable/reference/craft.md")
           },
           {
+            path: "reference/extract.md",
+            content: readCoreAsset("skills/vendor/frontend/impeccable/reference/extract.md")
+          },
+          {
             path: "reference/interaction-design.md",
             content: readCoreAsset("skills/vendor/frontend/impeccable/reference/interaction-design.md")
           },
@@ -299,13 +302,15 @@ describe("framework asset parity", () => {
     expect(frontendReview).toContain("Context Gathering Protocol");
     expect(frontendReview).toContain("Run impeccable teach");
     expect(frontendReview).toContain("Consult [typography reference](reference/typography.md)");
+    expect(frontendReview).toContain('argument-hint: "[craft|teach|extract]"');
+    expect(frontendReview).toContain("## Extract Mode");
   });
 
   it("exposes pinned provenance seam for optional packs", () => {
     expect(optionalPackProvenance("caveman")).toEqual({
       kind: "derived",
-      note: "Sane-curated adaptation of the Caveman plugin skill for builtin pack use.",
-      updateStrategy: "manual-curated",
+      note: "Pinned mirror of the upstream Caveman skill, exported under a Sane-managed name to avoid collisions with user-installed plugin skills.",
+      updateStrategy: "pinned-manual",
       upstreams: [
         {
           name: "caveman",
@@ -342,7 +347,7 @@ describe("framework asset parity", () => {
     });
     expect(optionalPackProvenance("cavemem")).toEqual({
       kind: "derived",
-      note: "Sane-curated durable-memory pack derived from Cavemem's local-first memory model and README guidance, without mirroring its full MCP/runtime surface.",
+      note: "Capability-only pack derived from Cavemem's local-first memory model and README guidance. No dedicated skill export until there is an upstream skill worth mirroring.",
       updateStrategy: "manual-curated",
       upstreams: [
         {
@@ -357,7 +362,7 @@ describe("framework asset parity", () => {
     });
     expect(optionalPackProvenance("rtk")).toEqual({
       kind: "internal",
-      note: "Sane-curated workflow pack for RTK-aware shell routing. Provenance stays repo-local for now.",
+      note: "Capability-only workflow pack for RTK-aware shell routing. No dedicated skill export until there is a concrete upstream skill worth mirroring.",
       updateStrategy: "manual-curated"
     });
     expect(optionalPackProvenance("missing-pack")).toBeUndefined();

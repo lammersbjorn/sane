@@ -172,7 +172,7 @@ describe("codex-native skills and agents", () => {
     expect(uninstallUser.summary).toBe("uninstall user-skills: removed sane-router");
     expect(uninstallRepo.summary).toBe("uninstall repo-skills: removed sane-router");
     expect(uninstallUser.pathsTouched.some((path) => path.endsWith("/sane-router"))).toBe(true);
-    expect(uninstallRepo.pathsTouched.some((path) => path.endsWith("/sane-cavemem"))).toBe(true);
+    expect(uninstallRepo.pathsTouched.some((path) => path.endsWith("/sane-router"))).toBe(true);
   });
 
   it("uninstalls every generated skill directory for a multi-skill pack", () => {

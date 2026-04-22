@@ -56,11 +56,11 @@ describe("inspect screen model", () => {
             name: "cavemem",
             inventoryName: "pack-cavemem",
             status: "disabled",
-            skillName: "sane-cavemem",
-            skillNames: ["sane-cavemem"],
+            skillName: null,
+            skillNames: [],
             provenance: {
               kind: "derived",
-              note: "cavemem-derived",
+              note: "cavemem-derived capability-only pack",
               updateStrategy: "manual-curated",
               upstreams: [{ name: "cavemem", url: "https://github.com/JuliusBrussee/cavemem", ref: "v0.1.3" }]
             }
@@ -69,8 +69,8 @@ describe("inspect screen model", () => {
             name: "rtk",
             inventoryName: "pack-rtk",
             status: "disabled",
-            skillName: "sane-rtk",
-            skillNames: ["sane-rtk"],
+            skillName: null,
+            skillNames: [],
             provenance: { kind: "internal", note: "local", updateStrategy: "manual-curated" }
           },
           {
@@ -137,7 +137,7 @@ describe("inspect screen model", () => {
       "hooks: invalid (Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows.)"
     );
     expect(lines).toContain(
-      "optional pack provenance: caveman configured (sane-caveman; derived from caveman); cavemem disabled (sane-cavemem; derived from cavemem); rtk disabled (sane-rtk; internal); frontend-craft disabled (design-taste-frontend + impeccable; derived from taste-skill + impeccable)"
+      "optional pack provenance: caveman configured (sane-caveman; derived from caveman); cavemem disabled (no skills; derived from cavemem); rtk disabled (no skills; internal); frontend-craft disabled (design-taste-frontend + impeccable; derived from taste-skill + impeccable)"
     );
   });
 
@@ -205,7 +205,7 @@ describe("inspect screen model", () => {
       expect.objectContaining({
         name: "cavemem",
         status: "disabled",
-        skillNames: ["sane-cavemem"],
+        skillNames: [],
         provenance: expect.objectContaining({
           kind: "derived"
         })
@@ -213,7 +213,7 @@ describe("inspect screen model", () => {
       expect.objectContaining({
         name: "rtk",
         status: "disabled",
-        skillNames: ["sane-rtk"],
+        skillNames: [],
         provenance: expect.objectContaining({
           kind: "internal"
         })
@@ -245,7 +245,7 @@ describe("inspect screen model", () => {
     expect(screen.overviewLines.join("\n")).toContain("runtime history (read-only local visibility):");
     expect(screen.overviewLines.join("\n")).toContain("latest policy snapshot: missing (current-run-derived read-only view)");
     expect(screen.overviewLines.join("\n")).toContain(
-      "optional pack provenance: caveman configured (sane-caveman; derived from caveman); cavemem disabled (sane-cavemem; derived from cavemem); rtk disabled (sane-rtk; internal); frontend-craft disabled (design-taste-frontend + impeccable; derived from taste-skill + impeccable)"
+      "optional pack provenance: caveman configured (sane-caveman; derived from caveman); cavemem disabled (no skills; derived from cavemem); rtk disabled (no skills; internal); frontend-craft disabled (design-taste-frontend + impeccable; derived from taste-skill + impeccable)"
     );
   });
 

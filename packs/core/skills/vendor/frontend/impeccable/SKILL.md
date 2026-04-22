@@ -1,8 +1,8 @@
 ---
 name: impeccable
-description: Create distinctive, production-grade frontend interfaces with high design quality. Generates creative, polished code that avoids generic AI aesthetics. Use when the user asks to build web components, pages, artifacts, posters, or applications, or when any design skill requires project context. Call with 'craft' to run the full shape-then-build flow, or 'teach' for design context setup.
+description: "Create distinctive, production-grade frontend interfaces with high design quality. Generates creative, polished code that avoids generic AI aesthetics. Use when the user asks to build web components, pages, artifacts, posters, or applications, or when any design skill requires project context. Call with 'craft' for shape-then-build, 'teach' for design context setup, or 'extract' to pull reusable components and tokens into the design system."
 user-invocable: true
-argument-hint: "[craft|teach]"
+argument-hint: "[craft|teach|extract]"
 license: Apache 2.0. Based on Anthropic's frontend-design skill. See NOTICE.md for attribution.
 ---
 
@@ -338,6 +338,12 @@ Synthesize your findings and the user's answers into a `## Design Context` secti
 
 Write this section to `.impeccable.md` in the project root. If the file already exists, update the Design Context section in place.
 
-Then ask the user directly to clarify what you cannot infer. whether they'd also like the Design Context appended to .github/copilot-instructions.md. If yes, append or update the section there as well.
+Then ask the user whether they'd also like the Design Context appended to .github/copilot-instructions.md. If yes, append or update the section there as well.
 
 Confirm completion and summarize the key design principles that will now guide all future work.
+
+---
+
+## Extract Mode
+
+If this skill is invoked with the argument "extract" (e.g., `/impeccable extract [target]`), follow the [extract flow](reference/extract.md). Pass any additional arguments as the extraction target.

@@ -59,6 +59,15 @@ describe("overlay models", () => {
     if (shell.activeEditor?.kind !== "packs") {
       throw new Error("expected packs editor state");
     }
+    shell.activeEditor.selected = 1;
+    overlay = loadOverlayModel(shell);
+    expect(overlay?.kind).toBe("packs");
+    if (!overlay || overlay.kind !== "packs") {
+      throw new Error("expected packs overlay");
+    }
+    expect(overlay.detailsLines.some((line: string) => line.includes("selected pack: cavemem"))).toBe(true);
+    expect(overlay.detailsLines).toContain("exports: no dedicated skills");
+
     shell.activeEditor.selected = 3;
     overlay = loadOverlayModel(shell);
     expect(overlay?.kind).toBe("packs");

@@ -5,8 +5,6 @@ import { fileURLToPath } from "node:url";
 export const NAME = "Sane";
 export const SANE_ROUTER_SKILL_NAME = "sane-router";
 export const SANE_CAVEMAN_PACK_SKILL_NAME = "sane-caveman";
-export const SANE_CAVEMEM_PACK_SKILL_NAME = "sane-cavemem";
-export const SANE_RTK_PACK_SKILL_NAME = "sane-rtk";
 export const SANE_FRONTEND_CRAFT_PACK_SKILL_NAME = "design-taste-frontend";
 export const SANE_FRONTEND_REVIEW_PACK_SKILL_NAME = "impeccable";
 export const SANE_AGENT_NAME = "sane-agent";

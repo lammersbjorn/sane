@@ -114,7 +114,7 @@ It exists so `Sane` can answer practical questions like:
 | Better starting defaults | Task-shaped routing classes (`explorer` / `implementation` / `verifier` / `realtime`) with documented-vs-runtime support kept separate. |
 | Safer changes | Preview, backup, apply, restore, uninstall, and local telemetry reset. |
 | Runtime handoff truth | Read-only Inspect view for `current-run`, `summary`, and `brief` state, plus latest current-run-derived policy-preview snapshot visibility. |
-| Optional guidance packs | `core`, `caveman`, `cavemem`, `rtk`, and `frontend-craft`. |
+| Optional guidance packs | `core`, `caveman`, `cavemem`, `rtk`, and `frontend-craft`. Some export concrete skills; some are capability-only. |
 | Useful integrations | Separate recommended integrations profile for `Context7`, `Playwright`, and `grep.app`, with structured audit details shown before apply. |
 | Provider-specific add-ons | Separate opt-in Cloudflare profile plus separate opt-in Opencode compatibility profile. |
 | Shared or personal installs | Mostly user-level exports, plus explicit repo-local installs when needed, plus optional OpenCode-agent compatibility exports outside the default bundle. |

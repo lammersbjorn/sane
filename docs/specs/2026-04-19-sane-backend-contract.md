@@ -58,8 +58,9 @@ Current managed export behavior also depends on local config:
 - exported `sane-router` skill content can reflect enabled guidance packs and current routing defaults
 - exported global `AGENTS.md` overlay can reflect enabled guidance packs and current routing defaults
 - status/doctor should flag those assets as invalid when current exports drift from enabled guidance-pack or routing config
-- enabled optional packs can materialize as additional managed user skills during `export_user_skills`
-- enabled optional packs can materialize as additional managed repo skills during `export_repo_skills`
+- enabled optional packs may materialize as additional managed user skills during `export_user_skills`
+- enabled optional packs may materialize as additional managed repo skills during `export_repo_skills`
+- capability-only packs may change router/overlay output without exporting any dedicated skill directory
 - repo-local AGENTS overlay export reuses the same guidance body as the global overlay, but with repo-scoped markers and opt-in behavior
 - built-in pack manifests may also carry read-only provenance metadata for bundled upstream-derived skills or MCP references
 - that provenance is inspectable metadata only, not a live fetch/update contract
