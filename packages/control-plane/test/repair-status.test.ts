@@ -45,6 +45,11 @@ describe("repair status snapshot", () => {
         eventsPresent: false,
         queuePresent: false
       },
+      backups: {
+        restoreAvailable: false,
+        backupCount: 0,
+        latestBackupPath: null
+      },
       actionStatus: expect.objectContaining({
         install_runtime: { kind: "missing", label: "missing" },
         restore_codex_config: { kind: "missing", label: "missing" },
@@ -81,6 +86,11 @@ describe("repair status snapshot", () => {
         summaryPresent: false,
         eventsPresent: false,
         queuePresent: false
+      },
+      backups: {
+        restoreAvailable: true,
+        backupCount: 1,
+        latestBackupPath: expect.stringContaining(paths.codexConfigBackupsDir)
       },
       actionStatus: expect.objectContaining({
         backup_codex_config: { kind: "installed", label: "installed" },

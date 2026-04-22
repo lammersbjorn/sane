@@ -92,6 +92,8 @@ export interface OpencodeProfileApplyResult {
 
 export interface CodexConfigBackupSnapshot {
   restoreAvailable: boolean;
+  backupCount: number;
+  latestBackupPath: string | null;
 }
 
 export function showCodexConfig(codexPaths: CodexPaths): OperationResult {
@@ -649,8 +651,11 @@ export function applyOpencodeProfile(paths: ProjectPaths, codexPaths: CodexPaths
 }
 
 export function inspectCodexConfigBackupSnapshot(paths: ProjectPaths): CodexConfigBackupSnapshot {
+  const backups = listCodexConfigBackups(paths);
   return {
-    restoreAvailable: existsSync(paths.codexConfigBackupsDir)
+    restoreAvailable: backups.length > 0,
+    backupCount: backups.length,
+    latestBackupPath: backups.at(-1) ?? null
   };
 }
 
@@ -748,15 +753,18 @@ function writeCodexConfigBackup(paths: ProjectPaths, codexPaths: CodexPaths): st
 }
 
 function latestCodexConfigBackup(paths: ProjectPaths): string | null {
+  return listCodexConfigBackups(paths).at(-1) ?? null;
+}
+
+function listCodexConfigBackups(paths: ProjectPaths): string[] {
   if (!existsSync(paths.codexConfigBackupsDir)) {
-    return null;
+    return [];
   }
 
-  const backups = readdirSync(paths.codexConfigBackupsDir)
-    .map((name) => join(paths.codexConfigBackupsDir, name))
+  return readdirSync(paths.codexConfigBackupsDir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && /^config-\d+\.toml$/.test(entry.name))
+    .map((entry) => join(paths.codexConfigBackupsDir, entry.name))
     .sort();
-
-  return backups.at(-1) ?? null;
 }
 
 function applyCoreCodexProfileToValue(config: TomlTable, recommended: LocalConfig): void {

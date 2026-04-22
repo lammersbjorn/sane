@@ -38,6 +38,7 @@ export interface RepairActionStatus {
 export interface RepairStatusSnapshot {
   installBundle: ReturnType<typeof inspectStatusBundle>["primary"]["installBundle"];
   telemetry: ReturnType<typeof inspectTelemetrySnapshot>;
+  backups: ReturnType<typeof inspectCodexConfigBackupSnapshot>;
   actionStatus: Record<RepairActionStatusId, RepairActionStatus>;
 }
 
@@ -52,6 +53,7 @@ export function inspectRepairStatus(
   return {
     installBundle: statusBundle.primary.installBundle,
     telemetry,
+    backups,
     actionStatus: {
       install_runtime: statusFor(statusBundle.inventory, "runtime"),
       backup_codex_config: statusFor(statusBundle.inventory, "codex-config"),

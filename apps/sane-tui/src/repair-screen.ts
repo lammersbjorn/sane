@@ -29,6 +29,7 @@ export interface RepairScreenModel {
   summary: "Repair";
   installBundle: ReturnType<typeof inspectRepairStatus>["installBundle"];
   telemetry: ReturnType<typeof inspectRepairStatus>["telemetry"];
+  backups: ReturnType<typeof inspectRepairStatus>["backups"];
   actions: RepairScreenAction[];
   handlers: {
     repairRuntime: () => ReturnType<typeof installRuntime>;
@@ -59,6 +60,7 @@ export function loadRepairScreen(paths: ProjectPaths, codexPaths: CodexPaths): R
     summary: "Repair",
     installBundle: status.installBundle,
     telemetry: status.telemetry,
+    backups: status.backups,
     actions,
     handlers: {
       repairRuntime: () => executeOperation(paths, () => installRuntime(paths, codexPaths)),

@@ -490,6 +490,7 @@ describe("app view", () => {
     const view = loadAppView(shell);
 
     expect(view.sectionOverviewLines.join("\n")).toContain("restore backup:");
+    expect(view.sectionOverviewLines.join("\n")).toContain("latest backup:");
     expect(view.sectionOverviewLines.join("\n")).toContain("local telemetry data:");
     expect(view.sectionOverviewLines.join("\n")).toContain("telemetry files:");
     expect(view.sectionOverviewLines.join("\n")).toContain("removable installs:");

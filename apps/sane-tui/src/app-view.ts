@@ -167,6 +167,7 @@ function sectionOverviewLines(
         ...dashboard.activeSection.description,
         "",
         `restore backup: ${repair.actions.find((action) => action.id === "restore_codex_config")?.status ?? "missing"}`,
+        `latest backup: ${repair.backups.latestBackupPath ?? "none"} (${repair.backups.backupCount} total)`,
         `local telemetry data: ${presentFlag(repair.telemetry.dirPresent)}`,
         `telemetry files: summary ${presentFlag(repair.telemetry.summaryPresent)}, events ${presentFlag(repair.telemetry.eventsPresent)}, queue ${presentFlag(repair.telemetry.queuePresent)}`,
         removable.length === 0

@@ -106,6 +106,7 @@ Implemented:
 - runtime summary/inspect now surface bounded latest `.sane` history previews for the most recent `event`, `decision`, and `artifact`, plus the underlying `events` / `decisions` / `artifacts` counts, through canonical layered-state bundle `historyCounts`, without adding a new log-browsing surface
 - startup last-event reads now go through control-plane history helper instead of direct TUI peek logic, keeping history access on one typed bounded path
 - preferences, telemetry presence, and Codex backup-availability reads now go through control-plane snapshot helpers instead of ad hoc TUI file checks
+- Codex backup snapshot truth now uses actual backup-file presence, count, and latest path instead of treating backup-directory existence as restore truth
 - task-shaped subagent presets now target `explorer`, `implementation`, `verifier`, and `realtime` classes; class candidate ordering remains heuristic and runtime-gated, not benchmark certainty
 - task-shaped routing classes are now wired through config + policy preview surfaces (with legacy role-default compatibility kept only where still required)
 - Sane now treats documented model availability and spawnable-here runtime support as separate concerns
@@ -171,6 +172,7 @@ pnpm check
 - [x] Surface install-runtime rewrite reporting for config/current-run/summary
 - [x] Surface doctor backup history for config/summary canonical files
 - [x] Align docs/TODO wording on task-shaped subagent presets (`explorer` / `implementation` / `verifier` / `realtime`) with explicit non-benchmark language
+- [ ] Evaluate and, if justified, add optional Codex statusline/status-bar support inspired by `openagentsbtw`, only as an explicit opt-in additive surface with inspect/remove coverage
 
 ## Research Gates
 
@@ -214,6 +216,10 @@ pnpm check
 
 - [ ] Exact post-`v1` built-in pack expansion/contraction policy (current built-in set is fixed today)
 - [ ] Exact long-term `Opencode` compatibility scope beyond the current optional `opensrc` profile plus optional OpenCode-agent export
+- [ ] Exact scope for optional Codex statusline/status-bar support:
+  - config-only vs managed helper script/hook surface
+  - what signals it shows
+  - how install/inspect/remove/rollback should work without turning `Sane` into a wrapper-first flow
 - [ ] Exact explicit preset coverage for `Kimi K2.6` and other newly popular models vs generic fallback-by-capability handling:
   - source quality acceptable
   - runtime/auth support on the actual Sane surface

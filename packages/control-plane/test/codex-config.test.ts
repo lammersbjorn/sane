@@ -208,9 +208,57 @@ describe("codex config control plane", () => {
       "integrations-profile preview: 3 recommended change(s)"
     );
     expect(inspectCodexConfigBackupSnapshot(projectPaths)).toEqual({
-      restoreAvailable: true
+      restoreAvailable: true,
+      backupCount: 1,
+      latestBackupPath: expect.stringContaining(projectPaths.codexConfigBackupsDir)
     });
     expect(restore.summary).toContain("codex-config restore: restored from");
+    expect(body).toContain('model = "gpt-5.2-codex"');
+    expect(body).toContain('model_reasoning_effort = "medium"');
+  });
+
+  it("ignores stray backup-dir entries when reporting and restoring backups", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+    writeFileSync(
+      codexPaths.configToml,
+      [
+        'model = "gpt-5.2-codex"',
+        'model_reasoning_effort = "medium"',
+        ""
+      ].join("\n"),
+      "utf8"
+    );
+
+    backupCodexConfig(projectPaths, codexPaths);
+    mkdirSync(projectPaths.codexConfigBackupsDir, { recursive: true });
+    writeFileSync(join(projectPaths.codexConfigBackupsDir, "notes.txt"), "ignore me\n", "utf8");
+    mkdirSync(join(projectPaths.codexConfigBackupsDir, "config-9999999999.toml"));
+    writeFileSync(
+      codexPaths.configToml,
+      [
+        'model = "gpt-5.4"',
+        'model_reasoning_effort = "high"',
+        ""
+      ].join("\n"),
+      "utf8"
+    );
+
+    const snapshot = inspectCodexConfigBackupSnapshot(projectPaths);
+    const restore = restoreCodexConfig(projectPaths, codexPaths);
+    const body = readFileSync(codexPaths.configToml, "utf8");
+
+    expect(snapshot).toEqual({
+      restoreAvailable: true,
+      backupCount: 1,
+      latestBackupPath: expect.stringContaining(projectPaths.codexConfigBackupsDir)
+    });
+    expect(restore.summary).toContain("codex-config restore: restored from");
+    expect(restore.summary).not.toContain("notes.txt");
     expect(body).toContain('model = "gpt-5.2-codex"');
     expect(body).toContain('model_reasoning_effort = "medium"');
   });

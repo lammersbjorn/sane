@@ -43,6 +43,11 @@ describe("repair screen model", () => {
       eventsPresent: false,
       queuePresent: false
     });
+    expect(screen.backups).toEqual({
+      restoreAvailable: false,
+      backupCount: 0,
+      latestBackupPath: null
+    });
     expect(screen.actions.map((action) => action.id)).toEqual([
       "install_runtime",
       "backup_codex_config",
@@ -101,6 +106,11 @@ describe("repair screen model", () => {
       summaryPresent: false,
       eventsPresent: false,
       queuePresent: false
+    });
+    expect(screen.backups).toEqual({
+      restoreAvailable: true,
+      backupCount: 1,
+      latestBackupPath: expect.stringContaining(paths.codexConfigBackupsDir)
     });
     expect(screen.actions.find((action) => action.id === "backup_codex_config")?.status).toBe(
       "installed"

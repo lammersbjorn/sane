@@ -153,6 +153,7 @@ Content:
 - reinstall / repair runtime
 - backup Codex config
 - restore Codex config
+- show latest local Codex backup path/count read-only so rollback truth is explicit before restore
 - explicit local telemetry reset
 - uninstall selected managed installs
 - uninstall all
