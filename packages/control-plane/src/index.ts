@@ -45,6 +45,7 @@ import {
   runtimeHistoryPaths,
   runtimeStatePaths
 } from "./runtime-state.js";
+import { managedStatusKindFromInventory, presentManagedStatus } from "./status-presenter.js";
 
 interface InstallCanonicalRewrite {
   name: "config" | "current-run" | "summary";
@@ -204,7 +205,7 @@ export function inspectSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): In
     driftItems: statusBundle.driftItems.map((item) => ({
       name: item.name,
       path: item.path,
-      status: item.status.displayString(),
+      status: presentManagedStatus(managedStatusKindFromInventory(item.status)).label,
       repairHint: item.repairHint
     })),
     policyPreview: previewPolicyForCurrentRun(paths, runtimeState.current)
@@ -447,7 +448,9 @@ function doctorStatus(
       }
     | undefined
 ): string {
-  return item?.status.displayString() ?? "unknown";
+  return item
+    ? presentManagedStatus(managedStatusKindFromInventory(item.status)).label
+    : "unknown";
 }
 
 function latestPolicyPreviewInputLines(preview: LatestPolicyPreviewSnapshot): string[] {

@@ -17,6 +17,7 @@ import { inspectCodexConfigInventory } from "./codex-config.js";
 import { inspectCodexSkillsAndAgents } from "./codex-native.js";
 import { inspectCustomAgentsInventory, inspectHooksInventory } from "./hooks-custom-agents.js";
 import { inspectSavedLocalConfig } from "./local-config.js";
+import { managedStatusKindFromInventory, presentManagedStatus } from "./status-presenter.js";
 import { inspectOpencodeAgentsInventory } from "./opencode-native.js";
 import { showRuntimeStatus } from "./index.js";
 
@@ -517,11 +518,11 @@ function doctorStatus(item: InventoryItem): string {
     case "codex-config":
       return item.status === InventoryStatus.Installed
         ? "installed"
-        : item.status === InventoryStatus.Missing
+      : item.status === InventoryStatus.Missing
           ? "missing (run `apply codex-profile`)"
-          : item.status === InventoryStatus.Invalid
+        : item.status === InventoryStatus.Invalid
             ? "invalid (repair ~/.codex/config.toml)"
-            : item.status.displayString();
+            : presentManagedStatus(managedStatusKindFromInventory(item.status)).label;
     case "global-agents":
       return item.status === InventoryStatus.PresentWithoutSaneBlock
         ? "present without Sane block"
@@ -529,11 +530,11 @@ function doctorStatus(item: InventoryItem): string {
     case "hooks":
       return item.status === InventoryStatus.Installed
         ? "installed"
-        : item.status === InventoryStatus.Missing
+      : item.status === InventoryStatus.Missing
           ? "missing (run `export hooks`)"
-          : item.status === InventoryStatus.Invalid
+        : item.status === InventoryStatus.Invalid
             ? "invalid (repair ~/.codex/hooks.json)"
-            : item.status.displayString();
+            : presentManagedStatus(managedStatusKindFromInventory(item.status)).label;
     case "custom-agents":
       return codexDoctorStatus(item, "export custom-agents");
     default:
@@ -548,7 +549,7 @@ function codexDoctorStatus(item: InventoryItem, exportCommand: string): string {
       ? `missing (run \`${exportCommand}\`)`
       : item.status === InventoryStatus.Invalid
         ? `invalid (rerun \`${exportCommand}\`)`
-        : item.status.displayString();
+        : presentManagedStatus(managedStatusKindFromInventory(item.status)).label;
 }
 
 function collectPathsTouched(inventory: InventoryItem[]): string[] {
