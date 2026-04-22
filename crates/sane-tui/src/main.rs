@@ -28,10 +28,7 @@ use sane_core::{
     sane_optional_pack_skills, sane_reviewer_agent, sane_router_skill,
 };
 use sane_platform::{CodexPaths, ProjectPaths, detect_platform};
-use sane_policy::{
-    Intent, Level, Obligation, Parallelism, PolicyInput, RunState, TaskShape, evaluate,
-    recommend_roles,
-};
+use sane_policy::{PolicyInput, canonical_scenarios, explain};
 use sane_state::{
     ArtifactRecord, CanonicalRewriteResult, CanonicalStateFormat, CanonicalStatePaths,
     CurrentRunState, DecisionRecord, EventRecord, LayeredStateBundle, RunSummary,
@@ -2409,9 +2406,9 @@ fn operation_kind_label(kind: OperationKind) -> &'static str {
 
 fn preview_policy(paths: &ProjectPaths) -> Result<OperationResult, String> {
     let config = LocalConfig::read_from_path(&paths.config_path).unwrap_or_default();
-    let details = policy_preview_scenarios()
-        .into_iter()
-        .map(|(label, input)| render_policy_preview_line(&config, label, input))
+    let details = canonical_scenarios()
+        .iter()
+        .map(|scenario| render_policy_preview_line(&config, scenario.id, scenario.input))
         .collect::<Vec<_>>();
 
     Ok(OperationResult {
@@ -2424,98 +2421,19 @@ fn preview_policy(paths: &ProjectPaths) -> Result<OperationResult, String> {
     })
 }
 
-fn policy_preview_scenarios() -> [(&'static str, PolicyInput); 5] {
-    [
-        (
-            "simple-question",
-            PolicyInput {
-                intent: Intent::Question,
-                task_shape: TaskShape::Trivial,
-                risk: Level::Low,
-                ambiguity: Level::Low,
-                parallelism: Parallelism::None,
-                context_pressure: Level::Low,
-                run_state: RunState::Exploring,
-            },
-        ),
-        (
-            "local-edit",
-            PolicyInput {
-                intent: Intent::Edit,
-                task_shape: TaskShape::Local,
-                risk: Level::Low,
-                ambiguity: Level::Low,
-                parallelism: Parallelism::None,
-                context_pressure: Level::Low,
-                run_state: RunState::Executing,
-            },
-        ),
-        (
-            "unknown-bug",
-            PolicyInput {
-                intent: Intent::Debug,
-                task_shape: TaskShape::Local,
-                risk: Level::Medium,
-                ambiguity: Level::Medium,
-                parallelism: Parallelism::None,
-                context_pressure: Level::Low,
-                run_state: RunState::Executing,
-            },
-        ),
-        (
-            "multi-file-feature",
-            PolicyInput {
-                intent: Intent::Edit,
-                task_shape: TaskShape::Architectural,
-                risk: Level::High,
-                ambiguity: Level::Medium,
-                parallelism: Parallelism::Clear,
-                context_pressure: Level::Medium,
-                run_state: RunState::Executing,
-            },
-        ),
-        (
-            "blocked-long-run",
-            PolicyInput {
-                intent: Intent::Orchestrate,
-                task_shape: TaskShape::LongRunning,
-                risk: Level::Medium,
-                ambiguity: Level::High,
-                parallelism: Parallelism::Possible,
-                context_pressure: Level::High,
-                run_state: RunState::Blocked,
-            },
-        ),
-    ]
-}
-
 fn render_policy_preview_line(config: &LocalConfig, label: &str, input: PolicyInput) -> String {
-    let decision = evaluate(input);
-    let roles = recommend_roles(&decision);
-    let obligations = decision
+    let explanation = explain(input);
+    let obligations = explanation
+        .decision
         .obligations
         .into_iter()
-        .map(obligation_label)
+        .map(|obligation| obligation.as_str())
         .collect::<Vec<_>>();
     format!(
         "{label}: {} | {}",
         obligations.join(", "),
-        render_role_plan(config, roles)
+        render_role_plan(config, explanation.roles)
     )
-}
-
-fn obligation_label(obligation: Obligation) -> &'static str {
-    match obligation {
-        Obligation::DirectAnswer => "direct_answer",
-        Obligation::VerifyLight => "verify_light",
-        Obligation::Planning => "planning",
-        Obligation::DebugRigor => "debug_rigor",
-        Obligation::Tdd => "tdd",
-        Obligation::Review => "review",
-        Obligation::SubagentEligible => "subagent_eligible",
-        Obligation::ContextCompaction => "context_compaction",
-        Obligation::SelfRepair => "self_repair",
-    }
 }
 
 fn render_role_plan(config: &LocalConfig, roles: sane_policy::RolePlan) -> String {
