@@ -19,6 +19,19 @@ export interface IntegrationsProfileAudit {
 
 export type IntegrationsProfileStatus = IntegrationsProfileAudit["status"];
 
+export interface CodexProfileChange {
+  key: "model" | "model_reasoning_effort" | "features.codex_hooks";
+  current: string | null;
+  recommended: string;
+}
+
+export interface CodexProfileAudit {
+  status: "installed" | "missing" | "invalid";
+  recommendedChangeCount: number;
+  changes: CodexProfileChange[];
+  details: string[];
+}
+
 export interface CodexConfigBackupSnapshot {
   restoreAvailable: boolean;
 }
@@ -87,29 +100,13 @@ export function backupCodexConfig(paths: ProjectPaths, codexPaths: CodexPaths): 
 }
 
 export function previewCodexProfile(codexPaths: CodexPaths): OperationResult {
-  const recommended = recommendedLocalConfig(codexPaths);
   const inventory = inspectCodexConfigInventory(codexPaths);
-  const details =
-    inventory.status === InventoryStatus.Missing
-      ? [
-          `model: <missing> -> ${recommended.models.coordinator.model}`,
-          `reasoning: <missing> -> ${recommended.models.coordinator.reasoningEffort}`,
-          "codex hooks: <missing> -> enabled",
-          "note: this writes the single-session Codex baseline only",
-          "note: broader execution and realtime routing stays derived outside config.toml",
-          "note: integrations stay outside bare core profile"
-        ]
-      : inventory.status === InventoryStatus.Invalid
-        ? [
-            "cannot preview managed profile until ~/.codex/config.toml parses cleanly",
-            "repair current config first"
-          ]
-        : codexProfilePreviewDetails(readCodexConfig(codexPaths.configToml), recommended);
+  const audit = inspectCodexProfileAudit(codexPaths);
 
   return new OperationResult({
     kind: OperationKind.PreviewCodexProfile,
-    summary: `codex-profile preview: ${countChanges(details)} recommended change(s)`,
-    details,
+    summary: `codex-profile preview: ${audit.recommendedChangeCount} recommended change(s)`,
+    details: audit.details,
     pathsTouched: [codexPaths.configToml],
     inventory: [inventory]
   });
@@ -182,6 +179,7 @@ export function applyCodexProfile(paths: ProjectPaths, codexPaths: CodexPaths): 
   ensureRuntimeDirs(paths);
   const recommended = recommendedLocalConfig(codexPaths);
   const inventory = inspectCodexConfigInventory(codexPaths);
+  const audit = inspectCodexProfileAudit(codexPaths);
 
   if (inventory.status === InventoryStatus.Invalid) {
     return new OperationResult({
@@ -200,16 +198,7 @@ export function applyCodexProfile(paths: ProjectPaths, codexPaths: CodexPaths): 
     inventory.status === InventoryStatus.Installed ? writeCodexConfigBackup(paths, codexPaths) : null;
   const config =
     inventory.status === InventoryStatus.Installed ? readCodexConfig(codexPaths.configToml) : {};
-  const details =
-    inventory.status === InventoryStatus.Installed
-      ? codexProfilePreviewDetails(config, recommended)
-      : [
-          `model: <missing> -> ${recommended.models.coordinator.model}`,
-          `reasoning: <missing> -> ${recommended.models.coordinator.reasoningEffort}`,
-          "codex hooks: <missing> -> enabled",
-          "note: this writes the single-session Codex baseline only",
-          "note: broader execution and realtime routing stays derived outside config.toml"
-        ];
+  const details = codexProfileApplyDetails(audit);
 
   applyCoreCodexProfileToValue(config, recommended);
   writeCodexConfig(codexPaths.configToml, config);
@@ -312,6 +301,43 @@ export function inspectIntegrationsProfileAudit(codexPaths: CodexPaths): Integra
 
 export function inspectIntegrationsProfileStatus(codexPaths: CodexPaths): IntegrationsProfileStatus {
   return inspectIntegrationsProfileAudit(codexPaths).status;
+}
+
+export function inspectCodexProfileAudit(codexPaths: CodexPaths): CodexProfileAudit {
+  const recommended = recommendedLocalConfig(codexPaths);
+  const inventory = inspectCodexConfigInventory(codexPaths);
+
+  if (inventory.status === InventoryStatus.Invalid) {
+    return {
+      status: "invalid",
+      recommendedChangeCount: 0,
+      changes: [],
+      details: [
+        "cannot preview managed profile until ~/.codex/config.toml parses cleanly",
+        "repair current config first"
+      ]
+    };
+  }
+
+  if (inventory.status === InventoryStatus.Missing) {
+    return codexProfileAuditFromCurrentValues(recommended, {
+      model: null,
+      modelReasoningEffort: null,
+      codexHooks: null
+    }, "missing");
+  }
+
+  const config = readCodexConfig(codexPaths.configToml);
+  const features = asTomlTable(config.features);
+  return codexProfileAuditFromCurrentValues(
+    recommended,
+    {
+      model: asString(config.model),
+      modelReasoningEffort: asString(config.model_reasoning_effort),
+      codexHooks: displayHooks(features?.codex_hooks)
+    },
+    "missing"
+  );
 }
 
 export function applyCloudflareProfile(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
@@ -618,24 +644,78 @@ function codexConfigDetails(config: TomlTable): string[] {
 
 function codexProfilePreviewDetails(config: TomlTable, recommended: LocalConfig): string[] {
   const features = asTomlTable(config.features);
+  return codexProfileAuditFromCurrentValues(
+    recommended,
+    {
+      model: asString(config.model),
+      modelReasoningEffort: asString(config.model_reasoning_effort),
+      codexHooks: displayHooks(features?.codex_hooks)
+    },
+    "installed"
+  ).details;
+}
+
+function codexProfileApplyDetails(audit: CodexProfileAudit): string[] {
+  if (audit.status !== "missing") {
+    return [...audit.details];
+  }
+
+  return audit.details.filter(
+    (line) => line !== "note: integrations stay outside bare core profile"
+  );
+}
+
+function codexProfileAuditFromCurrentValues(
+  recommended: LocalConfig,
+  current: {
+    model: string | null;
+    modelReasoningEffort: string | null;
+    codexHooks: string | null;
+  },
+  status: CodexProfileAudit["status"]
+): CodexProfileAudit {
+  const changes: CodexProfileChange[] = [];
   const details: string[] = [];
 
-  pushProfileChange(details, "model", asString(config.model) ?? "unset", recommended.models.coordinator.model);
-  pushProfileChange(
+  pushCodexProfileChange(
+    changes,
     details,
+    "model",
+    "model",
+    current.model,
+    recommended.models.coordinator.model
+  );
+  pushCodexProfileChange(
+    changes,
+    details,
+    "model_reasoning_effort",
     "reasoning",
-    asString(config.model_reasoning_effort) ?? "unset",
+    current.modelReasoningEffort,
     recommended.models.coordinator.reasoningEffort
   );
-  pushProfileChange(details, "codex hooks", displayHooks(features?.codex_hooks), "enabled");
+  pushCodexProfileChange(
+    changes,
+    details,
+    "features.codex_hooks",
+    "codex hooks",
+    current.codexHooks,
+    "enabled"
+  );
 
-  if (!details.some((line) => line.includes("->"))) {
+  if (changes.length === 0) {
     details.push("core profile already matches current recommendation");
   }
+
   details.push("note: this writes the single-session Codex baseline only");
   details.push("note: broader execution and realtime routing stays derived outside config.toml");
   details.push("note: integrations stay outside bare core profile");
-  return details;
+
+  return {
+    status: changes.length === 0 ? "installed" : status,
+    recommendedChangeCount: changes.length,
+    changes,
+    details
+  };
 }
 
 function integrationProfileAuditFromConfig(config: TomlTable): IntegrationsProfileAudit {
@@ -692,6 +772,21 @@ function pushProfileChange(details: string[], label: string, current: string, re
   details.push(
     current === recommended ? `${label}: keep ${recommended}` : `${label}: ${current} -> ${recommended}`
   );
+}
+
+function pushCodexProfileChange(
+  changes: CodexProfileChange[],
+  details: string[],
+  key: CodexProfileChange["key"],
+  label: string,
+  current: string | null,
+  recommended: string
+): void {
+  const displayCurrent = current ?? "<missing>";
+  if (current !== recommended) {
+    changes.push({ key, current, recommended });
+  }
+  pushProfileChange(details, label, displayCurrent, recommended);
 }
 
 function ensureChildTable(parent: TomlTable, key: string, errorMessage: string): TomlTable {
