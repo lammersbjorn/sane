@@ -57,7 +57,6 @@ import {
   type TuiSectionId,
   type UiCommandId
 } from "@/command-registry.js";
-import { loadGetStartedScreen } from "@/get-started-screen.js";
 import {
   createConfigEditorState,
   createPackEditorState,
@@ -170,10 +169,6 @@ export function currentAction(shell: TuiShell): SectionActionMetadata {
 
 export function projectLabel(shell: TuiShell): string {
   return basename(shell.paths.projectRoot);
-}
-
-export function recommendedNextStep(shell: TuiShell): string {
-  return loadGetStartedScreen(shell.paths, shell.codexPaths).recommendedNextStep;
 }
 
 export function runSelectedAction(shell: TuiShell): OperationResult | null {
