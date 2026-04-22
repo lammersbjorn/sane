@@ -46,6 +46,8 @@ export interface CodexPaths {
   configToml: string;
   modelsCacheJson: string;
   authJson: string;
+  opencodeConfigDir: string;
+  opencodeGlobalAgentsDir: string;
   userAgentsDir: string;
   userSkillsDir: string;
   customAgentsDir: string;
@@ -162,6 +164,7 @@ export function rawStateHistoryFiles(paths: ProjectPaths): StateFileRef[] {
 export function createCodexPaths(homeDir: string): CodexPaths {
   const codexHome = join(homeDir, '.codex');
   const userAgentsDir = join(homeDir, '.agents');
+  const opencodeConfigDir = join(homeDir, ".config", "opencode");
 
   return {
     homeDir,
@@ -169,6 +172,8 @@ export function createCodexPaths(homeDir: string): CodexPaths {
     configToml: join(codexHome, 'config.toml'),
     modelsCacheJson: join(codexHome, 'models_cache.json'),
     authJson: join(codexHome, 'auth.json'),
+    opencodeConfigDir,
+    opencodeGlobalAgentsDir: join(opencodeConfigDir, "agents"),
     userAgentsDir,
     userSkillsDir: join(userAgentsDir, 'skills'),
     customAgentsDir: join(codexHome, 'agents'),

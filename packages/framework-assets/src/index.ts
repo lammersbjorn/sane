@@ -50,6 +50,11 @@ interface CorePackManifest {
       reviewer: string;
       explorer: string;
     };
+    opencodeAgents: {
+      primary: string;
+      reviewer: string;
+      explorer: string;
+    };
   };
   optionalPacks: Record<
     string,
@@ -146,6 +151,24 @@ export function createSaneExplorerAgentTemplate(roles: ModelRoleGuidance): strin
   return renderCoreAsset(CORE_PACK_MANIFEST.assets.agents.explorer, {
     MODEL: roles.sidecarModel,
     MODEL_REASONING: roles.sidecarReasoning
+  });
+}
+
+export function createSaneOpencodeAgentTemplate(roles: ModelRoleGuidance): string {
+  return renderCoreAsset(CORE_PACK_MANIFEST.assets.opencodeAgents.primary, {
+    MODEL: roles.coordinatorModel
+  });
+}
+
+export function createSaneOpencodeReviewerAgentTemplate(roles: ModelRoleGuidance): string {
+  return renderCoreAsset(CORE_PACK_MANIFEST.assets.opencodeAgents.reviewer, {
+    MODEL: roles.verifierModel
+  });
+}
+
+export function createSaneOpencodeExplorerAgentTemplate(roles: ModelRoleGuidance): string {
+  return renderCoreAsset(CORE_PACK_MANIFEST.assets.opencodeAgents.explorer, {
+    MODEL: roles.sidecarModel
   });
 }
 

@@ -70,6 +70,7 @@ Implemented:
 - first optional managed global Codex overlay block (`~/.codex/AGENTS.md`)
 - first managed user-level hooks target (`~/.codex/hooks.json`)
 - first managed user-level custom agents target (`~/.codex/agents/`)
+- first optional OpenCode-agent compatibility target (`~/.config/opencode/agents/`)
 - file-first framework asset rendering through `packages/framework-assets`, sourced from `packs/core/manifest.json` plus checked-in templates under `packs/core`
 - read-only inspection of `~/.codex/config.toml`
 - opt-in local backup flow for `~/.codex/config.toml`
@@ -202,7 +203,7 @@ pnpm check
 ## Open Research / Decisions
 
 - [ ] Exact `v1` built-in packs
-- [ ] Exact `Opencode` compatibility scope and install/apply shape
+- [ ] Exact long-term `Opencode` compatibility scope beyond the current optional `opensrc` profile plus optional OpenCode-agent export
 - [ ] Exact explicit preset coverage for `Kimi K2.6` and other newly popular models vs generic fallback-by-capability handling:
   - source quality acceptable
   - runtime/auth support on the actual Sane surface

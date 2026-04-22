@@ -133,6 +133,7 @@ These packs change guidance and behavior. They are not meant to turn the product
 - an additive global guidance block in `~/.codex/AGENTS.md`
 - Sane-managed entries in `~/.codex/hooks.json`
 - Sane-managed custom agents in `~/.codex/agents/`
+- optional Sane-managed OpenCode agents in `~/.config/opencode/agents/`
 
 ### Local runtime and repair tools
 
@@ -188,7 +189,7 @@ If you want the longer user-story version, read [docs/what-sane-does.md](./docs/
 
 | Status | Scope |
 | --- | --- |
-| In place today | Onboarding-first TUI, local `.sane/` runtime, config preview/apply/restore, recommended integrations profile, opt-in Cloudflare profile, managed skills, additive `AGENTS.md` overlays, hooks, custom agents, status/doctor, uninstall. |
+| In place today | Onboarding-first TUI, local `.sane/` runtime, config preview/apply/restore, recommended integrations profile, opt-in Cloudflare profile, opt-in Opencode compatibility profile, managed skills, additive `AGENTS.md` overlays, hooks, custom agents, optional OpenCode agent export, status/doctor, uninstall. |
 | Planned later | Packaging and distribution polish, broader adaptive orchestration, exact long-term pack set, and a later end-to-end outcome runner / one-shot flow. |
 
 > [!IMPORTANT]

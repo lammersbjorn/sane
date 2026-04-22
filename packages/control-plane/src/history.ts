@@ -258,6 +258,8 @@ function operationKindLabel(kind: OperationKind): string {
       return "export_hooks";
     case OperationKind.ExportCustomAgents:
       return "export_custom_agents";
+    case OperationKind.ExportOpencodeAgents:
+      return "export_opencode_agents";
     case OperationKind.ExportAll:
       return "export_all";
     case OperationKind.UninstallUserSkills:
@@ -272,6 +274,8 @@ function operationKindLabel(kind: OperationKind): string {
       return "uninstall_hooks";
     case OperationKind.UninstallCustomAgents:
       return "uninstall_custom_agents";
+    case OperationKind.UninstallOpencodeAgents:
+      return "uninstall_opencode_agents";
     case OperationKind.UninstallAll:
       return "uninstall_all";
     default:

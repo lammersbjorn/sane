@@ -46,7 +46,8 @@ Current managed targets are:
 5. optional additive global overlay block in `~/.codex/AGENTS.md`
 6. additive user-level hooks entry in `~/.codex/hooks.json`
 7. additive user-level custom agents in `~/.codex/agents/`
-8. narrow explicit opt-in profile management for user-level Codex config at `~/.codex/config.toml`
+8. optional additive OpenCode agent export in `~/.config/opencode/agents/`
+9. narrow explicit opt-in profile management for user-level Codex config at `~/.codex/config.toml`
 
 Current managed export behavior also depends on local config:
 - exported `sane-router` skill content can reflect enabled guidance packs and current routing defaults
@@ -164,6 +165,7 @@ These are the backend actions the TUI is allowed to call in the current phase.
 - inspect optional repo-local AGENTS overlay presence
 - inspect managed global AGENTS block presence
 - inspect user-level Codex config presence / parse validity
+- inspect optional OpenCode-agent export presence
 - emit repair hints
 
 - `inventory`
@@ -261,6 +263,7 @@ Current implementation note:
 - current install/inspect integrations UI consumes the structured integrations audit payload instead of rebuilding its own diff logic
 - current Cloudflare profile work supports separate explicit opt-in provider-profile writes only
 - current Opencode compatibility profile work supports separate explicit opt-in compatibility-profile writes only
+- current OpenCode-agent work supports separate explicit opt-in compatibility exports only and stays outside `export_all`
 
 ## TUI Boundary Rule
 

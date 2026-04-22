@@ -8,6 +8,11 @@
       "primary": "agents/sane-agent.toml.tmpl",
       "reviewer": "agents/sane-reviewer.toml.tmpl",
       "explorer": "agents/sane-explorer.toml.tmpl"
+    },
+    "opencodeAgents": {
+      "primary": "agents/opencode/sane-agent.md.tmpl",
+      "reviewer": "agents/opencode/sane-reviewer.md.tmpl",
+      "explorer": "agents/opencode/sane-explorer.md.tmpl"
     }
   },
   "optionalPacks": {

@@ -88,6 +88,7 @@ describe("inventory enum helpers", () => {
     );
     expect(InventoryScope.LocalRuntime.displayString()).toBe("local runtime");
     expect(InventoryScope.CodexNative.displayString()).toBe("codex-native");
+    expect(InventoryScope.Compatibility.displayString()).toBe("compatibility");
   });
 });
 

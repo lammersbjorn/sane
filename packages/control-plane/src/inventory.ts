@@ -10,6 +10,7 @@ import { listCanonicalBackupSiblings } from "@sane/state";
 import { inspectCodexConfigInventory } from "./codex-config.js";
 import { inspectCodexSkillsAndAgents } from "./codex-native.js";
 import { inspectCustomAgentsInventory, inspectHooksInventory } from "./hooks-custom-agents.js";
+import { inspectOpencodeAgentsInventory } from "./opencode-native.js";
 import { showRuntimeStatus } from "./index.js";
 
 type InventoryItem = OperationResult["inventory"][number];
@@ -26,6 +27,7 @@ export interface StatusBundle {
   inventory: InventoryItem[];
   localRuntime: InventoryItem[];
   codexNative: InventoryItem[];
+  compatibility: InventoryItem[];
   driftItems: InventoryItem[];
   counts: Record<InventoryStatusName, number>;
   primary: {
@@ -84,6 +86,7 @@ export function doctor(paths: ProjectPaths, codexPaths: CodexPaths): OperationRe
       `global-agents: ${doctorStatus(findInventory(bundle.inventory, "global-agents"))}`,
       `hooks: ${doctorStatus(findInventory(bundle.inventory, "hooks"))}`,
       `custom-agents: ${doctorStatus(findInventory(bundle.inventory, "custom-agents"))}`,
+      `opencode-agents: ${doctorStatus(findInventory(bundle.inventory, "opencode-agents"))}`,
       `root: ${paths.runtimeRoot}`,
       `codex-home: ${codexPaths.codexHome}`
     ].join("\n"),
@@ -100,11 +103,13 @@ export function inspectStatusBundle(paths: ProjectPaths, codexPaths: CodexPaths)
     inspectCodexConfigInventory(codexPaths),
     ...inspectCodexSkillsAndAgents(paths, codexPaths),
     inspectHooksInventory(codexPaths),
-    inspectCustomAgentsInventory(paths, codexPaths)
+    inspectCustomAgentsInventory(paths, codexPaths),
+    inspectOpencodeAgentsInventory(paths, codexPaths)
   ];
 
   const localRuntime = inventory.filter((item) => item.scope === InventoryScope.LocalRuntime);
   const codexNative = inventory.filter((item) => item.scope === InventoryScope.CodexNative);
+  const compatibility = inventory.filter((item) => item.scope === InventoryScope.Compatibility);
   const driftItems = inventory.filter(
     (item) =>
       item.status === InventoryStatus.Invalid
@@ -115,6 +120,7 @@ export function inspectStatusBundle(paths: ProjectPaths, codexPaths: CodexPaths)
     inventory,
     localRuntime,
     codexNative,
+    compatibility,
     driftItems,
     counts: countStatuses(inventory),
     primary: {

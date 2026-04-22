@@ -84,6 +84,7 @@ Today, `Sane` can manage:
 - optional additive guidance blocks in global or repo `AGENTS.md`, with repo `AGENTS.md` reserved for explicit broad guidance
 - Sane-managed hook entries
 - Sane-managed custom agents
+- optional Sane-managed OpenCode agents
 
 Those are the things that actually change Codex behavior.
 The TUI is the control surface; the framework behavior lives in the Codex-native exports.
@@ -116,7 +117,7 @@ It exists so `Sane` can answer practical questions like:
 | Optional guidance packs | `core`, `caveman`, `cavemem`, `rtk`, and `frontend-craft`. |
 | Useful integrations | Separate recommended integrations profile for `Context7`, `Playwright`, and `grep.app`, with structured audit details shown before apply. |
 | Provider-specific add-ons | Separate opt-in Cloudflare profile plus separate opt-in Opencode compatibility profile. |
-| Shared or personal installs | Mostly user-level exports, plus explicit repo-local installs when needed. |
+| Shared or personal installs | Mostly user-level exports, plus explicit repo-local installs when needed, plus optional OpenCode-agent compatibility exports outside the default bundle. |
 | Repair visibility | `status` and `doctor` to inspect managed runtime and Codex-native surfaces, plus explicit repair/remove actions in the TUI. |
 
 ## How It Works Under The Hood
@@ -127,7 +128,7 @@ At a high level, `Sane` has three layers:
 | --- | --- |
 | TUI | Current control surface for options, previews, install, inspect, and repair flows. |
 | Local `.sane/` runtime | Stores just enough local config, state, and backups for repair and handoff. |
-| Codex-native surfaces | Skills, overlays, hooks, custom agents, and narrow config writes that carry the framework behavior. |
+| Codex-native surfaces | Skills, overlays, hooks, custom agents, optional OpenCode agents, and narrow config writes that carry the framework behavior. |
 
 This structure is what lets `Sane` stay framework-first without becoming a wrapper-first product.
 

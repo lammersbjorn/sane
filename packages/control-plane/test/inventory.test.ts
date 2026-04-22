@@ -47,7 +47,7 @@ describe("full inventory and doctor", () => {
 
     const bundle = inspectStatusBundle(paths, codexPaths);
 
-    expect(bundle.inventory).toHaveLength(17);
+    expect(bundle.inventory).toHaveLength(18);
     expect(bundle.localRuntime.map((item) => item.name)).toEqual([
       "runtime",
       "config",
@@ -68,6 +68,9 @@ describe("full inventory and doctor", () => {
       "global-agents",
       "hooks",
       "custom-agents"
+    ]);
+    expect(bundle.compatibility.map((item) => item.name)).toEqual([
+      "opencode-agents"
     ]);
     expect(bundle.primary.runtime?.status).toBe(InventoryStatus.Installed);
     expect(bundle.primary.codexConfig?.status).toBe(InventoryStatus.Missing);
@@ -167,12 +170,16 @@ describe("full inventory and doctor", () => {
     expect(status.inventory.find((item) => item.name === "custom-agents")?.status).toBe(
       InventoryStatus.Installed
     );
+    expect(status.inventory.find((item) => item.name === "opencode-agents")?.status).toBe(
+      InventoryStatus.Missing
+    );
     expect(doctorResult.summary).toContain("pack-caveman: enabled");
     expect(doctorResult.summary).toContain("codex-config: installed");
     expect(doctorResult.summary).toContain("user-skills: installed");
     expect(doctorResult.summary).toContain("global-agents: installed");
     expect(doctorResult.summary).toContain("hooks: installed");
     expect(doctorResult.summary).toContain("custom-agents: installed");
+    expect(doctorResult.summary).toContain("opencode-agents: missing");
   });
 
   it("derives onboarding recommendations from a narrow backend snapshot", () => {

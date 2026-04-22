@@ -12,6 +12,9 @@ import {
   SANE_REVIEWER_AGENT_NAME,
   createDefaultGuidancePacks,
   createOptionalPackSkill,
+  createSaneOpencodeAgentTemplate,
+  createSaneOpencodeExplorerAgentTemplate,
+  createSaneOpencodeReviewerAgentTemplate,
   createSaneAgentTemplate,
   createSaneExplorerAgentTemplate,
   createSaneGlobalAgentsOverlay,
@@ -34,6 +37,11 @@ interface CorePackManifest {
     globalOverlay: string;
     repoOverlay: string;
     agents: {
+      primary: string;
+      reviewer: string;
+      explorer: string;
+    };
+    opencodeAgents: {
       primary: string;
       reviewer: string;
       explorer: string;
@@ -91,6 +99,9 @@ describe("framework asset parity", () => {
     expect(manifest.assets.agents.primary).toBe("agents/sane-agent.toml.tmpl");
     expect(manifest.assets.agents.reviewer).toBe("agents/sane-reviewer.toml.tmpl");
     expect(manifest.assets.agents.explorer).toBe("agents/sane-explorer.toml.tmpl");
+    expect(manifest.assets.opencodeAgents.primary).toBe("agents/opencode/sane-agent.md.tmpl");
+    expect(manifest.assets.opencodeAgents.reviewer).toBe("agents/opencode/sane-reviewer.md.tmpl");
+    expect(manifest.assets.opencodeAgents.explorer).toBe("agents/opencode/sane-explorer.md.tmpl");
     expect(manifest.optionalPacks.caveman.skillName).toBe(SANE_CAVEMAN_PACK_SKILL_NAME);
     expect(manifest.optionalPacks["frontend-craft"].skillName).toBe(
       SANE_FRONTEND_CRAFT_PACK_SKILL_NAME
@@ -216,6 +227,36 @@ describe("framework asset parity", () => {
     expect(explorer).toBe(expectedExplorer);
     expect(explorer).toContain(`name = "${SANE_EXPLORER_AGENT_NAME.replace("-", "_")}"`);
     expect(explorer).toContain(`model = "${roles.sidecarModel}"`);
+    expect(agent).not.toContain("{{");
+    expect(reviewer).not.toContain("{{");
+    expect(explorer).not.toContain("{{");
+  });
+
+  it("opencode agent templates render from checked-in files", () => {
+    const roles = roleGuidance();
+    const manifest = readCoreManifest();
+
+    const agent = createSaneOpencodeAgentTemplate(roles);
+    const reviewer = createSaneOpencodeReviewerAgentTemplate(roles);
+    const explorer = createSaneOpencodeExplorerAgentTemplate(roles);
+    const expectedAgent = renderTemplate(readCoreAsset(manifest.assets.opencodeAgents.primary), {
+      MODEL: roles.coordinatorModel
+    });
+    const expectedReviewer = renderTemplate(readCoreAsset(manifest.assets.opencodeAgents.reviewer), {
+      MODEL: roles.verifierModel
+    });
+    const expectedExplorer = renderTemplate(readCoreAsset(manifest.assets.opencodeAgents.explorer), {
+      MODEL: roles.sidecarModel
+    });
+
+    expect(agent).toBe(expectedAgent);
+    expect(agent).toContain(`model: ${roles.coordinatorModel}`);
+    expect(reviewer).toBe(expectedReviewer);
+    expect(reviewer).toContain(`model: ${roles.verifierModel}`);
+    expect(reviewer).toContain("write: false");
+    expect(explorer).toBe(expectedExplorer);
+    expect(explorer).toContain(`model: ${roles.sidecarModel}`);
+    expect(explorer).toContain("bash: false");
     expect(agent).not.toContain("{{");
     expect(reviewer).not.toContain("{{");
     expect(explorer).not.toContain("{{");

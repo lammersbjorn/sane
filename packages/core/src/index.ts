@@ -23,6 +23,7 @@ export class OperationKind {
   static readonly ExportGlobalAgents = new OperationKind("ExportGlobalAgents");
   static readonly ExportHooks = new OperationKind("ExportHooks");
   static readonly ExportCustomAgents = new OperationKind("ExportCustomAgents");
+  static readonly ExportOpencodeAgents = new OperationKind("ExportOpencodeAgents");
   static readonly ExportAll = new OperationKind("ExportAll");
   static readonly UninstallUserSkills = new OperationKind("UninstallUserSkills");
   static readonly UninstallRepoSkills = new OperationKind("UninstallRepoSkills");
@@ -30,6 +31,7 @@ export class OperationKind {
   static readonly UninstallGlobalAgents = new OperationKind("UninstallGlobalAgents");
   static readonly UninstallHooks = new OperationKind("UninstallHooks");
   static readonly UninstallCustomAgents = new OperationKind("UninstallCustomAgents");
+  static readonly UninstallOpencodeAgents = new OperationKind("UninstallOpencodeAgents");
   static readonly UninstallAll = new OperationKind("UninstallAll");
 
   private constructor(readonly value: string) {}
@@ -62,6 +64,7 @@ export class InventoryStatus {
 export class InventoryScope {
   static readonly LocalRuntime = new InventoryScope("local runtime");
   static readonly CodexNative = new InventoryScope("codex-native");
+  static readonly Compatibility = new InventoryScope("compatibility");
 
   private constructor(private readonly label: string) {}
 
@@ -144,7 +147,7 @@ export class OperationResult {
     const lines = [this.summary, ...this.details];
 
     if (this.inventory.length > 0) {
-      const scopes = [InventoryScope.LocalRuntime, InventoryScope.CodexNative];
+      const scopes = [InventoryScope.LocalRuntime, InventoryScope.CodexNative, InventoryScope.Compatibility];
       const multipleScopes = this.inventory.some((item) => item.scope !== this.inventory[0]?.scope);
 
       for (const scope of scopes) {
