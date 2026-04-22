@@ -135,7 +135,28 @@ describe("operation history plumbing", () => {
     expect(decisions.at(-1)?.summary).toBe("policy preview: rendered adaptive obligation scenarios");
     expect(decisions.at(-1)?.context).toMatchObject({
       kind: "policy_preview",
-      scenarios: expect.any(Array)
+      scenarios: expect.arrayContaining([
+        expect.objectContaining({
+          summary: expect.any(String),
+          roles: expect.objectContaining({
+            coordinator: expect.any(Boolean),
+            sidecar: expect.any(Boolean),
+            verifier: expect.any(Boolean)
+          }),
+          orchestration: expect.objectContaining({
+            subagents: expect.any(String),
+            subagentReadiness: expect.any(String),
+            reviewPosture: expect.any(String),
+            verifierTiming: expect.any(String)
+          }),
+          trace: expect.arrayContaining([
+            expect.objectContaining({
+              obligation: expect.any(String),
+              rule: expect.any(String)
+            })
+          ])
+        })
+      ])
     });
     expect(summary.completedMilestones).toHaveLength(0);
   });

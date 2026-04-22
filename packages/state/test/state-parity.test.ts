@@ -385,6 +385,39 @@ describe('typed record parity', () => {
     });
   });
 
+  it('keeps latest matching policy preview when newer non-policy decisions exist', () => {
+    const dir = makeTempDir();
+    const path = join(dir, 'decisions.jsonl');
+
+    const previewDecision = createDecisionRecord(
+      'policy preview: rendered adaptive obligation scenarios',
+      'simple-question: direct_answer | coordinator=gpt-5.4/high',
+      [],
+      createPolicyPreviewDecisionContext([{ id: 'simple-question' }]),
+    );
+    previewDecision.tsUnix = 1_700_000_006;
+    appendJsonlRecord(path, previewDecision, stringifyDecisionRecord);
+
+    const installDecision = createDecisionRecord(
+      'runtime installed',
+      'keep runtime bootstrap explicit',
+      ['.sane/config.local.toml'],
+    );
+    installDecision.tsUnix = 1_700_000_007;
+    appendJsonlRecord(path, installDecision, stringifyDecisionRecord);
+
+    expect(readLatestPolicyPreviewDecision(path)?.summary).toBe(
+      'policy preview: rendered adaptive obligation scenarios',
+    );
+    expect(readLatestPolicyPreviewSnapshot(path)).toEqual({
+      status: 'present',
+      scenarioCount: 1,
+      scenarioIds: ['simple-question'],
+      tsUnix: 1_700_000_006,
+      summary: 'policy preview: rendered adaptive obligation scenarios',
+    });
+  });
+
   it('returns missing typed snapshot when latest policy context is malformed', () => {
     const dir = makeTempDir();
     const path = join(dir, 'decisions.jsonl');
