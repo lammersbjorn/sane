@@ -129,13 +129,13 @@ function primaryStatusValue(
 ): string {
   switch (name) {
     case "runtime":
-      return statusBundle.primary.runtime?.status.displayString() ?? "missing";
+      return statusBundle.primary.status.runtime;
     case "codex-config":
-      return statusBundle.primary.codexConfig?.status.displayString() ?? "missing";
+      return statusBundle.primary.status.codexConfig;
     case "user-skills":
-      return statusBundle.primary.userSkills?.status.displayString() ?? "missing";
+      return statusBundle.primary.status.userSkills;
     case "hooks":
-      return statusBundle.primary.hooks?.status.displayString() ?? "missing";
+      return statusBundle.primary.status.hooks;
   }
 }
 

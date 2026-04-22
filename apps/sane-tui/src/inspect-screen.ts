@@ -43,9 +43,10 @@ export function loadInspectScreen(paths: ProjectPaths, codexPaths: CodexPaths): 
 
 export function inspectOverviewLines(snapshot: InspectScreenSnapshot): string[] {
   const counts = snapshot.statusBundle.counts;
+  const primary = snapshot.statusBundle.primary.status;
   return [
     `status counts: installed ${counts.installed}, configured ${counts.configured}, disabled ${counts.disabled}, missing ${counts.missing}, invalid ${counts.invalid}, drift ${snapshot.statusBundle.driftItems.length}`,
-    `primary surfaces: runtime ${statusValue(snapshot.statusBundle.primary.runtime)}, codex ${statusValue(snapshot.statusBundle.primary.codexConfig)}, user ${statusValue(snapshot.statusBundle.primary.userSkills)}, hooks ${statusValue(snapshot.statusBundle.primary.hooks)}, custom-agents ${statusValue(snapshot.statusBundle.primary.customAgents)}`,
+    `primary surfaces: runtime ${primary.runtime}, codex ${primary.codexConfig}, user ${primary.userSkills}, hooks ${primary.hooks}, custom-agents ${primary.customAgents}`,
     `install bundle: ${snapshot.statusBundle.primary.installBundle}`,
     `doctor result: ${snapshot.doctor.summary.split("\n")[0] ?? "no doctor output"}`,
     `runtime summary (read-only local visibility): ${snapshot.runtimeSummary.summary}`,
@@ -67,8 +68,4 @@ export function inspectOverviewLines(snapshot: InspectScreenSnapshot): string[] 
         : `${item.name}: ${item.status}`
     )
   );
-}
-
-function statusValue(item: { status: { displayString(): string } } | null): string {
-  return item?.status.displayString() ?? "missing";
 }

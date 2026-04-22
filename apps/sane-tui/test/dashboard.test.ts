@@ -161,7 +161,15 @@ describe("dashboard view", () => {
         userSkills: { status: { displayString: () => "installed" } },
         hooks: { status: { displayString: () => "installed" } },
         customAgents: { status: { displayString: () => "installed" } },
-        installBundle: "installed"
+        installBundle: "installed",
+        status: {
+          runtime: "installed",
+          codexConfig: "installed",
+          userSkills: "installed",
+          hooks: "installed",
+          customAgents: "installed",
+          installBundle: "installed"
+        }
       }
     } as unknown as ReturnType<typeof inventory.inspectStatusBundle>);
 

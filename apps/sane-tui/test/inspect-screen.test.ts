@@ -51,7 +51,15 @@ describe("inspect screen model", () => {
           userSkills: null,
           hooks: null,
           customAgents: null,
-          installBundle: "missing"
+          installBundle: "missing",
+          status: {
+            runtime: "missing",
+            codexConfig: "missing",
+            userSkills: "missing",
+            hooks: "missing",
+            customAgents: "missing",
+            installBundle: "missing"
+          }
         }
       },
       doctor: { summary: "doctor: hooks invalid" },

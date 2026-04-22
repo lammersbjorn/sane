@@ -1,6 +1,10 @@
 import { type CodexPaths, type ProjectPaths } from "@sane/platform";
 
-import { inspectOnboardingSnapshot } from "@sane/control-plane/inventory.js";
+import {
+  inspectOnboardingSnapshot,
+  type OnboardingAttentionItem,
+  type OnboardingReasonId
+} from "@sane/control-plane/inventory.js";
 import { listSectionActions } from "@/command-registry.js";
 
 export interface GetStartedStep {
@@ -38,9 +42,32 @@ export function loadGetStartedScreen(
   return {
     summary: "Get Started",
     recommendedActionId: onboarding.recommendedActionId,
-    recommendedNextStep: onboarding.recommendedNextStep,
-    attentionItems: onboarding.attentionItems,
-    statusLine: onboarding.statusLine,
+    recommendedNextStep: recommendedNextStep(onboarding.recommendedReason),
+    attentionItems: onboarding.attentionItems.map(formatAttentionItem),
+    statusLine: [
+      `runtime ${onboarding.primaryStatuses.runtime}`,
+      `codex-config ${onboarding.primaryStatuses.codexConfig}`,
+      `user-skills ${onboarding.primaryStatuses.userSkills}`,
+      `hooks ${onboarding.primaryStatuses.hooks}`,
+      `install bundle ${onboarding.primaryStatuses.installBundle}`
+    ].join(" | "),
     steps
   };
+}
+
+function recommendedNextStep(reason: OnboardingReasonId): string {
+  switch (reason) {
+    case "install_runtime":
+      return "Create Sane's local project files first.";
+    case "show_codex_config":
+      return "Inspect Codex config, then preview the core Codex profile.";
+    case "export_all":
+      return "Install Sane into Codex so Codex can use Sane's guidance.";
+    default:
+      return "Review configure or inspect sections and change only what you actually want.";
+  }
+}
+
+function formatAttentionItem(item: OnboardingAttentionItem): string {
+  return `${item.id}: ${item.status}`;
 }

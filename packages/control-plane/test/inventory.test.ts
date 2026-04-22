@@ -191,22 +191,35 @@ describe("full inventory and doctor", () => {
 
     expect(inspectOnboardingSnapshot(paths, codexPaths)).toMatchObject({
       recommendedActionId: "install_runtime",
-      recommendedNextStep: "Create Sane's local project files first.",
-      statusLine:
-        "runtime missing | codex-config missing | user-skills missing | hooks missing | install bundle missing"
+      recommendedReason: "install_runtime",
+      primaryStatuses: {
+        runtime: "missing",
+        codexConfig: "missing",
+        userSkills: "missing",
+        hooks: "missing",
+        installBundle: "missing"
+      },
+      attentionItems: [
+        { id: "runtime", status: "missing" },
+        { id: "config", status: "missing" },
+        { id: "codex-config", status: "missing" },
+        { id: "user-skills", status: "missing" },
+        { id: "hooks", status: "missing" },
+        { id: "custom-agents", status: "missing" }
+      ]
     });
 
     installRuntime(paths, codexPaths);
     expect(inspectOnboardingSnapshot(paths, codexPaths)).toMatchObject({
       recommendedActionId: "show_codex_config",
-      recommendedNextStep: "Inspect Codex config, then preview the core Codex profile."
+      recommendedReason: "show_codex_config"
     });
 
     saveConfig(paths, config);
     applyCodexProfile(paths, codexPaths);
     expect(inspectOnboardingSnapshot(paths, codexPaths)).toMatchObject({
       recommendedActionId: "export_all",
-      recommendedNextStep: "Install Sane into Codex so Codex can use Sane's guidance."
+      recommendedReason: "export_all"
     });
   });
 });

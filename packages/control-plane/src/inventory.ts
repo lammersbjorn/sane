@@ -38,14 +38,41 @@ export interface StatusBundle {
     hooks: InventoryItem | null;
     customAgents: InventoryItem | null;
     installBundle: "installed" | "missing";
+    status: {
+      runtime: InventoryStatusName;
+      codexConfig: InventoryStatusName;
+      userSkills: InventoryStatusName;
+      hooks: InventoryStatusName;
+      customAgents: InventoryStatusName;
+      installBundle: "installed" | "missing";
+    };
   };
+}
+
+export type OnboardingReasonId =
+  | "install_runtime"
+  | "show_codex_config"
+  | "export_all"
+  | "review_sections";
+
+export type OnboardingAttentionItemId =
+  | "runtime"
+  | "config"
+  | "codex-config"
+  | "user-skills"
+  | "hooks"
+  | "custom-agents";
+
+export interface OnboardingAttentionItem {
+  id: OnboardingAttentionItemId;
+  status: InventoryStatusName;
 }
 
 export interface OnboardingSnapshot {
   recommendedActionId: "install_runtime" | "show_codex_config" | "export_all" | null;
-  recommendedNextStep: string;
-  attentionItems: string[];
-  statusLine: string;
+  recommendedReason: OnboardingReasonId;
+  attentionItems: OnboardingAttentionItem[];
+  primaryStatuses: StatusBundle["primary"]["status"];
 }
 
 export function showStatus(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
@@ -130,7 +157,15 @@ export function inspectStatusBundle(paths: ProjectPaths, codexPaths: CodexPaths)
       userSkills: findInventoryOrNull(inventory, "user-skills"),
       hooks: findInventoryOrNull(inventory, "hooks"),
       customAgents: findInventoryOrNull(inventory, "custom-agents"),
-      installBundle: bundleInstallState(inventory)
+      installBundle: bundleInstallState(inventory),
+      status: {
+        runtime: inventoryStatusName(findInventoryOrNull(inventory, "runtime")),
+        codexConfig: inventoryStatusName(findInventoryOrNull(inventory, "codex-config")),
+        userSkills: inventoryStatusName(findInventoryOrNull(inventory, "user-skills")),
+        hooks: inventoryStatusName(findInventoryOrNull(inventory, "hooks")),
+        customAgents: inventoryStatusName(findInventoryOrNull(inventory, "custom-agents")),
+        installBundle: bundleInstallState(inventory)
+      }
     }
   };
 }
@@ -144,15 +179,9 @@ export function inspectOnboardingSnapshot(
 
   return {
     recommendedActionId,
-    recommendedNextStep: recommendedOnboardingStep(recommendedActionId),
+    recommendedReason: recommendedOnboardingReason(recommendedActionId),
     attentionItems: onboardingAttentionItems(paths, statusBundle),
-    statusLine: [
-      `runtime ${statusValue(statusBundle.primary.runtime)}`,
-      `codex-config ${statusValue(statusBundle.primary.codexConfig)}`,
-      `user-skills ${statusValue(statusBundle.primary.userSkills)}`,
-      `hooks ${statusValue(statusBundle.primary.hooks)}`,
-      `install bundle ${statusBundle.primary.installBundle}`
-    ].join(" | ")
+    primaryStatuses: statusBundle.primary.status
   };
 }
 
@@ -309,23 +338,24 @@ function recommendedOnboardingAction(
   return null;
 }
 
-function recommendedOnboardingStep(
-  action: OnboardingSnapshot["recommendedActionId"]
-): string {
+function recommendedOnboardingReason(action: OnboardingSnapshot["recommendedActionId"]): OnboardingReasonId {
   switch (action) {
     case "install_runtime":
-      return "Create Sane's local project files first.";
+      return "install_runtime";
     case "show_codex_config":
-      return "Inspect Codex config, then preview the core Codex profile.";
+      return "show_codex_config";
     case "export_all":
-      return "Install Sane into Codex so Codex can use Sane's guidance.";
+      return "export_all";
     default:
-      return "Review configure or inspect sections and change only what you actually want.";
+      return "review_sections";
   }
 }
 
-function onboardingAttentionItems(paths: ProjectPaths, statusBundle: StatusBundle): string[] {
-  const items: string[] = [];
+function onboardingAttentionItems(
+  paths: ProjectPaths,
+  statusBundle: StatusBundle
+): OnboardingAttentionItem[] {
+  const items: OnboardingAttentionItem[] = [];
   const runtime = statusBundle.primary.runtime;
   const config = findInventoryOrNull(statusBundle.inventory, "config");
   const codexConfig = statusBundle.primary.codexConfig;
@@ -334,20 +364,23 @@ function onboardingAttentionItems(paths: ProjectPaths, statusBundle: StatusBundl
   const customAgents = statusBundle.primary.customAgents;
 
   if (isMissingOrInvalid(runtime?.status) || isMissingOrInvalid(config?.status)) {
-    items.push(`runtime: ${statusValue(runtime)}`);
-    items.push(`config: ${existsSync(paths.configPath) ? config?.status.displayString() ?? "missing" : "missing"}`);
+    items.push({ id: "runtime", status: inventoryStatusName(runtime) });
+    items.push({
+      id: "config",
+      status: existsSync(paths.configPath) ? inventoryStatusName(config) : "missing"
+    });
   }
   if (isMissingOrInvalid(codexConfig?.status)) {
-    items.push(`codex-config: ${statusValue(codexConfig)}`);
+    items.push({ id: "codex-config", status: inventoryStatusName(codexConfig) });
   }
   if (isMissingOrInvalid(userSkills?.status)) {
-    items.push(`user-skills: ${statusValue(userSkills)}`);
+    items.push({ id: "user-skills", status: inventoryStatusName(userSkills) });
   }
   if (isMissingOrInvalid(hooks?.status)) {
-    items.push(`hooks: ${statusValue(hooks)}`);
+    items.push({ id: "hooks", status: inventoryStatusName(hooks) });
   }
   if (isMissingOrInvalid(customAgents?.status)) {
-    items.push(`custom-agents: ${statusValue(customAgents)}`);
+    items.push({ id: "custom-agents", status: inventoryStatusName(customAgents) });
   }
 
   return items;
@@ -357,8 +390,8 @@ function isMissingOrInvalid(status: InventoryStatus | undefined): boolean {
   return status === InventoryStatus.Missing || status === InventoryStatus.Invalid;
 }
 
-function statusValue(item: InventoryItem | null): string {
-  return item?.status.displayString() ?? "missing";
+function inventoryStatusName(item: InventoryItem | null): InventoryStatusName {
+  return (item?.status.asString() as InventoryStatusName | undefined) ?? "missing";
 }
 
 function doctorStatus(item: InventoryItem): string {
