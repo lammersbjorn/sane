@@ -1,0 +1,298 @@
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+import { createCodexPaths, createProjectPaths } from "@sane/platform";
+import { parseEventRecordJson, readJsonlRecords } from "@sane/state";
+import { afterEach, describe, expect, it } from "vitest";
+
+import { exportAll } from "@sane/control-plane/bundles.js";
+import { executeOperation } from "@sane/control-plane/history.js";
+import { saveConfig } from "@sane/control-plane/preferences.js";
+import { createDefaultLocalConfig } from "@sane/config";
+import {
+  confirmPendingAction,
+  createTuiShell,
+  currentAction,
+  editActiveValue,
+  moveSelection,
+  resetLocalTelemetry,
+  runSelectedAction,
+  saveActiveEditor
+} from "@/shell.js";
+
+const tempDirs: string[] = [];
+
+function makeTempDir(): string {
+  const dir = mkdtempSync(join(tmpdir(), "sane-tui-shell-"));
+  tempDirs.push(dir);
+  return dir;
+}
+
+afterEach(() => {
+  while (tempDirs.length > 0) {
+    rmSync(tempDirs.pop()!, { recursive: true, force: true });
+  }
+});
+
+describe("tui shell", () => {
+  it("defaults to get_started and supports settings shortcut", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    const shell = createTuiShell(paths, codexPaths);
+    const settingsShell = createTuiShell(paths, codexPaths, "settings");
+
+    expect(shell.activeSectionId).toBe("get_started");
+    expect(currentAction(shell).id).toBe("install_runtime");
+    expect(settingsShell.activeSectionId).toBe("preferences");
+    expect(currentAction(settingsShell).id).toBe("open_config_editor");
+  });
+
+  it("hydrates the initial last-result copy from the backend history helper", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    executeOperation(paths, () => exportAll(paths, codexPaths));
+    const shell = createTuiShell(paths, codexPaths);
+
+    expect(shell.lastResult.lines).toContain("export all: installed managed targets");
+  });
+
+  it("records read-only inspect, show, and preview actions in local history", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const shell = createTuiShell(paths, codexPaths, "settings");
+
+    moveSelection(shell, "action", 1);
+    moveSelection(shell, "action", 1);
+    moveSelection(shell, "action", 1);
+    runSelectedAction(shell);
+
+    moveSelection(shell, "section", 1);
+    moveSelection(shell, "section", 1);
+    runSelectedAction(shell);
+
+    moveSelection(shell, "action", 1);
+    moveSelection(shell, "action", 1);
+    moveSelection(shell, "action", 1);
+    moveSelection(shell, "action", 1);
+    moveSelection(shell, "action", 1);
+    runSelectedAction(shell);
+
+    const events = readJsonlRecords(paths.eventsPath, parseEventRecordJson);
+
+    expect(events.slice(-3).map((event) => event.action)).toEqual([
+      "show_config",
+      "show_status",
+      "preview_integrations_profile"
+    ]);
+  });
+
+  it("wraps selection and resets action cursor when section changes", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const shell = createTuiShell(createProjectPaths(projectRoot), createCodexPaths(homeDir));
+
+    moveSelection(shell, "action", -1);
+    expect(currentAction(shell).id).toBe("export_all");
+
+    moveSelection(shell, "section", 1);
+    expect(shell.activeSectionId).toBe("preferences");
+    expect(shell.activeActionIndex).toBe(0);
+    expect(currentAction(shell).id).toBe("open_config_editor");
+  });
+
+  it("gates risky actions behind confirmation and opens a notice after confirm", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const shell = createTuiShell(paths, codexPaths);
+
+    moveSelection(shell, "action", 1);
+    moveSelection(shell, "action", 1);
+    moveSelection(shell, "action", 1);
+    moveSelection(shell, "action", 1);
+
+    expect(currentAction(shell).id).toBe("apply_codex_profile");
+    expect(existsSync(codexPaths.configToml)).toBe(false);
+
+    const pending = runSelectedAction(shell);
+
+    expect(pending).toBeNull();
+    expect(shell.pendingConfirmation?.heading).toBe("Confirm This Action");
+    expect(existsSync(codexPaths.configToml)).toBe(false);
+
+    const result = confirmPendingAction(shell);
+
+    expect(result?.summary).toContain("codex-profile apply");
+    expect(shell.pendingConfirmation).toBeNull();
+    expect(shell.notice?.title).toBe("Applied");
+    expect(shell.activeSectionId).toBe("get_started");
+    expect(shell.activeActionIndex).toBe(0);
+    expect(existsSync(codexPaths.configToml)).toBe(true);
+  });
+
+  it("opens the config editor, mutates draft values, and saves through the shell", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const shell = createTuiShell(paths, codexPaths, "settings");
+
+    expect(currentAction(shell).id).toBe("open_config_editor");
+
+    runSelectedAction(shell);
+    expect(shell.activeEditor?.kind).toBe("config");
+
+    const before = shell.activeEditor?.config.models.coordinator.model;
+    editActiveValue(shell, 1);
+    const after = shell.activeEditor?.config.models.coordinator.model;
+
+    expect(after).not.toBe(before);
+    expect(saveActiveEditor(shell)?.summary).toContain("config: saved");
+    expect(shell.activeEditor).toBeNull();
+    expect(shell.notice?.title).toBe("Saved");
+    expect(existsSync(paths.configPath)).toBe(true);
+  });
+
+  it("opens the config editor with local current values and recommended defaults from the backend helper", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const config = createDefaultLocalConfig();
+    config.models.coordinator.model = "gpt-5.2-codex";
+    saveConfig(paths, config);
+
+    const shell = createTuiShell(paths, codexPaths, "settings");
+    runSelectedAction(shell);
+
+    expect(shell.activeEditor?.kind).toBe("config");
+    if (shell.activeEditor?.kind !== "config") {
+      throw new Error("expected config editor");
+    }
+    expect(shell.activeEditor.initial.models.coordinator.model).toBe("gpt-5.2-codex");
+    expect(shell.activeEditor.config.models.coordinator.model).toBe("gpt-5.2-codex");
+    expect(shell.activeEditor.defaults.models.coordinator.model).toBe("gpt-5.4");
+  });
+
+  it("applies the integrations profile from install after confirmation", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const shell = createTuiShell(paths, codexPaths);
+
+    moveSelection(shell, "section", 1);
+    moveSelection(shell, "section", 1);
+    moveSelection(shell, "action", 1);
+    moveSelection(shell, "action", 1);
+    moveSelection(shell, "action", 1);
+    moveSelection(shell, "action", 1);
+
+    expect(currentAction(shell).id).toBe("apply_integrations_profile");
+    expect(existsSync(codexPaths.configToml)).toBe(false);
+
+    runSelectedAction(shell);
+    expect(shell.pendingConfirmation?.heading).toBe("Confirm This Action");
+    expect(shell.pendingConfirmation?.commandId).toBe("apply_integrations_profile");
+
+    const result = confirmPendingAction(shell);
+
+    expect(result?.summary).toContain("integrations-profile apply");
+    expect(shell.pendingConfirmation).toBeNull();
+    expect(shell.notice?.title).toBe("Applied");
+    expect(shell.notice?.section).toBe("install");
+    expect(shell.activeSectionId).toBe("install");
+    expect(shell.activeActionIndex).toBe(0);
+    expect(existsSync(codexPaths.configToml)).toBe(true);
+  });
+
+  it("resets local telemetry data from the privacy editor flow", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const shell = createTuiShell(paths, codexPaths, "settings");
+
+    moveSelection(shell, "action", 1);
+    moveSelection(shell, "action", 1);
+    expect(currentAction(shell).id).toBe("open_privacy_editor");
+
+    runSelectedAction(shell);
+    editActiveValue(shell, 1);
+    saveActiveEditor(shell);
+
+    expect(existsSync(paths.telemetryDir)).toBe(true);
+    expect(resetLocalTelemetry(shell).summary).toBe("telemetry reset: removed local telemetry data");
+    expect(existsSync(paths.telemetryDir)).toBe(false);
+  });
+
+  it("surfaces telemetry reset as a first-class confirmed repair action", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const shell = createTuiShell(paths, codexPaths, "settings");
+
+    runSelectedAction(shell);
+    moveSelection(shell, "action", 1);
+    moveSelection(shell, "action", 1);
+    runSelectedAction(shell);
+    editActiveValue(shell, 1);
+    saveActiveEditor(shell);
+
+    expect(existsSync(paths.telemetryDir)).toBe(true);
+
+    moveSelection(shell, "section", 1);
+    moveSelection(shell, "section", 1);
+    moveSelection(shell, "section", 1);
+    moveSelection(shell, "action", 1);
+    moveSelection(shell, "action", 1);
+    moveSelection(shell, "action", 1);
+    expect(currentAction(shell).id).toBe("reset_telemetry_data");
+
+    runSelectedAction(shell);
+    expect(shell.pendingConfirmation?.commandId).toBe("reset_telemetry_data");
+
+    const result = confirmPendingAction(shell);
+
+    expect(result?.summary).toBe("telemetry reset: removed local telemetry data");
+    expect(shell.pendingConfirmation).toBeNull();
+    expect(shell.notice?.title).toBe("Reset");
+    expect(shell.notice?.section).toBe("repair");
+    expect(existsSync(paths.telemetryDir)).toBe(false);
+  });
+
+  it("removes individual managed codex targets from the repair section", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    exportAll(paths, codexPaths);
+
+    const shell = createTuiShell(paths, codexPaths);
+    moveSelection(shell, "section", -1);
+    for (let index = 0; index < 8; index += 1) {
+      moveSelection(shell, "action", 1);
+    }
+    expect(currentAction(shell).id).toBe("uninstall_hooks");
+
+    runSelectedAction(shell);
+    expect(shell.pendingConfirmation?.commandId).toBe("uninstall_hooks");
+
+    const result = confirmPendingAction(shell);
+
+    expect(result?.summary).toContain("uninstall hooks");
+    expect(shell.notice?.title).toBe("Uninstalled");
+    expect(existsSync(codexPaths.hooksJson)).toBe(false);
+  });
+});

@@ -1,0 +1,231 @@
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+
+import {
+  createRecommendedLocalConfig,
+  detectCodexEnvironment,
+  enabledPackNames,
+  readLocalConfig,
+  stringifyLocalConfig,
+  type LocalConfig,
+  type TelemetryLevel
+} from "@sane/config";
+import {
+  InventoryScope,
+  InventoryStatus,
+  OperationKind,
+  OperationResult,
+  type OperationRewriteMetadata
+} from "@sane/core";
+import { ensureRuntimeDirs, type CodexPaths, type ProjectPaths } from "@sane/platform";
+import { writeCanonicalWithBackupResult } from "@sane/state";
+
+export interface PreferencesSnapshot {
+  source: "local" | "recommended";
+  models: ReturnType<typeof createRecommendedLocalConfig>["models"];
+  telemetry: ReturnType<typeof createRecommendedLocalConfig>["privacy"]["telemetry"];
+  enabledPacks: string[];
+}
+
+export interface EditablePreferencesConfigSnapshot {
+  source: "local" | "recommended";
+  current: LocalConfig;
+  recommended: LocalConfig;
+}
+
+export interface TelemetrySnapshot {
+  dirPresent: boolean;
+  summaryPresent: boolean;
+  eventsPresent: boolean;
+  queuePresent: boolean;
+}
+
+export function showConfig(paths: ProjectPaths): OperationResult {
+  if (!existsSync(paths.configPath)) {
+    return new OperationResult({
+      kind: OperationKind.ShowConfig,
+      summary: `config: missing at ${paths.configPath}`,
+      details: [],
+      pathsTouched: [paths.configPath],
+      inventory: [
+        {
+          name: "config",
+          scope: InventoryScope.LocalRuntime,
+          status: InventoryStatus.Missing,
+          path: paths.configPath,
+          repairHint: "run `install`"
+        }
+      ]
+    });
+  }
+
+  const config = readLocalConfig(paths.configPath);
+  return new OperationResult({
+    kind: OperationKind.ShowConfig,
+    summary: `config: ok at ${paths.configPath}`,
+    details: configDetails(config),
+    pathsTouched: [paths.configPath],
+    inventory: [
+      {
+        name: "config",
+        scope: InventoryScope.LocalRuntime,
+        status: InventoryStatus.Installed,
+        path: paths.configPath,
+        repairHint: null
+      }
+    ]
+  });
+}
+
+export function saveConfig(paths: ProjectPaths, config: LocalConfig): OperationResult {
+  ensureRuntimeDirs(paths);
+  ensureTelemetryFiles(paths, config.privacy.telemetry);
+
+  const rewrite = operationRewriteMetadata(
+    writeCanonicalWithBackupResult(paths.configPath, config, {
+      format: "toml",
+      stringify: stringifyLocalConfig
+    })
+  );
+
+  const details: string[] = [];
+  appendRewriteDetails(details, rewrite);
+
+  return new OperationResult({
+    kind: OperationKind.ShowConfig,
+    summary: `config: saved at ${paths.configPath}`,
+    rewrite,
+    details,
+    pathsTouched: unique([rewrite.rewrittenPath, rewrite.backupPath]),
+    inventory: [
+      {
+        name: "config",
+        scope: InventoryScope.LocalRuntime,
+        status: InventoryStatus.Installed,
+        path: paths.configPath,
+        repairHint: null
+      }
+    ]
+  });
+}
+
+export function resetTelemetryData(paths: ProjectPaths): OperationResult {
+  if (!existsSync(paths.telemetryDir)) {
+    return new OperationResult({
+      kind: OperationKind.ResetTelemetryData,
+      summary: "telemetry reset: no local telemetry data present",
+      details: [],
+      pathsTouched: [paths.telemetryDir],
+      inventory: []
+    });
+  }
+
+  rmSync(paths.telemetryDir, { recursive: true, force: true });
+  return new OperationResult({
+    kind: OperationKind.ResetTelemetryData,
+    summary: "telemetry reset: removed local telemetry data",
+    details: [],
+    pathsTouched: [paths.telemetryDir],
+    inventory: []
+  });
+}
+
+export function inspectPreferencesSnapshot(
+  paths: ProjectPaths,
+  codexPaths: CodexPaths
+): PreferencesSnapshot {
+  const snapshot = inspectEditablePreferencesConfig(paths, codexPaths);
+  return {
+    source: snapshot.source,
+    models: snapshot.current.models,
+    telemetry: snapshot.current.privacy.telemetry,
+    enabledPacks: enabledPackNames(snapshot.current.packs)
+  };
+}
+
+export function inspectEditablePreferencesConfig(
+  paths: ProjectPaths,
+  codexPaths: CodexPaths
+): EditablePreferencesConfigSnapshot {
+  const recommended = createRecommendedLocalConfig(
+    detectCodexEnvironment(codexPaths.modelsCacheJson, codexPaths.authJson)
+  );
+
+  try {
+    return {
+      source: "local",
+      current: readLocalConfig(paths.configPath),
+      recommended
+    };
+  } catch {
+    return {
+      source: "recommended",
+      current: recommended,
+      recommended
+    };
+  }
+}
+
+export function inspectTelemetrySnapshot(paths: ProjectPaths): TelemetrySnapshot {
+  return {
+    dirPresent: existsSync(paths.telemetryDir),
+    summaryPresent: existsSync(paths.telemetrySummaryPath),
+    eventsPresent: existsSync(paths.telemetryEventsPath),
+    queuePresent: existsSync(paths.telemetryQueuePath)
+  };
+}
+
+function configDetails(config: LocalConfig): string[] {
+  return [
+    `version: ${config.version}`,
+    `coordinator: ${config.models.coordinator.model} (${config.models.coordinator.reasoningEffort})`,
+    `sidecar: ${config.models.sidecar.model} (${config.models.sidecar.reasoningEffort})`,
+    `verifier: ${config.models.verifier.model} (${config.models.verifier.reasoningEffort})`,
+    `derived classes: execution and realtime iteration are resolved from detected model availability`,
+    `telemetry: ${config.privacy.telemetry}`,
+    `packs: ${enabledPackNames(config.packs).join(", ")}`
+  ];
+}
+
+function ensureTelemetryFiles(paths: ProjectPaths, level: TelemetryLevel): void {
+  if (level === "off") {
+    return;
+  }
+
+  mkdirSync(paths.telemetryDir, { recursive: true });
+  ensureFileWithDefault(paths.telemetrySummaryPath, '{\n  "version": 1\n}\n');
+  ensureFileWithDefault(paths.telemetryEventsPath, "");
+
+  if (level === "product-improvement") {
+    ensureFileWithDefault(paths.telemetryQueuePath, "");
+  }
+}
+
+function ensureFileWithDefault(path: string, body: string): void {
+  if (!existsSync(path)) {
+    writeFileSync(path, body, "utf8");
+  }
+}
+
+function operationRewriteMetadata(rewrite: {
+  rewrittenPath: string;
+  backupPath: string | null;
+  firstWrite: boolean;
+}): OperationRewriteMetadata {
+  return {
+    rewrittenPath: rewrite.rewrittenPath,
+    backupPath: rewrite.backupPath,
+    firstWrite: rewrite.firstWrite
+  };
+}
+
+function appendRewriteDetails(details: string[], rewrite: OperationRewriteMetadata): void {
+  details.push(`rewritten path: ${rewrite.rewrittenPath}`);
+  if (rewrite.backupPath) {
+    details.push(`backup path: ${rewrite.backupPath}`);
+  }
+  details.push(`write mode: ${rewrite.firstWrite ? "first write" : "rewrite"}`);
+}
+
+function unique(values: Array<string | null>): string[] {
+  return [...new Set(values.filter((value): value is string => Boolean(value)))].sort();
+}
