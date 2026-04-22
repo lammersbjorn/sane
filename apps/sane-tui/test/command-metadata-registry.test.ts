@@ -96,17 +96,14 @@ describe("command metadata registry", () => {
       ".sane/state/artifacts.jsonl"
     ]);
     expect(getCommandSpec("preview_policy").filesTouched).toEqual([
+      ".sane/config.local.toml",
       ".sane/state/current-run.json",
-      ".sane/state/summary.json",
-      ".sane/BRIEF.md",
-      ".sane/state/events.jsonl",
-      ".sane/state/decisions.jsonl"
     ]);
+    expect(getCommandSpec("preview_policy").help[3]).toBe(
+      "This is a read-only preview over current-run and local config state."
+    );
     expect(getCommandSpec("preview_policy").help[2]).toBe(
       "Visibility only for managed surfaces. No runtime orchestration runs."
-    );
-    expect(getCommandSpec("preview_policy").help[3]).toBe(
-      "Sane also records the latest preview into local runtime history for Inspect."
     );
     expect(getCommandSpec("preview_codex_profile").help[2]).toBe(
       "Preview only for managed surfaces."

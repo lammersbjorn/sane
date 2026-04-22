@@ -5,6 +5,11 @@ import { inspectCodexConfigBackupSnapshot } from "./codex-config.js";
 import { CORE_INSTALL_BUNDLE_TARGETS } from "./core-install-bundle-targets.js";
 import { inspectStatusBundle } from "./inventory.js";
 import { inspectTelemetrySnapshot } from "./preferences.js";
+import {
+  managedStatusKindFromInventory,
+  presentManagedStatus,
+  type ManagedStatusKind
+} from "./status-presenter.js";
 
 export type RepairActionStatusId =
   | "install_runtime"
@@ -21,13 +26,7 @@ export type RepairActionStatusId =
   | "uninstall_all";
 
 export type RepairActionStatusKind =
-  | "installed"
-  | "configured"
-  | "disabled"
-  | "missing"
-  | "invalid"
-  | "present_without_sane_block"
-  | "removed"
+  | ManagedStatusKind
   | "available"
   | "present";
 
@@ -79,43 +78,24 @@ function uninstallAllStatus(
   inventory: ReturnType<typeof inspectStatusBundle>["inventory"]
 ): RepairActionStatus {
   return CORE_INSTALL_BUNDLE_TARGETS.some(
-    (name) => inventory.find((item) => item.name === name)?.status.displayString() === "installed"
+    (name) => inventory.find((item) => item.name === name)?.status === InventoryStatus.Installed
   )
     ? statusDto("installed")
     : statusDto("missing");
 }
 
 function fromInventoryStatus(status: InventoryStatus | undefined): RepairActionStatus {
-  if (status === InventoryStatus.Installed) {
-    return statusDto("installed");
-  }
-
-  if (status === InventoryStatus.Configured) {
-    return statusDto("configured");
-  }
-
-  if (status === InventoryStatus.Disabled) {
-    return statusDto("disabled");
-  }
-
-  if (status === InventoryStatus.Invalid) {
-    return statusDto("invalid");
-  }
-
-  if (status === InventoryStatus.PresentWithoutSaneBlock) {
-    return statusDto("present_without_sane_block");
-  }
-
-  if (status === InventoryStatus.Removed) {
-    return statusDto("removed");
-  }
-
-  return statusDto("missing");
+  return statusDto(managedStatusKindFromInventory(status));
 }
 
 function statusDto(kind: RepairActionStatusKind): RepairActionStatus {
+  if (kind === "available" || kind === "present") {
+    return { kind, label: kind };
+  }
+
+  const presentation = presentManagedStatus(kind);
   return {
-    kind,
-    label: kind === "present_without_sane_block" ? "present without Sane block" : kind
+    kind: presentation.kind,
+    label: presentation.label
   };
 }

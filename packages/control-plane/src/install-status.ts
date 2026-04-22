@@ -4,6 +4,11 @@ import { type CodexPaths, type ProjectPaths } from "@sane/platform";
 import { inspectIntegrationsProfileStatus } from "./codex-config.js";
 import { CORE_INSTALL_BUNDLE_TARGETS } from "./core-install-bundle-targets.js";
 import { inspectStatusBundle } from "./inventory.js";
+import {
+  managedStatusKindFromInventory,
+  presentManagedStatus,
+  type ManagedStatusKind
+} from "./status-presenter.js";
 
 export type InstallActionStatusId =
   | "export_user_skills"
@@ -16,14 +21,7 @@ export type InstallActionStatusId =
   | "export_opencode_agents"
   | "export_all";
 
-export type InstallActionStatusKind =
-  | "installed"
-  | "configured"
-  | "disabled"
-  | "missing"
-  | "invalid"
-  | "present_without_sane_block"
-  | "removed";
+export type InstallActionStatusKind = ManagedStatusKind;
 
 export interface InstallActionStatus {
   kind: InstallActionStatusKind;
@@ -111,36 +109,10 @@ function installBundleStatus(status: string): InstallActionStatus {
 }
 
 function fromInventoryStatus(status: InventoryStatus | undefined): InstallActionStatus {
-  if (status === InventoryStatus.Installed) {
-    return statusDto("installed");
-  }
-
-  if (status === InventoryStatus.Configured) {
-    return statusDto("configured");
-  }
-
-  if (status === InventoryStatus.Disabled) {
-    return statusDto("disabled");
-  }
-
-  if (status === InventoryStatus.Invalid) {
-    return statusDto("invalid");
-  }
-
-  if (status === InventoryStatus.PresentWithoutSaneBlock) {
-    return statusDto("present_without_sane_block");
-  }
-
-  if (status === InventoryStatus.Removed) {
-    return statusDto("removed");
-  }
-
-  return statusDto("missing");
+  return statusDto(managedStatusKindFromInventory(status));
 }
 
 function statusDto(kind: InstallActionStatusKind): InstallActionStatus {
-  return {
-    kind,
-    label: kind === "present_without_sane_block" ? "present without Sane block" : kind
-  };
+  const presentation = presentManagedStatus(kind);
+  return { kind: presentation.kind, label: presentation.label };
 }

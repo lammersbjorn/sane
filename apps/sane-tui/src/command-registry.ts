@@ -265,7 +265,7 @@ export const COMMAND_METADATA_REGISTRY = {
         "Show Sane's current-run-derived adaptive routing policy preview.",
         "",
         "Visibility only for managed surfaces. No runtime orchestration runs.",
-        "Sane also records the latest preview into local runtime history for Inspect.",
+        "This is a read-only preview over current-run and local config state.",
         "It shows per-scenario obligations plus routing defaults.",
         "Editable coordinator/sidecar/verifier defaults are shown alongside derived execution and realtime-iteration classes."
       ],
@@ -273,11 +273,8 @@ export const COMMAND_METADATA_REGISTRY = {
       successNoticeTitle: null,
       repoMutation: false,
       filesTouched: [
+        ".sane/config.local.toml",
         ".sane/state/current-run.json",
-        ".sane/state/summary.json",
-        ".sane/BRIEF.md",
-        ".sane/state/events.jsonl",
-        ".sane/state/decisions.jsonl"
       ]
     },
     backup_codex_config: {

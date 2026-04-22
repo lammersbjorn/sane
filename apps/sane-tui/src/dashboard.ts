@@ -1,5 +1,6 @@
 import { showRuntimeProgress } from "@sane/control-plane";
 import { inspectStatusBundle } from "@sane/control-plane/inventory.js";
+import { presentManagedStatus, type ManagedStatusKind } from "@sane/control-plane/status-presenter.js";
 import * as getStartedScreen from "@/get-started-screen.js";
 import { currentAction, currentActions, currentSection, projectLabel, recommendedNextStep, type TuiShell } from "@/shell.js";
 
@@ -58,28 +59,25 @@ function buildStatusChips(
   const chips: DashboardChip[] = [];
 
   for (const [name, inventoryName] of wanted) {
-    const value = primaryStatusValue(statusBundle, name) ?? inventoryStatusValue(statusBundle.inventory, inventoryName);
-    if (!value) {
-      continue;
-    }
+    const presentation = primaryStatusPresentation(statusBundle, name);
 
     chips.push({
       id: name,
       label: chipLabel(name),
-      value,
-      tone: toneForValue(value)
+      value: presentation.label,
+      tone: presentation.tone
     });
   }
 
-  const customAgentsValue = inventoryStatusValue(statusBundle.inventory, "custom-agents");
-  if (customAgentsValue) {
-    chips.push({
-      id: "custom-agents",
-      label: "Custom agents",
-      value: customAgentsValue,
-      tone: toneForValue(customAgentsValue)
-    });
-  }
+  const customAgents = presentManagedStatus(
+    statusBundle.primary.status.customAgents as ManagedStatusKind
+  );
+  chips.push({
+    id: "custom-agents",
+    label: "Custom agents",
+    value: customAgents.label,
+    tone: customAgents.tone
+  });
 
   const installBundleValue = statusBundle.primary.installBundle;
 
@@ -116,26 +114,19 @@ function buildStatusChips(
   return chips;
 }
 
-function inventoryStatusValue(
-  inventory: ReturnType<typeof inspectStatusBundle>["inventory"],
-  name: string
-): string | null {
-  return inventory.find((item) => item.name === name)?.status.displayString() ?? null;
-}
-
-function primaryStatusValue(
+function primaryStatusPresentation(
   statusBundle: ReturnType<typeof inspectStatusBundle>,
   name: "runtime" | "codex-config" | "user-skills" | "hooks"
-): string {
+): ReturnType<typeof presentManagedStatus> {
   switch (name) {
     case "runtime":
-      return statusBundle.primary.status.runtime;
+      return presentManagedStatus(statusBundle.primary.status.runtime as ManagedStatusKind);
     case "codex-config":
-      return statusBundle.primary.status.codexConfig;
+      return presentManagedStatus(statusBundle.primary.status.codexConfig as ManagedStatusKind);
     case "user-skills":
-      return statusBundle.primary.status.userSkills;
+      return presentManagedStatus(statusBundle.primary.status.userSkills as ManagedStatusKind);
     case "hooks":
-      return statusBundle.primary.status.hooks;
+      return presentManagedStatus(statusBundle.primary.status.hooks as ManagedStatusKind);
   }
 }
 
