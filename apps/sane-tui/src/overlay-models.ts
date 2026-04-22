@@ -1,5 +1,6 @@
 import { PICKER_MODELS, REASONING_EFFORTS } from "@sane/config";
 import { inspectTelemetrySnapshot } from "@sane/control-plane/preferences.js";
+import { optionalPackSkillNames } from "@sane/framework-assets";
 
 import {
   type ConfigEditorState,
@@ -209,11 +210,13 @@ function privacyLines(shell: TuiShell): string[] {
 
 function packLines(editor: PackEditorState): string[] {
   const selected = editor.fields[editor.selected]!;
+  const skillNames = selectedPackSkillNames(selected);
   return [
     `enabled packs: ${enabledPackNames(editor)}`,
     "",
     `selected pack: ${packFieldLabel(selected)}`,
     packFieldExplanation(selected),
+    `exports: ${skillNames.length === 0 ? "no dedicated skills" : skillNames.join(", ")}`,
     "",
     "Effect",
     "Updates local pack config first.",
@@ -262,5 +265,18 @@ function packFieldExplanation(field: PackFieldId): string {
       return "Shell-routing guidance: if RTK policy exists, prefer RTK-routed command execution.";
     case "frontend_craft":
       return "Frontend craft guidance. Biases Sane away from generic AI UI output and toward stronger design quality.";
+  }
+}
+
+function selectedPackSkillNames(field: PackFieldId): string[] {
+  switch (field) {
+    case "caveman":
+      return optionalPackSkillNames("caveman");
+    case "cavemem":
+      return optionalPackSkillNames("cavemem");
+    case "rtk":
+      return optionalPackSkillNames("rtk");
+    case "frontend_craft":
+      return optionalPackSkillNames("frontend-craft");
   }
 }

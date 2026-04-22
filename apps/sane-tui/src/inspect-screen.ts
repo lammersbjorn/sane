@@ -85,8 +85,9 @@ function formatOptionalPackProvenanceLine(
       pack.provenance?.kind === "derived" || pack.provenance?.kind === "upstream"
         ? `${pack.provenance.kind} from ${pack.provenance.upstreams.map((item) => item.name).join(" + ")}`
         : "internal";
+    const exportedSkills = pack.skillNames.length === 0 ? "no skills" : pack.skillNames.join(" + ");
 
-    return `${pack.name} ${pack.status} (${origin})`;
+    return `${pack.name} ${pack.status} (${exportedSkills}; ${origin})`;
   });
 
   return `optional pack provenance: ${summary.join("; ")}`;

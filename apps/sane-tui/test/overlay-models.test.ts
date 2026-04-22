@@ -54,6 +54,7 @@ describe("overlay models", () => {
       throw new Error("expected packs overlay");
     }
     expect(overlay.detailsLines.some((line: string) => line.includes("selected pack: caveman"))).toBe(true);
+    expect(overlay.detailsLines).toContain("exports: sane-caveman");
 
     shell.activeEditor = null;
     moveSelection(shell, "action", 1);
