@@ -113,23 +113,10 @@ describe("inspect snapshot", () => {
 
     const snapshot = inspectSnapshot(paths, codexPaths);
 
-    expect(snapshot.statusBundle.driftItems.map((item) => item.name)).toEqual([
-      "config",
-      "current-run",
-      "summary",
-      "hooks"
-    ]);
+    expect(snapshot.statusBundle.driftItems.map((item) => item.name)).toEqual(["config", "hooks"]);
     expect(snapshot.driftItems).toEqual([
       expect.objectContaining({
         name: "config",
-        status: "invalid"
-      }),
-      expect.objectContaining({
-        name: "current-run",
-        status: "invalid"
-      }),
-      expect.objectContaining({
-        name: "summary",
         status: "invalid"
       }),
       expect.objectContaining({

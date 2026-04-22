@@ -911,6 +911,12 @@ describe('layered load parity', () => {
     expect(bundle.summary?.version).toBe(2);
     expect(bundle.currentRun).toEqual(currentRun);
     expect(bundle.brief).toBe('# brief\n');
+    expect(bundle.layerStatus).toEqual({
+      config: 'present',
+      summary: 'present',
+      currentRun: 'present',
+      brief: 'present',
+    });
     expect(bundle.historyCounts).toEqual({ events: 0, decisions: 0, artifacts: 0 });
     expect(bundle.historyPreview).toEqual({
       latestEvent: null,
@@ -960,6 +966,12 @@ describe('layered load parity', () => {
     expect(bundle.currentRun?.objective).toBe('recover current run');
     expect(bundle.currentRun?.phase).toBe('implementing');
     expect(bundle.brief).toBe('# brief\n');
+    expect(bundle.layerStatus).toEqual({
+      config: 'present',
+      summary: 'invalid',
+      currentRun: 'present',
+      brief: 'present',
+    });
     expect(bundle.historyPreview).toEqual({
       latestEvent: null,
       latestDecision: null,
@@ -972,6 +984,90 @@ describe('layered load parity', () => {
       scenarios: [],
       tsUnix: null,
       summary: null,
+    });
+  });
+
+  it('marks missing layers explicitly when canonical files are absent', () => {
+    const dir = makeTempDir();
+    const runtimeRoot = join(dir, '.sane');
+    const stateDir = join(runtimeRoot, 'state');
+    const configPath = join(runtimeRoot, 'config.local.toml');
+    const summaryPath = join(stateDir, 'summary.json');
+    const currentRunPath = join(stateDir, 'current-run.json');
+    const briefPath = join(runtimeRoot, 'BRIEF.md');
+
+    mkdirSync(stateDir, { recursive: true });
+    writeCurrentRunState(currentRunPath, {
+      version: 2,
+      objective: 'keep current only',
+      phase: 'implementing',
+      activeTasks: [],
+      blockingQuestions: [],
+      verification: createVerificationStatus('pending', null),
+      lastCompactionTsUnix: null,
+      extra: {},
+    });
+
+    const bundle = loadLayeredStateBundle(
+      createCanonicalStatePaths(configPath, summaryPath, currentRunPath, briefPath),
+    );
+
+    expect(bundle.config).toBeNull();
+    expect(bundle.summary).toBeNull();
+    expect(bundle.currentRun?.objective).toBe('keep current only');
+    expect(bundle.brief).toBeNull();
+    expect(bundle.layerStatus).toEqual({
+      config: 'missing',
+      summary: 'missing',
+      currentRun: 'present',
+      brief: 'missing',
+    });
+  });
+
+  it('keeps bundle readable when brief path is unreadable', () => {
+    const dir = makeTempDir();
+    const runtimeRoot = join(dir, '.sane');
+    const stateDir = join(runtimeRoot, 'state');
+    const configPath = join(runtimeRoot, 'config.local.toml');
+    const summaryPath = join(stateDir, 'summary.json');
+    const currentRunPath = join(stateDir, 'current-run.json');
+    const briefPath = join(runtimeRoot, 'BRIEF.md');
+
+    writeLocalStateConfig(configPath, { version: 1, extra: {} });
+    writeRunSummary(summaryPath, {
+      version: 2,
+      acceptedDecisions: [],
+      completedMilestones: [],
+      constraints: [],
+      lastVerifiedOutputs: [],
+      filesTouched: [],
+      extra: {},
+    });
+    writeCurrentRunState(currentRunPath, {
+      version: 2,
+      objective: 'keep siblings readable',
+      phase: 'implementing',
+      activeTasks: [],
+      blockingQuestions: [],
+      verification: createVerificationStatus('pending', null),
+      lastCompactionTsUnix: null,
+      extra: {},
+    });
+    mkdirSync(briefPath, { recursive: true });
+
+    const bundle = loadLayeredStateBundle(
+      createCanonicalStatePaths(configPath, summaryPath, currentRunPath, briefPath),
+    );
+
+    expect(bundle.config?.version).toBe(1);
+    expect(bundle.summary?.version).toBe(2);
+    expect(bundle.currentRun?.objective).toBe('keep siblings readable');
+    expect(bundle.brief).toBeNull();
+    expect(bundle.layerStatus).toEqual({
+      config: 'present',
+      summary: 'present',
+      currentRun: 'present',
+      brief: 'invalid',
     });
   });
 

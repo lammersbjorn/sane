@@ -248,7 +248,7 @@ describe("showRuntimeSummary", () => {
     });
 
     const result = showRuntimeSummary(paths);
-    expect(result.details).toContain(`summary: missing at ${paths.summaryPath}`);
+    expect(result.details).toContain(`summary: invalid at ${paths.summaryPath}`);
     expect(result.details).toContain(`current-run: present at ${paths.currentRunPath}`);
   });
 

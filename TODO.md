@@ -124,6 +124,7 @@ Implemented:
 - optional repo-local skill export now exists as an explicit separate target and is not part of `export all`
 - optional repo-local AGENTS export now exists as an explicit separate target and is not part of `export all`
 - canonical `.sane` layered-state helpers now load config, summary, current run, and brief files in one typed bundle, with runtime-history counts flowing through that same canonical state path
+- canonical layered runtime state now also preserves `present` / `missing` / `invalid` truth for `current-run`, `summary`, and `brief`, and runtime-summary/inventory consume that typed status instead of value-truthiness
 - typed JSONL history helpers now support full reads plus ordered offset/limit slices for events, decisions, and artifacts
 - `@sane/platform` now owns Codex home discovery through explicit env resolution instead of leaving control-plane to call `homedir()` directly
 - TypeScript TUI bootstrap can now discover both project root and Codex home through `@sane/platform`

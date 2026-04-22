@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -44,6 +44,28 @@ describe("showRuntimeStatus", () => {
       true
     );
     expect(result.inventory.every((item) => item.status === InventoryStatus.Installed)).toBe(true);
+  });
+
+  it("keeps missing vs invalid runtime layers distinct from canonical bundle status", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+
+    installRuntime(projectPaths, createCodexPaths(homeDir));
+    writeFileSync(projectPaths.summaryPath, "{", "utf8");
+    rmSync(projectPaths.currentRunPath);
+    rmSync(projectPaths.briefPath);
+    mkdirSync(projectPaths.briefPath, { recursive: true });
+
+    const result = showRuntimeStatus(projectPaths);
+
+    expect(result.inventory).toEqual([
+      expect.objectContaining({ name: "runtime", status: InventoryStatus.Installed }),
+      expect.objectContaining({ name: "config", status: InventoryStatus.Installed }),
+      expect.objectContaining({ name: "current-run", status: InventoryStatus.Missing }),
+      expect.objectContaining({ name: "summary", status: InventoryStatus.Invalid }),
+      expect.objectContaining({ name: "brief", status: InventoryStatus.Invalid })
+    ]);
   });
 });
 

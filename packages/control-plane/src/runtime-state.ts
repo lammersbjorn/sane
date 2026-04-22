@@ -127,11 +127,20 @@ export function ensureRuntimeHandoffBaseline(
 export function loadRuntimeHandoffState(paths: ProjectPaths): RuntimeHandoffState {
   const layeredState = tryLoadRuntimeStateBundle(paths);
 
+  if (layeredState) {
+    return {
+      layeredState,
+      current: layeredState.currentRun,
+      summary: layeredState.summary,
+      brief: layeredState.brief
+    };
+  }
+
   return {
     layeredState,
-    current: layeredState?.currentRun ?? safeRead(() => readCurrentRunState(paths.currentRunPath)),
-    summary: layeredState?.summary ?? safeRead(() => readRunSummary(paths.summaryPath)),
-    brief: layeredState?.brief ?? safeRead(() => readFileSync(paths.briefPath, "utf8"))
+    current: safeRead(() => readCurrentRunState(paths.currentRunPath)),
+    summary: safeRead(() => readRunSummary(paths.summaryPath)),
+    brief: safeRead(() => readFileSync(paths.briefPath, "utf8"))
   };
 }
 

@@ -67,6 +67,7 @@ Current managed export behavior also depends on local config:
 - built-in pack manifests may also carry read-only provenance metadata for bundled upstream-derived skills or MCP references
 - that provenance is inspectable metadata only, not a live fetch/update contract
 - inspect/runtime-summary reads may surface bounded latest history previews for the most recent `event`, `decision`, and `artifact` alongside the underlying counts, but that stays read-only and does not add a log-browsing surface
+- runtime handoff inspection should preserve canonical `present` vs `missing` vs `invalid` layer truth for `current-run`, `summary`, and `brief` instead of collapsing everything into value-truthiness
 
 ## Required Operations
 

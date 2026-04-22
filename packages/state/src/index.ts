@@ -100,11 +100,19 @@ export interface CanonicalStatePaths {
   artifactsPath?: string;
 }
 
+export type LayeredStateLayerStatus = 'missing' | 'invalid' | 'present';
+
 export interface LayeredStateBundle {
   config: LocalStateConfig | null;
   summary: RunSummary | null;
   currentRun: CurrentRunState | null;
   brief: string | null;
+  layerStatus: {
+    config: LayeredStateLayerStatus;
+    summary: LayeredStateLayerStatus;
+    currentRun: LayeredStateLayerStatus;
+    brief: LayeredStateLayerStatus;
+  };
   historyCounts: LayeredStateHistoryCounts;
   historyPreview: LayeredStateHistoryPreview;
   latestPolicyPreview: LatestPolicyPreviewSnapshot;
@@ -497,11 +505,22 @@ export function writeLocalStateConfig(path: string, config: LocalStateConfig): v
 }
 
 export function loadLayeredStateBundle(paths: CanonicalStatePaths): LayeredStateBundle {
+  const config = readOptionalLayer(paths.configPath, readLocalStateConfig);
+  const summary = readOptionalLayer(paths.summaryPath, readRunSummary);
+  const currentRun = readOptionalLayer(paths.currentRunPath, readCurrentRunState);
+  const brief = readOptionalText(paths.briefPath);
+
   return {
-    config: readOptionalLayer(paths.configPath, readLocalStateConfig),
-    summary: readOptionalLayer(paths.summaryPath, readRunSummary),
-    currentRun: readOptionalLayer(paths.currentRunPath, readCurrentRunState),
-    brief: readOptionalText(paths.briefPath),
+    config: config.value,
+    summary: summary.value,
+    currentRun: currentRun.value,
+    brief: brief.value,
+    layerStatus: {
+      config: config.status,
+      summary: summary.status,
+      currentRun: currentRun.status,
+      brief: brief.status,
+    },
     historyCounts: {
       events: countOptionalJsonlEntries(paths.eventsPath),
       decisions: countOptionalJsonlEntries(paths.decisionsPath),
@@ -1349,11 +1368,18 @@ function readOptional<T>(path: string, reader: (path: string) => T): T | null {
   return reader(path);
 }
 
-function readOptionalLayer<T>(path: string, reader: (path: string) => T): T | null {
+function readOptionalLayer<T>(
+  path: string,
+  reader: (path: string) => T,
+): { value: T | null; status: LayeredStateLayerStatus } {
+  if (!existsSync(path)) {
+    return { value: null, status: 'missing' };
+  }
+
   try {
-    return readOptional(path, reader);
+    return { value: readOptional(path, reader), status: 'present' };
   } catch {
-    return null;
+    return { value: null, status: 'invalid' };
   }
 }
 
@@ -1368,11 +1394,15 @@ function countOptionalJsonlEntries(path: string | undefined): number {
   }
 }
 
-function readOptionalText(path: string): string | null {
+function readOptionalText(path: string): { value: string | null; status: LayeredStateLayerStatus } {
   if (!existsSync(path)) {
-    return null;
+    return { value: null, status: 'missing' };
   }
-  return readText(path);
+  try {
+    return { value: readText(path), status: 'present' };
+  } catch {
+    return { value: null, status: 'invalid' };
+  }
 }
 
 function readText(path: string): string {
