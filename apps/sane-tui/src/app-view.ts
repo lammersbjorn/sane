@@ -183,15 +183,14 @@ function selectedActionHelpLines(
 ): string[] {
   const action = currentAction(shell);
   if (action.id === "preview_codex_profile" || action.id === "apply_codex_profile") {
-    return [
-      `Selected action: ${action.label}`,
-      "",
-      ...action.help,
-      "",
-      `audit: ${getStarted.codexProfileAudit.status} (${getStarted.codexProfileAudit.recommendedChangeCount} recommended changes)`,
-      `apply readiness: ${getStarted.codexProfileApply.status} (${getStarted.codexProfileApply.appliedKeys.length} changes)`,
-      ...getStarted.codexProfilePreview.details
-    ];
+    return formatProfileActionHelp(action, {
+      auditStatus: getStarted.codexProfileAudit.status,
+      recommendedChangeCount: getStarted.codexProfileAudit.recommendedChangeCount,
+      applyStatus: getStarted.codexProfileApply.status,
+      appliedKeyCount: getStarted.codexProfileApply.appliedKeys.length,
+      appliedKeyLabel: "changes",
+      details: getStarted.codexProfilePreview.details
+    });
   }
 
   if (
@@ -199,15 +198,14 @@ function selectedActionHelpLines(
     action.id === "apply_integrations_profile"
   ) {
     const model = inspect();
-    return [
-      `Selected action: ${action.label}`,
-      "",
-      ...action.help,
-      "",
-      `audit: ${model.integrationsAudit.status} (${model.integrationsAudit.recommendedChangeCount} recommended changes)`,
-      `apply readiness: ${model.integrationsApply.status} (${model.integrationsApply.appliedKeys.length} keys)`,
-      ...model.integrationsPreview.details
-    ];
+    return formatProfileActionHelp(action, {
+      auditStatus: model.integrationsAudit.status,
+      recommendedChangeCount: model.integrationsAudit.recommendedChangeCount,
+      applyStatus: model.integrationsApply.status,
+      appliedKeyCount: model.integrationsApply.appliedKeys.length,
+      appliedKeyLabel: "keys",
+      details: model.integrationsPreview.details
+    });
   }
 
   if (action.id === "show_runtime_summary") {
@@ -262,31 +260,51 @@ function selectedActionHelpLines(
 
   if (action.id === "preview_cloudflare_profile" || action.id === "apply_cloudflare_profile") {
     const model = preferences();
-    return [
-      `Selected action: ${action.label}`,
-      "",
-      ...action.help,
-      "",
-      `audit: ${model.cloudflareAudit.status} (${model.cloudflareAudit.recommendedChangeCount} recommended changes)`,
-      `apply readiness: ${model.cloudflareApply.status} (${model.cloudflareApply.appliedKeys.length} keys)`,
-      ...model.cloudflarePreview.details
-    ];
+    return formatProfileActionHelp(action, {
+      auditStatus: model.cloudflareAudit.status,
+      recommendedChangeCount: model.cloudflareAudit.recommendedChangeCount,
+      applyStatus: model.cloudflareApply.status,
+      appliedKeyCount: model.cloudflareApply.appliedKeys.length,
+      appliedKeyLabel: "keys",
+      details: model.cloudflarePreview.details
+    });
   }
 
   if (action.id === "preview_opencode_profile" || action.id === "apply_opencode_profile") {
     const model = preferences();
-    return [
-      `Selected action: ${action.label}`,
-      "",
-      ...action.help,
-      "",
-      `audit: ${model.opencodeAudit.status} (${model.opencodeAudit.recommendedChangeCount} recommended changes)`,
-      `apply readiness: ${model.opencodeApply.status} (${model.opencodeApply.appliedKeys.length} keys)`,
-      ...model.opencodePreview.details
-    ];
+    return formatProfileActionHelp(action, {
+      auditStatus: model.opencodeAudit.status,
+      recommendedChangeCount: model.opencodeAudit.recommendedChangeCount,
+      applyStatus: model.opencodeApply.status,
+      appliedKeyCount: model.opencodeApply.appliedKeys.length,
+      appliedKeyLabel: "keys",
+      details: model.opencodePreview.details
+    });
   }
 
   return [`Selected action: ${action.label}`, "", ...action.help];
+}
+
+function formatProfileActionHelp(
+  action: ReturnType<typeof currentAction>,
+  profile: {
+    auditStatus: string;
+    recommendedChangeCount: number;
+    applyStatus: string;
+    appliedKeyCount: number;
+    appliedKeyLabel: "changes" | "keys";
+    details: string[];
+  }
+): string[] {
+  return [
+    `Selected action: ${action.label}`,
+    "",
+    ...action.help,
+    "",
+    `audit: ${profile.auditStatus} (${profile.recommendedChangeCount} recommended changes)`,
+    `apply readiness: ${profile.applyStatus} (${profile.appliedKeyCount} ${profile.appliedKeyLabel})`,
+    ...profile.details
+  ];
 }
 
 function footerLine(chips: ReturnType<typeof loadDashboardView>["chips"]): string {
