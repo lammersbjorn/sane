@@ -5,8 +5,10 @@ import {
   flowSteps,
   heroProofs,
   installCommand,
+  pageLinks,
   packageBoundaries,
   philosophyPrinciples,
+  primaryCtas,
   policyClasses
 } from "../src/content/site-content";
 
@@ -51,5 +53,18 @@ describe("@sane/site content", () => {
     expect(antiClaims).toContain("Not another runtime.");
     expect(packageBoundaries).toContain("@sane/control-plane");
     expect(installCommand).toContain("cargo run -p sane");
+  });
+
+  it("keeps exported nav and install links aligned with the single-page app", () => {
+    expect(pageLinks).toEqual([
+      { href: "#top", label: "Home" },
+      { href: "#stitched-surface", label: "Philosophy" },
+      { href: "#soft-structuralism", label: "How It Works" }
+    ]);
+
+    expect(primaryCtas[0]).toEqual({
+      label: "Install from source",
+      href: "#install-reference"
+    });
   });
 });

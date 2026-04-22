@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -102,6 +102,24 @@ describe("showRuntimeSummary", () => {
       scenarioCount: 2,
       scenarioIds: ["simple-question", "multi-file-feature"]
     });
+  });
+
+  it("keeps runtime progress available when summary.json is invalid", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+
+    installRuntime(paths, createCodexPaths(homeDir));
+    writeFileSync(paths.summaryPath, "{", "utf8");
+
+    expect(showRuntimeProgress(paths)).toEqual({
+      phase: "setup",
+      verificationStatus: "pending"
+    });
+
+    const result = showRuntimeSummary(paths);
+    expect(result.details).toContain(`summary: missing at ${paths.summaryPath}`);
+    expect(result.details).toContain(`current-run: present at ${paths.currentRunPath}`);
   });
 
   it("ignores malformed policy preview context safely", () => {

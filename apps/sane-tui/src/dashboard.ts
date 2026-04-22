@@ -1,4 +1,4 @@
-import { showRuntimeProgress, showRuntimeSummary } from "@sane/control-plane";
+import { showRuntimeProgress } from "@sane/control-plane";
 import { inspectStatusBundle } from "@sane/control-plane/inventory.js";
 import * as getStartedScreen from "@/get-started-screen.js";
 import { currentAction, currentActions, currentSection, projectLabel, recommendedNextStep, type TuiShell } from "@/shell.js";
@@ -185,37 +185,7 @@ function chipLabel(name: string): string {
 function runtimeProgressFromSnapshot(
   paths: TuiShell["paths"]
 ): { phase: string; verificationStatus: string } | null {
-  const snapshotProgress = showRuntimeProgress(paths);
-  if (snapshotProgress) {
-    return snapshotProgress;
-  }
-
-  return runtimeProgressFromSummaryDetails(showRuntimeSummary(paths).details);
-}
-
-function runtimeProgressFromSummaryDetails(
-  details: string[]
-): { phase: string; verificationStatus: string } | null {
-  let phase: string | null = null;
-  let verificationStatus: string | null = null;
-
-  for (const detail of details) {
-    if (detail.startsWith("phase: ")) {
-      phase = detail.slice("phase: ".length).trim();
-      continue;
-    }
-    if (detail.startsWith("verification: ")) {
-      const raw = detail.slice("verification: ".length).trim();
-      const withOptionalSummary = raw.split(" (", 1)[0];
-      verificationStatus = withOptionalSummary;
-    }
-  }
-
-  if (!phase || !verificationStatus) {
-    return null;
-  }
-
-  return { phase, verificationStatus };
+  return showRuntimeProgress(paths);
 }
 
 function toneForValue(value: string): DashboardChip["tone"] {

@@ -104,34 +104,22 @@ describe("dashboard view", () => {
     });
   });
 
-  it("derives runtime progress chips from runtime summary details", () => {
+  it("does not derive runtime chips from runtime summary detail text", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const paths = createProjectPaths(projectRoot);
     const codexPaths = createCodexPaths(homeDir);
     const shell = createTuiShell(paths, codexPaths);
 
-    const summarySpy = vi
-      .spyOn(controlPlane, "showRuntimeSummary")
-      .mockReturnValue({
-        details: ["phase: setup", "verification: failed (waiting for input)"]
-      } as ReturnType<typeof controlPlane.showRuntimeSummary>);
+    const progressSpy = vi.spyOn(controlPlane, "showRuntimeProgress").mockReturnValue(null);
+    const summarySpy = vi.spyOn(controlPlane, "showRuntimeSummary");
 
     const view = loadDashboardView(shell);
 
-    expect(summarySpy).toHaveBeenCalledWith(paths);
-    expect(view.chips.find((chip) => chip.id === "phase")).toEqual({
-      id: "phase",
-      label: "Phase",
-      value: "setup",
-      tone: "muted"
-    });
-    expect(view.chips.find((chip) => chip.id === "verification")).toEqual({
-      id: "verification",
-      label: "Verification",
-      value: "failed",
-      tone: "warn"
-    });
+    expect(progressSpy).toHaveBeenCalledWith(paths);
+    expect(summarySpy).not.toHaveBeenCalled();
+    expect(view.chips.find((chip) => chip.id === "phase")).toBeUndefined();
+    expect(view.chips.find((chip) => chip.id === "verification")).toBeUndefined();
   });
 
   it("prefers onboarding snapshot status line over status bundle primary shape for core chips", () => {

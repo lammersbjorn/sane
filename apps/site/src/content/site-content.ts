@@ -1,13 +1,13 @@
 export const pageLinks = [
-  { href: "/", label: "Home" },
-  { href: "/philosophy/", label: "Philosophy" },
-  { href: "/how-it-works/", label: "How It Works" }
+  { href: "#top", label: "Home" },
+  { href: "#stitched-surface", label: "Philosophy" },
+  { href: "#soft-structuralism", label: "How It Works" }
 ] as const;
 
 export const primaryCtas = [
   {
     label: "Install from source",
-    href: "#install"
+    href: "#install-reference"
   },
   {
     label: "View on GitHub",

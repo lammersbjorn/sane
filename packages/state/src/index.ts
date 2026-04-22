@@ -357,14 +357,14 @@ export function writeLocalStateConfig(path: string, config: LocalStateConfig): v
 
 export function loadLayeredStateBundle(paths: CanonicalStatePaths): LayeredStateBundle {
   return {
-    config: readOptional(paths.configPath, readLocalStateConfig),
-    summary: readOptional(paths.summaryPath, readRunSummary),
-    currentRun: readOptional(paths.currentRunPath, readCurrentRunState),
+    config: readOptionalLayer(paths.configPath, readLocalStateConfig),
+    summary: readOptionalLayer(paths.summaryPath, readRunSummary),
+    currentRun: readOptionalLayer(paths.currentRunPath, readCurrentRunState),
     brief: readOptionalText(paths.briefPath),
     historyCounts: {
-      events: paths.eventsPath ? countJsonlEntries(paths.eventsPath) : 0,
-      decisions: paths.decisionsPath ? countJsonlEntries(paths.decisionsPath) : 0,
-      artifacts: paths.artifactsPath ? countJsonlEntries(paths.artifactsPath) : 0,
+      events: countOptionalJsonlEntries(paths.eventsPath),
+      decisions: countOptionalJsonlEntries(paths.decisionsPath),
+      artifacts: countOptionalJsonlEntries(paths.artifactsPath),
     },
   };
 }
@@ -975,6 +975,25 @@ function readOptional<T>(path: string, reader: (path: string) => T): T | null {
     return null;
   }
   return reader(path);
+}
+
+function readOptionalLayer<T>(path: string, reader: (path: string) => T): T | null {
+  try {
+    return readOptional(path, reader);
+  } catch {
+    return null;
+  }
+}
+
+function countOptionalJsonlEntries(path: string | undefined): number {
+  if (!path) {
+    return 0;
+  }
+  try {
+    return countJsonlEntries(path);
+  } catch {
+    return 0;
+  }
 }
 
 function readOptionalText(path: string): string | null {
