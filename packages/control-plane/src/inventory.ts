@@ -5,8 +5,11 @@ import { createRecommendedLocalConfig, detectCodexEnvironment } from "@sane/conf
 import { InventoryScope, InventoryStatus, OperationKind, OperationResult } from "@sane/core";
 import {
   createOptionalPackSkills,
+  optionalPackConfigKey,
+  optionalPackNames,
   optionalPackSkillNames,
   optionalPackProvenance,
+  type OptionalPackName,
   type PackAssetProvenance
 } from "@sane/framework-assets";
 import { type CodexPaths, type ProjectPaths } from "@sane/platform";
@@ -30,8 +33,6 @@ type InventoryStatusName =
   | "invalid"
   | "present_without_sane_block"
   | "removed";
-
-type OptionalPackName = "caveman" | "cavemem" | "rtk" | "frontend-craft";
 
 export interface OptionalPackSnapshot {
   name: OptionalPackName;
@@ -147,10 +148,9 @@ export function inspectDoctorSnapshot(
     `summary-backups: ${canonicalBackupHistorySummary(summaryBackups)}`,
     `brief: ${doctorStatus(findInventory(bundle.inventory, "brief"))}`,
     `pack-core: ${doctorStatus(findInventory(bundle.inventory, "pack-core"))}`,
-    `pack-caveman: ${doctorStatus(findInventory(bundle.inventory, "pack-caveman"))}`,
-    `pack-cavemem: ${doctorStatus(findInventory(bundle.inventory, "pack-cavemem"))}`,
-    `pack-rtk: ${doctorStatus(findInventory(bundle.inventory, "pack-rtk"))}`,
-    `pack-frontend-craft: ${doctorStatus(findInventory(bundle.inventory, "pack-frontend-craft"))}`,
+    ...optionalPackNames().map((pack) =>
+      `${optionalPackInventoryName(pack)}: ${doctorStatus(findInventory(bundle.inventory, optionalPackInventoryName(pack)))}`
+    ),
     `codex-config: ${doctorStatus(findInventory(bundle.inventory, "codex-config"))}`,
     `user-skills: ${doctorStatus(findInventory(bundle.inventory, "user-skills"))}`,
     `repo-skills: ${doctorStatus(findInventory(bundle.inventory, "repo-skills"))}`,
@@ -234,12 +234,9 @@ export function inspectOnboardingSnapshot(
 function inspectPackInventory(paths: ProjectPaths, codexPaths: CodexPaths): InventoryItem[] {
   const configState = loadConfigState(paths, codexPaths);
   const names = [
-    ["pack-core", "core"],
-    ["pack-caveman", "caveman"],
-    ["pack-cavemem", "cavemem"],
-    ["pack-rtk", "rtk"],
-    ["pack-frontend-craft", "frontend-craft"]
-  ] as const;
+    ["pack-core", "core"] as const,
+    ...optionalPackNames().map((pack) => [optionalPackInventoryName(pack), pack] as const)
+  ];
 
   return names.map(([inventoryName, packName]) => {
     const status =
@@ -269,10 +266,8 @@ function inspectPackInventory(paths: ProjectPaths, codexPaths: CodexPaths): Inve
 }
 
 function inspectOptionalPackSnapshots(inventory: InventoryItem[]): OptionalPackSnapshot[] {
-  const packs: OptionalPackName[] = ["caveman", "cavemem", "rtk", "frontend-craft"];
-
-  return packs.map((name) => {
-    const inventoryName = `pack-${name}` as const;
+  return optionalPackNames().map((name) => {
+    const inventoryName = optionalPackInventoryName(name);
     const item = findInventoryOrNull(inventory, inventoryName);
 
     return {
@@ -292,20 +287,14 @@ function packStatusFromConfig(
   config: ReturnType<typeof createRecommendedLocalConfig>,
   packName: "core" | "caveman" | "cavemem" | "rtk" | "frontend-craft"
 ) {
-  switch (packName) {
-    case "core":
-      return config.packs.core ? InventoryStatus.Installed : InventoryStatus.Disabled;
-    case "caveman":
-      return config.packs.caveman ? packSkillStatus(paths, codexPaths, "caveman") : InventoryStatus.Disabled;
-    case "cavemem":
-      return config.packs.cavemem ? packSkillStatus(paths, codexPaths, "cavemem") : InventoryStatus.Disabled;
-    case "rtk":
-      return config.packs.rtk ? packSkillStatus(paths, codexPaths, "rtk") : InventoryStatus.Disabled;
-    case "frontend-craft":
-      return config.packs.frontendCraft
-        ? packSkillStatus(paths, codexPaths, "frontend-craft")
-        : InventoryStatus.Disabled;
+  if (packName === "core") {
+    return config.packs.core ? InventoryStatus.Installed : InventoryStatus.Disabled;
   }
+
+  const configKey = optionalPackConfigKey(packName);
+  return config.packs[configKey]
+    ? packSkillStatus(paths, codexPaths, packName)
+    : InventoryStatus.Disabled;
 }
 
 function packSkillStatus(
@@ -559,6 +548,10 @@ function doctorStatus(item: InventoryItem): string {
     default:
       return item.status.asString();
   }
+}
+
+function optionalPackInventoryName(pack: OptionalPackName): `pack-${OptionalPackName}` {
+  return `pack-${pack}`;
 }
 
 function codexDoctorStatus(item: InventoryItem, exportCommand: string): string {

@@ -24,6 +24,8 @@ import {
   createSaneRouterSkill,
   corePackAssetSourceProvenance,
   corePackAssetSourceProvenanceStyle,
+  optionalPackConfigKey,
+  optionalPackNames,
   optionalPackSkillName,
   optionalPackSkillNames,
   optionalPackProvenance,
@@ -145,6 +147,14 @@ describe("framework asset parity", () => {
     );
     expect(manifest.optionalPacks.caveman.provenance.kind).toBe("derived");
     expect(manifest.optionalPacks["frontend-craft"].provenance.kind).toBe("derived");
+  });
+
+  it("exposes one shared optional-pack roster and config-key mapping", () => {
+    expect(optionalPackNames()).toEqual(["caveman", "cavemem", "rtk", "frontend-craft"]);
+    expect(optionalPackConfigKey("caveman")).toBe("caveman");
+    expect(optionalPackConfigKey("cavemem")).toBe("cavemem");
+    expect(optionalPackConfigKey("rtk")).toBe("rtk");
+    expect(optionalPackConfigKey("frontend-craft")).toBe("frontendCraft");
   });
 
   it("router skill renders from the checked-in core template", () => {

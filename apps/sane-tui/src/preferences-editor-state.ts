@@ -5,6 +5,7 @@ import {
   createDefaultPackConfig,
   type LocalConfig
 } from "@sane/config";
+import { OPTIONAL_PACK_METADATA, type OptionalPackName } from "@sane/framework-assets";
 
 export type ConfigFieldId =
   | "coordinator_model"
@@ -56,7 +57,30 @@ const CONFIG_FIELDS: ConfigFieldId[] = [
   "verifier_reasoning"
 ];
 
-const PACK_FIELDS: PackFieldId[] = ["caveman", "cavemem", "rtk", "frontend_craft"];
+const PACK_FIELD_ID_BY_NAME: Record<OptionalPackName, PackFieldId> = {
+  caveman: "caveman",
+  cavemem: "cavemem",
+  rtk: "rtk",
+  "frontend-craft": "frontend_craft"
+};
+
+const PACK_NAME_BY_FIELD: Record<PackFieldId, OptionalPackName> = {
+  caveman: "caveman",
+  cavemem: "cavemem",
+  rtk: "rtk",
+  frontend_craft: "frontend-craft"
+};
+
+const PACK_CONFIG_KEY_BY_FIELD: Record<PackFieldId, keyof LocalConfig["packs"]> = {
+  caveman: "caveman",
+  cavemem: "cavemem",
+  rtk: "rtk",
+  frontend_craft: "frontendCraft"
+};
+
+const PACK_FIELDS: PackFieldId[] = OPTIONAL_PACK_METADATA.map(
+  (entry) => PACK_FIELD_ID_BY_NAME[entry.name]
+);
 
 export function createConfigEditorState(
   config: LocalConfig,
@@ -153,24 +177,19 @@ export function movePackSelection(state: PackEditorState, step: 1 | -1): PackEdi
 export function toggleSelectedPack(state: PackEditorState): PackEditorState {
   const next = structuredClone(state);
   const field = state.fields[state.selected]!;
-
-  switch (field) {
-    case "caveman":
-      next.config.packs.caveman = !next.config.packs.caveman;
-      break;
-    case "cavemem":
-      next.config.packs.cavemem = !next.config.packs.cavemem;
-      break;
-    case "rtk":
-      next.config.packs.rtk = !next.config.packs.rtk;
-      break;
-    case "frontend_craft":
-      next.config.packs.frontendCraft = !next.config.packs.frontendCraft;
-      break;
-  }
+  const configKey = packFieldConfigKey(field);
+  next.config.packs[configKey] = !next.config.packs[configKey];
 
   next.config.packs.core = true;
   return withPackAffordances(next);
+}
+
+export function packFieldPackName(field: PackFieldId): OptionalPackName {
+  return PACK_NAME_BY_FIELD[field];
+}
+
+export function packFieldConfigKey(field: PackFieldId): keyof LocalConfig["packs"] {
+  return PACK_CONFIG_KEY_BY_FIELD[field];
 }
 
 export function resetPackEditor(state: PackEditorState): PackEditorState {

@@ -23,6 +23,7 @@ They feel it indirectly when:
 - exported skills and overlays use consistent names and markers
 - uninstall removes only Sane-managed content
 - generated guidance stays aligned with enabled packs and saved model-role defaults
+- fixed built-in pack behavior stays coherent across exports/status (`frontend-craft` exports `design-taste-frontend` + `impeccable`; `cavemem`/`rtk` stay capability-only)
 
 ## What It Owns
 
@@ -30,6 +31,7 @@ They feel it indirectly when:
 - operation and inventory types
 - managed block markers for additive file edits
 - generated `sane-router` and related managed content
+- fixed built-in pack mapping for managed exports versus capability-only behavior
 - shared wording used to keep install/export/uninstall boundaries aligned
 
 ## What It Must Not Own

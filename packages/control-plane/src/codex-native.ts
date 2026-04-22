@@ -12,6 +12,8 @@ import {
   upsertManagedBlock
 } from "@sane/core";
 import {
+  disabledOptionalPackNames,
+  enabledOptionalPackNames,
   SANE_GLOBAL_AGENTS_BEGIN,
   SANE_GLOBAL_AGENTS_END,
   SANE_REPO_AGENTS_BEGIN,
@@ -19,7 +21,9 @@ import {
   createOptionalPackSkills,
   createSaneGlobalAgentsOverlay,
   createSaneRouterSkill,
+  optionalPackNames,
   optionalPackSkillNames,
+  type OptionalPackName,
   type GuidancePacks,
   type ModelRoutingGuidance
 } from "@sane/framework-assets";
@@ -29,9 +33,6 @@ import { existsSync, mkdirSync, readFileSync, rmSync, rmSync as removeSync, writ
 import { dirname, join } from "node:path";
 
 import { recommendedLocalConfigFromEnvironment } from "./local-config.js";
-
-const OPTIONAL_PACK_NAMES = ["caveman", "cavemem", "rtk", "frontend-craft"] as const;
-
 export function exportUserSkills(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
   return exportSkillsTarget(
     paths,
@@ -280,7 +281,7 @@ function uninstallSkillsTarget(
 ): OperationResult {
   const skillDir = join(skillsRoot, "sane-router");
   const skillPath = join(skillDir, "SKILL.md");
-  const optionalDirs = OPTIONAL_PACK_NAMES.flatMap((name) =>
+  const optionalDirs = optionalPackNames().flatMap((name) =>
     optionalPackSkillNames(name).map((skillName) => join(skillsRoot, skillName))
   );
 
@@ -506,39 +507,16 @@ function loadOrDefaultConfig(paths: ProjectPaths, codexPaths: CodexPaths, enviro
 }
 
 function formatGuidancePacks(packs: GuidancePacks): string {
-  const enabled = ["core"];
-  if (packs.caveman) enabled.push("caveman");
-  if (packs.cavemem) enabled.push("cavemem");
-  if (packs.rtk) enabled.push("rtk");
-  if (packs.frontendCraft) enabled.push("frontend-craft");
-  return enabled.join(", ");
+  return ["core", ...enabledOptionalPackNames(packs)].join(", ");
 }
 
 function enabledOptionalPackSkills(
   packs: GuidancePacks
 ): Array<
   [
-    typeof OPTIONAL_PACK_NAMES[number],
+    OptionalPackName,
     Array<{ name: string; content: string; resources: Array<{ path: string; content: string }> }>
   ]
 > {
-  return OPTIONAL_PACK_NAMES.filter((name) => isPackEnabled(name, packs))
-    .map((name) => [name, createOptionalPackSkills(name)]);
-}
-
-function disabledOptionalPackNames(packs: GuidancePacks): Array<typeof OPTIONAL_PACK_NAMES[number]> {
-  return OPTIONAL_PACK_NAMES.filter((name) => !isPackEnabled(name, packs));
-}
-
-function isPackEnabled(name: typeof OPTIONAL_PACK_NAMES[number], packs: GuidancePacks): boolean {
-  switch (name) {
-    case "caveman":
-      return packs.caveman;
-    case "cavemem":
-      return packs.cavemem;
-    case "rtk":
-      return packs.rtk;
-    case "frontend-craft":
-      return packs.frontendCraft;
-  }
+  return enabledOptionalPackNames(packs).map((name) => [name, createOptionalPackSkills(name)]);
 }

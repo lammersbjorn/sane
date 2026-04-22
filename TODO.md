@@ -84,7 +84,10 @@ Implemented:
 - explicit opt-in OpenCode-agent export/remove actions kept outside `export_all`
 - built-in pack editor in the TUI with local-only optional pack toggles
 - built-in pack state exposed in status / doctor inventory
+- built-in pack set currently remains fixed: always-on `core` plus optional `caveman`, `cavemem`, `rtk`, and `frontend-craft`
 - optional packs now show `configured` vs `installed` truthfully depending on whether managed user-skill assets were exported
+- `frontend-craft` currently exports exactly two concrete skills: `design-taste-frontend` and `impeccable`
+- `cavemem` and `rtk` currently stay capability-only (router/overlay behavior, no dedicated skill export directory)
 - exported `sane-router` skill and global AGENTS overlay now reflect enabled guidance packs and current routing defaults
 - status/doctor now catch drift when exported guidance assets no longer match enabled packs or current routing defaults
 - optional pack manifests now carry read-only provenance metadata for curated upstream-derived skills where that source is real and worth tracking
@@ -207,7 +210,7 @@ pnpm check
 
 ## Open Research / Decisions
 
-- [ ] Exact `v1` built-in packs
+- [ ] Exact post-`v1` built-in pack expansion/contraction policy (current built-in set is fixed today)
 - [ ] Exact long-term `Opencode` compatibility scope beyond the current optional `opensrc` profile plus optional OpenCode-agent export
 - [ ] Exact explicit preset coverage for `Kimi K2.6` and other newly popular models vs generic fallback-by-capability handling:
   - source quality acceptable

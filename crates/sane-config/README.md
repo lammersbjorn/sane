@@ -20,7 +20,7 @@ Users feel this crate whenever `Sane`:
 - shows stable defaults
 - derives first-pass role presets from the detected Codex environment
 - remembers model-role choices
-- tracks enabled built-in packs
+- tracks enabled built-in packs from the fixed current set (`caveman`, `cavemem`, `rtk`, `frontend-craft`)
 - stores privacy and telemetry choices
 - rejects invalid combinations before export or apply
 
@@ -32,7 +32,7 @@ If config meaning drifts across the workspace, previews and installs stop being 
 - defaults
 - environment-aware recommendation helpers for role presets
 - model and reasoning enums
-- pack settings
+- pack settings for the fixed built-in optional-pack set, including capability-only vs concrete-skill export behavior
 - privacy and telemetry settings
 - serialization helpers
 - validation rules

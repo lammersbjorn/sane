@@ -14,6 +14,17 @@ export const SANE_GLOBAL_AGENTS_BEGIN = "<!-- sane:global-agents:start -->";
 export const SANE_GLOBAL_AGENTS_END = "<!-- sane:global-agents:end -->";
 export const SANE_REPO_AGENTS_BEGIN = "<!-- sane:repo-agents:start -->";
 export const SANE_REPO_AGENTS_END = "<!-- sane:repo-agents:end -->";
+export const OPTIONAL_PACK_NAMES = ["caveman", "cavemem", "rtk", "frontend-craft"] as const;
+export type OptionalPackName = typeof OPTIONAL_PACK_NAMES[number];
+export const OPTIONAL_PACK_METADATA = [
+  { name: "caveman", configKey: "caveman" },
+  { name: "cavemem", configKey: "cavemem" },
+  { name: "rtk", configKey: "rtk" },
+  { name: "frontend-craft", configKey: "frontendCraft" }
+] as const satisfies ReadonlyArray<{
+  name: OptionalPackName;
+  configKey: keyof GuidancePacks;
+}>;
 
 export interface GuidancePacks {
   caveman: boolean;
@@ -136,6 +147,35 @@ export function createDefaultGuidancePacks(): GuidancePacks {
     rtk: false,
     frontendCraft: false
   };
+}
+
+export function optionalPackNames(): OptionalPackName[] {
+  return [...OPTIONAL_PACK_NAMES];
+}
+
+export function optionalPackConfigKey(pack: OptionalPackName): keyof GuidancePacks {
+  return OPTIONAL_PACK_METADATA.find((entry) => entry.name === pack)!.configKey;
+}
+
+export function isOptionalPackEnabled(pack: OptionalPackName, packs: GuidancePacks): boolean {
+  switch (pack) {
+    case "caveman":
+      return packs.caveman;
+    case "cavemem":
+      return packs.cavemem;
+    case "rtk":
+      return packs.rtk;
+    case "frontend-craft":
+      return packs.frontendCraft;
+  }
+}
+
+export function enabledOptionalPackNames(packs: GuidancePacks): OptionalPackName[] {
+  return OPTIONAL_PACK_NAMES.filter((pack) => isOptionalPackEnabled(pack, packs));
+}
+
+export function disabledOptionalPackNames(packs: GuidancePacks): OptionalPackName[] {
+  return OPTIONAL_PACK_NAMES.filter((pack) => !isOptionalPackEnabled(pack, packs));
 }
 
 export function createSaneRouterSkill(packs: GuidancePacks, roles: ModelRoutingGuidance): string {
@@ -303,7 +343,9 @@ function renderTemplate(template: string, replacements: Record<string, string>):
 function enabledPackEntries(
   packs: GuidancePacks
 ): Array<[string, CorePackManifest["optionalPacks"][string]]> {
-  return Object.entries(CORE_PACK_MANIFEST.optionalPacks).filter(([key]) => isPackEnabled(key, packs));
+  return Object.entries(CORE_PACK_MANIFEST.optionalPacks).filter(([key]) =>
+    OPTIONAL_PACK_NAMES.includes(key as OptionalPackName) && isOptionalPackEnabled(key as OptionalPackName, packs)
+  );
 }
 
 function enabledPackSkillSelections(packs: GuidancePacks): string {
@@ -319,19 +361,4 @@ function enabledPackSkillSelections(packs: GuidancePacks): string {
       })
     )
     .join("\n");
-}
-
-function isPackEnabled(pack: string, packs: GuidancePacks): boolean {
-  switch (pack) {
-    case "caveman":
-      return packs.caveman;
-    case "cavemem":
-      return packs.cavemem;
-    case "rtk":
-      return packs.rtk;
-    case "frontend-craft":
-      return packs.frontendCraft;
-    default:
-      return false;
-  }
 }

@@ -1,4 +1,4 @@
-import { PICKER_MODELS, REASONING_EFFORTS } from "@sane/config";
+import { PICKER_MODELS, REASONING_EFFORTS, enabledPackNames as configEnabledPackNames } from "@sane/config";
 import { inspectTelemetrySnapshot } from "@sane/control-plane/preferences.js";
 import { optionalPackSkillNames } from "@sane/framework-assets";
 
@@ -7,6 +7,7 @@ import {
   type ConfigFieldId,
   type PackEditorState,
   type PackFieldId,
+  packFieldPackName,
   type PrivacyEditorState
 } from "@/preferences-editor-state.js";
 import { type TuiShell } from "@/shell.js";
@@ -226,33 +227,11 @@ function packLines(editor: PackEditorState): string[] {
 }
 
 function enabledPackNames(editor: PackEditorState): string {
-  const names = ["core"];
-  if (editor.config.packs.caveman) {
-    names.push("caveman");
-  }
-  if (editor.config.packs.cavemem) {
-    names.push("cavemem");
-  }
-  if (editor.config.packs.rtk) {
-    names.push("rtk");
-  }
-  if (editor.config.packs.frontendCraft) {
-    names.push("frontend-craft");
-  }
-  return names.join(", ");
+  return configEnabledPackNames(editor.config.packs).join(", ");
 }
 
 function packFieldLabel(field: PackFieldId): string {
-  switch (field) {
-    case "caveman":
-      return "caveman";
-    case "cavemem":
-      return "cavemem";
-    case "rtk":
-      return "rtk";
-    case "frontend_craft":
-      return "frontend-craft";
-  }
+  return packFieldPackName(field);
 }
 
 function packFieldExplanation(field: PackFieldId): string {
@@ -269,14 +248,5 @@ function packFieldExplanation(field: PackFieldId): string {
 }
 
 function selectedPackSkillNames(field: PackFieldId): string[] {
-  switch (field) {
-    case "caveman":
-      return optionalPackSkillNames("caveman");
-    case "cavemem":
-      return optionalPackSkillNames("cavemem");
-    case "rtk":
-      return optionalPackSkillNames("rtk");
-    case "frontend_craft":
-      return optionalPackSkillNames("frontend-craft");
-  }
+  return optionalPackSkillNames(packFieldPackName(field));
 }
