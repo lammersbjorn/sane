@@ -43,6 +43,7 @@ describe("repair status snapshot", () => {
         uninstall_global_agents: "missing",
         uninstall_hooks: "missing",
         uninstall_custom_agents: "missing",
+        uninstall_opencode_agents: "missing",
         uninstall_all: "missing"
       })
     });
@@ -71,6 +72,7 @@ describe("repair status snapshot", () => {
         uninstall_global_agents: "installed",
         uninstall_hooks: "installed",
         uninstall_custom_agents: "installed",
+        uninstall_opencode_agents: "missing",
         uninstall_all: "installed"
       })
     });

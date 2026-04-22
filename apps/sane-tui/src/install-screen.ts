@@ -14,6 +14,7 @@ import {
 } from "@sane/control-plane/hooks-custom-agents.js";
 import { executeOperation } from "@sane/control-plane/history.js";
 import { inspectInstallStatus } from "@sane/control-plane/install-status.js";
+import { exportOpencodeAgents } from "@sane/control-plane/opencode-native.js";
 import { listSectionActions } from "@/command-registry.js";
 
 export interface InstallScreenModel {
@@ -31,6 +32,7 @@ export interface InstallScreenModel {
     applyIntegrationsProfile: () => ReturnType<typeof applyIntegrationsProfile>;
     installHooks: () => ReturnType<typeof exportHooks>;
     installCustomAgents: () => ReturnType<typeof exportCustomAgents>;
+    installOpencodeAgents: () => ReturnType<typeof exportOpencodeAgents>;
     installAll: () => ReturnType<typeof exportAll>;
   };
 }
@@ -44,6 +46,7 @@ export interface InstallAction {
     | "apply_integrations_profile"
     | "export_hooks"
     | "export_custom_agents"
+    | "export_opencode_agents"
     | "export_all";
   title: string;
   status: string;
@@ -77,6 +80,7 @@ export function loadInstallScreen(paths: ProjectPaths, codexPaths: CodexPaths): 
       applyIntegrationsProfile: () => executeOperation(paths, () => applyIntegrationsProfile(paths, codexPaths)),
       installHooks: () => executeOperation(paths, () => exportHooks(codexPaths)),
       installCustomAgents: () => executeOperation(paths, () => exportCustomAgents(paths, codexPaths)),
+      installOpencodeAgents: () => executeOperation(paths, () => exportOpencodeAgents(paths, codexPaths)),
       installAll: () => executeOperation(paths, () => exportAll(paths, codexPaths))
     }
   };

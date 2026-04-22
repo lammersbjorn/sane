@@ -40,6 +40,7 @@ describe("install status snapshot", () => {
           export_global_agents: "missing",
           export_hooks: "missing",
           export_custom_agents: "missing",
+          export_opencode_agents: "missing",
           apply_integrations_profile: "missing",
           export_all: "missing"
         })
@@ -62,6 +63,7 @@ describe("install status snapshot", () => {
         recommendedActionId: "apply_integrations_profile",
         actionStatus: expect.objectContaining({
           export_all: "installed",
+          export_opencode_agents: "missing",
           apply_integrations_profile: "missing"
         })
       })

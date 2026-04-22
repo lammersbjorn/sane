@@ -12,6 +12,7 @@ export type InstallActionStatusId =
   | "apply_integrations_profile"
   | "export_hooks"
   | "export_custom_agents"
+  | "export_opencode_agents"
   | "export_all";
 
 export interface InstallStatusSnapshot {
@@ -50,6 +51,7 @@ export function inspectInstallStatus(
       apply_integrations_profile: integrationStatus,
       export_hooks: inventoryStatus(inventory, "hooks"),
       export_custom_agents: inventoryStatus(inventory, "custom-agents"),
+      export_opencode_agents: compatibilityStatus(statusBundle, "opencode-agents"),
       export_all: bundleStatus
     }
   };
@@ -69,4 +71,11 @@ function missingBundleTargets(
   return needed.filter(
     (name) => inventory.find((item) => item.name === name)?.status !== InventoryStatus.Installed
   );
+}
+
+function compatibilityStatus(
+  statusBundle: ReturnType<typeof inspectStatusBundle>,
+  name: string
+): string {
+  return statusBundle.compatibility.find((item) => item.name === name)?.status.displayString() ?? "missing";
 }

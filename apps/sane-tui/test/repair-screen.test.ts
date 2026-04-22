@@ -48,6 +48,7 @@ describe("repair screen model", () => {
       "uninstall_repo_agents",
       "uninstall_hooks",
       "uninstall_custom_agents",
+      "uninstall_opencode_agents",
       "uninstall_all"
     ]);
     expect(
@@ -59,6 +60,9 @@ describe("repair screen model", () => {
     expect(screen.actions.find((action) => action.id === "uninstall_hooks")?.confirmation).toBe(
       "This removes Sane's managed Codex hook entry."
     );
+    expect(
+      screen.actions.find((action) => action.id === "uninstall_opencode_agents")?.confirmation
+    ).toBe("This removes Sane's optional OpenCode-agent export.");
     expect(
       screen.actions.find((action) => action.id === "restore_codex_config")?.confirmation
     ).toBe("This replaces your current Codex config with the latest backup.");

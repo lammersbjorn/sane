@@ -87,6 +87,7 @@ Not part of the main onboarding button:
 - repo skills
 - repo `AGENTS.md` block
 - optional provider/integration installs
+- optional OpenCode-agent export
 
 Rules:
 
@@ -133,6 +134,7 @@ Content:
 - global `AGENTS.md` block
 - hooks
 - custom agents (`sane-agent`, `sane-reviewer`, `sane-explorer`)
+- optional OpenCode agents (`~/.config/opencode/agents/`)
 - integrations-profile actions should render backend structured audit output directly so users can see exact recommended adds before apply, and inspect/install overview copy should consume that same typed audit state instead of parsing preview summaries
 - install all supported user-level items together
 

@@ -15,6 +15,7 @@ export type RepairActionStatusId =
   | "uninstall_repo_agents"
   | "uninstall_hooks"
   | "uninstall_custom_agents"
+  | "uninstall_opencode_agents"
   | "uninstall_all";
 
 export interface RepairStatusSnapshot {
@@ -43,6 +44,7 @@ export function inspectRepairStatus(
       uninstall_repo_agents: statusFor(statusBundle.inventory, "repo-agents"),
       uninstall_hooks: statusFor(statusBundle.inventory, "hooks"),
       uninstall_custom_agents: statusFor(statusBundle.inventory, "custom-agents"),
+      uninstall_opencode_agents: statusFor(statusBundle.inventory, "opencode-agents"),
       uninstall_all: uninstallAllStatus(statusBundle.inventory)
     }
   };

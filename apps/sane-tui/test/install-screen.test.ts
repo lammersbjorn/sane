@@ -49,7 +49,8 @@ describe("install screen model", () => {
       "apply_integrations_profile",
       "export_hooks",
       "export_custom_agents",
-      "export_all"
+      "export_all",
+      "export_opencode_agents"
     ]);
     expect(screen.actions.find((action) => action.id === "export_repo_skills")?.repoMutation).toBe(
       true
@@ -61,6 +62,9 @@ describe("install screen model", () => {
       "custom-agents"
     ]);
     expect(screen.actions.find((action) => action.id === "apply_integrations_profile")?.status).toBe(
+      "missing"
+    );
+    expect(screen.actions.find((action) => action.id === "export_opencode_agents")?.status).toBe(
       "missing"
     );
   });

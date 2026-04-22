@@ -39,7 +39,8 @@ describe("command metadata registry", () => {
       "apply_integrations_profile",
       "export_hooks",
       "export_custom_agents",
-      "export_all"
+      "export_all",
+      "export_opencode_agents"
     ]);
     expect(listSectionActions("preferences").map((action) => action.id)).toEqual([
       "open_config_editor",
@@ -72,10 +73,11 @@ describe("command metadata registry", () => {
       "uninstall_repo_agents",
       "uninstall_hooks",
       "uninstall_custom_agents",
+      "uninstall_opencode_agents",
       "uninstall_all"
     ]);
     expect(listSectionActions("get_started").at(-1)?.label).toBe("6. Install Sane into Codex");
-    expect(listSectionActions("install").at(-1)?.label).toBe("Install everything Sane manages in Codex");
+    expect(listSectionActions("install").at(-1)?.label).toBe("Install optional Sane agents for OpenCode");
     expect(getCommandSpec("show_runtime_summary").help[0]).toBe(
       "Show a read-only summary of local runtime handoff state."
     );
@@ -91,6 +93,9 @@ describe("command metadata registry", () => {
     expect(getCommandSpec("apply_integrations_profile").backendKind).toBe(
       OperationKind.ApplyIntegrationsProfile
     );
+    expect(getCommandSpec("export_opencode_agents").backendKind).toBe(
+      OperationKind.ExportOpencodeAgents
+    );
     expect(getCommandSpec("preview_opencode_profile").backendKind).toBe(
       OperationKind.PreviewOpencodeProfile
     );
@@ -105,6 +110,9 @@ describe("command metadata registry", () => {
     );
     expect(getCommandSpec("uninstall_hooks").confirmation?.impactCopy).toBe(
       "This removes Sane's managed Codex hook entry."
+    );
+    expect(getCommandSpec("uninstall_opencode_agents").confirmation?.impactCopy).toBe(
+      "This removes Sane's optional OpenCode-agent export."
     );
     expect(getCommandSpec("uninstall_all").confirmation?.impactCopy).toBe(
       "This removes all Sane-managed Codex pieces."

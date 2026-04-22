@@ -26,6 +26,7 @@ export type BackendCommandId =
   | "export_global_agents"
   | "export_hooks"
   | "export_custom_agents"
+  | "export_opencode_agents"
   | "export_all"
   | "uninstall_user_skills"
   | "uninstall_repo_skills"
@@ -33,6 +34,7 @@ export type BackendCommandId =
   | "uninstall_global_agents"
   | "uninstall_hooks"
   | "uninstall_custom_agents"
+  | "uninstall_opencode_agents"
   | "uninstall_all"
   | "show_status"
   | "doctor";
@@ -427,6 +429,21 @@ export const COMMAND_METADATA_REGISTRY = {
       repoMutation: false,
       filesTouched: ["~/.codex/config.toml"]
     },
+    export_opencode_agents: {
+      id: "export_opencode_agents",
+      kind: "backend",
+      backendKind: OperationKind.ExportOpencodeAgents,
+      help: [
+        "Install the optional Sane OpenCode agents into `~/.config/opencode/agents/`.",
+        "",
+        "This stays outside Sane's default Codex install bundle.",
+        "Use it only if you also want the same Sane agent roles available in OpenCode."
+      ],
+      confirmation: null,
+      successNoticeTitle: "Installed",
+      repoMutation: false,
+      filesTouched: ["~/.config/opencode/agents/"]
+    },
     restore_codex_config: {
       id: "restore_codex_config",
       kind: "backend",
@@ -681,6 +698,27 @@ export const COMMAND_METADATA_REGISTRY = {
       repoMutation: false,
       filesTouched: ["~/.codex/agents/"]
     },
+    uninstall_opencode_agents: {
+      id: "uninstall_opencode_agents",
+      kind: "backend",
+      backendKind: OperationKind.UninstallOpencodeAgents,
+      help: [
+        "Remove the optional Sane OpenCode agents from `~/.config/opencode/agents/`.",
+        "",
+        "This does not touch the main Codex install bundle.",
+        "",
+        "Safety",
+        "Confirmation required before this action runs."
+      ],
+      confirmation: {
+        required: true,
+        impactCopy: "This removes Sane's optional OpenCode-agent export.",
+        remindPreviewOrBackup: false
+      },
+      successNoticeTitle: "Uninstalled",
+      repoMutation: false,
+      filesTouched: ["~/.config/opencode/agents/"]
+    },
     uninstall_all: {
       id: "uninstall_all",
       kind: "backend",
@@ -808,6 +846,7 @@ export const COMMAND_METADATA_REGISTRY = {
     { commandId: "export_hooks", section: "install", order: 6, label: "Install Sane Codex hooks" },
     { commandId: "export_custom_agents", section: "install", order: 7, label: "Install Sane custom agents for Codex" },
     { commandId: "export_all", section: "install", order: 8, label: "Install everything Sane manages in Codex" },
+    { commandId: "export_opencode_agents", section: "install", order: 9, label: "Install optional Sane agents for OpenCode" },
     { commandId: "show_status", section: "inspect", order: 1, label: "Show everything Sane currently manages" },
     { commandId: "doctor", section: "inspect", order: 2, label: "Run Sane doctor checks for problems" },
     { commandId: "show_runtime_summary", section: "inspect", order: 3, label: "View current Sane runtime handoff state" },
@@ -825,7 +864,8 @@ export const COMMAND_METADATA_REGISTRY = {
     { commandId: "uninstall_repo_agents", section: "repair", order: 8, label: "Remove Sane block from this repo's AGENTS.md" },
     { commandId: "uninstall_hooks", section: "repair", order: 9, label: "Remove Sane Codex hooks" },
     { commandId: "uninstall_custom_agents", section: "repair", order: 10, label: "Remove Sane custom agents from Codex" },
-    { commandId: "uninstall_all", section: "repair", order: 11, label: "Remove everything Sane manages from Codex" }
+    { commandId: "uninstall_opencode_agents", section: "repair", order: 11, label: "Remove optional Sane agents from OpenCode" },
+    { commandId: "uninstall_all", section: "repair", order: 12, label: "Remove everything Sane manages from Codex" }
   ] satisfies CommandPlacement[]
 } as const;
 

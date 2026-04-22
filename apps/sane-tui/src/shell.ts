@@ -31,6 +31,7 @@ import {
   exportCustomAgents,
   exportHooks
 } from "@sane/control-plane/hooks-custom-agents.js";
+import { exportOpencodeAgents, uninstallOpencodeAgents } from "@sane/control-plane/opencode-native.js";
 import { executeConfigSave, executeOperation, readLastOperationSummary } from "@sane/control-plane/history.js";
 import { doctor, showStatus } from "@sane/control-plane/inventory.js";
 import { previewPolicy } from "@sane/control-plane/policy-preview.js";
@@ -384,6 +385,8 @@ function executeUiCommand(
       return executeOperation(paths, () => exportHooks(codexPaths));
     case "export_custom_agents":
       return executeOperation(paths, () => exportCustomAgents(paths, codexPaths));
+    case "export_opencode_agents":
+      return executeOperation(paths, () => exportOpencodeAgents(paths, codexPaths));
     case "export_all":
       return executeOperation(paths, () => exportAll(paths, codexPaths));
     case "uninstall_user_skills":
@@ -398,6 +401,8 @@ function executeUiCommand(
       return executeOperation(paths, () => uninstallHooks(codexPaths));
     case "uninstall_custom_agents":
       return executeOperation(paths, () => uninstallCustomAgents(codexPaths));
+    case "uninstall_opencode_agents":
+      return executeOperation(paths, () => uninstallOpencodeAgents(codexPaths));
     case "uninstall_all":
       return executeOperation(paths, () => uninstallAll(codexPaths));
   }

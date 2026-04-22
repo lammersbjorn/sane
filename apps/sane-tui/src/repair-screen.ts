@@ -8,6 +8,7 @@ import {
 import { executeOperation } from "@sane/control-plane/history.js";
 import { uninstallGlobalAgents, uninstallUserSkills } from "@sane/control-plane/codex-native.js";
 import { uninstallCustomAgents, uninstallHooks } from "@sane/control-plane/hooks-custom-agents.js";
+import { uninstallOpencodeAgents } from "@sane/control-plane/opencode-native.js";
 import { inspectRepairStatus } from "@sane/control-plane/repair-status.js";
 import { uninstallRepoAgents, uninstallRepoSkills } from "@sane/control-plane";
 import { installRuntime } from "@sane/control-plane";
@@ -26,6 +27,7 @@ export interface RepairScreenAction {
     | "uninstall_repo_agents"
     | "uninstall_hooks"
     | "uninstall_custom_agents"
+    | "uninstall_opencode_agents"
     | "uninstall_all";
   title: string;
   status: string;
@@ -47,6 +49,7 @@ export interface RepairScreenModel {
     uninstallRepoAgents: () => ReturnType<typeof uninstallRepoAgents>;
     uninstallHooks: () => ReturnType<typeof uninstallHooks>;
     uninstallCustomAgents: () => ReturnType<typeof uninstallCustomAgents>;
+    uninstallOpencodeAgents: () => ReturnType<typeof uninstallOpencodeAgents>;
     uninstallAll: () => ReturnType<typeof uninstallAll>;
   };
 }
@@ -75,6 +78,7 @@ export function loadRepairScreen(paths: ProjectPaths, codexPaths: CodexPaths): R
       uninstallRepoAgents: () => executeOperation(paths, () => uninstallRepoAgents(paths)),
       uninstallHooks: () => executeOperation(paths, () => uninstallHooks(codexPaths)),
       uninstallCustomAgents: () => executeOperation(paths, () => uninstallCustomAgents(codexPaths)),
+      uninstallOpencodeAgents: () => executeOperation(paths, () => uninstallOpencodeAgents(codexPaths)),
       uninstallAll: () => executeOperation(paths, () => uninstallAll(codexPaths))
     }
   };
