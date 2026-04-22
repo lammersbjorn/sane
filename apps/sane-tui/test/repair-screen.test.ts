@@ -37,6 +37,12 @@ describe("repair screen model", () => {
 
     expect(screen.summary).toBe("Repair");
     expect(screen.installBundle).toBe("missing");
+    expect(screen.telemetry).toEqual({
+      dirPresent: false,
+      summaryPresent: false,
+      eventsPresent: false,
+      queuePresent: false
+    });
     expect(screen.actions.map((action) => action.id)).toEqual([
       "install_runtime",
       "backup_codex_config",
@@ -90,6 +96,12 @@ describe("repair screen model", () => {
     const screen = loadRepairScreen(paths, codexPaths);
 
     expect(screen.installBundle).toBe("installed");
+    expect(screen.telemetry).toEqual({
+      dirPresent: true,
+      summaryPresent: false,
+      eventsPresent: false,
+      queuePresent: false
+    });
     expect(screen.actions.find((action) => action.id === "backup_codex_config")?.status).toBe(
       "installed"
     );

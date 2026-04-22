@@ -151,6 +151,8 @@ function sectionOverviewLines(
         `execution: ${preferences.derivedRouting.execution.model}/${preferences.derivedRouting.execution.reasoningEffort}`,
         `realtime: ${preferences.derivedRouting.realtime.model}/${preferences.derivedRouting.realtime.reasoningEffort}`,
         `telemetry: ${preferences.telemetry}`,
+        `local telemetry data: ${presentFlag(preferences.telemetryFiles.dirPresent)}`,
+        `telemetry files: summary ${presentFlag(preferences.telemetryFiles.summaryPresent)}, events ${presentFlag(preferences.telemetryFiles.eventsPresent)}, queue ${presentFlag(preferences.telemetryFiles.queuePresent)}`,
         `enabled packs: ${preferences.enabledPacks.join(", ")}`,
         `cloudflare profile: ${preferences.cloudflareAudit.status} (${preferences.cloudflareAudit.recommendedChangeCount} recommended changes; apply ${preferences.cloudflareApply.status})`,
         `opencode profile: ${preferences.opencodeAudit.status} (${preferences.opencodeAudit.recommendedChangeCount} recommended changes; apply ${preferences.opencodeApply.status})`
@@ -165,7 +167,8 @@ function sectionOverviewLines(
         ...dashboard.activeSection.description,
         "",
         `restore backup: ${repair.actions.find((action) => action.id === "restore_codex_config")?.status ?? "missing"}`,
-        `local telemetry data: ${repair.actions.find((action) => action.id === "reset_telemetry_data")?.status ?? "missing"}`,
+        `local telemetry data: ${presentFlag(repair.telemetry.dirPresent)}`,
+        `telemetry files: summary ${presentFlag(repair.telemetry.summaryPresent)}, events ${presentFlag(repair.telemetry.eventsPresent)}, queue ${presentFlag(repair.telemetry.queuePresent)}`,
         removable.length === 0
           ? "removable installs: none currently installed"
           : `removable installs: ${removable.join(", ")}`,
@@ -296,6 +299,10 @@ function chipValue(chips: ReturnType<typeof loadDashboardView>["chips"], id: str
 
 function compactStatus(value: string): string {
   return value === "installed" ? "ok" : value;
+}
+
+function presentFlag(value: boolean): string {
+  return value ? "present" : "missing";
 }
 
 function lazy<T>(load: () => T): () => T {

@@ -42,6 +42,12 @@ describe("preferences screen model", () => {
     expect(screen.subagents.implementation.model).toBe("gpt-5.3-codex");
     expect(screen.subagents.realtime.model).toBe("gpt-5.3-codex-spark");
     expect(screen.telemetry).toBe("off");
+    expect(screen.telemetryFiles).toEqual({
+      dirPresent: false,
+      summaryPresent: false,
+      eventsPresent: false,
+      queuePresent: false
+    });
     expect(screen.enabledPacks).toEqual(["core"]);
     expect(screen.cloudflareAudit.status).toBe("missing");
     expect(screen.cloudflareApply.status).toBe("ready");
@@ -68,6 +74,7 @@ describe("preferences screen model", () => {
     const config = createDefaultLocalConfig();
     config.models.coordinator.model = "gpt-5.2-codex";
     config.packs.caveman = true;
+    config.privacy.telemetry = "product-improvement";
 
     saveConfig(paths, config);
     const screen = loadPreferencesScreen(paths, codexPaths);
@@ -77,6 +84,12 @@ describe("preferences screen model", () => {
     expect(screen.derivedRouting.execution.model).toBe("gpt-5.3-codex");
     expect(screen.derivedRouting.realtime.model).toBe("gpt-5.3-codex-spark");
     expect(screen.subagents.explorer.model).toBe("gpt-5.4-mini");
+    expect(screen.telemetryFiles).toEqual({
+      dirPresent: true,
+      summaryPresent: true,
+      eventsPresent: true,
+      queuePresent: true
+    });
     expect(screen.enabledPacks).toEqual(["core", "caveman"]);
     expect(screen.cloudflarePreview.summary).toBe("cloudflare-profile preview: 1 recommended change(s)");
     expect(screen.opencodePreview.summary).toBe("opencode-profile preview: 1 recommended change(s)");

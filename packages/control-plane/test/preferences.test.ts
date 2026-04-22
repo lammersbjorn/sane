@@ -139,6 +139,12 @@ describe("preferences control plane", () => {
         }
       },
       telemetry: "off",
+      telemetryFiles: {
+        dirPresent: false,
+        summaryPresent: false,
+        eventsPresent: false,
+        queuePresent: false
+      },
       enabledPacks: ["core"]
     });
 
@@ -150,6 +156,12 @@ describe("preferences control plane", () => {
     expect(inspectPreferencesSnapshot(paths, codexPaths)).toMatchObject({
       source: "local",
       telemetry: "off",
+      telemetryFiles: {
+        dirPresent: true,
+        summaryPresent: false,
+        eventsPresent: false,
+        queuePresent: false
+      },
       enabledPacks: ["core", "caveman"],
       derivedRouting: {
         execution: {
@@ -245,6 +257,15 @@ describe("preferences control plane", () => {
       summaryPresent: true,
       eventsPresent: true,
       queuePresent: true
+    });
+
+    expect(inspectPreferencesSnapshot(paths, createCodexPaths(makeTempDir()))).toMatchObject({
+      telemetryFiles: {
+        dirPresent: true,
+        summaryPresent: true,
+        eventsPresent: true,
+        queuePresent: true
+      }
     });
   });
 });

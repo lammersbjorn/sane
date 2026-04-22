@@ -31,6 +31,7 @@ export interface PreferencesSnapshot {
   derivedRouting: Pick<ModelRoutingPresets, "execution" | "realtime">;
   subagents: Pick<SubagentRoutingPresets, "explorer" | "implementation" | "realtime">;
   telemetry: ReturnType<typeof createRecommendedLocalConfig>["privacy"]["telemetry"];
+  telemetryFiles: TelemetrySnapshot;
   enabledPacks: string[];
 }
 
@@ -163,6 +164,7 @@ export function inspectPreferencesSnapshot(
       realtime: subagents.realtime
     },
     telemetry: snapshot.current.privacy.telemetry,
+    telemetryFiles: inspectTelemetrySnapshot(paths),
     enabledPacks: enabledPackNames(snapshot.current.packs)
   };
 }

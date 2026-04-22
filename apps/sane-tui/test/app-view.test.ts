@@ -433,6 +433,8 @@ describe("app view", () => {
 
     expect(view.sectionOverviewLines.join("\n")).toContain("defaults source:");
     expect(view.sectionOverviewLines.join("\n")).toContain("coordinator:");
+    expect(view.sectionOverviewLines.join("\n")).toContain("local telemetry data:");
+    expect(view.sectionOverviewLines.join("\n")).toContain("telemetry files:");
     expect(view.sectionOverviewLines.join("\n")).toContain("enabled packs:");
   });
 
@@ -444,6 +446,7 @@ describe("app view", () => {
 
     expect(view.sectionOverviewLines.join("\n")).toContain("restore backup:");
     expect(view.sectionOverviewLines.join("\n")).toContain("local telemetry data:");
+    expect(view.sectionOverviewLines.join("\n")).toContain("telemetry files:");
     expect(view.sectionOverviewLines.join("\n")).toContain("removable installs:");
   });
 
