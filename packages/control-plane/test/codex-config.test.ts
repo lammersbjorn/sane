@@ -9,6 +9,7 @@ import {
   applyCloudflareProfile,
   applyCodexProfile,
   applyIntegrationsProfile,
+  applyOpencodeProfile,
   backupCodexConfig,
   inspectCodexConfigBackupSnapshot,
   inspectIntegrationsProfileAudit,
@@ -16,6 +17,7 @@ import {
   previewCloudflareProfile,
   previewCodexProfile,
   previewIntegrationsProfile,
+  previewOpencodeProfile,
   restoreCodexConfig,
   showCodexConfig
 } from "../src/codex-config.js";
@@ -139,6 +141,26 @@ describe("codex config control plane", () => {
     expect(second.summary).toBe("cloudflare-profile apply: already satisfied");
     expect(body).toContain("[mcp_servers.cloudflare-api]");
     expect(body).toContain('url = "https://mcp.cloudflare.com/mcp"');
+  });
+
+  it("applies optional opencode compatibility profile once and reports already satisfied on repeat", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    expect(previewOpencodeProfile(codexPaths).details).toContain(
+      "opensrc: missing -> optional Opencode compatibility profile"
+    );
+
+    const first = applyOpencodeProfile(projectPaths, codexPaths);
+    const second = applyOpencodeProfile(projectPaths, codexPaths);
+    const body = readFileSync(codexPaths.configToml, "utf8");
+
+    expect(first.summary).toBe("opencode-profile apply: wrote optional compatibility profile");
+    expect(second.summary).toBe("opencode-profile apply: already satisfied");
+    expect(body).toContain("[mcp_servers.opensrc]");
+    expect(body).toContain('url = "https://mcp.opensrc.dev"');
   });
 
   it("backs up and restores the latest codex config snapshot", () => {

@@ -77,6 +77,7 @@ Implemented:
 - explicit opt-in apply / restore flow for narrow core Codex profile
 - explicit opt-in apply flow for separate recommended integrations profile
 - explicit opt-in Cloudflare provider profile for Cloudflare MCP tooling
+- explicit opt-in Opencode compatibility profile for optional `opensrc` MCP wiring
 - built-in pack editor in the TUI with local-only optional pack toggles
 - built-in pack state exposed in status / doctor inventory
 - optional packs now show `configured` vs `installed` truthfully depending on whether managed user-skill assets were exported

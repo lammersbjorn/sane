@@ -8,10 +8,12 @@ import {
   applyCloudflareProfile,
   applyCodexProfile,
   applyIntegrationsProfile,
+  applyOpencodeProfile,
   backupCodexConfig,
   previewCloudflareProfile,
   previewCodexProfile,
   previewIntegrationsProfile,
+  previewOpencodeProfile,
   restoreCodexConfig,
   showCodexConfig
 } from "@sane/control-plane/codex-config.js";
@@ -354,12 +356,16 @@ function executeUiCommand(
       return executeOperation(paths, () => previewIntegrationsProfile(codexPaths));
     case "preview_cloudflare_profile":
       return executeOperation(paths, () => previewCloudflareProfile(codexPaths));
+    case "preview_opencode_profile":
+      return executeOperation(paths, () => previewOpencodeProfile(codexPaths));
     case "apply_codex_profile":
       return executeOperation(paths, () => applyCodexProfile(paths, codexPaths));
     case "apply_integrations_profile":
       return executeOperation(paths, () => applyIntegrationsProfile(paths, codexPaths));
     case "apply_cloudflare_profile":
       return executeOperation(paths, () => applyCloudflareProfile(paths, codexPaths));
+    case "apply_opencode_profile":
+      return executeOperation(paths, () => applyOpencodeProfile(paths, codexPaths));
     case "restore_codex_config":
       return executeOperation(paths, () => restoreCodexConfig(paths, codexPaths));
     case "show_status":

@@ -45,7 +45,9 @@ describe("preferences screen model", () => {
       "show_config",
       "show_codex_config",
       "preview_cloudflare_profile",
-      "apply_cloudflare_profile"
+      "apply_cloudflare_profile",
+      "preview_opencode_profile",
+      "apply_opencode_profile"
     ]);
   });
 

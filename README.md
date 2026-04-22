@@ -109,6 +109,8 @@ Routing note:
 
 There is also a separate opt-in Cloudflare profile.
 
+And a separate opt-in Opencode compatibility profile.
+
 ### Optional guidance packs
 
 Built-in packs currently exposed in `Sane`:

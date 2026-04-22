@@ -228,12 +228,16 @@ function operationKindLabel(kind: OperationKind): string {
       return "preview_integrations_profile";
     case OperationKind.PreviewCloudflareProfile:
       return "preview_cloudflare_profile";
+    case OperationKind.PreviewOpencodeProfile:
+      return "preview_opencode_profile";
     case OperationKind.ApplyCodexProfile:
       return "apply_codex_profile";
     case OperationKind.ApplyIntegrationsProfile:
       return "apply_integrations_profile";
     case OperationKind.ApplyCloudflareProfile:
       return "apply_cloudflare_profile";
+    case OperationKind.ApplyOpencodeProfile:
+      return "apply_opencode_profile";
     case OperationKind.RestoreCodexConfig:
       return "restore_codex_config";
     case OperationKind.ResetTelemetryData:

@@ -41,6 +41,17 @@ describe("command metadata registry", () => {
       "export_custom_agents",
       "export_all"
     ]);
+    expect(listSectionActions("preferences").map((action) => action.id)).toEqual([
+      "open_config_editor",
+      "open_pack_editor",
+      "open_privacy_editor",
+      "show_config",
+      "show_codex_config",
+      "preview_cloudflare_profile",
+      "apply_cloudflare_profile",
+      "preview_opencode_profile",
+      "apply_opencode_profile"
+    ]);
     expect(listSectionActions("inspect").map((action) => action.id)).toEqual([
       "show_status",
       "doctor",
@@ -79,6 +90,12 @@ describe("command metadata registry", () => {
     );
     expect(getCommandSpec("apply_integrations_profile").backendKind).toBe(
       OperationKind.ApplyIntegrationsProfile
+    );
+    expect(getCommandSpec("preview_opencode_profile").backendKind).toBe(
+      OperationKind.PreviewOpencodeProfile
+    );
+    expect(getCommandSpec("apply_opencode_profile").backendKind).toBe(
+      OperationKind.ApplyOpencodeProfile
     );
     expect(getCommandSpec("restore_codex_config").confirmation?.impactCopy).toBe(
       "This replaces your current Codex config with the latest backup."

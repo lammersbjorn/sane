@@ -117,6 +117,18 @@ These are the backend actions the TUI is allowed to call in the current phase.
     - `mcp_servers.cloudflare-api`
   - preserve all unrelated user config
 
+- `preview_opencode_profile`
+  - compute read-only optional compatibility-profile changes for Opencode-adjacent tooling
+  - current compatibility target:
+    - `opensrc`
+  - keep it separate from the broad recommended integrations profile
+
+- `apply_opencode_profile`
+  - backup current `~/.codex/config.toml` first when it exists
+  - write only:
+    - `mcp_servers.opensrc`
+  - preserve all unrelated user config
+
 - `apply_codex_profile`
   - backup current `~/.codex/config.toml` first when it exists
   - write only:
@@ -248,6 +260,7 @@ Current implementation note:
 - current integrations profile work supports narrow explicit opt-in writes for recommended MCP servers only
 - current install/inspect integrations UI consumes the structured integrations audit payload instead of rebuilding its own diff logic
 - current Cloudflare profile work supports separate explicit opt-in provider-profile writes only
+- current Opencode compatibility profile work supports separate explicit opt-in compatibility-profile writes only
 
 ## TUI Boundary Rule
 

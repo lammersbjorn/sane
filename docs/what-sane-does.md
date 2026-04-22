@@ -115,7 +115,7 @@ It exists so `Sane` can answer practical questions like:
 | Runtime handoff truth | Read-only inspect view for `current-run`, `summary`, and `brief` state. |
 | Optional guidance packs | `core`, `caveman`, `cavemem`, `rtk`, and `frontend-craft`. |
 | Useful integrations | Separate recommended integrations profile for `Context7`, `Playwright`, and `grep.app`, with structured audit details shown before apply. |
-| Provider-specific add-ons | Separate opt-in Cloudflare profile. |
+| Provider-specific add-ons | Separate opt-in Cloudflare profile plus separate opt-in Opencode compatibility profile. |
 | Shared or personal installs | Mostly user-level exports, plus explicit repo-local installs when needed. |
 | Repair visibility | `status` and `doctor` to inspect managed runtime and Codex-native surfaces, plus explicit repair/remove actions in the TUI. |
 

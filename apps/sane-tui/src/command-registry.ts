@@ -14,9 +14,11 @@ export type BackendCommandId =
   | "preview_codex_profile"
   | "preview_integrations_profile"
   | "preview_cloudflare_profile"
+  | "preview_opencode_profile"
   | "apply_codex_profile"
   | "apply_integrations_profile"
   | "apply_cloudflare_profile"
+  | "apply_opencode_profile"
   | "restore_codex_config"
   | "export_user_skills"
   | "export_repo_skills"
@@ -320,6 +322,22 @@ export const COMMAND_METADATA_REGISTRY = {
       repoMutation: false,
       filesTouched: ["~/.codex/config.toml"]
     },
+    preview_opencode_profile: {
+      id: "preview_opencode_profile",
+      kind: "backend",
+      backendKind: OperationKind.PreviewOpencodeProfile,
+      help: [
+        "Show the optional Opencode compatibility profile.",
+        "",
+        "Preview only. No files are changed.",
+        "Today this adds the optional opensrc MCP entry only.",
+        "Broader Opencode-native config stays separate on purpose."
+      ],
+      confirmation: null,
+      successNoticeTitle: null,
+      repoMutation: false,
+      filesTouched: ["~/.codex/config.toml"]
+    },
     apply_codex_profile: {
       id: "apply_codex_profile",
       kind: "backend",
@@ -374,6 +392,28 @@ export const COMMAND_METADATA_REGISTRY = {
         "Write the optional Cloudflare provider profile into `~/.codex/config.toml`.",
         "",
         "This is provider-specific and not part of the bare default profile.",
+        "",
+        "Safety",
+        "Confirmation required before this action runs."
+      ],
+      confirmation: {
+        required: true,
+        impactCopy: "This writes changes into your `~/.codex/config.toml`.",
+        remindPreviewOrBackup: true
+      },
+      successNoticeTitle: "Applied",
+      repoMutation: false,
+      filesTouched: ["~/.codex/config.toml"]
+    },
+    apply_opencode_profile: {
+      id: "apply_opencode_profile",
+      kind: "backend",
+      backendKind: OperationKind.ApplyOpencodeProfile,
+      help: [
+        "Write the optional Opencode compatibility profile into `~/.codex/config.toml`.",
+        "",
+        "Today this adds the optional opensrc MCP entry only.",
+        "Broader Opencode-native config stays separate on purpose.",
         "",
         "Safety",
         "Confirmation required before this action runs."
@@ -758,6 +798,8 @@ export const COMMAND_METADATA_REGISTRY = {
     { commandId: "show_codex_config", section: "preferences", order: 5, label: "View your current Codex settings" },
     { commandId: "preview_cloudflare_profile", section: "preferences", order: 6, label: "Preview optional Cloudflare Codex settings" },
     { commandId: "apply_cloudflare_profile", section: "preferences", order: 7, label: "Apply optional Cloudflare Codex settings" },
+    { commandId: "preview_opencode_profile", section: "preferences", order: 8, label: "Preview optional Opencode compatibility settings" },
+    { commandId: "apply_opencode_profile", section: "preferences", order: 9, label: "Apply optional Opencode compatibility settings" },
     { commandId: "export_user_skills", section: "install", order: 1, label: "Install Sane user skills for your account" },
     { commandId: "export_repo_skills", section: "install", order: 2, label: "Install Sane repo skills for this project" },
     { commandId: "export_repo_agents", section: "install", order: 3, label: "Install Sane guidance block in this repo's AGENTS.md" },

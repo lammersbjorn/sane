@@ -12,6 +12,8 @@ export interface PreferencesScreenAction {
     | "show_codex_config"
     | "preview_cloudflare_profile"
     | "apply_cloudflare_profile"
+    | "preview_opencode_profile"
+    | "apply_opencode_profile"
   >;
   title: string;
   kind: "config-editor" | "pack-editor" | "privacy-editor" | "backend";
