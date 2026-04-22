@@ -94,6 +94,8 @@ The stack direction does not change the product boundary: the control plane stay
 - internally pack-shaped
 - no frozen public plugin API yet
 - current local config/editor foundation can enable or disable optional built-in packs without exposing a public plugin system
+- upstream-inspired pack content should stay vendored and checked in
+- manifests should carry read-only provenance for curated upstream-derived content so refreshes stay explicit and reviewable
 
 ### Current Package Boundaries
 

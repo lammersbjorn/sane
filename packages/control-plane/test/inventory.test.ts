@@ -72,6 +72,44 @@ describe("full inventory and doctor", () => {
     expect(bundle.compatibility.map((item) => item.name)).toEqual([
       "opencode-agents"
     ]);
+    expect(bundle.optionalPacks).toEqual([
+      expect.objectContaining({
+        name: "caveman",
+        inventoryName: "pack-caveman",
+        status: "configured",
+        skillName: "sane-caveman",
+        provenance: expect.objectContaining({
+          kind: "derived"
+        })
+      }),
+      expect.objectContaining({
+        name: "cavemem",
+        inventoryName: "pack-cavemem",
+        status: "disabled",
+        skillName: "sane-cavemem",
+        provenance: expect.objectContaining({
+          kind: "internal"
+        })
+      }),
+      expect.objectContaining({
+        name: "rtk",
+        inventoryName: "pack-rtk",
+        status: "disabled",
+        skillName: "sane-rtk",
+        provenance: expect.objectContaining({
+          kind: "internal"
+        })
+      }),
+      expect.objectContaining({
+        name: "frontend-craft",
+        inventoryName: "pack-frontend-craft",
+        status: "disabled",
+        skillName: "sane-frontend-craft",
+        provenance: expect.objectContaining({
+          kind: "derived"
+        })
+      })
+    ]);
     expect(bundle.primary.runtime?.status).toBe(InventoryStatus.Installed);
     expect(bundle.primary.codexConfig?.status).toBe(InventoryStatus.Missing);
     expect(bundle.primary.userSkills?.status).toBe(InventoryStatus.Missing);

@@ -3,7 +3,12 @@ import { join } from "node:path";
 
 import { createRecommendedLocalConfig, detectCodexEnvironment, readLocalConfig } from "@sane/config";
 import { InventoryScope, InventoryStatus, OperationKind, OperationResult } from "@sane/core";
-import { createOptionalPackSkill, optionalPackSkillName } from "@sane/framework-assets";
+import {
+  createOptionalPackSkill,
+  optionalPackProvenance,
+  optionalPackSkillName,
+  type PackAssetProvenance
+} from "@sane/framework-assets";
 import { type CodexPaths, type ProjectPaths } from "@sane/platform";
 import { listCanonicalBackupSiblings } from "@sane/state";
 
@@ -24,11 +29,22 @@ type InventoryStatusName =
   | "present_without_sane_block"
   | "removed";
 
+type OptionalPackName = "caveman" | "cavemem" | "rtk" | "frontend-craft";
+
+export interface OptionalPackSnapshot {
+  name: OptionalPackName;
+  inventoryName: `pack-${OptionalPackName}`;
+  status: InventoryStatusName;
+  skillName: string | null;
+  provenance: PackAssetProvenance | null;
+}
+
 export interface StatusBundle {
   inventory: InventoryItem[];
   localRuntime: InventoryItem[];
   codexNative: InventoryItem[];
   compatibility: InventoryItem[];
+  optionalPacks: OptionalPackSnapshot[];
   driftItems: InventoryItem[];
   counts: Record<InventoryStatusName, number>;
   primary: {
@@ -149,6 +165,7 @@ export function inspectStatusBundle(paths: ProjectPaths, codexPaths: CodexPaths)
     localRuntime,
     codexNative,
     compatibility,
+    optionalPacks: inspectOptionalPackSnapshots(inventory),
     driftItems,
     counts: countStatuses(inventory),
     primary: {
@@ -222,6 +239,23 @@ function inspectPackInventory(paths: ProjectPaths, codexPaths: CodexPaths): Inve
   });
 }
 
+function inspectOptionalPackSnapshots(inventory: InventoryItem[]): OptionalPackSnapshot[] {
+  const packs: OptionalPackName[] = ["caveman", "cavemem", "rtk", "frontend-craft"];
+
+  return packs.map((name) => {
+    const inventoryName = `pack-${name}` as const;
+    const item = findInventoryOrNull(inventory, inventoryName);
+
+    return {
+      name,
+      inventoryName,
+      status: inventoryStatusName(item),
+      skillName: optionalPackSkillName(name) ?? null,
+      provenance: optionalPackProvenance(name) ?? null
+    };
+  });
+}
+
 function packStatusFromConfig(
   paths: ProjectPaths,
   codexPaths: CodexPaths,
@@ -247,7 +281,7 @@ function packStatusFromConfig(
 function packSkillStatus(
   paths: ProjectPaths,
   codexPaths: CodexPaths,
-  packName: "caveman" | "cavemem" | "rtk" | "frontend-craft"
+  packName: OptionalPackName
 ) {
   const skillName = optionalPackSkillName(packName);
   const expected = createOptionalPackSkill(packName);

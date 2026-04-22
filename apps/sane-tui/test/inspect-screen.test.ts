@@ -38,6 +38,49 @@ describe("inspect screen model", () => {
           missing: 0,
           invalid: 1
         },
+        optionalPacks: [
+          {
+            name: "caveman",
+            inventoryName: "pack-caveman",
+            status: "configured",
+            skillName: "sane-caveman",
+            provenance: {
+              kind: "derived",
+              note: "curated from caveman",
+              updateStrategy: "manual-curated",
+              upstreams: [{ name: "caveman", url: "https://github.com/JuliusBrussee/caveman", ref: "0.1.0" }]
+            }
+          },
+          {
+            name: "cavemem",
+            inventoryName: "pack-cavemem",
+            status: "disabled",
+            skillName: "sane-cavemem",
+            provenance: { kind: "internal", note: "local", updateStrategy: "manual-curated" }
+          },
+          {
+            name: "rtk",
+            inventoryName: "pack-rtk",
+            status: "disabled",
+            skillName: "sane-rtk",
+            provenance: { kind: "internal", note: "local", updateStrategy: "manual-curated" }
+          },
+          {
+            name: "frontend-craft",
+            inventoryName: "pack-frontend-craft",
+            status: "disabled",
+            skillName: "sane-frontend-craft",
+            provenance: {
+              kind: "derived",
+              note: "taste + impeccable",
+              updateStrategy: "manual-curated",
+              upstreams: [
+                { name: "taste-skill", url: "https://github.com/Leonxlnx/taste-skill", ref: "main" },
+                { name: "impeccable", url: "https://github.com/pbakaus/impeccable", ref: "main" }
+              ]
+            }
+          }
+        ],
         driftItems: [
           {
             name: "hooks",
@@ -81,6 +124,9 @@ describe("inspect screen model", () => {
 
     expect(lines).toContain(
       "hooks: invalid (Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows.)"
+    );
+    expect(lines).toContain(
+      "optional pack provenance: caveman configured (derived from caveman); cavemem disabled (internal); rtk disabled (internal); frontend-craft disabled (derived from taste-skill + impeccable)"
     );
   });
 
@@ -129,6 +175,36 @@ describe("inspect screen model", () => {
       decisions: 0,
       artifacts: 0
     });
+    expect(screen.statusBundle.optionalPacks).toEqual([
+      expect.objectContaining({
+        name: "caveman",
+        status: "configured",
+        provenance: expect.objectContaining({
+          kind: "derived"
+        })
+      }),
+      expect.objectContaining({
+        name: "cavemem",
+        status: "disabled",
+        provenance: expect.objectContaining({
+          kind: "internal"
+        })
+      }),
+      expect.objectContaining({
+        name: "rtk",
+        status: "disabled",
+        provenance: expect.objectContaining({
+          kind: "internal"
+        })
+      }),
+      expect.objectContaining({
+        name: "frontend-craft",
+        status: "disabled",
+        provenance: expect.objectContaining({
+          kind: "derived"
+        })
+      })
+    ]);
     expect(screen.latestPolicyPreview).toEqual({
       status: "missing",
       scenarioCount: 0,
@@ -146,6 +222,9 @@ describe("inspect screen model", () => {
     expect(screen.overviewLines.join("\n")).toContain("runtime summary (read-only local visibility):");
     expect(screen.overviewLines.join("\n")).toContain("runtime history (read-only local visibility):");
     expect(screen.overviewLines.join("\n")).toContain("latest policy snapshot: missing (current-run-derived read-only view)");
+    expect(screen.overviewLines.join("\n")).toContain(
+      "optional pack provenance: caveman configured (derived from caveman); cavemem disabled (internal); rtk disabled (internal); frontend-craft disabled (derived from taste-skill + impeccable)"
+    );
   });
 
   it("surfaces invalid drift items for inspect consumers", () => {

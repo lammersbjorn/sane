@@ -56,6 +56,8 @@ Current managed export behavior also depends on local config:
 - enabled optional packs can materialize as additional managed user skills during `export_user_skills`
 - enabled optional packs can materialize as additional managed repo skills during `export_repo_skills`
 - repo-local AGENTS overlay export reuses the same guidance body as the global overlay, but with repo-scoped markers and opt-in behavior
+- built-in pack manifests may also carry read-only provenance metadata for bundled upstream-derived skills or MCP references
+- that provenance is inspectable metadata only, not a live fetch/update contract
 
 ## Required Operations
 

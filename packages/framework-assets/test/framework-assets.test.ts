@@ -20,8 +20,12 @@ import {
   createSaneGlobalAgentsOverlay,
   createSaneReviewerAgentTemplate,
   createSaneRouterSkill,
+  corePackAssetSourceProvenance,
+  corePackAssetSourceProvenanceStyle,
   optionalPackSkillName,
+  optionalPackProvenance,
   type GuidancePacks,
+  type PackAssetProvenance,
   type ModelRoleGuidance,
   type ModelRoutingGuidance
 } from "../src/index.js";
@@ -54,8 +58,22 @@ interface CorePackManifest {
       skillPath: string;
       routerNote: string;
       overlayNote: string;
+      provenance: PackAssetProvenance;
     }
   >;
+  assetSources?: {
+    style: string;
+    items: Record<
+      string,
+      {
+        repo: string;
+        path: string;
+        ref: string;
+        license: string;
+        updateStrategy: string;
+      }
+    >;
+  };
 }
 
 function roleGuidance(): ModelRoutingGuidance {
@@ -106,6 +124,8 @@ describe("framework asset parity", () => {
     expect(manifest.optionalPacks["frontend-craft"].skillName).toBe(
       SANE_FRONTEND_CRAFT_PACK_SKILL_NAME
     );
+    expect(manifest.optionalPacks.caveman.provenance.kind).toBe("derived");
+    expect(manifest.optionalPacks["frontend-craft"].provenance.kind).toBe("derived");
   });
 
   it("router skill renders from the checked-in core template", () => {
@@ -196,6 +216,83 @@ describe("framework asset parity", () => {
     expect(frontendCraft).toContain("gpt-taste");
     expect(frontendCraft).toContain("DESIGN_VARIANCE");
     expect(frontendCraft).toContain("avoid generic AI frontend aesthetics");
+  });
+
+  it("exposes pinned provenance seam for optional packs", () => {
+    expect(optionalPackProvenance("caveman")).toEqual({
+      kind: "derived",
+      note: "Sane-curated adaptation of the Caveman plugin skill for builtin pack use.",
+      updateStrategy: "manual-curated",
+      upstreams: [
+        {
+          name: "caveman",
+          role: "primary",
+          url: "https://github.com/JuliusBrussee/caveman",
+          ref: "0.1.0",
+          path: "skills/caveman/SKILL.md",
+          license: "MIT"
+        }
+      ]
+    });
+    expect(optionalPackProvenance("frontend-craft")).toEqual({
+      kind: "derived",
+      note: "Sane-curated frontend pack built around Taste for implementation craft and Impeccable for review-shaped frontend quality guidance.",
+      updateStrategy: "manual-curated",
+      upstreams: [
+        {
+          name: "taste-skill",
+          role: "primary",
+          url: "https://github.com/Leonxlnx/taste-skill",
+          ref: "main",
+          path: "skills/taste-skill/SKILL.md"
+        },
+        {
+          name: "impeccable",
+          role: "review-secondary",
+          url: "https://github.com/pbakaus/impeccable",
+          ref: "main",
+          path: "source/skills/impeccable/SKILL.md",
+          license: "Apache-2.0"
+        }
+      ]
+    });
+    expect(optionalPackProvenance("rtk")).toEqual({
+      kind: "internal",
+      note: "Sane-curated workflow pack for RTK-aware shell routing. Provenance stays repo-local for now.",
+      updateStrategy: "manual-curated"
+    });
+    expect(optionalPackProvenance("missing-pack")).toBeUndefined();
+  });
+
+  it("exposes source provenance seam for core pack assets", () => {
+    const manifest = readCoreManifest();
+    const requiredAssetPaths = [
+      manifest.assets.routerSkill,
+      manifest.assets.globalOverlay,
+      manifest.assets.repoOverlay,
+      manifest.assets.agents.primary,
+      manifest.assets.agents.reviewer,
+      manifest.assets.agents.explorer,
+      manifest.assets.opencodeAgents.primary,
+      manifest.assets.opencodeAgents.reviewer,
+      manifest.assets.opencodeAgents.explorer,
+      ...Object.values(manifest.optionalPacks).map((entry) => entry.skillPath)
+    ];
+
+    expect(manifest.assetSources?.style).toBe("pinned-upstream-link");
+    expect(corePackAssetSourceProvenanceStyle()).toBe("pinned-upstream-link");
+
+    for (const path of requiredAssetPaths) {
+      const source = corePackAssetSourceProvenance(path);
+      expect(source).toEqual(manifest.assetSources?.items[path]);
+      expect(source?.repo.startsWith("https://")).toBe(true);
+      expect(source?.path.length).toBeGreaterThan(0);
+      expect(source?.ref.length).toBeGreaterThan(0);
+      expect(source?.license.length).toBeGreaterThan(0);
+      expect(source?.updateStrategy).toContain("manual");
+    }
+
+    expect(corePackAssetSourceProvenance("missing/file")).toBeUndefined();
   });
 
   it("custom agent templates render from checked-in files", () => {

@@ -155,6 +155,8 @@ These are strong direction, but not frozen down to exact implementation shape.
   - isolated templates/export content
   - clear capabilities
   - explicit install/export hooks
+  - inspectable provenance metadata for curated upstream-derived content
+  - vendored checked-in copies as the canonical source of truth, not live runtime fetches or git submodules by default
 
 ## Open
 

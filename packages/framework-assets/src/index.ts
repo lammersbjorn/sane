@@ -39,6 +39,49 @@ export interface ModelRoutingGuidance extends ModelRoleGuidance {
   realtimeReasoning: string;
 }
 
+export interface PackAssetUpstream {
+  name: string;
+  url: string;
+  ref: string | null;
+  role?: string;
+  path?: string | null;
+  license?: string | null;
+}
+
+export type PackAssetProvenance =
+  | {
+      kind: "upstream" | "derived";
+      note: string;
+      upstreams: PackAssetUpstream[];
+      updateStrategy: "pinned-manual" | "manual-curated";
+    }
+  | {
+      kind: "internal";
+      note: string;
+      updateStrategy: "manual-curated";
+    };
+
+export interface PackAssetSourceProvenance {
+  repo: string;
+  path: string;
+  ref: string;
+  license: string;
+  updateStrategy: string;
+}
+
+interface CorePackAssetSources {
+  style: string;
+  items: Record<string, PackAssetSourceProvenance>;
+}
+
+interface CorePackManifestEntry {
+  skillName: string;
+  skillPath: string;
+  routerNote: string;
+  overlayNote: string;
+  provenance: PackAssetProvenance;
+}
+
 interface CorePackManifest {
   name: string;
   assets: {
@@ -58,13 +101,9 @@ interface CorePackManifest {
   };
   optionalPacks: Record<
     string,
-    {
-      skillName: string;
-      skillPath: string;
-      routerNote: string;
-      overlayNote: string;
-    }
+    CorePackManifestEntry
   >;
+  assetSources?: CorePackAssetSources;
 }
 
 const SRC_DIR = dirname(fileURLToPath(import.meta.url));
@@ -131,6 +170,18 @@ export function createOptionalPackSkill(pack: string): string | undefined {
   }
 
   return readCoreAsset(entry.skillPath);
+}
+
+export function optionalPackProvenance(pack: string): PackAssetProvenance | undefined {
+  return CORE_PACK_MANIFEST.optionalPacks[pack]?.provenance;
+}
+
+export function corePackAssetSourceProvenance(path: string): PackAssetSourceProvenance | undefined {
+  return CORE_PACK_MANIFEST.assetSources?.items[path];
+}
+
+export function corePackAssetSourceProvenanceStyle(): string | undefined {
+  return CORE_PACK_MANIFEST.assetSources?.style;
 }
 
 export function createSaneReviewerAgentTemplate(roles: ModelRoleGuidance): string {

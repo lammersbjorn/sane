@@ -20,25 +20,168 @@
       "skillName": "sane-caveman",
       "skillPath": "skills/optional/sane-caveman.md",
       "routerNote": "- caveman pack active: prefer terse, token-efficient prose when normal clarity still holds",
-      "overlayNote": "- caveman pack active: default to terse, token-aware prose when it does not reduce correctness"
+      "overlayNote": "- caveman pack active: default to terse, token-aware prose when it does not reduce correctness",
+      "provenance": {
+        "kind": "derived",
+        "note": "Sane-curated adaptation of the Caveman plugin skill for builtin pack use.",
+        "updateStrategy": "manual-curated",
+        "upstreams": [
+          {
+            "name": "caveman",
+            "role": "primary",
+            "url": "https://github.com/JuliusBrussee/caveman",
+            "ref": "0.1.0",
+            "path": "skills/caveman/SKILL.md",
+            "license": "MIT"
+          }
+        ]
+      }
     },
     "cavemem": {
       "skillName": "sane-cavemem",
       "skillPath": "skills/optional/sane-cavemem.md",
       "routerNote": "- cavemem pack active: keep durable summaries compact and high-signal during long sessions",
-      "overlayNote": "- cavemem pack active: prefer compact durable memory and handoff summaries"
+      "overlayNote": "- cavemem pack active: prefer compact durable memory and handoff summaries",
+      "provenance": {
+        "kind": "internal",
+        "note": "Sane-specific durable-memory companion pack. No separate upstream skill tracked yet.",
+        "updateStrategy": "manual-curated"
+      }
     },
     "rtk": {
       "skillName": "sane-rtk",
       "skillPath": "skills/optional/sane-rtk.md",
       "routerNote": "- rtk pack active: if RTK policy is present, route shell work through RTK instead of raw shell",
-      "overlayNote": "- rtk pack active: when RTK policy exists, prefer RTK-routed shell execution"
+      "overlayNote": "- rtk pack active: when RTK policy exists, prefer RTK-routed shell execution",
+      "provenance": {
+        "kind": "internal",
+        "note": "Sane-curated workflow pack for RTK-aware shell routing. Provenance stays repo-local for now.",
+        "updateStrategy": "manual-curated"
+      }
     },
     "frontend-craft": {
       "skillName": "sane-frontend-craft",
       "skillPath": "skills/optional/sane-frontend-craft.md",
       "routerNote": "- frontend-craft pack active: avoid generic AI frontend output; prefer distinctive, production-grade interface craft",
-      "overlayNote": "- frontend-craft pack active: for frontend work, avoid generic AI aesthetics and push for stronger craft"
+      "overlayNote": "- frontend-craft pack active: for frontend work, avoid generic AI aesthetics and push for stronger craft",
+      "provenance": {
+        "kind": "derived",
+        "note": "Sane-curated frontend pack built around Taste for implementation craft and Impeccable for review-shaped frontend quality guidance.",
+        "updateStrategy": "manual-curated",
+        "upstreams": [
+          {
+            "name": "taste-skill",
+            "role": "primary",
+            "url": "https://github.com/Leonxlnx/taste-skill",
+            "ref": "main",
+            "path": "skills/taste-skill/SKILL.md"
+          },
+          {
+            "name": "impeccable",
+            "role": "review-secondary",
+            "url": "https://github.com/pbakaus/impeccable",
+            "ref": "main",
+            "path": "source/skills/impeccable/SKILL.md",
+            "license": "Apache-2.0"
+          }
+        ]
+      }
+    }
+  },
+  "assetSources": {
+    "style": "pinned-upstream-link",
+    "items": {
+      "skills/sane-router.md.tmpl": {
+        "repo": "https://github.com/lammersbjorn/sane",
+        "path": "packs/core/skills/sane-router.md.tmpl",
+        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
+        "license": "MIT OR Apache-2.0",
+        "updateStrategy": "pinned-manual"
+      },
+      "overlays/global-agents.md.tmpl": {
+        "repo": "https://github.com/lammersbjorn/sane",
+        "path": "packs/core/overlays/global-agents.md.tmpl",
+        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
+        "license": "MIT OR Apache-2.0",
+        "updateStrategy": "pinned-manual"
+      },
+      "overlays/repo-agents.md.tmpl": {
+        "repo": "https://github.com/lammersbjorn/sane",
+        "path": "packs/core/overlays/repo-agents.md.tmpl",
+        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
+        "license": "MIT OR Apache-2.0",
+        "updateStrategy": "pinned-manual"
+      },
+      "agents/sane-agent.toml.tmpl": {
+        "repo": "https://github.com/lammersbjorn/sane",
+        "path": "packs/core/agents/sane-agent.toml.tmpl",
+        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
+        "license": "MIT OR Apache-2.0",
+        "updateStrategy": "pinned-manual"
+      },
+      "agents/sane-reviewer.toml.tmpl": {
+        "repo": "https://github.com/lammersbjorn/sane",
+        "path": "packs/core/agents/sane-reviewer.toml.tmpl",
+        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
+        "license": "MIT OR Apache-2.0",
+        "updateStrategy": "pinned-manual"
+      },
+      "agents/sane-explorer.toml.tmpl": {
+        "repo": "https://github.com/lammersbjorn/sane",
+        "path": "packs/core/agents/sane-explorer.toml.tmpl",
+        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
+        "license": "MIT OR Apache-2.0",
+        "updateStrategy": "pinned-manual"
+      },
+      "agents/opencode/sane-agent.md.tmpl": {
+        "repo": "https://github.com/lammersbjorn/sane",
+        "path": "packs/core/agents/opencode/sane-agent.md.tmpl",
+        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
+        "license": "MIT OR Apache-2.0",
+        "updateStrategy": "pinned-manual"
+      },
+      "agents/opencode/sane-reviewer.md.tmpl": {
+        "repo": "https://github.com/lammersbjorn/sane",
+        "path": "packs/core/agents/opencode/sane-reviewer.md.tmpl",
+        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
+        "license": "MIT OR Apache-2.0",
+        "updateStrategy": "pinned-manual"
+      },
+      "agents/opencode/sane-explorer.md.tmpl": {
+        "repo": "https://github.com/lammersbjorn/sane",
+        "path": "packs/core/agents/opencode/sane-explorer.md.tmpl",
+        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
+        "license": "MIT OR Apache-2.0",
+        "updateStrategy": "pinned-manual"
+      },
+      "skills/optional/sane-caveman.md": {
+        "repo": "https://github.com/lammersbjorn/sane",
+        "path": "packs/core/skills/optional/sane-caveman.md",
+        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
+        "license": "MIT OR Apache-2.0",
+        "updateStrategy": "pinned-manual"
+      },
+      "skills/optional/sane-cavemem.md": {
+        "repo": "https://github.com/lammersbjorn/sane",
+        "path": "packs/core/skills/optional/sane-cavemem.md",
+        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
+        "license": "MIT OR Apache-2.0",
+        "updateStrategy": "pinned-manual"
+      },
+      "skills/optional/sane-rtk.md": {
+        "repo": "https://github.com/lammersbjorn/sane",
+        "path": "packs/core/skills/optional/sane-rtk.md",
+        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
+        "license": "MIT OR Apache-2.0",
+        "updateStrategy": "pinned-manual"
+      },
+      "skills/optional/sane-frontend-craft.md": {
+        "repo": "https://github.com/lammersbjorn/sane",
+        "path": "packs/core/skills/optional/sane-frontend-craft.md",
+        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
+        "license": "MIT OR Apache-2.0",
+        "updateStrategy": "pinned-manual"
+      }
     }
   }
 }

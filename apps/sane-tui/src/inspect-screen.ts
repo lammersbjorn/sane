@@ -52,6 +52,7 @@ export function inspectOverviewLines(snapshot: InspectScreenSnapshot): string[] 
     `runtime summary (read-only local visibility): ${snapshot.runtimeSummary.summary}`,
     `runtime history (read-only local visibility): events ${snapshot.runtimeHistory.events}, decisions ${snapshot.runtimeHistory.decisions}, artifacts ${snapshot.runtimeHistory.artifacts}`,
     formatLatestPolicyPreviewLine(snapshot.latestPolicyPreview),
+    formatOptionalPackProvenanceLine(snapshot.statusBundle.optionalPacks),
     `local config view: ${snapshot.localConfig.summary}`,
     `Codex config view: ${snapshot.codexConfig.summary}`,
     `integrations audit: ${snapshot.integrationsAudit.status} (${snapshot.integrationsAudit.recommendedChangeCount} recommended changes)`,
@@ -74,4 +75,19 @@ export function formatLatestPolicyPreviewLine(
   return preview.status === "present"
     ? `latest policy snapshot: present (current-run-derived read-only view; ts ${preview.tsUnix}; summary ${preview.summary}; ${preview.scenarioCount} scenarios: ${preview.scenarioIds.join(", ")})`
     : "latest policy snapshot: missing (current-run-derived read-only view)";
+}
+
+function formatOptionalPackProvenanceLine(
+  packs: InspectScreenSnapshot["statusBundle"]["optionalPacks"]
+): string {
+  const summary = packs.map((pack) => {
+    const origin =
+      pack.provenance?.kind === "derived" || pack.provenance?.kind === "upstream"
+        ? `${pack.provenance.kind} from ${pack.provenance.upstreams.map((item) => item.name).join(" + ")}`
+        : "internal";
+
+    return `${pack.name} ${pack.status} (${origin})`;
+  });
+
+  return `optional pack provenance: ${summary.join("; ")}`;
 }
