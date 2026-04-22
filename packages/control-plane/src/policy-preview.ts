@@ -22,9 +22,10 @@ import {
   TaskShape,
   explain,
   obligationAsString,
-  policyRuleAsString
+  policyRuleAsString,
+  type PolicyInput
 } from "@sane/policy";
-import { readCurrentRunState } from "@sane/state";
+import { readCurrentRunState, type CurrentRunState } from "@sane/state";
 
 export function previewPolicy(paths: ProjectPaths, env: HomeDirEnv = process.env): OperationResult {
   const config = loadOrDefaultConfig(paths);
@@ -105,24 +106,17 @@ function buildPolicyPreview(paths: ProjectPaths): PolicyPreviewPayload {
 
 function buildCurrentRunInspectScenario(paths: ProjectPaths): PolicyPreviewScenario | null {
   try {
-    readCurrentRunState(paths.currentRunPath);
+    const currentRun = readCurrentRunState(paths.currentRunPath);
+    const input = mapCurrentRunToPolicyInput(currentRun);
+
+    return buildScenarioPreview(
+      "current-run-inspect",
+      "inspect-only scenario derived from current-run state",
+      input
+    );
   } catch {
     return null;
   }
-
-  return buildScenarioPreview(
-    "current-run-inspect",
-    "inspect-only scenario derived from current-run state",
-    {
-      intent: Intent.Inspect,
-      taskShape: TaskShape.Local,
-      risk: Level.Low,
-      ambiguity: Level.Low,
-      parallelism: Parallelism.None,
-      contextPressure: Level.Low,
-      runState: RunState.Executing
-    }
-  );
 }
 
 function buildScenarioPreview(
@@ -148,6 +142,138 @@ function buildScenarioPreview(
       rule: policyRuleAsString(entry.rule)
     }))
   };
+}
+
+function mapCurrentRunToPolicyInput(currentRun: CurrentRunState): PolicyInput {
+  const objective = currentRun.objective.toLowerCase();
+  const phase = currentRun.phase.toLowerCase();
+  const activeTasks = currentRun.activeTasks.filter((task) => task.trim().length > 0);
+  const blockers = currentRun.blockingQuestions.filter((question) => isRealBlockingQuestion(question));
+  const taskText = activeTasks.join(" ").toLowerCase();
+  const intent = deriveIntent(objective, phase, taskText);
+  const taskShape = deriveTaskShape(objective, taskText, activeTasks.length);
+  const ambiguity =
+    blockers.length >= 2 ? Level.High : blockers.length === 1 ? Level.Medium : Level.Low;
+  const risk = deriveRisk(intent, taskShape, ambiguity, currentRun.verification.status);
+  const parallelism =
+    activeTasks.length >= 4 ? Parallelism.Clear : activeTasks.length >= 2 ? Parallelism.Possible : Parallelism.None;
+  const contextPressure =
+    taskShape === TaskShape.LongRunning ||
+    activeTasks.length >= 5 ||
+    (currentRun.lastCompactionTsUnix === null && activeTasks.length >= 3)
+      ? Level.High
+      : currentRun.lastCompactionTsUnix === null || activeTasks.length >= 2
+        ? Level.Medium
+        : Level.Low;
+
+  return {
+    intent,
+    taskShape,
+    risk,
+    ambiguity,
+    parallelism,
+    contextPressure,
+    runState: deriveRunState(phase, blockers.length, activeTasks.length, taskShape)
+  };
+}
+
+function deriveIntent(objective: string, phase: string, taskText: string): Intent {
+  const text = `${objective} ${phase} ${taskText}`;
+
+  if (hasAny(text, ["inspect", "status", "doctor"])) {
+    return Intent.Inspect;
+  }
+  if (hasAny(text, ["fix", "repair", "debug", "error"])) {
+    return Intent.Debug;
+  }
+  if (hasAny(text, ["plan", "design", "architecture", "refactor", "migration", "self-hosting"])) {
+    return Intent.Design;
+  }
+  if (hasAny(text, ["edit", "apply", "update", "export", "write"])) {
+    return Intent.Edit;
+  }
+  if (hasAny(text, ["orchestrate", "keep going", "long run"])) {
+    return Intent.Orchestrate;
+  }
+  if (objective.trim().endsWith("?")) {
+    return Intent.Question;
+  }
+
+  return Intent.Inspect;
+}
+
+function deriveTaskShape(objective: string, taskText: string, activeTaskCount: number): TaskShape {
+  const text = `${objective} ${taskText}`;
+
+  if (hasAny(text, ["architecture", "refactor", "migration", "self-hosting"])) {
+    return TaskShape.Architectural;
+  }
+  if (activeTaskCount >= 5 || hasAny(text, ["long run", "long-running", "orchestrate"])) {
+    return TaskShape.LongRunning;
+  }
+  if (activeTaskCount >= 3 || hasAny(text, ["export", "repair", "bundle", "files"])) {
+    return TaskShape.MultiFile;
+  }
+  if (activeTaskCount >= 1) {
+    return TaskShape.Local;
+  }
+
+  return TaskShape.Trivial;
+}
+
+function deriveRisk(
+  intent: Intent,
+  taskShape: TaskShape,
+  ambiguity: Level,
+  verificationStatus: string
+): Level {
+  const status = verificationStatus.toLowerCase();
+
+  if (status === "failed" || ambiguity === Level.High) {
+    return Level.High;
+  }
+  if (taskShape === TaskShape.Architectural || taskShape === TaskShape.LongRunning) {
+    return Level.High;
+  }
+  if (intent === Intent.Debug || taskShape === TaskShape.MultiFile) {
+    return Level.Medium;
+  }
+
+  return Level.Low;
+}
+
+function deriveRunState(
+  phase: string,
+  blockerCount: number,
+  activeTaskCount: number,
+  taskShape: TaskShape
+): RunState {
+  if (hasAny(phase, ["blocked", "stalled"])) {
+    return RunState.Blocked;
+  }
+  if (blockerCount > 0 && (taskShape === TaskShape.LongRunning || activeTaskCount >= 4)) {
+    return RunState.Blocked;
+  }
+  if (hasAny(phase, ["validating", "reviewing"])) {
+    return RunState.Validating;
+  }
+  if (hasAny(phase, ["closing"])) {
+    return RunState.Closing;
+  }
+  if (hasAny(phase, ["executing", "working", "editing", "implementing"])) {
+    return RunState.Executing;
+  }
+
+  return RunState.Exploring;
+}
+
+function hasAny(value: string, needles: string[]): boolean {
+  return needles.some((needle) => value.includes(needle));
+}
+
+function isRealBlockingQuestion(question: string): boolean {
+  const normalized = question.trim().toLowerCase();
+  return normalized.length > 0 && normalized !== "none" && normalized !== "n/a";
 }
 
 function loadDerivedRouting(paths: ProjectPaths, env: HomeDirEnv) {

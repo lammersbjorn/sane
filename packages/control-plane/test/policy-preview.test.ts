@@ -106,6 +106,45 @@ describe("policy preview", () => {
     expect(currentRunScenario?.obligations).toEqual(["verify_light"]);
   });
 
+  it("derives blocked debug long-running heuristics from current-run state", () => {
+    const projectRoot = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+
+    writeCurrentRunState(paths.currentRunPath, {
+      version: 2,
+      objective: "debug long-running indexing drift",
+      phase: "debug",
+      activeTasks: [
+        "reproduce index drift in staging",
+        "trace mismatch across ingestion workers",
+        "instrument retry and checkpoint paths",
+        "prepare rollback validation checklist"
+      ],
+      blockingQuestions: ["which shard boundary causes the replay loop?"],
+      verification: {
+        status: "pending",
+        summary: "awaiting replay run"
+      },
+      lastCompactionTsUnix: null,
+      extra: {}
+    });
+
+    const result = previewPolicy(paths);
+    const currentRunScenario = result.policyPreview?.scenarios.find(
+      (scenario) => scenario.id === "current-run-inspect"
+    );
+
+    expect(currentRunScenario?.obligations).toEqual([
+      "debug_rigor",
+      "verify_light",
+      "planning",
+      "tdd",
+      "review",
+      "context_compaction",
+      "self_repair"
+    ]);
+  });
+
   it("keeps canonical five scenarios when current-run is missing", () => {
     const projectRoot = makeTempDir();
     const paths = createProjectPaths(projectRoot);
