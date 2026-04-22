@@ -56,6 +56,8 @@ Use the boundary docs instead of guessing:
 - Treat `docs/decisions/2026-04-19-sane-decision-log.md` as locked product truth unless a new decision log changes it.
 - Keep `README.md` public-facing and beginner-first.
 - Keep under-the-hood details in `docs/`, `TODO.md`, crate READMEs, or this skill.
+- When self-hosting on the `Sane` repo itself, use the repo's own currently installed/local-state-defined agents, tools, skills, and routing surfaces where they exist instead of bypassing them by default.
+- Keep that self-hosting behavior aligned with `Sane`'s real exported/local-state behavior so future self-improve and self-heal work can build on the same surfaces instead of a hidden one-off workflow.
 - If guidance starts becoming broad or stale, split it into docs or a more targeted skill instead of expanding root `AGENTS.md`.
 - Do not present future work as shipped behavior.
 - Do not blur the TUI/setup boundary into a normal prompting interface.
