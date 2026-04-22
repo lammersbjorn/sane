@@ -43,6 +43,11 @@ import { previewPolicy, previewPolicyForCurrentRun } from "./policy-preview.js";
 import { showConfig } from "./preferences.js";
 import { inspectSavedLocalConfig } from "./local-config.js";
 import {
+  formatLatestHistoryArtifactPreview,
+  formatLatestHistoryDecisionPreview,
+  formatLatestHistoryEventPreview
+} from "./runtime-history-presenter.js";
+import {
   ensureRuntimeHandoffBaseline,
   loadRuntimeHandoffState,
   runtimeHistoryPaths,
@@ -290,6 +295,7 @@ export * from "./opencode-native.js";
 export * from "./policy-preview.js";
 export * from "./policy-preview-presenter.js";
 export * from "./preferences.js";
+export * from "./runtime-history-presenter.js";
 
 function inspectRuntimeStateSnapshot(paths: ProjectPaths): RuntimeStateSnapshot {
   const handoff = loadRuntimeHandoffState(paths);
@@ -439,36 +445,6 @@ function canonicalBackupHistorySummary(backups: string[]): string {
 
 function joinSummaryList(values: string[]): string {
   return values.length === 0 ? "none" : values.join(", ");
-}
-
-function formatLatestHistoryEventPreview(
-  preview: RuntimeStateSnapshot["historyPreview"]["latestEvent"]
-): string {
-  if (!preview) {
-    return "missing";
-  }
-
-  return `ts ${preview.tsUnix}, action ${preview.action}, result ${preview.result}, summary ${preview.summary}`;
-}
-
-function formatLatestHistoryDecisionPreview(
-  preview: RuntimeStateSnapshot["historyPreview"]["latestDecision"]
-): string {
-  if (!preview) {
-    return "missing";
-  }
-
-  return `ts ${preview.tsUnix}, summary ${preview.summary}, rationale ${preview.rationale}`;
-}
-
-function formatLatestHistoryArtifactPreview(
-  preview: RuntimeStateSnapshot["historyPreview"]["latestArtifact"]
-): string {
-  if (!preview) {
-    return "missing";
-  }
-
-  return `ts ${preview.tsUnix}, kind ${preview.kind}, path ${preview.path}, summary ${preview.summary}`;
 }
 
 function briefPreviewLines(brief: string): string[] {

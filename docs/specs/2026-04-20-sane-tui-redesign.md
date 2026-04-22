@@ -119,7 +119,7 @@ Content:
 - status summary
 - doctor result
 - runtime handoff state (`current-run`, `summary`, `brief`)
-- bounded local runtime history counts (`events`, `decisions`, `artifacts`)
+- bounded local runtime history previews for the latest `event`, `decision`, and `artifact`, plus counts for `events`, `decisions`, `artifacts`
 - latest persisted policy snapshot and typed input classification, read-only only
 - current policy preview summary/scenario counts are shown with the same shared presenter used by action-level `preview policy` details (including per-scenario obligation/trace/orchestration lines), read-only only
 - local config view

@@ -66,6 +66,7 @@ Current managed export behavior also depends on local config:
 - repo-local AGENTS overlay export reuses the same guidance body as the global overlay, but with repo-scoped markers and opt-in behavior
 - built-in pack manifests may also carry read-only provenance metadata for bundled upstream-derived skills or MCP references
 - that provenance is inspectable metadata only, not a live fetch/update contract
+- inspect/runtime-summary reads may surface bounded latest history previews for the most recent `event`, `decision`, and `artifact` alongside the underlying counts, but that stays read-only and does not add a log-browsing surface
 
 ## Required Operations
 
