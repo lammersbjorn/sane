@@ -238,6 +238,8 @@ describe("policy preview", () => {
               contextPressure: "low",
               runState: "exploring"
             },
+            roles: null,
+            orchestration: null,
             obligationCount: 0,
             traceCount: 0
           }
@@ -269,6 +271,7 @@ describe("policy preview", () => {
     expect(lines).toEqual([
       "latest policy snapshot: present (current-run-derived read-only view; ts 1700000006; summary policy preview: rendered adaptive obligation scenarios; 1 scenarios: simple-question)",
       "latest policy input simple-question: intent question, task trivial, risk low, ambiguity low, parallelism none, context low, run exploring",
+      "latest policy scenario simple-question: obligations 0, traces 0",
       "current policy preview: policy preview: rendered adaptive obligation scenarios; 1 scenario"
     ]);
   });

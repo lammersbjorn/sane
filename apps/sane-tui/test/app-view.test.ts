@@ -245,6 +245,9 @@ describe("app view", () => {
     expect(view.sectionOverviewLines.join("\n")).toContain(
       "latest policy snapshot: present (current-run-derived read-only view; ts 1700000005; summary policy preview: rendered adaptive obligation scenarios; 2 scenarios: simple-question, multi-file-feature)"
     );
+    expect(view.sectionOverviewLines.join("\n")).toContain(
+      "latest policy scenario simple-question: obligations 0, traces 0"
+    );
   });
 
   it("surfaces policy preview payload for the inspect policy action", () => {

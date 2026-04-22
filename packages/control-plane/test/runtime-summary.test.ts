@@ -103,6 +103,15 @@ describe("showRuntimeSummary", () => {
               parallelism: "none",
               contextPressure: "low",
               runState: "exploring"
+            },
+            roles: {
+              coordinator: true
+            },
+            orchestration: {
+              subagents: "none",
+              subagentReadiness: "not_needed",
+              reviewPosture: "inline_only",
+              verifierTiming: "inline"
             }
           },
           { id: "multi-file-feature" }
@@ -125,6 +134,13 @@ describe("showRuntimeSummary", () => {
     expect(result.details).toContain(
       "latest policy input simple-question: intent question, task trivial, risk low, ambiguity low, parallelism none, context low, run exploring"
     );
+    expect(result.details).toContain("latest policy scenario simple-question: obligations 0, traces 0");
+    expect(result.details).toContain(
+      "latest policy roles simple-question: coordinator on, sidecar off, verifier off"
+    );
+    expect(result.details).toContain(
+      "latest policy orchestration simple-question: subagents none, readiness not_needed, review inline_only, verifier inline"
+    );
     expect(result.details).toContain(`decisions: 1 at ${paths.decisionsPath}`);
     expect(inspectLatestPolicyPreview(paths)).toEqual({
       status: "present",
@@ -143,10 +159,29 @@ describe("showRuntimeSummary", () => {
             contextPressure: "low",
             runState: "exploring"
           },
+          roles: {
+            coordinator: true,
+            sidecar: false,
+            verifier: false
+          },
+          orchestration: {
+            subagents: "none",
+            subagentReadiness: "not_needed",
+            reviewPosture: "inline_only",
+            verifierTiming: "inline"
+          },
           obligationCount: 0,
           traceCount: 0
         },
-        { id: "multi-file-feature", summary: null, input: null, obligationCount: 0, traceCount: 0 }
+        {
+          id: "multi-file-feature",
+          summary: null,
+          input: null,
+          roles: null,
+          orchestration: null,
+          obligationCount: 0,
+          traceCount: 0
+        }
       ],
       tsUnix: 1_700_000_002,
       summary: "policy preview: rendered adaptive obligation scenarios"

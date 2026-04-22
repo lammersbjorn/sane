@@ -68,7 +68,8 @@ export function formatLatestPolicyPreviewLines(
 
   return [
     formatInspectSnapshotLine(preview, options.snapshotPrefix),
-    ...formatLatestPolicyPreviewInputLines(preview, options.inputPrefix ?? "latest policy input")
+    ...formatLatestPolicyPreviewInputLines(preview, options.inputPrefix ?? "latest policy input"),
+    ...formatLatestPolicyPreviewScenarioLines(preview)
   ];
 }
 
@@ -109,7 +110,11 @@ function formatRuntimeSummaryLines(
     );
   }
 
-  return [...lines, ...formatLatestPolicyPreviewInputLines(preview, options.inputPrefix)];
+  return [
+    ...lines,
+    ...formatLatestPolicyPreviewInputLines(preview, options.inputPrefix),
+    ...formatLatestPolicyPreviewScenarioLines(preview)
+  ];
 }
 
 function formatInspectSnapshotLine(
@@ -119,6 +124,34 @@ function formatInspectSnapshotLine(
   return preview.status === "present"
     ? `${prefix}: present (current-run-derived read-only view; ts ${preview.tsUnix}; summary ${preview.summary}; ${preview.scenarioCount} scenarios: ${preview.scenarioIds.join(", ")})`
     : `${prefix}: missing (current-run-derived read-only view)`;
+}
+
+function formatLatestPolicyPreviewScenarioLines(
+  preview: LatestPolicyPreviewSnapshot
+): string[] {
+  if (preview.status !== "present") {
+    return [];
+  }
+
+  return preview.scenarios.flatMap((scenario) => {
+    const lines = [
+      `latest policy scenario ${scenario.id}: obligations ${scenario.obligationCount}, traces ${scenario.traceCount}`
+    ];
+
+    if (scenario.roles) {
+      lines.push(
+        `latest policy roles ${scenario.id}: coordinator ${scenario.roles.coordinator ? "on" : "off"}, sidecar ${scenario.roles.sidecar ? "on" : "off"}, verifier ${scenario.roles.verifier ? "on" : "off"}`
+      );
+    }
+
+    if (scenario.orchestration) {
+      lines.push(
+        `latest policy orchestration ${scenario.id}: subagents ${scenario.orchestration.subagents ?? "unknown"}, readiness ${scenario.orchestration.subagentReadiness ?? "unknown"}, review ${scenario.orchestration.reviewPosture ?? "unknown"}, verifier ${scenario.orchestration.verifierTiming ?? "unknown"}`
+      );
+    }
+
+    return lines;
+  });
 }
 
 function formatCurrentPolicyPreviewLine(

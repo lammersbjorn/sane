@@ -310,6 +310,15 @@ describe("inspect screen model", () => {
               parallelism: "none",
               contextPressure: "low",
               runState: "exploring"
+            },
+            roles: {
+              coordinator: true
+            },
+            orchestration: {
+              subagents: "none",
+              subagentReadiness: "not_needed",
+              reviewPosture: "inline_only",
+              verifierTiming: "inline"
             }
           },
           { id: "multi-file-feature" }
@@ -343,10 +352,29 @@ describe("inspect screen model", () => {
             contextPressure: "low",
             runState: "exploring"
           },
+          roles: {
+            coordinator: true,
+            sidecar: false,
+            verifier: false
+          },
+          orchestration: {
+            subagents: "none",
+            subagentReadiness: "not_needed",
+            reviewPosture: "inline_only",
+            verifierTiming: "inline"
+          },
           obligationCount: 0,
           traceCount: 0
         },
-        { id: "multi-file-feature", summary: null, input: null, obligationCount: 0, traceCount: 0 }
+        {
+          id: "multi-file-feature",
+          summary: null,
+          input: null,
+          roles: null,
+          orchestration: null,
+          obligationCount: 0,
+          traceCount: 0
+        }
       ],
       tsUnix: 1_700_000_004,
       summary: "policy preview: rendered adaptive obligation scenarios"
@@ -356,6 +384,12 @@ describe("inspect screen model", () => {
     );
     expect(screen.overviewLines.join("\n")).toContain(
       "latest policy input simple-question: intent question, task trivial, risk low, ambiguity low, parallelism none, context low, run exploring"
+    );
+    expect(screen.overviewLines.join("\n")).toContain(
+      "latest policy roles simple-question: coordinator on, sidecar off, verifier off"
+    );
+    expect(screen.overviewLines.join("\n")).toContain(
+      "latest policy orchestration simple-question: subagents none, readiness not_needed, review inline_only, verifier inline"
     );
   });
 });

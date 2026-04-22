@@ -211,6 +211,19 @@ export interface LatestPolicyPreviewScenarioSnapshot {
     contextPressure: string | null;
     runState: string | null;
   } | null;
+  roles: {
+    [key: string]: JsonValue;
+    coordinator: boolean;
+    sidecar: boolean;
+    verifier: boolean;
+  } | null;
+  orchestration: {
+    [key: string]: JsonValue;
+    subagents: string | null;
+    subagentReadiness: string | null;
+    reviewPosture: string | null;
+    verifierTiming: string | null;
+  } | null;
   obligationCount: number;
   traceCount: number;
 }
@@ -753,6 +766,8 @@ export function readLatestPolicyPreviewSnapshot(path: string): LatestPolicyPrevi
       id: scenario.id,
       summary: scenario.summary,
       input: scenario.input,
+      roles: scenario.roles,
+      orchestration: scenario.orchestration,
       obligationCount: scenario.obligations.length,
       traceCount: scenario.trace.length,
     })),
