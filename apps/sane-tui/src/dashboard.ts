@@ -1,4 +1,4 @@
-import { showRuntimeSummary } from "@sane/control-plane";
+import { showRuntimeProgress, showRuntimeSummary } from "@sane/control-plane";
 import { inspectStatusBundle } from "@sane/control-plane/inventory.js";
 import * as getStartedScreen from "@/get-started-screen.js";
 import { currentAction, currentActions, currentSection, projectLabel, recommendedNextStep, type TuiShell } from "@/shell.js";
@@ -99,7 +99,7 @@ function buildStatusChips(
     tone: statusBundle.driftItems.length === 0 ? "ok" : "warn"
   });
 
-  const runtimeProgress = runtimeProgressFromSummary(shell.paths);
+  const runtimeProgress = runtimeProgressFromSnapshot(shell.paths);
   if (runtimeProgress) {
     chips.push({
       id: "phase",
@@ -182,14 +182,24 @@ function chipLabel(name: string): string {
   }
 }
 
-function runtimeProgressFromSummary(
+function runtimeProgressFromSnapshot(
   paths: TuiShell["paths"]
 ): { phase: string; verificationStatus: string } | null {
-  const summary = showRuntimeSummary(paths);
+  const snapshotProgress = showRuntimeProgress(paths);
+  if (snapshotProgress) {
+    return snapshotProgress;
+  }
+
+  return runtimeProgressFromSummaryDetails(showRuntimeSummary(paths).details);
+}
+
+function runtimeProgressFromSummaryDetails(
+  details: string[]
+): { phase: string; verificationStatus: string } | null {
   let phase: string | null = null;
   let verificationStatus: string | null = null;
 
-  for (const detail of summary.details) {
+  for (const detail of details) {
     if (detail.startsWith("phase: ")) {
       phase = detail.slice("phase: ".length).trim();
       continue;

@@ -1,39 +1,55 @@
 import {
-  directCompetitors,
-  integrations,
+  adjacentPeers,
+  antiClaims,
+  closestPeers,
+  flowSteps,
+  heroProofs,
   installCommand,
-  managedSurfaces,
-  policyClasses,
-  proofPoints
+  packageBoundaries,
+  philosophyPrinciples,
+  policyClasses
 } from "../src/content/site-content";
 
 describe("@sane/site content", () => {
   it("keeps the core trust-and-recovery messaging intact", () => {
-    expect(proofPoints).toContain("Preview before apply");
-    expect(proofPoints).toContain("Backup and restore paths");
-    expect(proofPoints).toContain("Typed inspect visibility");
+    expect(heroProofs).toContain("Preview before apply");
+    expect(heroProofs).toContain("Backup, restore, and scoped uninstall");
+    expect(heroProofs).toContain("No required daily wrapper");
   });
 
-  it("keeps the direct competitor frame focused on framework-layer products", () => {
-    expect(directCompetitors.map((item) => item.name)).toEqual([
-      "openagentsbtw",
+  it("keeps the peer frame focused on verified framework and control-layer products", () => {
+    expect(closestPeers.map((item) => item.name)).toEqual([
       "Superpowers",
       "gstack",
-      "cc-thingz",
-      "Arc",
-      "Everything Claude Code"
+      "Everything Claude Code",
+      "OpenAgentsControl"
+    ]);
+
+    expect(adjacentPeers.map((item) => item.name)).toEqual([
+      "OpenAgents",
+      "OpenCastle",
+      "oh-my-opencode",
+      "gitagent"
     ]);
   });
 
-  it("documents managed surfaces, integrations, policy classes, and install flow", () => {
-    expect(managedSurfaces).toContain("~/.codex/config.toml");
-    expect(integrations.recommended).toContain("Context7");
+  it("preserves the product philosophy and implementation boundaries", () => {
+    expect(flowSteps.map((item) => item.title)).toEqual([
+      "Setup",
+      "Inspect",
+      "Repair"
+    ]);
+
     expect(policyClasses).toEqual([
       "explorer",
       "implementation",
       "verifier",
       "realtime"
     ]);
+
+    expect(philosophyPrinciples).toHaveLength(6);
+    expect(antiClaims).toContain("Not another runtime.");
+    expect(packageBoundaries).toContain("@sane/control-plane");
     expect(installCommand).toContain("cargo run -p sane");
   });
 });
