@@ -124,9 +124,6 @@ function sectionOverviewLines(
     }
     case "install": {
       const install = models.install;
-      const integrationsAction = install.actions.find(
-        (action) => action.id === "apply_integrations_profile"
-      );
       return [
         "Current install bundle:",
         ...dashboard.activeSection.description,
@@ -135,7 +132,7 @@ function sectionOverviewLines(
         install.missingTargets.length === 0
           ? "bundle targets: all onboarding targets installed"
           : `bundle targets missing: ${install.missingTargets.join(", ")}`,
-        `optional Codex tools: ${integrationsAction?.status ?? "missing"} (${models.inspect().integrationsAudit.recommendedChangeCount} recommended changes)`
+        `optional Codex tools: ${install.integrationsStatus.label} (${install.integrationsRecommendedChangeCount} recommended changes)`
       ];
     }
     case "preferences": {
@@ -160,19 +157,16 @@ function sectionOverviewLines(
     }
     case "repair": {
       const repair = models.repair();
-      const removable = repair.actions
-        .filter((action) => action.id.startsWith("uninstall_") && action.status === "installed")
-        .map((action) => action.id.replace("uninstall_", ""));
       return [
         ...dashboard.activeSection.description,
         "",
-        `restore backup: ${repair.actions.find((action) => action.id === "restore_codex_config")?.status ?? "missing"}`,
+        `restore backup: ${repair.restoreStatus.label}`,
         `latest backup: ${repair.backups.latestBackupPath ?? "none"} (${repair.backups.backupCount} total)`,
         `local telemetry data: ${presentFlag(repair.telemetry.dirPresent)}`,
         `telemetry files: summary ${presentFlag(repair.telemetry.summaryPresent)}, events ${presentFlag(repair.telemetry.eventsPresent)}, queue ${presentFlag(repair.telemetry.queuePresent)}`,
-        removable.length === 0
+        repair.removableInstalls.length === 0
           ? "removable installs: none currently installed"
-          : `removable installs: ${removable.join(", ")}`,
+          : `removable installs: ${repair.removableInstalls.join(", ")}`,
         `install bundle: ${repair.installBundle}`
       ];
     }

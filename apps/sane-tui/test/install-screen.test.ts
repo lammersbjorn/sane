@@ -41,6 +41,8 @@ describe("install screen model", () => {
       "hooks",
       "custom-agents"
     ]);
+    expect(screen.integrationsStatus).toEqual({ kind: "missing", label: "missing" });
+    expect(screen.integrationsRecommendedChangeCount).toBe(3);
     expect(screen.actions.map((action) => action.id)).toEqual([
       "export_user_skills",
       "export_repo_skills",
@@ -81,6 +83,8 @@ describe("install screen model", () => {
     expect(screen.recommendedActionId).toBe("apply_integrations_profile");
     expect(screen.bundleStatus).toBe("installed");
     expect(screen.missingTargets).toEqual([]);
+    expect(screen.integrationsStatus).toEqual({ kind: "missing", label: "missing" });
+    expect(screen.integrationsRecommendedChangeCount).toBe(3);
     expect(screen.actions.find((action) => action.id === "export_user_skills")?.status).toBe(
       "installed"
     );
@@ -104,6 +108,8 @@ describe("install screen model", () => {
     applyIntegrationsProfile(paths, codexPaths);
     const screen = loadInstallScreen(paths, codexPaths);
 
+    expect(screen.integrationsStatus).toEqual({ kind: "installed", label: "installed" });
+    expect(screen.integrationsRecommendedChangeCount).toBe(0);
     expect(screen.actions.find((action) => action.id === "apply_integrations_profile")?.status).toBe(
       "installed"
     );
@@ -119,6 +125,8 @@ describe("install screen model", () => {
     applyIntegrationsProfile(paths, codexPaths);
     const screen = loadInstallScreen(paths, codexPaths);
 
+    expect(screen.integrationsStatus).toEqual({ kind: "installed", label: "installed" });
+    expect(screen.integrationsRecommendedChangeCount).toBe(0);
     expect(screen.bundleStatus).toBe("installed");
     expect(screen.actions.find((action) => action.id === "apply_integrations_profile")?.status).toBe(
       "installed"
@@ -137,6 +145,8 @@ describe("install screen model", () => {
 
     const screen = loadInstallScreen(paths, codexPaths);
 
+    expect(screen.integrationsStatus).toEqual({ kind: "invalid", label: "invalid" });
+    expect(screen.integrationsRecommendedChangeCount).toBe(0);
     expect(screen.actions.find((action) => action.id === "apply_integrations_profile")?.status).toBe(
       "invalid"
     );

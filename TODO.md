@@ -113,6 +113,7 @@ Implemented:
 - research note locked: OpenAI docs publish strong positioning but not one hard benchmark table across these Codex workflow classes
 - integrations profile preview/apply now emits structured audit payloads, and install-screen integrations UI consumes that audit directly for read-before-write visibility
 - inspect/app-view now also consume typed integrations audit state instead of inferring optional-tool status from preview summary text, and this remains inspect-only visibility
+- install/repair overview copy now consumes typed install/repair snapshots directly for integrations status/count, restore status, and removable installs instead of scraping action rows
 - TUI Inspect now shows read-only policy-preview snapshot visibility derived from the latest current run instead of command-only access
 - TUI now requires confirmation for risky apply/restore/uninstall actions
 - TUI repair now exposes local telemetry reset as a first-class confirmed action instead of only a privacy-editor shortcut

@@ -25,6 +25,8 @@ export interface InstallScreenModel {
   inventory: ReturnType<typeof inspectInstallStatus>["inventory"];
   bundleStatus: ReturnType<typeof inspectInstallStatus>["bundleStatus"];
   missingTargets: string[];
+  integrationsStatus: ReturnType<typeof inspectInstallStatus>["integrationsStatus"];
+  integrationsRecommendedChangeCount: ReturnType<typeof inspectInstallStatus>["integrationsRecommendedChangeCount"];
   recommendedActionId: ReturnType<typeof inspectInstallStatus>["recommendedActionId"];
   actions: InstallAction[];
   handlers: {
@@ -64,6 +66,8 @@ export function loadInstallScreen(paths: ProjectPaths, codexPaths: CodexPaths): 
     inventory,
     bundleStatus: status.bundleStatus,
     missingTargets: status.missingTargets,
+    integrationsStatus: status.integrationsStatus,
+    integrationsRecommendedChangeCount: status.integrationsRecommendedChangeCount,
     recommendedActionId: status.recommendedActionId,
     actions,
     handlers: {

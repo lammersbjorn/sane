@@ -1,7 +1,7 @@
 import { InventoryStatus } from "@sane/core";
 import { type CodexPaths, type ProjectPaths } from "@sane/platform";
 
-import { inspectIntegrationsProfileStatus } from "./codex-config.js";
+import { inspectIntegrationsProfileAudit, inspectIntegrationsProfileStatus } from "./codex-config.js";
 import { CORE_INSTALL_BUNDLE_TARGETS } from "./core-install-bundle-targets.js";
 import { inspectStatusBundle } from "./inventory.js";
 import {
@@ -32,6 +32,8 @@ export interface InstallStatusSnapshot {
   inventory: ReturnType<typeof inspectStatusBundle>["codexNative"];
   bundleStatus: ReturnType<typeof inspectStatusBundle>["primary"]["installBundle"];
   missingTargets: string[];
+  integrationsStatus: InstallActionStatus;
+  integrationsRecommendedChangeCount: number;
   recommendedActionId: InstallActionStatusId | null;
   actionStatus: Record<InstallActionStatusId, InstallActionStatus>;
 }
@@ -42,14 +44,18 @@ export function inspectInstallStatus(
 ): InstallStatusSnapshot {
   const statusBundle = inspectStatusBundle(paths, codexPaths);
   const inventory = statusBundle.codexNative;
+  const integrationsAudit = inspectIntegrationsProfileAudit(codexPaths);
   const integrationStatus = inspectIntegrationsProfileStatus(codexPaths);
   const missingTargets = missingBundleTargets(inventory);
   const bundleStatus = statusBundle.primary.installBundle;
+  const integrationsStatusSnapshot = integrationsStatus(integrationStatus);
 
   return {
     inventory,
     bundleStatus,
     missingTargets,
+    integrationsStatus: integrationsStatusSnapshot,
+    integrationsRecommendedChangeCount: integrationsAudit.recommendedChangeCount,
     recommendedActionId:
       bundleStatus !== "installed"
         ? "export_all"
@@ -61,7 +67,7 @@ export function inspectInstallStatus(
       export_repo_skills: inventoryStatus(inventory, "repo-skills"),
       export_repo_agents: inventoryStatus(inventory, "repo-agents"),
       export_global_agents: inventoryStatus(inventory, "global-agents"),
-      apply_integrations_profile: integrationsStatus(integrationStatus),
+      apply_integrations_profile: integrationsStatusSnapshot,
       export_hooks: inventoryStatus(inventory, "hooks"),
       export_custom_agents: inventoryStatus(inventory, "custom-agents"),
       export_opencode_agents: compatibilityStatus(statusBundle, "opencode-agents"),

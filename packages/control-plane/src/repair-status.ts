@@ -39,6 +39,8 @@ export interface RepairStatusSnapshot {
   installBundle: ReturnType<typeof inspectStatusBundle>["primary"]["installBundle"];
   telemetry: ReturnType<typeof inspectTelemetrySnapshot>;
   backups: ReturnType<typeof inspectCodexConfigBackupSnapshot>;
+  restoreStatus: RepairActionStatus;
+  removableInstalls: string[];
   actionStatus: Record<RepairActionStatusId, RepairActionStatus>;
 }
 
@@ -49,15 +51,18 @@ export function inspectRepairStatus(
   const statusBundle = inspectStatusBundle(paths, codexPaths);
   const telemetry = inspectTelemetrySnapshot(paths);
   const backups = inspectCodexConfigBackupSnapshot(paths);
+  const restoreStatus = backups.restoreAvailable ? statusDto("available") : statusDto("missing");
 
   return {
     installBundle: statusBundle.primary.installBundle,
     telemetry,
     backups,
+    restoreStatus,
+    removableInstalls: removableInstalls(statusBundle),
     actionStatus: {
       install_runtime: statusFor(statusBundle.inventory, "runtime"),
       backup_codex_config: statusFor(statusBundle.inventory, "codex-config"),
-      restore_codex_config: backups.restoreAvailable ? statusDto("available") : statusDto("missing"),
+      restore_codex_config: restoreStatus,
       reset_telemetry_data: telemetry.dirPresent ? statusDto("present") : statusDto("missing"),
       uninstall_user_skills: statusFor(statusBundle.inventory, "user-skills"),
       uninstall_repo_skills: statusFor(statusBundle.inventory, "repo-skills"),
@@ -86,6 +91,18 @@ function uninstallAllStatus(
   )
     ? statusDto("installed")
     : statusDto("missing");
+}
+
+function removableInstalls(statusBundle: ReturnType<typeof inspectStatusBundle>): string[] {
+  const installedCoreTargets = CORE_INSTALL_BUNDLE_TARGETS.filter(
+    (name) => statusBundle.inventory.find((item) => item.name === name)?.status === InventoryStatus.Installed
+  );
+
+  const installedCompatibilityTargets = statusBundle.compatibility
+    .filter((item) => item.status === InventoryStatus.Installed)
+    .map((item) => item.name);
+
+  return [...installedCoreTargets, ...installedCompatibilityTargets];
 }
 
 function fromInventoryStatus(status: InventoryStatus | undefined): RepairActionStatus {

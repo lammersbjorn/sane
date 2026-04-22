@@ -141,6 +141,7 @@ Content:
 - custom agents (`sane-agent`, `sane-reviewer`, `sane-explorer`)
 - optional OpenCode agents (`~/.config/opencode/agents/`)
 - integrations-profile actions should render backend structured audit output directly so users can see exact recommended adds before apply, and inspect/install overview copy should consume that same typed audit state instead of parsing preview summaries
+- install overview copy should come from one typed install snapshot, including integrations status/count, instead of scraping action rows plus inspect state separately
 - install all supported user-level items together
 
 ### 6. Repair
@@ -154,6 +155,7 @@ Content:
 - backup Codex config
 - restore Codex config
 - show latest local Codex backup path/count read-only so rollback truth is explicit before restore
+- repair overview copy should come from one typed repair snapshot, including restore status and removable installs, instead of re-deriving them from action rows
 - explicit local telemetry reset
 - uninstall selected managed installs
 - uninstall all

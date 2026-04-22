@@ -48,6 +48,8 @@ describe("repair screen model", () => {
       backupCount: 0,
       latestBackupPath: null
     });
+    expect(screen.restoreStatus).toEqual({ kind: "missing", label: "missing" });
+    expect(screen.removableInstalls).toEqual([]);
     expect(screen.actions.map((action) => action.id)).toEqual([
       "install_runtime",
       "backup_codex_config",
@@ -112,6 +114,13 @@ describe("repair screen model", () => {
       backupCount: 1,
       latestBackupPath: expect.stringContaining(paths.codexConfigBackupsDir)
     });
+    expect(screen.restoreStatus).toEqual({ kind: "available", label: "available" });
+    expect(screen.removableInstalls).toEqual([
+      "user-skills",
+      "global-agents",
+      "hooks",
+      "custom-agents"
+    ]);
     expect(screen.actions.find((action) => action.id === "backup_codex_config")?.status).toBe(
       "installed"
     );

@@ -50,6 +50,8 @@ describe("repair status snapshot", () => {
         backupCount: 0,
         latestBackupPath: null
       },
+      restoreStatus: { kind: "missing", label: "missing" },
+      removableInstalls: [],
       actionStatus: expect.objectContaining({
         install_runtime: { kind: "missing", label: "missing" },
         restore_codex_config: { kind: "missing", label: "missing" },
@@ -92,6 +94,8 @@ describe("repair status snapshot", () => {
         backupCount: 1,
         latestBackupPath: expect.stringContaining(paths.codexConfigBackupsDir)
       },
+      restoreStatus: { kind: "available", label: "available" },
+      removableInstalls: [...CORE_INSTALL_BUNDLE_TARGETS],
       actionStatus: expect.objectContaining({
         backup_codex_config: { kind: "installed", label: "installed" },
         restore_codex_config: { kind: "available", label: "available" },

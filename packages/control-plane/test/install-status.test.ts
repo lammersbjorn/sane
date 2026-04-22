@@ -35,6 +35,8 @@ describe("install status snapshot", () => {
       expect.objectContaining({
         bundleStatus: "missing",
         missingTargets: [...CORE_INSTALL_BUNDLE_TARGETS],
+        integrationsStatus: { kind: "missing", label: "missing" },
+        integrationsRecommendedChangeCount: 3,
         recommendedActionId: "export_all",
         actionStatus: expect.objectContaining({
           export_user_skills: { kind: "missing", label: "missing" },
@@ -61,6 +63,8 @@ describe("install status snapshot", () => {
       expect.objectContaining({
         bundleStatus: "installed",
         missingTargets: [],
+        integrationsStatus: { kind: "missing", label: "missing" },
+        integrationsRecommendedChangeCount: 3,
         recommendedActionId: "apply_integrations_profile",
         actionStatus: expect.objectContaining({
           export_all: { kind: "installed", label: "installed" },
@@ -73,6 +77,8 @@ describe("install status snapshot", () => {
     applyIntegrationsProfile(paths, codexPaths);
     expect(inspectInstallStatus(paths, codexPaths)).toEqual(
       expect.objectContaining({
+        integrationsStatus: { kind: "installed", label: "installed" },
+        integrationsRecommendedChangeCount: 0,
         recommendedActionId: null,
         actionStatus: expect.objectContaining({
           apply_integrations_profile: { kind: "installed", label: "installed" }
@@ -95,6 +101,8 @@ describe("install status snapshot", () => {
       expect.objectContaining({
         bundleStatus: "installed",
         missingTargets: [],
+        integrationsStatus: { kind: "invalid", label: "invalid" },
+        integrationsRecommendedChangeCount: 0,
         recommendedActionId: "apply_integrations_profile",
         actionStatus: expect.objectContaining({
           export_all: { kind: "installed", label: "installed" },
