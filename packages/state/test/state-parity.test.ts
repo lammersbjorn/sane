@@ -405,6 +405,79 @@ describe('typed record parity', () => {
     });
   });
 
+  it('returns last valid typed snapshot when trailing line is malformed JSON', () => {
+    const dir = makeTempDir();
+    const path = join(dir, 'decisions.jsonl');
+
+    appendJsonlRecord(
+      path,
+      createDecisionRecord(
+        'policy preview: rendered adaptive obligation scenarios',
+        'simple-question: direct_answer | coordinator=gpt-5.4/high',
+        [],
+        createPolicyPreviewDecisionContext([{ id: 'simple-question' }]),
+      ),
+      stringifyDecisionRecord,
+    );
+    writeFileSync(path, '{"version":1,"summary":"bad"', { encoding: 'utf8', flag: 'a' });
+
+    expect(() => readLatestPolicyPreviewSnapshot(path)).not.toThrow();
+    expect(readLatestPolicyPreviewSnapshot(path)).toEqual({
+      status: 'present',
+      scenarioCount: 1,
+      scenarioIds: ['simple-question'],
+    });
+  });
+
+  it('returns missing typed snapshot when only malformed JSON exists', () => {
+    const dir = makeTempDir();
+    const path = join(dir, 'decisions.jsonl');
+
+    writeFileSync(path, '{"version":1,"summary":"bad"', 'utf8');
+
+    expect(() => readLatestPolicyPreviewSnapshot(path)).not.toThrow();
+    expect(readLatestPolicyPreviewSnapshot(path)).toEqual({
+      status: 'missing',
+      scenarioCount: 0,
+      scenarioIds: [],
+    });
+  });
+
+  it('returns last valid typed snapshot when trailing policy context is malformed', () => {
+    const dir = makeTempDir();
+    const path = join(dir, 'decisions.jsonl');
+
+    appendJsonlRecord(
+      path,
+      createDecisionRecord(
+        'policy preview: rendered adaptive obligation scenarios',
+        'simple-question: direct_answer | coordinator=gpt-5.4/high',
+        [],
+        createPolicyPreviewDecisionContext([{ id: 'simple-question' }]),
+      ),
+      stringifyDecisionRecord,
+    );
+    appendJsonlRecord(
+      path,
+      createDecisionRecord(
+        'policy preview: malformed',
+        'bad context',
+        [],
+        {
+          kind: 'policy_preview',
+          scenarios: [42 as never],
+        },
+      ),
+      stringifyDecisionRecord,
+    );
+
+    expect(readLatestPolicyPreviewSnapshot(path)).toEqual({
+      status: 'present',
+      scenarioCount: 1,
+      scenarioIds: ['simple-question'],
+    });
+  });
+
   it('parses typed and legacy artifact records', () => {
     const typed: ArtifactRecord = createArtifactRecord(
       'report',

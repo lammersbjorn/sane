@@ -610,7 +610,13 @@ export function readLatestPolicyPreviewDecision(path: string): DecisionRecord | 
       continue;
     }
 
-    const decision = parseDecisionRecordJson(line, `${path}:${index + 1}`);
+    let decision: DecisionRecord;
+    try {
+      decision = parseDecisionRecordJson(line, `${path}:${index + 1}`);
+    } catch {
+      continue;
+    }
+
     if (policyPreviewDecisionContext(decision)) {
       return decision;
     }
