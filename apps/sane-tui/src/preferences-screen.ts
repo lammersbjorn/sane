@@ -15,6 +15,8 @@ export interface PreferencesScreenAction {
     | "open_privacy_editor"
     | "show_config"
     | "show_codex_config"
+    | "preview_statusline_profile"
+    | "apply_statusline_profile"
     | "preview_cloudflare_profile"
     | "apply_cloudflare_profile"
     | "preview_opencode_profile"
@@ -33,6 +35,9 @@ export interface PreferencesScreenModel {
   telemetry: PreferencesSnapshotModel["telemetry"];
   telemetryFiles: PreferencesSnapshotModel["telemetryFiles"];
   enabledPacks: string[];
+  statuslineAudit: ReturnType<typeof inspectCodexProfileFamilySnapshot>["statusline"]["audit"];
+  statuslineApply: ReturnType<typeof inspectCodexProfileFamilySnapshot>["statusline"]["apply"];
+  statuslinePreview: ReturnType<typeof inspectCodexProfileFamilySnapshot>["statusline"]["preview"];
   cloudflareAudit: ReturnType<typeof inspectCodexProfileFamilySnapshot>["cloudflare"]["audit"];
   cloudflareApply: ReturnType<typeof inspectCodexProfileFamilySnapshot>["cloudflare"]["apply"];
   cloudflarePreview: ReturnType<typeof inspectCodexProfileFamilySnapshot>["cloudflare"]["preview"];
@@ -69,6 +74,9 @@ export function loadPreferencesScreen(
     telemetry: snapshot.telemetry,
     telemetryFiles: snapshot.telemetryFiles,
     enabledPacks: snapshot.enabledPacks,
+    statuslineAudit: profiles.statusline.audit,
+    statuslineApply: profiles.statusline.apply,
+    statuslinePreview: profiles.statusline.preview,
     cloudflareAudit: profiles.cloudflare.audit,
     cloudflareApply: profiles.cloudflare.apply,
     cloudflarePreview: profiles.cloudflare.preview,

@@ -110,6 +110,12 @@ It exists so `Sane` can answer practical questions like:
 - what can be repaired
 - what can be rolled back
 
+Important continuity boundary:
+
+- `Sane` does not depend on a third-party memory layer
+- `Sane` also does not currently depend on Codex native `memories` for default continuity
+- default continuity comes from thin local `.sane` state plus scoped Codex-native exports
+
 ## What Users Actually Get Today
 
 | Need | What `Sane` gives you now |
@@ -119,9 +125,14 @@ It exists so `Sane` can answer practical questions like:
 | Runtime handoff truth | Read-only Inspect view for `current-run`, `summary`, and `brief` state, plus latest current-run-derived policy-preview snapshot visibility. |
 | Optional guidance packs | Fixed built-in set today: `core` + optional `caveman`, `rtk`, `frontend-craft`. `frontend-craft` exports `design-taste-frontend` + `impeccable`; `rtk` is capability-only. |
 | Useful integrations | Separate recommended integrations profile for `Context7`, `Playwright`, and `grep.app`, with structured audit details shown before apply. |
+| Native Codex TUI polish | Optional native Codex statusline/title profile over `tui.status_line`, `tui.terminal_title`, and `tui.notification_condition`. |
 | Provider-specific add-ons | Separate opt-in Cloudflare profile plus separate opt-in Opencode compatibility profile. |
 | Shared or personal installs | Mostly user-level exports, plus explicit repo-local installs when needed, plus optional OpenCode-agent compatibility exports outside the default bundle. |
 | Repair visibility | `status` and `doctor` to inspect managed runtime and Codex-native surfaces, plus explicit repair/remove actions in the TUI. |
+
+What `Sane` does not currently try to own:
+- Codex native `memories` as the canonical continuity layer
+- a custom status-bar system on top of Codex
 
 ## How It Works Under The Hood
 

@@ -248,6 +248,17 @@ function selectedActionHelpBuilders(
         details: model.integrationsPreview.details
       };
     }),
+    ...profileActionHelpBuilders(["preview_statusline_profile", "apply_statusline_profile"], () => {
+      const model = preferences();
+      return {
+        auditStatus: model.statuslineAudit.status,
+        recommendedChangeCount: model.statuslineAudit.recommendedChangeCount,
+        applyStatus: model.statuslineApply.status,
+        appliedKeyCount: model.statuslineApply.appliedKeys.length,
+        appliedKeyLabel: "keys",
+        details: model.statuslinePreview.details
+      };
+    }),
     show_runtime_summary: (action) => {
       const model = inspect();
       return detailSelectedActionHelp(action, [

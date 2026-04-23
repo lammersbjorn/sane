@@ -15,10 +15,12 @@ export type BackendCommandId =
   | "preview_integrations_profile"
   | "preview_cloudflare_profile"
   | "preview_opencode_profile"
+  | "preview_statusline_profile"
   | "apply_codex_profile"
   | "apply_integrations_profile"
   | "apply_cloudflare_profile"
   | "apply_opencode_profile"
+  | "apply_statusline_profile"
   | "restore_codex_config"
   | "export_user_skills"
   | "export_repo_skills"
@@ -353,6 +355,21 @@ export const COMMAND_METADATA_REGISTRY = {
       repoMutation: false,
       filesTouched: ["~/.codex/config.toml"]
     },
+    preview_statusline_profile: {
+      id: "preview_statusline_profile",
+      kind: "backend",
+      backendKind: OperationKind.PreviewStatuslineProfile,
+      help: [
+        "Show Sane's optional native Codex statusline and terminal-title profile.",
+        "",
+        "Preview only for managed surfaces.",
+        "This targets Codex's built-in `tui.status_line`, `tui.terminal_title`, and `tui.notification_condition` settings."
+      ],
+      confirmation: null,
+      successNoticeTitle: null,
+      repoMutation: false,
+      filesTouched: ["~/.codex/config.toml"]
+    },
     apply_codex_profile: {
       id: "apply_codex_profile",
       kind: "backend",
@@ -436,6 +453,27 @@ export const COMMAND_METADATA_REGISTRY = {
       confirmation: {
         required: true,
         impactCopy: "This writes changes into your `~/.codex/config.toml`.",
+        remindPreviewOrBackup: true
+      },
+      successNoticeTitle: "Applied",
+      repoMutation: false,
+      filesTouched: ["~/.codex/config.toml"]
+    },
+    apply_statusline_profile: {
+      id: "apply_statusline_profile",
+      kind: "backend",
+      backendKind: OperationKind.ApplyStatuslineProfile,
+      help: [
+        "Write Sane's optional native Codex statusline and terminal-title profile into `~/.codex/config.toml`.",
+        "",
+        "This is native Codex TUI config, not a Sane-owned custom statusline system.",
+        "",
+        "Safety",
+        "Confirmation required before this action runs."
+      ],
+      confirmation: {
+        required: true,
+        impactCopy: "This writes native Codex statusline/title settings into your `~/.codex/config.toml`.",
         remindPreviewOrBackup: true
       },
       successNoticeTitle: "Applied",
@@ -851,10 +889,12 @@ export const COMMAND_METADATA_REGISTRY = {
     { commandId: "open_privacy_editor", section: "preferences", order: 3, label: "Choose your telemetry and privacy level" },
     { commandId: "show_config", section: "preferences", order: 4, label: "View your current Sane config" },
     { commandId: "show_codex_config", section: "preferences", order: 5, label: "View your current Codex settings" },
-    { commandId: "preview_cloudflare_profile", section: "preferences", order: 6, label: "Preview optional Cloudflare Codex settings" },
-    { commandId: "apply_cloudflare_profile", section: "preferences", order: 7, label: "Apply optional Cloudflare Codex settings" },
-    { commandId: "preview_opencode_profile", section: "preferences", order: 8, label: "Preview optional Opencode compatibility settings" },
-    { commandId: "apply_opencode_profile", section: "preferences", order: 9, label: "Apply optional Opencode compatibility settings" },
+    { commandId: "preview_statusline_profile", section: "preferences", order: 6, label: "Preview optional native Codex statusline settings" },
+    { commandId: "apply_statusline_profile", section: "preferences", order: 7, label: "Apply optional native Codex statusline settings" },
+    { commandId: "preview_cloudflare_profile", section: "preferences", order: 8, label: "Preview optional Cloudflare Codex settings" },
+    { commandId: "apply_cloudflare_profile", section: "preferences", order: 9, label: "Apply optional Cloudflare Codex settings" },
+    { commandId: "preview_opencode_profile", section: "preferences", order: 10, label: "Preview optional Opencode compatibility settings" },
+    { commandId: "apply_opencode_profile", section: "preferences", order: 11, label: "Apply optional Opencode compatibility settings" },
     { commandId: "export_user_skills", section: "install", order: 1, label: "Install Sane user skills for your account" },
     { commandId: "export_repo_skills", section: "install", order: 2, label: "Install Sane repo skills for this project" },
     { commandId: "export_repo_agents", section: "install", order: 3, label: "Install Sane guidance block in this repo's AGENTS.md" },

@@ -65,6 +65,7 @@ Current managed export behavior also depends on local config:
 - `frontend-craft` currently exports exactly two concrete skills: `design-taste-frontend` and `impeccable`
 - capability-only packs (`rtk`) do not export dedicated skill directories, but they still change and can be enforced through router/overlay/custom-agent output
 - installed `caveman` pack guidance is enforced through exported router guidance, overlays, and custom-agent templates; it is not just an advisory inspect note
+- default continuity should still come from scoped Codex-native exports plus thin local `.sane` state, not Codex native `memories`
 - repo-local `AGENTS.md` overlay export should stay distinct from the global overlay while reusing the same underlying routing state
 - built-in pack manifests may also carry read-only provenance metadata for bundled upstream-derived skills or MCP references
 - that provenance is inspectable metadata only, not a live fetch/update contract
@@ -88,7 +89,7 @@ These are the backend actions the TUI is allowed to call in the current phase.
 
 - `show_codex_config`
   - read `~/.codex/config.toml` if present
-  - summarize current model, reasoning, hooks feature, MCP servers, plugins, trusted project count, and TUI theme
+  - summarize current model, reasoning, hooks feature, Codex native memories setting, MCP servers, plugins, trusted project count, and current TUI statusline/theme state
   - remain read-only until explicit opt-in write flow exists
 
 - `backup_codex_config`
@@ -99,6 +100,7 @@ These are the backend actions the TUI is allowed to call in the current phase.
 - `preview_codex_profile`
   - compute read-only recommended core profile changes for user Codex config
   - keep recommendations narrow: core model, reasoning, and hook support only
+  - do not turn Codex native `memories` into a default recommended write
   - keep integrations out of the bare core profile preview
 
 - `preview_integrations_profile`

@@ -90,6 +90,25 @@ export interface OpencodeProfileApplyResult {
   details: string[];
 }
 
+export interface StatuslineProfileAudit {
+  status: "installed" | "missing" | "invalid";
+  recommendedChangeCount: number;
+  details: string[];
+}
+
+export type StatuslineProfileStatus = StatuslineProfileAudit["status"];
+export type StatuslineProfileApplyResultStatus = "blocked_invalid" | "already_satisfied" | "ready";
+export type StatuslineProfileAppliedKey =
+  | "tui.notification_condition"
+  | "tui.status_line"
+  | "tui.terminal_title";
+export interface StatuslineProfileApplyResult {
+  status: StatuslineProfileApplyResultStatus;
+  recommendedChangeCount: number;
+  appliedKeys: StatuslineProfileAppliedKey[];
+  details: string[];
+}
+
 export interface CodexConfigBackupSnapshot {
   restoreAvailable: boolean;
   backupCount: number;
@@ -120,11 +139,18 @@ export interface OpencodeProfileSnapshot {
   preview: OperationResult;
 }
 
+export interface StatuslineProfileSnapshot {
+  audit: StatuslineProfileAudit;
+  apply: StatuslineProfileApplyResult;
+  preview: OperationResult;
+}
+
 export interface CodexProfileFamilySnapshot {
   core: CodexProfileSnapshot;
   integrations: IntegrationsProfileSnapshot;
   cloudflare: CloudflareProfileSnapshot;
   opencode: OpencodeProfileSnapshot;
+  statusline: StatuslineProfileSnapshot;
 }
 
 interface CodexConfigContext {
@@ -133,6 +159,21 @@ interface CodexConfigContext {
   recommended: LocalConfig;
   config: TomlTable | null;
 }
+
+const RECOMMENDED_STATUSLINE = [
+  "model-with-reasoning",
+  "project-root",
+  "git-branch",
+  "context-remaining",
+  "current-dir",
+  "five-hour-limit",
+  "weekly-limit",
+  "context-window-size",
+  "used-tokens"
+] as const;
+
+const RECOMMENDED_TERMINAL_TITLE = ["project", "spinner"] as const;
+const RECOMMENDED_TUI_NOTIFICATION_CONDITION = "always";
 
 export function showCodexConfig(codexPaths: CodexPaths): OperationResult {
   const context = inspectCodexConfigContext(codexPaths);
@@ -219,6 +260,12 @@ export function previewOpencodeProfile(codexPaths: CodexPaths): OperationResult 
   const context = inspectCodexConfigContext(codexPaths);
   const audit = inspectOpencodeProfileAuditFromContext(context);
   return previewOpencodeProfileFromAudit(codexPaths, audit);
+}
+
+export function previewStatuslineProfile(codexPaths: CodexPaths): OperationResult {
+  const context = inspectCodexConfigContext(codexPaths);
+  const audit = inspectStatuslineProfileAuditFromContext(context);
+  return previewStatuslineProfileFromAudit(codexPaths, audit);
 }
 
 export function applyCodexProfile(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
@@ -355,6 +402,18 @@ export function inspectOpencodeProfileApplyResult(codexPaths: CodexPaths): Openc
   return inspectOpencodeProfileApplyResultFromContext(inspectCodexConfigContext(codexPaths));
 }
 
+export function inspectStatuslineProfileAudit(codexPaths: CodexPaths): StatuslineProfileAudit {
+  return inspectStatuslineProfileAuditFromContext(inspectCodexConfigContext(codexPaths));
+}
+
+export function inspectStatuslineProfileStatus(codexPaths: CodexPaths): StatuslineProfileStatus {
+  return inspectStatuslineProfileAudit(codexPaths).status;
+}
+
+export function inspectStatuslineProfileApplyResult(codexPaths: CodexPaths): StatuslineProfileApplyResult {
+  return inspectStatuslineProfileApplyResultFromContext(inspectCodexConfigContext(codexPaths));
+}
+
 export function applyCloudflareProfile(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
   ensureRuntimeDirs(paths);
   const context = inspectCodexConfigContext(codexPaths);
@@ -449,6 +508,53 @@ export function applyOpencodeProfile(paths: ProjectPaths, codexPaths: CodexPaths
   });
 }
 
+export function applyStatuslineProfile(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
+  ensureRuntimeDirs(paths);
+  const context = inspectCodexConfigContext(codexPaths);
+  const applyResult = inspectStatuslineProfileApplyResultFromContext(context);
+
+  if (applyResult.status === "blocked_invalid") {
+    return new OperationResult({
+      kind: OperationKind.ApplyStatuslineProfile,
+      summary: "statusline-profile apply: blocked by invalid config",
+      details: applyResult.details,
+      pathsTouched: [codexPaths.configToml],
+      inventory: [context.inventory]
+    });
+  }
+
+  const details = [...applyResult.details];
+  const updatedConfig = cloneTable(context.config ?? {});
+  if (applyResult.status === "already_satisfied") {
+    return new OperationResult({
+      kind: OperationKind.ApplyStatuslineProfile,
+      summary: "statusline-profile apply: already satisfied",
+      details,
+      pathsTouched: [codexPaths.configToml],
+      inventory: [context.inventory]
+    });
+  }
+  const appliedKeys = applyStatuslineProfileToValue(updatedConfig);
+
+  const backupPath =
+    context.inventory.status === InventoryStatus.Installed
+      ? writeCodexConfigBackup(paths, codexPaths)
+      : null;
+  writeCodexConfig(codexPaths.configToml, updatedConfig);
+
+  details.push(`applied keys: ${appliedKeys.join(", ")}`);
+  details.push("native Codex statusline/title support only; no Sane-owned custom statusline system");
+  details.push(backupPath ? `backup: ${backupPath}` : "backup: skipped (no prior config existed)");
+
+  return new OperationResult({
+    kind: OperationKind.ApplyStatuslineProfile,
+    summary: "statusline-profile apply: wrote native tui footer settings",
+    details,
+    pathsTouched: unique([codexPaths.configToml, backupPath]),
+    inventory: [installedCodexConfigInventory(codexPaths)]
+  });
+}
+
 export function inspectCodexConfigBackupSnapshot(paths: ProjectPaths): CodexConfigBackupSnapshot {
   const backups = listCodexConfigBackups(paths);
   return {
@@ -500,6 +606,16 @@ export function inspectOpencodeProfileSnapshot(codexPaths: CodexPaths): Opencode
   };
 }
 
+export function inspectStatuslineProfileSnapshot(codexPaths: CodexPaths): StatuslineProfileSnapshot {
+  const context = inspectCodexConfigContext(codexPaths);
+  const audit = inspectStatuslineProfileAuditFromContext(context);
+  return {
+    audit,
+    apply: inspectStatuslineProfileApplyResultFromContext(context),
+    preview: previewStatuslineProfileFromAudit(codexPaths, audit)
+  };
+}
+
 export function inspectCodexProfileFamilySnapshot(
   codexPaths: CodexPaths
 ): CodexProfileFamilySnapshot {
@@ -508,6 +624,7 @@ export function inspectCodexProfileFamilySnapshot(
   const integrationsAudit = inspectIntegrationsProfileAuditFromContext(context);
   const cloudflareAudit = inspectCloudflareProfileAuditFromContext(context);
   const opencodeAudit = inspectOpencodeProfileAuditFromContext(context);
+  const statuslineAudit = inspectStatuslineProfileAuditFromContext(context);
 
   return {
     core: {
@@ -529,6 +646,11 @@ export function inspectCodexProfileFamilySnapshot(
       audit: opencodeAudit,
       apply: inspectOpencodeProfileApplyResultFromContext(context),
       preview: previewOpencodeProfileFromAudit(codexPaths, opencodeAudit)
+    },
+    statusline: {
+      audit: statuslineAudit,
+      apply: inspectStatuslineProfileApplyResultFromContext(context),
+      preview: previewStatuslineProfileFromAudit(codexPaths, statuslineAudit)
     }
   };
 }
@@ -716,6 +838,24 @@ function previewOpencodeProfileFromAudit(
 
   return new OperationResult({
     kind: OperationKind.PreviewOpencodeProfile,
+    summary,
+    details: audit.details,
+    pathsTouched: [codexPaths.configToml],
+    inventory: [inspectCodexConfigInventory(codexPaths)]
+  });
+}
+
+function previewStatuslineProfileFromAudit(
+  codexPaths: CodexPaths,
+  audit: StatuslineProfileAudit
+): OperationResult {
+  const summary =
+    audit.status === "invalid"
+      ? "statusline-profile preview: blocked by invalid config"
+      : `statusline-profile preview: ${audit.recommendedChangeCount} recommended change(s)`;
+
+  return new OperationResult({
+    kind: OperationKind.PreviewStatuslineProfile,
     summary,
     details: audit.details,
     pathsTouched: [codexPaths.configToml],
@@ -951,6 +1091,49 @@ function inspectOpencodeProfileApplyResultFromContext(
   };
 }
 
+function inspectStatuslineProfileAuditFromContext(
+  context: CodexConfigContext
+): StatuslineProfileAudit {
+  if (context.inventory.status === InventoryStatus.Invalid) {
+    return {
+      status: "invalid",
+      recommendedChangeCount: 0,
+      details: [
+        "cannot preview statusline profile until ~/.codex/config.toml parses cleanly",
+        "repair current config first"
+      ]
+    };
+  }
+
+  const current = context.inventory.status === InventoryStatus.Missing ? {} : (context.config ?? {});
+  return statuslineProfileAuditFromConfig(current);
+}
+
+function inspectStatuslineProfileApplyResultFromContext(
+  context: CodexConfigContext
+): StatuslineProfileApplyResult {
+  if (context.inventory.status === InventoryStatus.Invalid) {
+    return {
+      status: "blocked_invalid",
+      recommendedChangeCount: 0,
+      appliedKeys: [],
+      details: [
+        "repair ~/.codex/config.toml first",
+        "Sane only writes after a clean parse"
+      ]
+    };
+  }
+
+  const appliedKeys = applyStatuslineProfileToValue(cloneTable(context.config ?? {}));
+  const audit = inspectStatuslineProfileAuditFromContext(context);
+  return {
+    status: appliedKeys.length === 0 ? "already_satisfied" : "ready",
+    recommendedChangeCount: audit.recommendedChangeCount,
+    appliedKeys,
+    details: [...audit.details]
+  };
+}
+
 function applyCoreCodexProfileToValue(config: TomlTable, recommended: LocalConfig): void {
   config.model = recommended.models.coordinator.model;
   config.model_reasoning_effort = recommended.models.coordinator.reasoningEffort;
@@ -1008,6 +1191,30 @@ function applyOpencodeProfileToValue(config: TomlTable): OpencodeProfileAppliedK
   return appliedKeys;
 }
 
+function applyStatuslineProfileToValue(config: TomlTable): StatuslineProfileAppliedKey[] {
+  const tui = ensureChildTable(config, "tui", "[tui] must be a table");
+  const appliedKeys: StatuslineProfileAppliedKey[] = [];
+  const desiredStatusLine = [...RECOMMENDED_STATUSLINE];
+  const desiredTerminalTitle = [...RECOMMENDED_TERMINAL_TITLE];
+
+  if (asString(tui.notification_condition) !== RECOMMENDED_TUI_NOTIFICATION_CONDITION) {
+    tui.notification_condition = RECOMMENDED_TUI_NOTIFICATION_CONDITION;
+    appliedKeys.push("tui.notification_condition");
+  }
+
+  if (!stringArraysEqual(asStringArray(tui.status_line), desiredStatusLine)) {
+    tui.status_line = desiredStatusLine;
+    appliedKeys.push("tui.status_line");
+  }
+
+  if (!stringArraysEqual(asStringArray(tui.terminal_title), desiredTerminalTitle)) {
+    tui.terminal_title = desiredTerminalTitle;
+    appliedKeys.push("tui.terminal_title");
+  }
+
+  return appliedKeys;
+}
+
 function codexConfigDetails(config: TomlTable): string[] {
   const features = asTomlTable(config.features);
   const mcpServers = sortedKeys(asTomlTable(config.mcp_servers));
@@ -1023,11 +1230,15 @@ function codexConfigDetails(config: TomlTable): string[] {
     `model: ${asString(config.model) ?? "unset"}`,
     `reasoning: ${asString(config.model_reasoning_effort) ?? "unset"}`,
     `codex hooks: ${displayHooks(features?.codex_hooks)}`,
+    `codex memories: ${displayEnabled(features?.memories)}`,
     `mcp servers: ${mcpServers.length}`,
     `mcp server names: ${mcpServers.length === 0 ? "none" : mcpServers.join(", ")}`,
     `enabled plugins: ${enabledPlugins.length}`,
     `plugin names: ${enabledPlugins.length === 0 ? "none" : enabledPlugins.join(", ")}`,
     `trusted projects: ${projects ? Object.keys(projects).length : 0}`,
+    `tui status line: ${displayStringArray(tui?.status_line)}`,
+    `tui terminal title: ${displayStringArray(tui?.terminal_title)}`,
+    `tui notifications: ${asString(tui?.notification_condition) ?? "unset"}`,
     `tui theme: ${asString(tui?.theme) ?? "unset"}`
   ];
 }
@@ -1098,6 +1309,7 @@ function codexProfileAuditFromCurrentValues(
 
   details.push("note: this writes the single-session Codex baseline only");
   details.push("note: broader execution and realtime routing stays derived outside config.toml");
+  details.push("note: Codex native memories stay outside Sane's default continuity path");
   details.push("note: integrations stay outside bare core profile");
 
   return {
@@ -1106,6 +1318,81 @@ function codexProfileAuditFromCurrentValues(
     changes,
     details
   };
+}
+
+function statuslineProfileAuditFromConfig(config: TomlTable): StatuslineProfileAudit {
+  const tui = asTomlTable(config.tui);
+  const currentStatusLine = asStringArray(tui?.status_line);
+  const currentTerminalTitle = asStringArray(tui?.terminal_title);
+  const currentNotifications = asString(tui?.notification_condition);
+  const details: string[] = [];
+  let recommendedChangeCount = 0;
+
+  if (currentNotifications !== RECOMMENDED_TUI_NOTIFICATION_CONDITION) {
+    details.push(
+      `tui.notification_condition: ${currentNotifications ?? "<missing>"} -> ${RECOMMENDED_TUI_NOTIFICATION_CONDITION}`
+    );
+    recommendedChangeCount += 1;
+  }
+
+  if (!stringArraysEqual(currentStatusLine, RECOMMENDED_STATUSLINE)) {
+    details.push(
+      `tui.status_line: ${displayStringArray(currentStatusLine)} -> ${RECOMMENDED_STATUSLINE.join(", ")}`
+    );
+    recommendedChangeCount += 1;
+  }
+
+  if (!stringArraysEqual(currentTerminalTitle, RECOMMENDED_TERMINAL_TITLE)) {
+    details.push(
+      `tui.terminal_title: ${displayStringArray(currentTerminalTitle)} -> ${RECOMMENDED_TERMINAL_TITLE.join(", ")}`
+    );
+    recommendedChangeCount += 1;
+  }
+
+  if (recommendedChangeCount === 0) {
+    details.push("statusline profile already matches current recommendation");
+  }
+
+  details.push("note: native Codex statusline/title config only");
+  details.push("note: this stays additive inside ~/.codex/config.toml");
+
+  return {
+    status: recommendedChangeCount === 0 ? "installed" : "missing",
+    recommendedChangeCount,
+    details
+  };
+}
+
+function displayEnabled(value: unknown): string {
+  return value === true ? "enabled" : value === false ? "disabled" : "unset";
+}
+
+function displayStringArray(value: unknown): string {
+  const entries = asStringArray(value);
+  if (!entries) {
+    return "unset";
+  }
+
+  return entries.length === 0 ? "none" : entries.join(", ");
+}
+
+function asStringArray(value: unknown): string[] | null {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  return value.filter((entry): entry is string => typeof entry === "string" && entry.length > 0);
+}
+
+function stringArraysEqual(
+  left: readonly string[] | null | undefined,
+  right: readonly string[]
+): boolean {
+  if (!left || left.length !== right.length) {
+    return false;
+  }
+
+  return left.every((entry, index) => entry === right[index]);
 }
 
 function integrationProfileAuditFromConfig(config: TomlTable): IntegrationsProfileAudit {

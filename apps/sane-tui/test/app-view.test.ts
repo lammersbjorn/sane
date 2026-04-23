@@ -261,7 +261,7 @@ describe("app view", () => {
   it("surfaces typed cloudflare profile readiness in Preferences guidance", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
     selectSection(shell, "preferences");
-    for (let index = 0; index < 5; index += 1) {
+    for (let index = 0; index < 7; index += 1) {
       moveSelection(shell, "action", 1);
     }
 
@@ -282,7 +282,7 @@ describe("app view", () => {
   it("surfaces typed opencode profile readiness in Preferences guidance", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
     selectSection(shell, "preferences");
-    for (let index = 0; index < 8; index += 1) {
+    for (let index = 0; index < 10; index += 1) {
       moveSelection(shell, "action", 1);
     }
 

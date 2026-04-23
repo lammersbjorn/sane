@@ -48,6 +48,8 @@ describe("command metadata registry", () => {
       "open_privacy_editor",
       "show_config",
       "show_codex_config",
+      "preview_statusline_profile",
+      "apply_statusline_profile",
       "preview_cloudflare_profile",
       "apply_cloudflare_profile",
       "preview_opencode_profile",
@@ -137,6 +139,15 @@ describe("command metadata registry", () => {
     );
     expect(getCommandSpec("apply_opencode_profile").backendKind).toBe(
       OperationKind.ApplyOpencodeProfile
+    );
+    expect(getCommandSpec("preview_statusline_profile").backendKind).toBe(
+      OperationKind.PreviewStatuslineProfile
+    );
+    expect(getCommandSpec("apply_statusline_profile").backendKind).toBe(
+      OperationKind.ApplyStatuslineProfile
+    );
+    expect(getCommandSpec("apply_statusline_profile").confirmation?.impactCopy).toBe(
+      "This writes native Codex statusline/title settings into your `~/.codex/config.toml`."
     );
     expect(getCommandSpec("restore_codex_config").confirmation?.impactCopy).toBe(
       "This replaces your current Codex config with the latest backup."

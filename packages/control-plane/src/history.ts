@@ -176,6 +176,8 @@ function operationKindLabel(kind: OperationKind): string {
       return "preview_cloudflare_profile";
     case OperationKind.PreviewOpencodeProfile:
       return "preview_opencode_profile";
+    case OperationKind.PreviewStatuslineProfile:
+      return "preview_statusline_profile";
     case OperationKind.ApplyCodexProfile:
       return "apply_codex_profile";
     case OperationKind.ApplyIntegrationsProfile:
@@ -184,6 +186,8 @@ function operationKindLabel(kind: OperationKind): string {
       return "apply_cloudflare_profile";
     case OperationKind.ApplyOpencodeProfile:
       return "apply_opencode_profile";
+    case OperationKind.ApplyStatuslineProfile:
+      return "apply_statusline_profile";
     case OperationKind.RestoreCodexConfig:
       return "restore_codex_config";
     case OperationKind.ResetTelemetryData:

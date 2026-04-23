@@ -88,6 +88,7 @@ Primary source:
 - Local state should balance readability and token efficiency
 - `Sane` should not depend on a third-party global memory system for default continuity
 - Default continuity should come from scoped Codex-native exports plus thin local `.sane` state
+- Codex native `memories` should stay outside Sane's default continuity path for now
 - Third-party memory systems may exist later only as explicit optional integrations, not as default startup replay
 
 ### TUI / Installation
@@ -104,6 +105,7 @@ Primary source:
 - User-facing copy should name concrete installs/files instead of vague "assets"
 - Onboarding may offer an explicit opt-in attribution option for the user's repo or project
 - Attribution must be off by default, previewed clearly, easy to remove, and never hidden
+- `Sane` may manage Codex native statusline/title config additively, but it should not invent its own custom status-bar product surface in `v1`
 
 ### Platform / Implementation
 

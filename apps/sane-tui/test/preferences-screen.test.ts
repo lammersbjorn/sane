@@ -50,6 +50,8 @@ describe("preferences screen model", () => {
       queuePresent: false
     });
     expect(screen.enabledPacks).toEqual(["core"]);
+    expect(screen.statuslineAudit.status).toBe("missing");
+    expect(screen.statuslineApply.status).toBe("ready");
     expect(screen.cloudflareAudit.status).toBe("missing");
     expect(screen.cloudflareApply.status).toBe("ready");
     expect(screen.opencodeAudit.status).toBe("missing");
@@ -60,6 +62,8 @@ describe("preferences screen model", () => {
       "open_privacy_editor",
       "show_config",
       "show_codex_config",
+      "preview_statusline_profile",
+      "apply_statusline_profile",
       "preview_cloudflare_profile",
       "apply_cloudflare_profile",
       "preview_opencode_profile",
@@ -92,6 +96,7 @@ describe("preferences screen model", () => {
       queuePresent: true
     });
     expect(screen.enabledPacks).toEqual(["core", "caveman"]);
+    expect(screen.statuslinePreview.summary).toBe("statusline-profile preview: 3 recommended change(s)");
     expect(screen.cloudflarePreview.summary).toBe("cloudflare-profile preview: 1 recommended change(s)");
     expect(screen.opencodePreview.summary).toBe("opencode-profile preview: 1 recommended change(s)");
   });
@@ -113,6 +118,7 @@ describe("preferences screen model", () => {
     expect(preferencesFamilySpy).toHaveBeenCalledWith(paths, codexPaths);
     expect(familySpy).toHaveBeenCalledTimes(1);
     expect(familySpy).toHaveBeenCalledWith(codexPaths);
+    expect(screen.statuslineAudit.status).toBe("missing");
     expect(screen.cloudflareAudit.status).toBe("missing");
     expect(screen.opencodeAudit.status).toBe("missing");
   });

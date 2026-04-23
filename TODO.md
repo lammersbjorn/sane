@@ -84,11 +84,12 @@ Implemented:
 - explicit opt-in OpenCode-agent export/remove actions kept outside `export_all`
 - built-in pack editor in the TUI with local-only optional pack toggles
 - built-in pack state exposed in status / doctor inventory
-- built-in pack set currently remains fixed: always-on `core` plus optional `caveman`, `cavemem`, `rtk`, and `frontend-craft`
+- built-in pack set currently remains fixed: always-on `core` plus optional `caveman`, `rtk`, and `frontend-craft`
 - optional pack registry helpers (name/config-key mapping + enabled/disabled selection) now live in `@sane/framework-assets` and are reused by TUI/editor + control-plane inventory/export paths
 - optional packs now show `configured` vs `installed` truthfully depending on whether managed user-skill assets were exported
 - `frontend-craft` currently exports exactly two concrete skills: `design-taste-frontend` and `impeccable`
-- `cavemem` and `rtk` currently stay capability-only (router/overlay behavior, no dedicated skill export directory)
+- `rtk` currently stays capability-only (router/overlay behavior, no dedicated skill export directory)
+- default continuity now stays scoped to Codex-native exports plus thin local `.sane` state; Codex native `memories` remain outside the default path
 - exported `sane-router` skill and global AGENTS overlay now reflect enabled guidance packs and current routing defaults
 - status/doctor now catch drift when exported guidance assets no longer match enabled packs or current routing defaults
 - optional pack manifests now carry read-only provenance metadata for curated upstream-derived skills where that source is real and worth tracking
@@ -192,7 +193,8 @@ pnpm check
 - [x] Surface install-runtime rewrite reporting for config/current-run/summary
 - [x] Surface doctor backup history for config/summary canonical files
 - [x] Align docs/TODO wording on task-shaped subagent presets (`explorer` / `implementation` / `verifier` / `realtime`) with explicit non-benchmark language
-- [ ] Evaluate and, if justified, add optional Codex statusline/status-bar support inspired by `openagentsbtw`, only as an explicit opt-in additive surface with inspect/remove coverage
+- [x] Evaluate optional Codex statusline/status-bar support inspired by `openagentsbtw`
+- [x] Add narrow optional native Codex statusline/title profile management over `tui.status_line`, `tui.terminal_title`, and `tui.notification_condition`
 
 ## Research Gates
 
@@ -236,10 +238,10 @@ pnpm check
 
 - [ ] Exact post-`v1` built-in pack expansion/contraction policy (current built-in set is fixed today)
 - [ ] Exact long-term `Opencode` compatibility scope beyond the current optional `opensrc` profile plus optional OpenCode-agent export
-- [ ] Exact scope for optional Codex statusline/status-bar support:
-  - config-only vs managed helper script/hook surface
-  - what signals it shows
-  - how install/inspect/remove/rollback should work without turning `Sane` into a wrapper-first flow
+- [ ] Exact scope for any future Sane helper over native Codex statusline/title config:
+  - whether the current optional profile preset is the right default recommendation
+  - what alternate preset, if any, is broadly useful
+  - how inspect/remove should work without turning `Sane` into a wrapper-first flow
 - [ ] Exact explicit preset coverage for `Kimi K2.6` and other newly popular models vs generic fallback-by-capability handling:
   - source quality acceptable
   - runtime/auth support on the actual Sane surface
