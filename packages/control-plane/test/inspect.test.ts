@@ -166,7 +166,8 @@ describe("inspect snapshot", () => {
             verifierTiming: "inline"
           },
           obligationCount: 0,
-          traceCount: 0
+          traceCount: 0,
+          trace: []
         },
         {
           id: "multi-file-feature",
@@ -175,7 +176,8 @@ describe("inspect snapshot", () => {
           roles: null,
           orchestration: null,
           obligationCount: 0,
-          traceCount: 0
+          traceCount: 0,
+          trace: []
         }
       ],
       tsUnix: 1_700_000_003,

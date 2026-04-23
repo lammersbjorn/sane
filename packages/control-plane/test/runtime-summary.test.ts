@@ -135,7 +135,13 @@ describe("showRuntimeSummary", () => {
               subagentReadiness: "not_needed",
               reviewPosture: "inline_only",
               verifierTiming: "inline"
-            }
+            },
+            trace: [
+              {
+                obligation: "keep_direct_answers_light",
+                rule: "keep_direct_answers_light"
+              }
+            ]
           },
           { id: "multi-file-feature" }
         ]
@@ -169,12 +175,15 @@ describe("showRuntimeSummary", () => {
     expect(result.details).toContain(
       "latest policy input simple-question: intent question, task trivial, risk low, ambiguity low, parallelism none, context low, run exploring"
     );
-    expect(result.details).toContain("latest policy scenario simple-question: obligations 0, traces 0");
+    expect(result.details).toContain("latest policy scenario simple-question: obligations 0, traces 1");
     expect(result.details).toContain(
       "latest policy roles simple-question: coordinator on, sidecar off, verifier off"
     );
     expect(result.details).toContain(
       "latest policy orchestration simple-question: subagents none, readiness not_needed, review inline_only, verifier inline"
+    );
+    expect(result.details).toContain(
+      "latest policy trace simple-question: keep_direct_answers_light via keep_direct_answers_light"
     );
     expect(result.details).toContain(
       "latest event (read-only local visibility): ts 1700000001, action install-runtime, result ok, summary created runtime handoff baseline"
@@ -217,7 +226,13 @@ describe("showRuntimeSummary", () => {
             verifierTiming: "inline"
           },
           obligationCount: 0,
-          traceCount: 0
+          traceCount: 1,
+          trace: [
+            {
+              obligation: "keep_direct_answers_light",
+              rule: "keep_direct_answers_light"
+            }
+          ]
         },
         {
           id: "multi-file-feature",
@@ -226,7 +241,8 @@ describe("showRuntimeSummary", () => {
           roles: null,
           orchestration: null,
           obligationCount: 0,
-          traceCount: 0
+          traceCount: 0,
+          trace: []
         }
       ],
       tsUnix: 1_700_000_002,

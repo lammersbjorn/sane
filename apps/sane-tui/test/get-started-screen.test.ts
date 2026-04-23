@@ -148,4 +148,27 @@ describe("get started screen model", () => {
     expect(fromBundleSpy).toHaveBeenCalledWith(paths, bundle);
     expect(screen.recommendedActionId).toBe("install_runtime");
   });
+
+  it("drops hooks from export-all files on native Windows", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    installRuntime(paths, codexPaths);
+    applyCodexProfile(paths, codexPaths);
+    exportAll(paths, codexPaths, "windows");
+
+    const bundle = inventory.inspectStatusBundle(paths, codexPaths, "windows");
+    const screen = loadGetStartedScreenFromStatusBundle(paths, codexPaths, bundle);
+
+    expect(screen.recommendedActionId).toBeNull();
+    expect(screen.attentionItems).not.toContain("hooks: invalid");
+    expect(screen.steps[5]?.filesTouched).toEqual([
+      "~/.agents/skills/sane-router",
+      "~/.agents/skills/continue",
+      "~/.codex/AGENTS.md",
+      "~/.codex/agents/"
+    ]);
+  });
 });

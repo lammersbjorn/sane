@@ -420,7 +420,8 @@ describe("policy preview", () => {
             roles: null,
             orchestration: null,
             obligationCount: 0,
-            traceCount: 0
+            traceCount: 0,
+            trace: []
           }
         ],
         tsUnix: 1_700_000_006,
@@ -495,7 +496,7 @@ describe("policy preview", () => {
       "current preview: policy preview: rendered adaptive obligation scenarios; 1 scenario",
       "simple-question: direct_answer | coordinator=gpt-5.4/high",
       "multi-file-feature: plan, tdd | coordinator=gpt-5.4/high",
-      "current preview scenario simple-question: obligations 1, traces 1, subagents none, readiness not_needed, review inline_only, verifier inline"
+      "current preview scenario simple-question: obligations 1, traces 1, subagents none, readiness not_needed, review inline_only, verifier inline, trace reasons direct_answer via keep_direct_answers_light"
     ]);
   });
 });

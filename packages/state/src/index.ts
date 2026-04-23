@@ -255,6 +255,10 @@ export interface LatestPolicyPreviewScenarioSnapshot {
   } | null;
   obligationCount: number;
   traceCount: number;
+  trace: Array<{
+    obligation: string;
+    rule: string;
+  }>;
 }
 
 export interface LatestPolicyPreviewSnapshot {
@@ -861,6 +865,10 @@ export function readLatestPolicyPreviewSnapshot(path: string): LatestPolicyPrevi
       orchestration: scenario.orchestration,
       obligationCount: scenario.obligations.length,
       traceCount: scenario.trace.length,
+      trace: scenario.trace.map((entry) => ({
+        obligation: entry.obligation,
+        rule: entry.rule,
+      })),
     })),
     tsUnix: latestPolicyDecision.tsUnix,
     summary: latestPolicyDecision.summary,

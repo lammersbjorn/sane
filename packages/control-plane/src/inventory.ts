@@ -557,7 +557,7 @@ function onboardingAttentionItems(
   if (isMissingOrInvalid(lookups.userSkills?.status)) {
     items.push({ id: "user-skills", status: inventoryStatusName(lookups.userSkills) });
   }
-  if (isMissingOrInvalid(lookups.hooks?.status)) {
+  if (isMissingOrInvalid(lookups.hooks?.status) && !isUnsupportedNativeWindowsHooks(lookups.hooks)) {
     items.push({ id: "hooks", status: inventoryStatusName(lookups.hooks) });
   }
   if (isMissingOrInvalid(lookups.customAgents?.status)) {
@@ -580,6 +580,11 @@ function loadOnboardingLookups(statusBundle: StatusBundle): OnboardingLookups {
 
 function isMissingOrInvalid(status: InventoryStatus | undefined): boolean {
   return status === InventoryStatus.Missing || status === InventoryStatus.Invalid;
+}
+
+function isUnsupportedNativeWindowsHooks(item: InventoryItem | null): boolean {
+  return item?.status === InventoryStatus.Invalid
+    && item.repairHint?.includes("native Windows") === true;
 }
 
 function inventoryStatusName(item: InventoryItem | null): InventoryStatusName {

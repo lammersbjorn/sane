@@ -53,7 +53,10 @@ export function loadGetStartedScreenFromStatusBundle(
   const steps = listSectionActions("get_started").map((action) => ({
     id: action.id as GetStartedStep["id"],
     title: action.label,
-    filesTouched: action.filesTouched
+    filesTouched:
+      action.id === "export_all"
+        ? exportAllFilesTouched(statusBundle)
+        : action.filesTouched
   }));
 
   return {
@@ -90,4 +93,24 @@ function recommendedNextStep(reason: OnboardingReasonId): string {
 
 function formatAttentionItem(item: OnboardingAttentionItem): string {
   return `${item.id}: ${item.status}`;
+}
+
+function exportAllFilesTouched(
+  statusBundle: ReturnType<typeof inspectStatusBundle>
+): string[] {
+  const hooks = statusBundle.primary.hooks;
+  return hooks?.status.asString() === "invalid" && hooks.repairHint?.includes("native Windows")
+    ? [
+        "~/.agents/skills/sane-router",
+        "~/.agents/skills/continue",
+        "~/.codex/AGENTS.md",
+        "~/.codex/agents/"
+      ]
+    : [
+        "~/.agents/skills/sane-router",
+        "~/.agents/skills/continue",
+        "~/.codex/AGENTS.md",
+        "~/.codex/hooks.json",
+        "~/.codex/agents/"
+      ];
 }

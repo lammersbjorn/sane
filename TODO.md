@@ -129,6 +129,7 @@ Implemented:
 - operation-history writes now seed or repair the canonical `.sane` handoff baseline before persisting new events/decisions/artifacts, so non-install operations no longer leave `current-run` missing
 - no-args TUI boot now also derives its initial last-result line from the canonical runtime-state history preview instead of reopening events JSONL directly
 - install/repair action rows now use one shared TUI builder and preserve typed status objects instead of flattening them into strings at screen load time
+- native Windows no longer keeps unsupported hooks in onboarding attention items or `export all` touched-file lists once the supported install bundle is satisfied; onboarding now points users at WSL without treating hooks as a blocking bundle requirement
 - preferences now have a typed family snapshot so show-config, preferences screen, and editable/default config helpers stop rebuilding the same saved-config/env/routing state separately
 - TUI Inspect now shows read-only policy-preview snapshot visibility derived from the latest current run instead of command-only access
 - Inspect overview presentation now lives in a shared control-plane presenter, with drift/provenance formatting pulled out of the TUI screen layer
@@ -157,6 +158,7 @@ Implemented:
 - canonical state rewrites now create timestamped `.bak` sibling backups before replacing existing JSON/TOML files
 - canonical rewrite helpers now expose typed metadata (`rewritten_path`, `backup_path`, `first_write`)
 - canonical backup sibling listing helpers now return matching backups newest-first for repair/rollback flows
+- latest persisted policy-preview snapshots now preserve compact trace reasons, and inspect/runtime-summary surfaces render those reasons through the existing read-only policy presenter path
 - `config` save output now reports canonical rewrite metadata (`rewritten path`, optional `backup path`, `write mode`)
 - `install` output now reports per-file rewrite metadata for `config`, `current-run`, and `summary` (including repair rewrites with backups)
 - `doctor` summary now reports canonical backup history for local config and summary (`config-backups`, `summary-backups`)

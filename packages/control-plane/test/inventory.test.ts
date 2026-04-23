@@ -8,6 +8,7 @@ import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { applyCodexProfile } from "../src/codex-config.js";
+import { exportAll } from "../src/bundles.js";
 import { exportGlobalAgents, exportUserSkills } from "../src/codex-native.js";
 import { exportCustomAgents, exportHooks } from "../src/hooks-custom-agents.js";
 import {
@@ -215,6 +216,23 @@ describe("full inventory and doctor", () => {
     expect(bundle.primary.hooks?.status).toBe(InventoryStatus.Invalid);
     expect(bundle.primary.status.hooks).toBe("invalid");
     expect(bundle.primary.installBundle).toBe("installed");
+  });
+
+  it("does not keep unsupported native Windows hooks in onboarding attention once the bundle is installed", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    installRuntime(paths, codexPaths);
+    applyCodexProfile(paths, codexPaths);
+    exportAll(paths, codexPaths, "windows");
+
+    const bundle = inspectStatusBundle(paths, codexPaths, "windows");
+    const onboarding = inspectOnboardingSnapshotFromStatusBundle(paths, bundle);
+
+    expect(onboarding.recommendedActionId).toBeNull();
+    expect(onboarding.attentionItems.map((item) => item.id)).not.toContain("hooks");
   });
 
   it("formats doctor install and export hints with exact labels", () => {
