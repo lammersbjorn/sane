@@ -44,7 +44,7 @@ import {
 import { formatLatestPolicyPreviewLines } from "./policy-preview-presenter.js";
 import { previewPolicy, previewPolicyForCurrentRun } from "./policy-preview.js";
 import { showConfig } from "./preferences.js";
-import { inspectSavedLocalConfig } from "./local-config.js";
+import { inspectLocalConfigFamily } from "./local-config.js";
 import {
   formatLatestHistoryArtifactPreview,
   formatLatestHistoryDecisionPreview,
@@ -373,12 +373,13 @@ function ensureInstallConfig(
   paths: ProjectPaths,
   codexPaths: CodexPaths
 ): OperationRewriteMetadata | null {
-  if (inspectSavedLocalConfig(paths).kind === "loaded") {
+  const localConfig = inspectLocalConfigFamily(paths, recommendedLocalConfig(codexPaths));
+  if (localConfig.source === "local") {
     return null;
   }
 
   return operationRewriteMetadata(
-    writeCanonicalWithBackupResult(paths.configPath, recommendedLocalConfig(codexPaths), {
+    writeCanonicalWithBackupResult(paths.configPath, localConfig.recommended, {
       format: "toml",
       stringify: stringifyLocalConfig
     })

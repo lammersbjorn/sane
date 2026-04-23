@@ -142,6 +142,8 @@ Implemented:
 - typed JSONL history helpers now support full reads plus ordered offset/limit slices for events, decisions, and artifacts
 - `@sane/platform` now owns Codex home discovery through explicit env resolution instead of leaving control-plane to call `homedir()` directly
 - TypeScript TUI bootstrap can now discover both project root and Codex home through `@sane/platform`
+- local config source/current/recommended truth now has a shared family snapshot helper, reused by preferences and install-time config seeding instead of duplicating saved-vs-recommended branching
+- TypeScript workspace tests now run on plain `vitest`/`vitest/config` with native `resolve.tsconfigPaths`, not `vite-plus`
 - canonical state rewrites now create timestamped `.bak` sibling backups before replacing existing JSON/TOML files
 - canonical rewrite helpers now expose typed metadata (`rewritten_path`, `backup_path`, `first_write`)
 - canonical backup sibling listing helpers now return matching backups newest-first for repair/rollback flows

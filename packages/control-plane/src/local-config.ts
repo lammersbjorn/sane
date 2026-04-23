@@ -13,6 +13,13 @@ export type SavedLocalConfigState =
   | { kind: "invalid" }
   | { kind: "loaded"; config: LocalConfig };
 
+export interface LocalConfigFamilySnapshot {
+  source: "local" | "recommended";
+  current: LocalConfig;
+  recommended: LocalConfig;
+  saved: SavedLocalConfigState;
+}
+
 export function inspectSavedLocalConfig(paths: ProjectPaths): SavedLocalConfigState {
   if (!existsSync(paths.configPath)) {
     return { kind: "missing" };
@@ -25,12 +32,24 @@ export function inspectSavedLocalConfig(paths: ProjectPaths): SavedLocalConfigSt
   }
 }
 
+export function inspectLocalConfigFamily(
+  paths: ProjectPaths,
+  recommended: LocalConfig
+): LocalConfigFamilySnapshot {
+  const saved = inspectSavedLocalConfig(paths);
+  return {
+    source: saved.kind === "loaded" ? "local" : "recommended",
+    current: saved.kind === "loaded" ? saved.config : recommended,
+    recommended,
+    saved
+  };
+}
+
 export function loadOrRecommendedLocalConfig(
   paths: ProjectPaths,
   recommended: LocalConfig
 ): LocalConfig {
-  const saved = inspectSavedLocalConfig(paths);
-  return saved.kind === "loaded" ? saved.config : recommended;
+  return inspectLocalConfigFamily(paths, recommended).current;
 }
 
 export function loadOrDefaultLocalConfig(paths: ProjectPaths): LocalConfig {
@@ -41,6 +60,5 @@ export function recommendedLocalConfigFromEnvironment(
   paths: ProjectPaths,
   recommended: ReturnType<typeof createRecommendedLocalConfig>
 ): ReturnType<typeof createRecommendedLocalConfig> {
-  const saved = inspectSavedLocalConfig(paths);
-  return saved.kind === "loaded" ? saved.config : recommended;
+  return inspectLocalConfigFamily(paths, recommended).current;
 }

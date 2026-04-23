@@ -23,7 +23,12 @@ import {
 import { ensureRuntimeDirs, type CodexPaths, type ProjectPaths } from "@sane/platform";
 import { writeCanonicalWithBackupResult } from "@sane/state";
 
-import { inspectSavedLocalConfig, type SavedLocalConfigState } from "./local-config.js";
+import {
+  inspectLocalConfigFamily,
+  inspectSavedLocalConfig,
+  type LocalConfigFamilySnapshot,
+  type SavedLocalConfigState
+} from "./local-config.js";
 
 export interface PreferencesSnapshot {
   source: "local" | "recommended";
@@ -209,9 +214,7 @@ export function inspectPrivacyTransparencySnapshot(
 }
 
 interface PreferencesContext {
-  source: "local" | "recommended";
-  current: LocalConfig;
-  recommended: LocalConfig;
+  localConfig: LocalConfigFamilySnapshot;
   derivedRouting: ReturnType<typeof createRecommendedModelRoutingPresets>;
   subagents: ReturnType<typeof createRecommendedSubagentRoutingPresets>;
 }
@@ -223,12 +226,18 @@ function createPreferencesContext(
 ): PreferencesContext {
   const environment = detectCodexEnvironment(codexPaths.modelsCacheJson, codexPaths.authJson);
   const recommended = createRecommendedLocalConfig(environment);
-  const current = savedConfigState.kind === "loaded" ? savedConfigState.config : recommended;
+  const localConfig =
+    savedConfigState.kind === "loaded"
+      ? {
+          source: "local" as const,
+          current: savedConfigState.config,
+          recommended,
+          saved: savedConfigState
+        }
+      : inspectLocalConfigFamily(paths, recommended);
 
   return {
-    source: savedConfigState.kind === "loaded" ? "local" : "recommended",
-    current,
-    recommended,
+    localConfig,
     derivedRouting: createRecommendedModelRoutingPresets(environment),
     subagents: createRecommendedSubagentRoutingPresets(environment)
   };
@@ -241,13 +250,13 @@ function inspectPreferencesFamilySnapshotFromContext(
   const telemetry = inspectTelemetrySnapshot(paths);
   return {
     editable: {
-      source: context.source,
-      current: context.current,
-      recommended: context.recommended
+      source: context.localConfig.source,
+      current: context.localConfig.current,
+      recommended: context.localConfig.recommended
     },
     preferences: {
-      source: context.source,
-      models: context.current.models,
+      source: context.localConfig.source,
+      models: context.localConfig.current.models,
       derivedRouting: {
         execution: context.derivedRouting.execution,
         realtime: context.derivedRouting.realtime
@@ -257,9 +266,9 @@ function inspectPreferencesFamilySnapshotFromContext(
         implementation: context.subagents.implementation,
         realtime: context.subagents.realtime
       },
-      telemetry: context.current.privacy.telemetry,
+      telemetry: context.localConfig.current.privacy.telemetry,
       telemetryFiles: telemetry,
-      enabledPacks: enabledPackNames(context.current.packs)
+      enabledPacks: enabledPackNames(context.localConfig.current.packs)
     },
     telemetry
   };
