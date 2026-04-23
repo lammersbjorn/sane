@@ -10,6 +10,7 @@ import {
 import { loadOverlayModel, type OverlayModel } from "@/overlay-models.js";
 import { loadPreferencesScreen } from "@/preferences-screen.js";
 import { loadRepairScreen } from "@/repair-screen.js";
+import { type UiCommandId } from "@/command-registry.js";
 
 export interface SaneTuiAppView {
   title: "Sane";
@@ -190,111 +191,14 @@ function selectedActionHelpLines(
   preferences: () => ReturnType<typeof loadPreferencesScreen>
 ): string[] {
   const action = currentAction(shell);
-  if (action.id === "preview_codex_profile" || action.id === "apply_codex_profile") {
-    return formatProfileActionHelp(action, {
-      auditStatus: getStarted.codexProfileAudit.status,
-      recommendedChangeCount: getStarted.codexProfileAudit.recommendedChangeCount,
-      applyStatus: getStarted.codexProfileApply.status,
-      appliedKeyCount: getStarted.codexProfileApply.appliedKeys.length,
-      appliedKeyLabel: "changes",
-      details: getStarted.codexProfilePreview.details
-    });
-  }
-
-  if (
-    action.id === "preview_integrations_profile" ||
-    action.id === "apply_integrations_profile"
-  ) {
-    const model = inspect();
-    return formatProfileActionHelp(action, {
-      auditStatus: model.integrationsAudit.status,
-      recommendedChangeCount: model.integrationsAudit.recommendedChangeCount,
-      applyStatus: model.integrationsApply.status,
-      appliedKeyCount: model.integrationsApply.appliedKeys.length,
-      appliedKeyLabel: "keys",
-      details: model.integrationsPreview.details
-    });
-  }
-
-  if (action.id === "show_runtime_summary") {
-    const model = inspect();
-    return [
-      `Selected action: ${action.label}`,
-      "",
-      ...action.help,
-      "",
-      "Runtime handoff visibility is read-only and current-run-derived.",
-      ...model.runtimeSummary.details
-    ];
-  }
-
-  if (action.id === "show_config") {
-    const model = inspect();
-    return [
-      `Selected action: ${action.label}`,
-      "",
-      ...action.help,
-      "",
-      ...model.localConfig.details
-    ];
-  }
-
-  if (action.id === "show_codex_config") {
-    const model = inspect();
-    return [
-      `Selected action: ${action.label}`,
-      "",
-      ...action.help,
-      "",
-      ...model.codexConfig.details
-    ];
-  }
-
-  if (action.id === "preview_policy") {
-    const model = inspect();
-    return [
-      `Selected action: ${action.label}`,
-      "",
-      ...action.help,
-      "",
-      ...formatInspectPolicyPreviewLines(model, {
-        mode: "action",
-        snapshot: "latest snapshot",
-        input: "latest snapshot input",
-        current: "current preview"
-      })
-    ];
-  }
-
-  if (action.id === "preview_cloudflare_profile" || action.id === "apply_cloudflare_profile") {
-    const model = preferences();
-    return formatProfileActionHelp(action, {
-      auditStatus: model.cloudflareAudit.status,
-      recommendedChangeCount: model.cloudflareAudit.recommendedChangeCount,
-      applyStatus: model.cloudflareApply.status,
-      appliedKeyCount: model.cloudflareApply.appliedKeys.length,
-      appliedKeyLabel: "keys",
-      details: model.cloudflarePreview.details
-    });
-  }
-
-  if (action.id === "preview_opencode_profile" || action.id === "apply_opencode_profile") {
-    const model = preferences();
-    return formatProfileActionHelp(action, {
-      auditStatus: model.opencodeAudit.status,
-      recommendedChangeCount: model.opencodeAudit.recommendedChangeCount,
-      applyStatus: model.opencodeApply.status,
-      appliedKeyCount: model.opencodeApply.appliedKeys.length,
-      appliedKeyLabel: "keys",
-      details: model.opencodePreview.details
-    });
-  }
-
-  return [`Selected action: ${action.label}`, "", ...action.help];
+  return (
+    selectedActionHelpBuilders(getStarted, inspect, preferences)[action.id]?.(action) ??
+    baseSelectedActionHelp(action)
+  );
 }
 
 function formatProfileActionHelp(
-  action: ReturnType<typeof currentAction>,
+  action: SelectedAction,
   profile: {
     auditStatus: string;
     recommendedChangeCount: number;
@@ -313,6 +217,129 @@ function formatProfileActionHelp(
     `apply readiness: ${profile.applyStatus} (${profile.appliedKeyCount} ${profile.appliedKeyLabel})`,
     ...profile.details
   ];
+}
+
+type SelectedAction = ReturnType<typeof currentAction>;
+type SelectedActionHelpBuilder = (action: SelectedAction) => string[];
+
+function selectedActionHelpBuilders(
+  getStarted: ReturnType<typeof loadGetStartedScreen>,
+  inspect: () => ReturnType<typeof loadInspectScreen>,
+  preferences: () => ReturnType<typeof loadPreferencesScreen>
+): Partial<Record<UiCommandId, SelectedActionHelpBuilder>> {
+  return {
+    preview_codex_profile: (action) =>
+      formatProfileActionHelp(action, {
+        auditStatus: getStarted.codexProfileAudit.status,
+        recommendedChangeCount: getStarted.codexProfileAudit.recommendedChangeCount,
+        applyStatus: getStarted.codexProfileApply.status,
+        appliedKeyCount: getStarted.codexProfileApply.appliedKeys.length,
+        appliedKeyLabel: "changes",
+        details: getStarted.codexProfilePreview.details
+      }),
+    apply_codex_profile: (action) =>
+      formatProfileActionHelp(action, {
+        auditStatus: getStarted.codexProfileAudit.status,
+        recommendedChangeCount: getStarted.codexProfileAudit.recommendedChangeCount,
+        applyStatus: getStarted.codexProfileApply.status,
+        appliedKeyCount: getStarted.codexProfileApply.appliedKeys.length,
+        appliedKeyLabel: "changes",
+        details: getStarted.codexProfilePreview.details
+      }),
+    preview_integrations_profile: (action) => {
+      const model = inspect();
+      return formatProfileActionHelp(action, {
+        auditStatus: model.integrationsAudit.status,
+        recommendedChangeCount: model.integrationsAudit.recommendedChangeCount,
+        applyStatus: model.integrationsApply.status,
+        appliedKeyCount: model.integrationsApply.appliedKeys.length,
+        appliedKeyLabel: "keys",
+        details: model.integrationsPreview.details
+      });
+    },
+    apply_integrations_profile: (action) => {
+      const model = inspect();
+      return formatProfileActionHelp(action, {
+        auditStatus: model.integrationsAudit.status,
+        recommendedChangeCount: model.integrationsAudit.recommendedChangeCount,
+        applyStatus: model.integrationsApply.status,
+        appliedKeyCount: model.integrationsApply.appliedKeys.length,
+        appliedKeyLabel: "keys",
+        details: model.integrationsPreview.details
+      });
+    },
+    show_runtime_summary: (action) => {
+      const model = inspect();
+      return detailSelectedActionHelp(action, [
+        "Runtime handoff visibility is read-only and current-run-derived.",
+        ...model.runtimeSummary.details
+      ]);
+    },
+    show_config: (action) => detailSelectedActionHelp(action, inspect().localConfig.details),
+    show_codex_config: (action) => detailSelectedActionHelp(action, inspect().codexConfig.details),
+    preview_policy: (action) =>
+      detailSelectedActionHelp(
+        action,
+        formatInspectPolicyPreviewLines(inspect(), {
+          mode: "action",
+          snapshot: "latest snapshot",
+          input: "latest snapshot input",
+          current: "current preview"
+        })
+      ),
+    preview_cloudflare_profile: (action) => {
+      const model = preferences();
+      return formatProfileActionHelp(action, {
+        auditStatus: model.cloudflareAudit.status,
+        recommendedChangeCount: model.cloudflareAudit.recommendedChangeCount,
+        applyStatus: model.cloudflareApply.status,
+        appliedKeyCount: model.cloudflareApply.appliedKeys.length,
+        appliedKeyLabel: "keys",
+        details: model.cloudflarePreview.details
+      });
+    },
+    apply_cloudflare_profile: (action) => {
+      const model = preferences();
+      return formatProfileActionHelp(action, {
+        auditStatus: model.cloudflareAudit.status,
+        recommendedChangeCount: model.cloudflareAudit.recommendedChangeCount,
+        applyStatus: model.cloudflareApply.status,
+        appliedKeyCount: model.cloudflareApply.appliedKeys.length,
+        appliedKeyLabel: "keys",
+        details: model.cloudflarePreview.details
+      });
+    },
+    preview_opencode_profile: (action) => {
+      const model = preferences();
+      return formatProfileActionHelp(action, {
+        auditStatus: model.opencodeAudit.status,
+        recommendedChangeCount: model.opencodeAudit.recommendedChangeCount,
+        applyStatus: model.opencodeApply.status,
+        appliedKeyCount: model.opencodeApply.appliedKeys.length,
+        appliedKeyLabel: "keys",
+        details: model.opencodePreview.details
+      });
+    },
+    apply_opencode_profile: (action) => {
+      const model = preferences();
+      return formatProfileActionHelp(action, {
+        auditStatus: model.opencodeAudit.status,
+        recommendedChangeCount: model.opencodeAudit.recommendedChangeCount,
+        applyStatus: model.opencodeApply.status,
+        appliedKeyCount: model.opencodeApply.appliedKeys.length,
+        appliedKeyLabel: "keys",
+        details: model.opencodePreview.details
+      });
+    }
+  };
+}
+
+function baseSelectedActionHelp(action: SelectedAction): string[] {
+  return [`Selected action: ${action.label}`, "", ...action.help];
+}
+
+function detailSelectedActionHelp(action: SelectedAction, details: string[]): string[] {
+  return [...baseSelectedActionHelp(action), "", ...details];
 }
 
 function footerLine(chips: ReturnType<typeof loadDashboardView>["chips"]): string {
