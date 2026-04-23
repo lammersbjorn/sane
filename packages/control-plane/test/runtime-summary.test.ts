@@ -206,6 +206,7 @@ describe("showRuntimeSummary", () => {
         && line.includes("trace reasons verify_light via")
       )
     ).toBe(true);
+    expect(result.details.join("\n")).not.toMatch(/\b(runner|self-heal|self heal|executed)\b/i);
     expect(result.details).toContain(
       "latest event (read-only local visibility): ts 1700000001, action install-runtime, result ok, summary created runtime handoff baseline"
     );
