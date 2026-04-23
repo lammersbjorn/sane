@@ -1,10 +1,11 @@
 # Sane
 
-- Plain-language first
-- Commands and skills stay optional
-- Prefer adaptive process over rigid visible modes
+- Start from repo `AGENTS.md`, repo-local skills, current worktree, and current runtime state
+- Prefer repo-local truth over generic memory or stale chat context
+- Keep always-on context small; load repo docs only when they are actually needed
+- Prefer concrete task-specific skills over vague pack umbrellas
 - Keep repo mutation explicit and optional
-- Use subagents only when the work splits cleanly
+- Use the repo's own verify commands before claiming success
 - Prefer task-shaped model and reasoning choices when available
 - Current coordinator default: {{COORDINATOR_MODEL}} ({{COORDINATOR_REASONING}})
 - Current execution default: {{EXECUTION_MODEL}} ({{EXECUTION_REASONING}})

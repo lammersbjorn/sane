@@ -1,11 +1,41 @@
 ---
 name: sane-router
-description: Thin internal selector for Sane-managed Codex assets and task-specific built-in pack skills.
+description: Use when work touches Sane-managed installs, exports, or config-backed routing defaults. It routes to managed assets and concrete pack skills without turning Sane into a daily wrapper.
 ---
 
 # Sane Router
 
-Use this managed skill only when work touches Sane-managed installs, exports, or config-backed routing defaults.
+## Goal
+
+Route work to the correct Sane-managed surface or concrete pack skill.
+
+## Use When
+
+- installing, updating, or removing Sane-managed skills, overlays, hooks, or custom agents
+- previewing or applying Sane config-backed routing defaults
+- deciding which concrete Sane-managed skill or agent should own a task
+
+## Don't Use When
+
+- normal coding, review, or research work already covered by a concrete repo or pack skill
+- general repo work with no Sane-managed install/export/config impact
+
+## Inputs
+
+- current task
+- current Sane config
+- installed pack state and managed asset state
+
+## Outputs
+
+- one concrete next action:
+  - preview
+  - apply
+  - remove
+  - inspect
+  - route to a specific skill or agent
+
+## How To Run
 
 Prefer task-specific skills first, not this selector:
 {{ENABLED_PACK_SKILL_SELECTIONS}}
@@ -15,8 +45,6 @@ Use `sane-router` only for:
 - previewing or applying config-backed routing defaults
 - keeping Sane-managed exports additive and easy to undo
 
-Do not turn this into a daily wrapper ritual.
-
 Current managed role defaults:
 - coordinator: {{COORDINATOR_MODEL}} ({{COORDINATOR_REASONING}})
 - execution: {{EXECUTION_MODEL}} ({{EXECUTION_REASONING}})
@@ -25,3 +53,14 @@ Current managed role defaults:
 - realtime iteration: {{REALTIME_MODEL}} ({{REALTIME_REASONING}})
 
 {{ENABLED_PACK_ROUTER_NOTES}}
+
+## Verification
+
+- preview before apply when possible
+- confirm the touched managed paths and concrete skill/agent selected
+
+## Gotchas / Safety
+
+- do not turn this into a daily wrapper ritual
+- do not recommend vague pack umbrellas when a concrete skill exists
+- keep managed exports additive and reversible

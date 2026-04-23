@@ -1,142 +1,78 @@
 ---
 name: continue
-description: Use when the user says continue, keep going, resume, don't stop, or wants the agent to keep progressing through the current plan autonomously. Confirms the intended workstream once at the start if needed, then continues until a real blocker or explicit user input is required. Handles side tasks and then resumes the main work automatically.
+description: Use when the user says continue, keep going, resume, don't stop, or wants autonomous progress on the current plan. Confirm the workstream once only if truly ambiguous, then keep moving until a real blocker or explicit user input is required.
 ---
 
 # Continue
 
-Use this skill when the user wants ongoing autonomous progress instead of a one-shot answer.
-
 ## Goal
 
-- Confirm the intended workstream once at the start if there is real ambiguity.
-- Then keep moving until there is a real blocker.
-- If the user injects a side task, do it, then resume the mainline automatically.
-- Do not stop at checkpoints, summaries, or "done with this slice" moments.
+Keep the current mainline moving until there is a real blocker. Do side tasks, then resume automatically.
 
-## What Counts As A Real Blocker
+## Use When
 
-Stop only when at least one is true:
+- the user says `continue`, `keep going`, `resume`, `don't stop`, or equivalent
+- the repo already has a main plan, TODO, or current migration lane
+- the user wants autonomous progress instead of a one-shot answer
 
-- a required decision has multiple materially different paths and the repo/context does not already answer it
-- a needed credential, login, permission, or external dependency is missing and cannot be worked around
-- a required file, service, environment, or API is unavailable and no safe fallback exists
-- continuing would risk destructive or policy-breaking changes without explicit approval
-- the user explicitly asks to pause or switch goals
+## Don't Use When
 
-Not blockers:
+- the task is clearly a one-off answer with no ongoing workstream
+- the user explicitly paused or switched goals
+- a short clarification is required before any safe assumption can be made
 
-- you reached a checkpoint
-- you finished one subtask
-- you have enough for a progress update
-- the conversation drifted to a side task you can finish and return from
+## Inputs
 
-## Start Behavior
+- current repo files and worktree state
+- current plan, TODO, handoff docs, runtime state, or local state if present
+- latest user instruction
+- side tasks that arrived during the mainline
 
-At the beginning only:
+## Outputs
 
-1. Inspect current repo/task state before guessing:
-   - root guidance like `AGENTS.md`
-   - repo-local skills if present
-   - current plan/TODO/handoff docs if present
-   - current worktree / diff / runtime state if relevant
-2. If there is genuine ambiguity about what "continue" means, ask one short question:
-   - continue the current main plan
-   - or work on another specific target
-3. If the intended workstream is already clear from the repo and chat, do not ask. Just continue.
+- verified slices of progress
+- checkpoint commits between meaningful phases when implementation is underway
+- short milestone updates while work continues
+- one explicit blocker only when progress truly cannot continue safely
 
-Do not keep re-confirming after that.
+## How To Run
 
-## Main Loop
+1. Re-read current repo state before guessing from memory or old chat.
+2. If `continue` is truly ambiguous, ask one short question once at the start. Otherwise do not ask.
+3. Pick the highest-value next slice that is small enough to verify and meaningful enough to move the project forward.
+4. Use parallel read/research lanes aggressively when safe. Keep one write lane when edits would conflict.
+5. If the user injects a side task:
+   - do it directly if small
+   - delegate if cleaner
+   - then resume the mainline automatically
+6. Use the lightest process that still works:
+   - no mandatory mega-plan unless ambiguity or risk is real
+   - no per-tool narration
+   - brief milestone updates only
+   - answer from context directly when no extra tooling is needed
+7. If you reread or re-edit the same area twice without real progress, switch approach instead of looping.
+8. Stop only for a real blocker:
+   - missing required decision the repo/context does not answer
+   - missing credential or dependency with no workaround
+   - destructive risk requiring approval
+   - explicit user pause or goal change
 
-Repeat until blocked:
+## Verification
 
-1. Re-read current state from the repo, not memory alone.
-2. Pick the highest-value next slice that is:
-   - aligned with the current plan
-   - non-overlapping with in-flight work
-   - small enough to verify
-   - meaningful enough to move the project forward
-3. Do the work.
-4. Verify the work with the lightest real checks that match the change.
-5. Commit/checkpoint if the repo workflow expects it.
-6. Immediately choose the next slice and continue.
+- use the lightest real local checks that match the change
+- do not call a checkpoint "done" without at least matching diff review or local validation
+- if the repo has exact verify commands, use those
 
-Never end a turn merely because one slice is complete.
+## Gotchas / Safety
 
-## Side Tasks
+- reaching a checkpoint is not a blocker
+- finishing one subtask is not a blocker
+- a side task is not a blocker if you can do it and return
+- do not keep asking whether to continue
+- do not over-tool trivial asks just because you are in continuation mode
 
-If the user interrupts with a side task:
+## Examples
 
-1. Decide whether it is:
-   - a small detour
-   - a replacement priority
-2. If it is a small detour:
-   - do it directly, or delegate it if that is cleaner
-   - verify it
-   - then resume the previous mainline without waiting to be told
-3. If it clearly replaces the previous priority, switch the mainline and continue from the new one
-
-Default bias:
-
-- treat small fixes, questions, prompts, docs tweaks, config tweaks, and research asks as detours unless the user explicitly reframes the whole goal
-
-## Parallelism
-
-Use parallel work aggressively when safe:
-
-- split read-only exploration into parallel lanes
-- split disjoint code/doc changes into parallel lanes
-- keep one write lane if multiple writers would conflict
-- close subagents when done
-
-Prefer the project's own available:
-
-- tools
-- skills
-- local state
-- task docs
-- routing rules
-- model/subagent philosophy
-
-If the repo has its own agent framework or local-state-defined behavior, use that instead of inventing a separate workflow.
-
-## Model / Agent Selection
-
-Pick models and reasoning by task shape, not habit.
-
-- use smaller/faster models for bounded read-only mapping, grep work, and low-risk synthesis
-- use stronger coding models for implementation-heavy or repo-coupled changes
-- use stronger verifier/synthesis models for integration checks and high-risk review
-- increase reasoning when ambiguity, coupling, or risk rises
-
-Do not under-think by default on continuation work.
-
-## Local State Bias
-
-Prefer repo truth in this order:
-
-1. current repo files
-2. repo-local state/runtime files
-3. current worktree status/diff
-4. durable plan/TODO/handoff docs
-5. prior memory/context
-
-If local state exists for the project, use it to resume instead of reconstructing from chat alone.
-
-## Communication
-
-- Send short progress updates while working.
-- Updates are not a stopping condition.
-- When reporting progress, include what changed, what was verified, and what you are taking next.
-- Do not ask "want me to continue?" unless there is a real blocker.
-
-## Finish Condition
-
-Only stop when:
-
-- the project is actually blocked
-- the user explicitly wants a pause
-- the requested scope is fully exhausted and there is no meaningful next slice
-
-If you stop, say exactly what blocked progress and what input is needed.
+- Positive: user says "continue with the plan and don't stop unless blocked." Keep going.
+- Positive: user asks a small side question mid-migration. Answer or implement it, verify it, then return to the migration.
+- Negative: user asks a standalone factual question with no active workstream. Just answer it.

@@ -9,12 +9,19 @@ Keep this file small. Repo-specific detail belongs in targeted skills, not in al
 - No required command ritual, wrapper-first flow, or mandatory repo mutation.
 - `AGENTS.md` is an optional product surface. Do not treat this repo's self-hosting setup as a default every repo should copy.
 
-## When Working On Sane Itself
+## Startup Rules
 
-- Load the repo skill: `.agents/skills/sane-self-hosting/SKILL.md`.
-- Before changing product direction or architecture, read:
-  - `docs/decisions/2026-04-19-sane-decision-log.md`
-  - `docs/specs/2026-04-19-sane-design.md`
-  - `docs/specs/2026-04-19-sane-backend-contract.md`
-  - `docs/specs/2026-04-20-sane-tui-redesign.md`
-  - `TODO.md`
+- RTK policy is active here. Route shell work through `rtk`.
+- Use repo files and current local state before guessing from chat or memory.
+- For product, architecture, self-hosting, or exported-surface work, load `.agents/skills/sane-self-hosting/SKILL.md`.
+
+## Verify
+
+- Default verify: `rtk run 'pnpm test && pnpm typecheck'`
+- If you touch legacy Rust paths, also run: `rtk run 'cargo test'`
+
+## Done Means
+
+- Changed behavior is verified with matching local checks.
+- Docs are synced when product behavior, responsibilities, or exported surfaces changed.
+- Keep going until there is a real blocker or explicit user pause.

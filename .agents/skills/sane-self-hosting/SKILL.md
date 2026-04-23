@@ -1,97 +1,81 @@
 ---
 name: sane-self-hosting
-description: Use when building, changing, reviewing, or documenting Sane itself. Keeps repo-specific self-hosting guidance out of root AGENTS, points to the right product and architecture docs, and preserves Sane's no-wrapper, minimal-context philosophy.
+description: Use when building, changing, reviewing, or documenting Sane itself, especially product direction, exported Codex surfaces, self-hosting behavior, or migration work. Triggers on prompts like "work on Sane", "continue the Sane migration", or "rewrite Sane skills/docs".
 ---
 
 # Sane Self-Hosting
 
-Use this skill for work on `Sane` itself. Do not copy this shape into other repos by default.
+## Goal
 
-## Core Stance
+Work on `Sane` itself without turning this repo's self-hosting setup into a generic default for other repos.
 
-- Keep root `AGENTS.md` tiny. Put recurring repo detail here or in repo docs, not in always-on guidance.
-- `Sane` is an agent framework for Codex, not a daily wrapper.
-- The TUI is the setup/config/update/export/inspect/repair surface.
-- Normal use should stay plain-language first. Do not introduce command ritual to get good results.
-- Repo-local self-hosting on this repo is dogfooding, not a universal requirement for repos that use `Sane`.
+## Use When
 
-## Read First
+- changing Sane product direction, architecture, migration, or exported Codex surfaces
+- rewriting repo-local skills, overlays, agents, packs, or self-hosting behavior
+- syncing docs with real product behavior
+- continuing the current Sane plan from local repo state
 
-Read these before changing product direction, architecture, or self-hosting guidance:
+## Don't Use When
 
+- working on some other repo
+- doing one-off generic coding work with no Sane-specific product or instruction-surface impact
+- you only need a vendor skill and no Sane-owned behavior is changing
+
+## Inputs
+
+- current repo files and worktree state
+- root `AGENTS.md`
 - `README.md`
 - `docs/what-sane-does.md`
 - `docs/decisions/2026-04-19-sane-decision-log.md`
 - `docs/specs/2026-04-19-sane-design.md`
 - `docs/specs/2026-04-19-sane-backend-contract.md`
 - `docs/specs/2026-04-20-sane-tui-redesign.md`
+- `docs/plans/2026-04-19-sane-strict-implementation-plan.md` when implementation order matters
+- `docs/research/2026-04-23-codex-instruction-surface-rules.md` when changing repo-local skills, overlays, agents, or `AGENTS.md`
 - `TODO.md`
 
-If the task touches implementation order or gated future work, also read:
+## Outputs
 
-- `docs/plans/2026-04-19-sane-strict-implementation-plan.md`
-- `docs/research/2026-04-20-tui-tooling-and-ux-audit.md`
+- repo-aligned code or docs changes
+- synced product docs when behavior or ownership changed
+- matching local verification
+- checkpoint commits between meaningful phases when implementation is underway
 
-## Architecture Doc Map
+## How To Run
 
-Use the boundary docs instead of guessing:
+1. Start from repo truth and local state, not memory alone.
+2. Keep root `AGENTS.md` small. Put recurring procedure detail here or in docs, not in always-on startup context.
+3. Treat `Sane` as an agent framework for Codex, not a daily wrapper. The TUI remains install/config/update/export/inspect/repair/doctor.
+4. When self-hosting on the Sane repo itself, use the repo's own local-state-defined agents, tools, skills, and routing where they exist.
+5. Prefer Sane-owned routing/export changes before editing vendored upstream mirrors.
+6. For repo-local skills and instruction surfaces, follow `docs/research/2026-04-23-codex-instruction-surface-rules.md`:
+   - one job per skill
+   - explicit `Use when` and `Don't use when`
+   - exact outputs and verification
+   - progressive disclosure instead of giant bodies
+   - no duplicated policy across root guidance, skills, overlays, and agents
+7. When the user says `continue`, `keep going`, or `resume`, also load `.agents/skills/continue/SKILL.md`.
+8. Do not present future work as shipped behavior.
+9. Keep managed Codex-native surfaces additive and reversible.
 
-- TUI flows, copy, onboarding, install/repair UX:
-  - `docs/specs/2026-04-20-sane-tui-redesign.md`
-  - `crates/sane-tui/README.md`
-- Managed assets, export/install/uninstall semantics, additive markers:
-  - `docs/specs/2026-04-19-sane-backend-contract.md`
-  - `crates/sane-core/README.md`
-- Config meaning, defaults, packs, model-role settings:
-  - `crates/sane-config/README.md`
-- Project-root discovery, `.sane/` layout, user-level Codex paths:
-  - `crates/sane-platform/README.md`
-- Local runtime state, summaries, backups, rewrite metadata:
-  - `crates/sane-state/README.md`
-- Adaptive policy groundwork and inspectable policy output:
-  - `crates/sane-policy/README.md`
+## Verification
 
-## Working Rules
+- docs or instruction-surface-only changes: inspect diff for the touched files
+- TS or exported-template changes: `rtk run 'pnpm test && pnpm typecheck'`
+- legacy Rust paths only if touched: `rtk run 'cargo test'`
 
-- Treat `docs/decisions/2026-04-19-sane-decision-log.md` as locked product truth unless a new decision log changes it.
-- Keep `README.md` public-facing and beginner-first.
-- Keep under-the-hood details in `docs/`, `TODO.md`, crate READMEs, or this skill.
-- When the user says `continue`, `keep going`, `resume`, or equivalent, also load `.agents/skills/continue/SKILL.md` and follow it unless the user explicitly narrows scope differently.
-- When self-hosting on the `Sane` repo itself, use the repo's own currently installed/local-state-defined agents, tools, skills, and routing surfaces where they exist instead of bypassing them by default.
-- Keep that self-hosting behavior aligned with `Sane`'s real exported/local-state behavior so future self-improve and self-heal work can build on the same surfaces instead of a hidden one-off workflow.
-- If guidance starts becoming broad or stale, split it into docs or a more targeted skill instead of expanding root `AGENTS.md`.
-- Do not present future work as shipped behavior.
-- Do not blur the TUI/setup boundary into a normal prompting interface.
-- Preserve additive, reversible behavior for managed Codex-native surfaces.
+## Gotchas / Safety
 
-## Doc Sync Rules
+- do not copy this repo's self-hosting shape into every repo by default
+- do not widen the TUI into the normal prompting interface
+- do not restate discoverable repo facts in multiple prompt surfaces
+- if a skill starts growing large, split detail into docs or `references/` instead
+- if a vendor skill is broad or heavy, fix Sane-owned routing first before patching the mirror
 
-Update docs in the same change when you alter:
+## Examples
 
-- what users see in the TUI
-- what `Sane` writes
-- what install/export/uninstall changes do
-- what is optional, additive, or reversible
-- crate boundaries or responsibilities
-
-When crate responsibilities change, update the relevant crate `README.md` in the same change.
-
-## Verification Baseline
-
-Use the lightest verification that matches the change. Default baseline:
-
-```bash
-cargo fmt --check
-cargo check
-cargo test
-```
-
-Add flow checks when relevant:
-
-- TUI or onboarding changes: `cargo run -p sane`
-- settings/config changes: `cargo run -p sane -- settings`
-- managed-surface or repair work: `cargo run -p sane -- status` and `cargo run -p sane -- doctor`
-
-## Self-Hosting Guardrail
-
-This skill exists so root `AGENTS.md` can stay small and high-signal. Prefer adding recurring repo guidance here over turning root guidance into a giant always-loaded file.
+- Positive: "Rewrite Sane's repo-local skills to match Codex best practices and sync the docs."
+- Positive: "Continue the Sane migration from the current repo state."
+- Negative: "Use Taste to restyle this React page." Use the concrete frontend skill instead.
