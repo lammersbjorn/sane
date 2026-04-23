@@ -57,13 +57,13 @@ Current managed targets are:
 Current managed export behavior also depends on local config:
 - built-in pack set is fixed today: always-on `core` plus optional `caveman`, `cavemem`, `rtk`, and `frontend-craft`
 - exported `sane-router` skill content can reflect enabled guidance packs and current routing defaults
-- exported global `AGENTS.md` overlay can reflect enabled guidance packs and current routing defaults
+- exported global and repo `AGENTS.md` overlays can reflect enabled guidance packs and current routing defaults
 - status/doctor should flag those assets as invalid when current exports drift from enabled guidance-pack or routing config
 - enabled optional packs may materialize as additional managed user skills during `export_user_skills` (currently `sane-caveman`, `design-taste-frontend`, and `impeccable`)
 - enabled optional packs may materialize as additional managed repo skills during `export_repo_skills` (same exported skill names as user scope)
 - `frontend-craft` currently exports exactly two concrete skills: `design-taste-frontend` and `impeccable`
 - capability-only packs (`cavemem` and `rtk`) may change router/overlay output without exporting any dedicated skill directory
-- repo-local AGENTS overlay export reuses the same guidance body as the global overlay, but with repo-scoped markers and opt-in behavior
+- repo-local `AGENTS.md` overlay export should stay distinct from the global overlay while reusing the same underlying routing state
 - built-in pack manifests may also carry read-only provenance metadata for bundled upstream-derived skills or MCP references
 - that provenance is inspectable metadata only, not a live fetch/update contract
 - inspect/runtime-summary reads may surface bounded latest history previews for the most recent `event`, `decision`, and `artifact` alongside the underlying counts, but that stays read-only and does not add a log-browsing surface

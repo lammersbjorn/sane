@@ -42,7 +42,7 @@ const PACK_FIELD_EXPLANATIONS: Record<PackFieldId, string> = {
   caveman:
     "Compressed communication guidance. Useful when you want less token-heavy prose by default.",
   cavemem: "Compact durable-memory guidance for long sessions and cleaner handoffs.",
-  rtk: "Shell-routing guidance: if RTK policy exists, prefer RTK-routed command execution.",
+  rtk: "Shell-routing guidance. When enabled, route shell work through RTK instead of raw commands.",
   frontend_craft:
     "Frontend craft guidance. Biases Sane away from generic AI UI output and toward stronger design quality."
 };
