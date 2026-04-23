@@ -120,7 +120,7 @@ Implemented:
 - typed family snapshot helper now exists for Codex profile surfaces, and Preferences uses it for provider-profile state instead of separate provider snapshot reads
 - Codex profile family reads now derive from one shared parsed config context in `codex-config.ts`, so family/profile audit/apply/preview helpers stop reparsing the same file repeatedly
 - invalid Codex/integrations/cloudflare/opencode previews now say `blocked by invalid config` instead of pretending there are `0 recommended change(s)`
-- Status/Inspect now surface warning-only Codex config conflict detection for invalid config and unmanaged `mcp_servers.*` entries; this is detect-and-warn only and does not add auto-fix behavior
+- Canonical status bundles and Inspect overview now surface warning-only Codex config conflict detection for invalid config and unmanaged `mcp_servers.*` entries; this is detect-and-warn only and does not add auto-fix behavior
 - Start Here onboarding can now derive from a preloaded typed status bundle, and app-view threads shell status bundle through that path instead of forcing a fresh onboarding status-bundle rebuild
 - Install can now derive from a preloaded typed status bundle too, and app-view threads shell status bundle through that path instead of forcing a second install status-bundle rebuild
 - Repair can now derive from a preloaded typed status bundle too, and app-view threads shell status bundle through that path when the repair section is opened instead of forcing another repair status-bundle rebuild
