@@ -211,9 +211,7 @@ function formatProfileActionHelp(
   }
 ): string[] {
   return [
-    `Selected action: ${action.label}`,
-    "",
-    ...action.help,
+    ...selectedActionHelp(action),
     "",
     `audit: ${profile.auditStatus} (${profile.recommendedChangeCount} recommended changes)`,
     `apply readiness: ${profile.applyStatus} (${profile.appliedKeyCount} ${profile.appliedKeyLabel})`,
@@ -307,11 +305,16 @@ function profileActionHelpBuilders<const T extends UiCommandId[]>(
 }
 
 function baseSelectedActionHelp(action: SelectedAction): string[] {
-  return [`Selected action: ${action.label}`, "", ...action.help];
+  return selectedActionHelp(action);
 }
 
 function detailSelectedActionHelp(action: SelectedAction, details: string[]): string[] {
-  return [...baseSelectedActionHelp(action), "", ...details];
+  return selectedActionHelp(action, details);
+}
+
+function selectedActionHelp(action: SelectedAction, details?: string[]): string[] {
+  const lines = [`Selected action: ${action.label}`, "", ...action.help];
+  return details ? [...lines, "", ...details] : lines;
 }
 
 function footerLine(chips: ReturnType<typeof loadDashboardView>["chips"]): string {
