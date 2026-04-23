@@ -88,6 +88,7 @@ Implemented:
 - optional packs now show `configured` vs `installed` truthfully depending on whether managed user-skill assets were exported
 - `frontend-craft` currently exports every pinned upstream `Leonxlnx/taste-skill` skill plus `impeccable`, including `gpt-taste` for ambitious GPT/Codex frontend work and `image-taste-frontend` for image-first art direction
 - `rtk` currently stays capability-only (router/overlay behavior, no dedicated skill export directory)
+- the fixed `v1` built-in pack set is `core`, `caveman`, `rtk`, and `frontend-craft`; post-`v1` pack changes require a fresh capability audit and do not imply a public plugin API
 - default continuity now stays scoped to Codex-native exports plus thin local `.sane` state; Codex native `memories` remain outside the default path
 - exported `sane-router` skill and global AGENTS overlay now reflect enabled guidance packs and current routing defaults
 - status/doctor now catch drift when exported guidance assets no longer match enabled packs or current routing defaults
@@ -326,3 +327,4 @@ Current allowed next slice:
 7. keep newly popular external models such as `Kimi K2.6` candidate-only until they are runtime/auth-proven inside Sane's Codex-first surface
 8. keep `B7` on typed policy/state plumbing, traces, and inspectable guidance; do not present it as shipped end-user orchestration
 9. keep the later end-to-end outcome runner plain-language first, not command-ritual-first
+10. keep `v1` pack behavior inside the fixed built-in set unless a new post-`v1` audit opens an explicit experimental lane

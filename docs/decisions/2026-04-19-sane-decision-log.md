@@ -163,6 +163,8 @@ These are strong direction, but not frozen down to exact implementation shape.
   - explicit install/export hooks
   - inspectable provenance metadata for curated upstream-derived content
   - vendored checked-in copies as the canonical source of truth, not live runtime fetches or git submodules by default
+- The `v1` built-in pack set is fixed at `core`, `caveman`, `rtk`, and `frontend-craft`.
+- Later pack expansion/contraction must start from a fresh capability audit and must not imply a public plugin API compatibility promise.
 
 ## Open
 

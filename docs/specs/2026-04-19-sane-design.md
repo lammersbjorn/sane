@@ -96,6 +96,8 @@ The stack direction does not change the product boundary: the control plane stay
 - current local config/editor foundation can enable or disable optional built-in packs without exposing a public plugin system
 - upstream-inspired pack content should stay vendored and checked in
 - manifests should carry read-only provenance for curated upstream-derived content so refreshes stay explicit and reviewable
+- the fixed `v1` set is `core`, `caveman`, `rtk`, and `frontend-craft`
+- post-`v1` pack changes require a fresh capability audit and install/inspect/uninstall coverage before graduation
 
 ### Current Package Boundaries
 

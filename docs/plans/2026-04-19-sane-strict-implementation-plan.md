@@ -403,9 +403,12 @@ Current repo already has:
 - doctor coverage
 
 Current mismatch with locked product direction:
-- pack/plugin-ready architecture not yet reflected clearly enough in plan/docs
-- builtin pack work not clearly separated into research gate
 - packaging/distribution plan not yet reflected clearly enough in plan/docs
+
+Resolved mismatch:
+- pack/plugin-ready architecture is now reflected as internal manifest/template boundaries only
+- builtin pack scope is locked by `R1`: `core`, `caveman`, `rtk`, and `frontend-craft`
+- no public plugin API ships in `v1`; later pack changes require a fresh capability audit, provenance, and install/inspect/uninstall coverage
 
 ## Working Rule For Any Agent
 
@@ -429,6 +432,7 @@ Allowed now:
 - otherwise keep aligning real state files with the `R3` design
 - keep privacy / telemetry local-first
 - keep TUI first and backend verbs secondary
+- keep pack changes within the fixed `v1` built-in set unless a new post-`v1` capability audit opens an experimental pack
 
 Not allowed now:
 - rewriting the product around command UX
