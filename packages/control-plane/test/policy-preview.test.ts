@@ -52,6 +52,17 @@ describe("policy preview", () => {
       runState: "exploring"
     });
     expect(result.policyPreview?.scenarios[0]?.trace[0]?.rule).toBe("keep_direct_answers_light");
+    expect(result.policyPreview?.scenarios[0]?.continuation).toEqual({
+      strategy: "answer_directly",
+      stopCondition: "answered"
+    });
+    expect(
+      result.policyPreview?.scenarios.find((scenario) => scenario.id === "multi-file-feature")
+        ?.continuation
+    ).toEqual({
+      strategy: "continue_until_verified",
+      stopCondition: "verified"
+    });
   });
 
   it("uses current local config roles plus derived routing classes when available", () => {
@@ -350,6 +361,10 @@ describe("policy preview", () => {
       runState: "closing"
     });
     expect(scenario.obligations).toEqual(["direct_answer", "review"]);
+    expect(scenario.continuation).toEqual({
+      strategy: "close_when_verified",
+      stopCondition: "closed"
+    });
   });
 
   it("derives stalled debug high-risk heuristics from failed verification", () => {
@@ -419,6 +434,7 @@ describe("policy preview", () => {
             },
             roles: null,
             orchestration: null,
+            continuation: null,
             obligationCount: 0,
             traceCount: 0,
             trace: []

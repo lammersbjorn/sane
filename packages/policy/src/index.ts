@@ -92,6 +92,7 @@ export interface PolicyExplanation {
   decision: PolicyDecision;
   roles: RolePlan;
   orchestration: OrchestrationGuidance;
+  continuation: ContinuationGuidance;
   trace: readonly PolicyTraceEntry[];
 }
 
@@ -140,6 +141,27 @@ export interface OrchestrationGuidance {
   subagentReadiness: SubagentReadinessReason;
   reviewPosture: ReviewPosture;
   verifierTiming: VerifierTiming;
+}
+
+export enum ContinuationStrategy {
+  AnswerDirectly = "answer_directly",
+  ContinueUntilVerified = "continue_until_verified",
+  ContinueUntilBlocked = "continue_until_blocked",
+  SelfRepairUntilUnblocked = "self_repair_until_unblocked",
+  CloseWhenVerified = "close_when_verified"
+}
+
+export enum StopCondition {
+  Answered = "answered",
+  Verified = "verified",
+  RealBlockerOrExplicitPause = "real_blocker_or_explicit_pause",
+  UnblockedOrNeedsInput = "unblocked_or_needs_input",
+  Closed = "closed"
+}
+
+export interface ContinuationGuidance {
+  strategy: ContinuationStrategy;
+  stopCondition: StopCondition;
 }
 
 const POLICY_RULE_REASONS: Record<PolicyRule, string> = {
@@ -256,6 +278,7 @@ export function explain(input: PolicyInput): PolicyExplanation {
     decision,
     roles: recommendRoles(decision),
     orchestration: recommendOrchestration(input, decision),
+    continuation: recommendContinuation(input, decision),
     trace
   };
 }
@@ -308,6 +331,52 @@ export function recommendOrchestration(
     subagentReadiness,
     reviewPosture,
     verifierTiming
+  };
+}
+
+export function recommendContinuation(
+  input: PolicyInput,
+  decision: PolicyDecision
+): ContinuationGuidance {
+  if (decision.has(Obligation.SelfRepair)) {
+    return {
+      strategy: ContinuationStrategy.SelfRepairUntilUnblocked,
+      stopCondition: StopCondition.UnblockedOrNeedsInput
+    };
+  }
+
+  if (input.runState === RunState.Closing) {
+    return {
+      strategy: ContinuationStrategy.CloseWhenVerified,
+      stopCondition: StopCondition.Closed
+    };
+  }
+
+  if (
+    decision.obligations.length === 1 &&
+    decision.has(Obligation.DirectAnswer)
+  ) {
+    return {
+      strategy: ContinuationStrategy.AnswerDirectly,
+      stopCondition: StopCondition.Answered
+    };
+  }
+
+  if (
+    decision.has(Obligation.VerifyLight) ||
+    decision.has(Obligation.DebugRigor) ||
+    decision.has(Obligation.Tdd) ||
+    decision.has(Obligation.Review)
+  ) {
+    return {
+      strategy: ContinuationStrategy.ContinueUntilVerified,
+      stopCondition: StopCondition.Verified
+    };
+  }
+
+  return {
+    strategy: ContinuationStrategy.ContinueUntilBlocked,
+    stopCondition: StopCondition.RealBlockerOrExplicitPause
   };
 }
 

@@ -165,6 +165,7 @@ describe("inspect snapshot", () => {
             reviewPosture: "inline_only",
             verifierTiming: "inline"
           },
+          continuation: null,
           obligationCount: 0,
           traceCount: 0,
           trace: []
@@ -175,6 +176,7 @@ describe("inspect snapshot", () => {
           input: null,
           roles: null,
           orchestration: null,
+          continuation: null,
           obligationCount: 0,
           traceCount: 0,
           trace: []

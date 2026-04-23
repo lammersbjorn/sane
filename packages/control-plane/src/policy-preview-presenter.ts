@@ -28,6 +28,10 @@ export interface InspectCurrentPolicyPreview {
         reviewPosture: string;
         verifierTiming: string;
       };
+      continuation?: {
+        strategy: string;
+        stopCondition: string;
+      } | null;
       trace: Array<{
         obligation: string;
         rule: string;
@@ -164,6 +168,12 @@ function formatLatestPolicyPreviewScenarioLines(
       );
     }
 
+    if (scenario.continuation) {
+      lines.push(
+        `latest policy continuation ${scenario.id}: strategy ${scenario.continuation.strategy ?? "unknown"}, stop ${scenario.continuation.stopCondition ?? "unknown"}`
+      );
+    }
+
     if (scenario.trace.length > 0) {
       lines.push(
         `latest policy trace ${scenario.id}: ${scenario.trace.map((entry) => `${entry.obligation} via ${entry.rule}`).join("; ")}`
@@ -196,6 +206,10 @@ function formatCurrentPolicyScenarioLines(
         ? "none"
         : scenario.trace.map((entry) => `${entry.obligation} via ${entry.rule}`).join("; ");
 
-    return `current preview scenario ${scenario.id}: obligations ${obligationCount}, traces ${traceCount}, subagents ${scenario.orchestration.subagents}, readiness ${scenario.orchestration.subagentReadiness}, review ${scenario.orchestration.reviewPosture}, verifier ${scenario.orchestration.verifierTiming}, trace reasons ${traceSummary}`;
+    const continuation = scenario.continuation
+      ? `, continuation ${scenario.continuation.strategy}, stop ${scenario.continuation.stopCondition}`
+      : "";
+
+    return `current preview scenario ${scenario.id}: obligations ${obligationCount}, traces ${traceCount}, subagents ${scenario.orchestration.subagents}, readiness ${scenario.orchestration.subagentReadiness}, review ${scenario.orchestration.reviewPosture}, verifier ${scenario.orchestration.verifierTiming}${continuation}, trace reasons ${traceSummary}`;
   });
 }

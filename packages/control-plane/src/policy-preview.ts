@@ -143,6 +143,10 @@ function buildScenarioPreview(
       reviewPosture: explanation.orchestration.reviewPosture,
       verifierTiming: explanation.orchestration.verifierTiming
     },
+    continuation: {
+      strategy: explanation.continuation.strategy,
+      stopCondition: explanation.continuation.stopCondition
+    },
     trace: explanation.trace.map((entry) => ({
       obligation: obligationAsString(entry.obligation),
       rule: policyRuleAsString(entry.rule)

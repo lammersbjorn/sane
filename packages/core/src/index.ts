@@ -120,6 +120,10 @@ export interface PolicyPreviewScenario {
     reviewPosture: string;
     verifierTiming: string;
   };
+  continuation: {
+    strategy: string;
+    stopCondition: string;
+  };
   trace: PolicyPreviewTraceEntry[];
 }
 

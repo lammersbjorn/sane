@@ -7,7 +7,9 @@ import {
   RunState,
   Obligation,
   PolicyRule,
+  ContinuationStrategy,
   ReviewPosture,
+  StopCondition,
   SubagentReadinessReason,
   SubagentStrategy,
   VerifierTiming,
@@ -15,6 +17,7 @@ import {
   explain,
   canonicalScenarios,
   recommendOrchestration,
+  recommendContinuation,
   recommendRoles,
   obligationAsString,
   policyRuleAsString,
@@ -264,6 +267,76 @@ describe("recommendOrchestration", () => {
   });
 });
 
+describe("recommendContinuation", () => {
+  it("answers direct questions without inventing process", () => {
+    const input = {
+      intent: Intent.Question,
+      taskShape: TaskShape.Trivial,
+      risk: Level.Low,
+      ambiguity: Level.Low,
+      parallelism: Parallelism.None,
+      contextPressure: Level.Low,
+      runState: RunState.Exploring
+    };
+
+    expect(recommendContinuation(input, evaluate(input))).toEqual({
+      strategy: ContinuationStrategy.AnswerDirectly,
+      stopCondition: StopCondition.Answered
+    });
+  });
+
+  it("keeps implementation work moving until verified", () => {
+    const input = {
+      intent: Intent.Edit,
+      taskShape: TaskShape.Architectural,
+      risk: Level.High,
+      ambiguity: Level.Medium,
+      parallelism: Parallelism.Clear,
+      contextPressure: Level.Medium,
+      runState: RunState.Executing
+    };
+
+    expect(recommendContinuation(input, evaluate(input))).toEqual({
+      strategy: ContinuationStrategy.ContinueUntilVerified,
+      stopCondition: StopCondition.Verified
+    });
+  });
+
+  it("switches blocked work into bounded self-repair", () => {
+    const input = {
+      intent: Intent.Debug,
+      taskShape: TaskShape.Local,
+      risk: Level.High,
+      ambiguity: Level.Low,
+      parallelism: Parallelism.None,
+      contextPressure: Level.Low,
+      runState: RunState.Blocked
+    };
+
+    expect(recommendContinuation(input, evaluate(input))).toEqual({
+      strategy: ContinuationStrategy.SelfRepairUntilUnblocked,
+      stopCondition: StopCondition.UnblockedOrNeedsInput
+    });
+  });
+
+  it("continues planning-only work until a real blocker or pause", () => {
+    const input = {
+      intent: Intent.Design,
+      taskShape: TaskShape.Local,
+      risk: Level.Medium,
+      ambiguity: Level.High,
+      parallelism: Parallelism.None,
+      contextPressure: Level.Low,
+      runState: RunState.Exploring
+    };
+
+    expect(recommendContinuation(input, evaluate(input))).toEqual({
+      strategy: ContinuationStrategy.ContinueUntilBlocked,
+      stopCondition: StopCondition.RealBlockerOrExplicitPause
+    });
+  });
+});
+
 describe("explain", () => {
   it("returns decision, roles, orchestration, and ordered trace", () => {
     const explanation = explain({
@@ -292,6 +365,10 @@ describe("explain", () => {
       subagentReadiness: SubagentReadinessReason.IndependentSlicesReady,
       reviewPosture: ReviewPosture.Independent,
       verifierTiming: VerifierTiming.ThroughoutExecution
+    });
+    expect(explanation.continuation).toEqual({
+      strategy: ContinuationStrategy.ContinueUntilVerified,
+      stopCondition: StopCondition.Verified
     });
     expect(explanation.trace).toEqual([
       {

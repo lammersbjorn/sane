@@ -161,6 +161,7 @@ export interface PolicyPreviewDecisionScenarioInput {
   obligations?: string[];
   roles?: PolicyPreviewDecisionRolesInput | null;
   orchestration?: PolicyPreviewScenarioOrchestrationInput | null;
+  continuation?: PolicyPreviewScenarioContinuationInput | null;
   trace?: PolicyPreviewDecisionTraceEntryInput[];
 }
 
@@ -185,6 +186,11 @@ export interface PolicyPreviewScenarioOrchestrationInput {
   subagentReadiness?: string | null;
   reviewPosture?: string | null;
   verifierTiming?: string | null;
+}
+
+export interface PolicyPreviewScenarioContinuationInput {
+  strategy?: string | null;
+  stopCondition?: string | null;
 }
 
 export interface PolicyPreviewDecisionTraceEntryInput {
@@ -220,6 +226,11 @@ export interface PolicyPreviewDecisionScenario {
     reviewPosture: string | null;
     verifierTiming: string | null;
   } | null;
+  continuation: {
+    [key: string]: JsonValue;
+    strategy: string | null;
+    stopCondition: string | null;
+  } | null;
   trace: Array<{
     [key: string]: JsonValue;
     obligation: string;
@@ -252,6 +263,11 @@ export interface LatestPolicyPreviewScenarioSnapshot {
     subagentReadiness: string | null;
     reviewPosture: string | null;
     verifierTiming: string | null;
+  } | null;
+  continuation: {
+    [key: string]: JsonValue;
+    strategy: string | null;
+    stopCondition: string | null;
   } | null;
   obligationCount: number;
   traceCount: number;
@@ -863,6 +879,7 @@ export function readLatestPolicyPreviewSnapshot(path: string): LatestPolicyPrevi
       input: scenario.input,
       roles: scenario.roles,
       orchestration: scenario.orchestration,
+      continuation: scenario.continuation,
       obligationCount: scenario.obligations.length,
       traceCount: scenario.trace.length,
       trace: scenario.trace.map((entry) => ({
@@ -932,6 +949,7 @@ function normalizePolicyPreviewScenario(
     obligations: [...(scenario.obligations ?? [])],
     roles: normalizePolicyPreviewScenarioRoles(scenario.roles),
     orchestration: normalizePolicyPreviewScenarioOrchestration(scenario.orchestration),
+    continuation: normalizePolicyPreviewScenarioContinuation(scenario.continuation),
     trace: normalizePolicyPreviewTraceEntries(scenario.trace),
   };
 }
@@ -941,6 +959,7 @@ function normalizePolicyPreviewScenarioRecord(record: JsonRecord): PolicyPreview
   const input = asOptionalJsonRecord(record.input);
   const roles = asOptionalJsonRecord(record.roles);
   const orchestration = asOptionalJsonRecord(record.orchestration);
+  const continuation = asOptionalJsonRecord(record.continuation);
   if (!id) {
     throw new Error('invalid policy preview scenario: missing id');
   }
@@ -973,6 +992,12 @@ function normalizePolicyPreviewScenarioRecord(record: JsonRecord): PolicyPreview
           subagentReadiness: asOptionalString(orchestration.subagentReadiness) ?? null,
           reviewPosture: asOptionalString(orchestration.reviewPosture) ?? null,
           verifierTiming: asOptionalString(orchestration.verifierTiming) ?? null,
+        }
+      : null,
+    continuation: continuation
+      ? {
+          strategy: asOptionalString(continuation.strategy) ?? null,
+          stopCondition: asOptionalString(continuation.stopCondition) ?? null,
         }
       : null,
     trace: Array.isArray(record.trace)
@@ -1030,6 +1055,19 @@ function normalizePolicyPreviewScenarioOrchestration(
     subagentReadiness: orchestration.subagentReadiness ?? null,
     reviewPosture: orchestration.reviewPosture ?? null,
     verifierTiming: orchestration.verifierTiming ?? null,
+  };
+}
+
+function normalizePolicyPreviewScenarioContinuation(
+  continuation: PolicyPreviewScenarioContinuationInput | null | undefined,
+): PolicyPreviewDecisionScenario['continuation'] {
+  if (!continuation) {
+    return null;
+  }
+
+  return {
+    strategy: continuation.strategy ?? null,
+    stopCondition: continuation.stopCondition ?? null,
   };
 }
 

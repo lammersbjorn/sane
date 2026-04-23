@@ -81,7 +81,7 @@ Today, `Sane` can manage:
 - installed `caveman` pack guidance is enforced in Sane's exported always-on guidance, not left as an optional soft note
 - the separate recommended integrations profile for Codex tools like `Context7`, `Playwright`, and `grep.app`
 - structured integrations audit output in install/apply/inspect flows so recommended adds are reviewable before write without summary-string guessing
-- bounded latest current-run-derived policy-preview snapshot visibility in read-only Inspect/runtime surfaces so routing state stays inspectable without becoming a user-facing orchestration mode
+- bounded latest current-run-derived policy-preview snapshot visibility in read-only Inspect/runtime surfaces so routing and continuation-stop posture stay inspectable without becoming a user-facing orchestration mode
 - bounded runtime-history previews for the latest `event`, `decision`, and `artifact`, plus counts for `.sane/state/events.jsonl`, `.sane/state/decisions.jsonl`, and `.sane/state/artifacts.jsonl`, in inspect/runtime surfaces
 - optional repo-local shared skills when a repo actually needs shared targeted behavior
 - optional additive guidance blocks in global or repo `AGENTS.md`, with repo `AGENTS.md` reserved for explicit broad guidance

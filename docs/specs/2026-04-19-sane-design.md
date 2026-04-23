@@ -235,7 +235,7 @@ Current implementation direction:
 - policy preview/docs should expose `explorer` / `implementation` / `verifier` / `realtime` routing classes directly
 - local config + policy preview are now wired around those routing classes directly
 - local config may still keep legacy role fields where needed for compatibility, but routing intent remains class-first
-- inspect/runtime surfaces may expose bounded latest policy-preview snapshot state for read-only transparency, but must not imply live orchestration control
+- inspect/runtime surfaces may expose bounded latest policy-preview snapshot state, including internal continuation stop posture, for read-only transparency, but must not imply live orchestration control
 - documented OpenAI positioning and actual spawnable-here runtime support must be tracked separately
 - OpenAI docs do not currently publish one hard benchmark table across these workflow classes, so class ordering is an implementation inference grounded in official positioning, not benchmark truth
 

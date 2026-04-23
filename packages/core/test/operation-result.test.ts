@@ -71,6 +71,10 @@ describe("operation result rendering", () => {
               reviewPosture: "none",
               verifierTiming: "none"
             },
+            continuation: {
+              strategy: "answer_directly",
+              stopCondition: "answered"
+            },
             trace: [
               {
                 obligation: "direct_answer",

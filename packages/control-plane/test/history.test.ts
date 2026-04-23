@@ -158,6 +158,10 @@ describe("operation history plumbing", () => {
             reviewPosture: expect.any(String),
             verifierTiming: expect.any(String)
           }),
+          continuation: expect.objectContaining({
+            strategy: expect.any(String),
+            stopCondition: expect.any(String)
+          }),
           trace: expect.arrayContaining([
             expect.objectContaining({
               obligation: expect.any(String),

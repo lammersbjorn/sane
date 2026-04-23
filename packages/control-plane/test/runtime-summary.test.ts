@@ -246,6 +246,7 @@ describe("showRuntimeSummary", () => {
             reviewPosture: "inline_only",
             verifierTiming: "inline"
           },
+          continuation: null,
           obligationCount: 0,
           traceCount: 1,
           trace: [
@@ -261,6 +262,7 @@ describe("showRuntimeSummary", () => {
           input: null,
           roles: null,
           orchestration: null,
+          continuation: null,
           obligationCount: 0,
           traceCount: 0,
           trace: []

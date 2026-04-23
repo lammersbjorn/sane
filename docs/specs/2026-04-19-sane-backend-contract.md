@@ -185,7 +185,8 @@ These are the backend actions the TUI is allowed to call in the current phase.
   - include editable role defaults plus derived routing classes for each scenario
   - persist the latest preview snapshot so Inspect can show read-only, current-run-derived policy visibility
   - latest persisted snapshot may include typed input classification per scenario for Inspect/runtime-summary visibility
-  - keep typed scenario/orchestration/trace payloads available for internal history/state plumbing even if current user-facing render stays compact
+  - keep typed scenario/orchestration/continuation/trace payloads available for internal history/state plumbing even if current user-facing render stays compact
+  - continuation guidance may express internal stop posture such as answer directly, continue until verified, continue until blocked, self-repair until unblocked, or close when verified
   - exist to verify obligation rules without presenting a shipped live orchestration runtime
 
 ### Doctor / Status
