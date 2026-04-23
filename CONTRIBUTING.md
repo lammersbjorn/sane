@@ -41,7 +41,8 @@ If you need the user story first, re-read:
 
 ### Prerequisites
 
-- Rust toolchain
+- Node.js
+- pnpm
 - Git
 - a Codex environment if you want to test end-to-end behavior
 
@@ -50,7 +51,8 @@ If you need the user story first, re-read:
 ```bash
 git clone https://github.com/lammersbjorn/sane.git
 cd sane
-cargo run -p sane
+pnpm install
+pnpm start
 ```
 
 That opens the onboarding TUI.
@@ -58,7 +60,7 @@ That opens the onboarding TUI.
 If you want to jump straight into the settings/configure area:
 
 ```bash
-cargo run -p sane -- settings
+pnpm run start:settings
 ```
 
 ### Install the git hooks
@@ -80,20 +82,19 @@ git config core.hooksPath .githooks
 Use this baseline loop while developing:
 
 ```bash
-cargo fmt --check
-cargo check
-cargo test
-cargo run -p sane
+pnpm test
+pnpm typecheck
+pnpm start
 ```
 
 Useful commands:
 
 | Command | Why you would run it |
 | --- | --- |
-| `cargo run -p sane` | Open the onboarding-first TUI. |
-| `cargo run -p sane -- settings` | Go straight to settings/configure mode. |
-| `cargo run -p sane -- doctor` | Check runtime state and managed Codex installs. |
-| `cargo run -p sane -- status` | Inspect current managed targets and drift. |
+| `pnpm start` | Open the onboarding-first TUI. |
+| `pnpm run start:settings` | Go straight to settings/configure mode. |
+| `pnpm run start:repair` | Go straight to repair/remove mode. |
+| `pnpm run start:inspect` | Inspect current managed targets, runtime state, and drift. |
 
 If your change affects repair, preview/apply, export, or uninstall, test that flow directly.
 
@@ -106,12 +107,12 @@ If your change affects repair, preview/apply, export, or uninstall, test that fl
 | [TODO.md](./TODO.md) | Current state, guardrails, and future-only items. |
 | [docs/decisions/2026-04-19-sane-decision-log.md](./docs/decisions/2026-04-19-sane-decision-log.md) | Locked product decisions. |
 | [docs/specs/2026-04-19-sane-backend-contract.md](./docs/specs/2026-04-19-sane-backend-contract.md) | Current backend contract the TUI wraps. |
-| [crates/sane-tui/README.md](./crates/sane-tui/README.md) | User-facing control surface responsibilities. |
-| [crates/sane-core/README.md](./crates/sane-core/README.md) | Shared names, contracts, and generated managed content. |
-| [crates/sane-config/README.md](./crates/sane-config/README.md) | Meaning of saved Sane settings. |
-| [crates/sane-platform/README.md](./crates/sane-platform/README.md) | Cross-platform path and filesystem layout rules. |
-| [crates/sane-state/README.md](./crates/sane-state/README.md) | Thin local state and persistence. |
-| [crates/sane-policy/README.md](./crates/sane-policy/README.md) | Adaptive policy groundwork. |
+| [apps/sane-tui/README.md](./apps/sane-tui/README.md) | User-facing control surface responsibilities. |
+| [packages/control-plane/src](./packages/control-plane/src) | Install/export/inspect/repair behavior the TUI wraps. |
+| [packages/config/src](./packages/config/src) | Meaning of saved Sane settings. |
+| [packages/platform/src](./packages/platform/src) | Cross-platform path and filesystem layout rules. |
+| [packages/state/src](./packages/state/src) | Thin local state and persistence. |
+| [packages/policy/src](./packages/policy/src) | Adaptive policy groundwork. |
 
 ## Keeping Docs In Sync
 

@@ -94,7 +94,7 @@ Implemented:
 - optional pack manifests now carry read-only provenance metadata for curated upstream-derived skills where that source is real and worth tracking
 - TUI save flows now warn immediately when config changes leave managed guidance exports stale
 - `export all` / `uninstall all` for current managed targets
-- pure adaptive policy crate with typed obligations and tests
+- pure adaptive policy package with typed obligations and tests
 - internal backend policy preview for canonical adaptive scenarios
 - internal backend policy preview now shows task-shaped routing classes per scenario and keeps role-default compatibility where still required
 - policy explanations now include typed orchestration guidance and stable rule traces for canonical scenarios
@@ -138,7 +138,7 @@ Implemented:
 - no-args TUI now opens into section-based onboarding instead of a flat settings/action wall
 - `sane settings` is the direct shortcut into configure mode
 - TypeScript TUI now has explicit shell, view, editor, and overlay model layers
-- TypeScript TUI now also owns pure input/key handling plus internal non-interactive CLI parsing/execution for backend verbs, direct `settings` / `inspect` / `repair` section shortcuts, and `hook session-start`, while the public shipped entrypoint still remains Rust-owned for now
+- TypeScript TUI now also owns pure input/key handling plus internal non-interactive CLI parsing/execution for backend verbs, direct `settings` / `inspect` / `repair` section shortcuts, and `hook session-start`, and the public shipped entrypoint is now TypeScript-owned
 - TS runtime resolution now works for internal text and live terminal preview paths via workspace package `exports`, self-package app imports, terminal-loop wiring, and `tsx`; the remaining blockers are real terminal parity plus a deliberate packaged public entrypoint
 - internal TS preview launch is now unified through one smart `tsx` entrypoint that chooses live terminal on TTY launch commands and falls back to text for non-TTY or backend command flows
 - `@sane/sane-tui` now also exposes a local `sane` bin shim that routes through the smart preview entrypoint; in this workspace the internal root launcher uses `node apps/sane-tui/bin/sane.mjs` directly while the package `bin` metadata stays ready for later packaged cutover work

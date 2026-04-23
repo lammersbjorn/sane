@@ -176,4 +176,27 @@ describe("install screen model", () => {
     expect(fromBundleSpy).toHaveBeenCalledWith(paths, codexPaths, bundle);
     expect(screen.recommendedActionId).toBe("export_all");
   });
+
+  it("drops hooks from export-all includes on native Windows", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    exportAll(paths, codexPaths, "windows");
+    const bundle = inventory.inspectStatusBundle(paths, codexPaths, "windows");
+    const screen = loadInstallScreenFromStatusBundle(paths, codexPaths, bundle);
+
+    expect(screen.bundleStatus).toBe("installed");
+    expect(screen.missingTargets).toEqual([]);
+    expect(screen.actions.find((action) => action.id === "export_all")?.includes).toEqual([
+      "user-skills",
+      "global-agents",
+      "custom-agents"
+    ]);
+    expect(screen.actions.find((action) => action.id === "export_hooks")?.status).toEqual({
+      kind: "invalid",
+      label: "invalid"
+    });
+  });
 });

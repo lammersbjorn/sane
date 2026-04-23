@@ -120,6 +120,12 @@ describe("command metadata registry", () => {
     expect(getCommandSpec("export_hooks").help.at(-1)).toBe(
       "On native Windows, Codex hooks are unavailable; use WSL for hook-enabled flows."
     );
+    expect(getCommandSpec("export_all").help[2]).toBe(
+      "This installs Sane's core user skills, global AGENTS block, and custom agents."
+    );
+    expect(getCommandSpec("export_all").help[3]).toBe(
+      "On macOS/Linux, it also installs hooks. On native Windows, use WSL for hook-enabled flows."
+    );
   });
 
   it("tracks risky confirmation copy and notice titles", () => {

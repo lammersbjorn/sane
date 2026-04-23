@@ -12,10 +12,10 @@ import {
   type OptionalPackName,
   type PackAssetProvenance
 } from "@sane/framework-assets";
-import { type CodexPaths, type ProjectPaths } from "@sane/platform";
+import { detectPlatform, type CodexPaths, type HostPlatform, type ProjectPaths } from "@sane/platform";
 import { listCanonicalBackupSiblings } from "@sane/state";
 
-import { CORE_INSTALL_BUNDLE_TARGETS } from "./core-install-bundle-targets.js";
+import { installableCoreInstallBundleTargets } from "./core-install-bundle-targets.js";
 import { inspectCodexConfigInventory } from "./codex-config.js";
 import { inspectCodexSkillsAndAgents } from "./codex-native.js";
 import { inspectCustomAgentsInventory, inspectHooksInventory } from "./hooks-custom-agents.js";
@@ -270,14 +270,18 @@ export function inspectDoctorSnapshot(
   };
 }
 
-export function inspectStatusBundle(paths: ProjectPaths, codexPaths: CodexPaths): StatusBundle {
+export function inspectStatusBundle(
+  paths: ProjectPaths,
+  codexPaths: CodexPaths,
+  hostPlatform: HostPlatform = detectPlatform()
+): StatusBundle {
   const runtimeState = inspectRuntimeState(paths);
   const inventory = [
     ...inspectRuntimeInventory(paths, runtimeState),
     ...inspectPackInventory(paths, codexPaths),
     inspectCodexConfigInventory(codexPaths),
     ...inspectCodexSkillsAndAgents(paths, codexPaths),
-    inspectHooksInventory(codexPaths),
+    inspectHooksInventory(codexPaths, hostPlatform),
     inspectCustomAgentsInventory(paths, codexPaths),
     inspectOpencodeAgentsInventory(paths, codexPaths)
   ];
@@ -306,14 +310,14 @@ export function inspectStatusBundle(paths: ProjectPaths, codexPaths: CodexPaths)
       userSkills: findInventoryOrNull(inventory, "user-skills"),
       hooks: findInventoryOrNull(inventory, "hooks"),
       customAgents: findInventoryOrNull(inventory, "custom-agents"),
-      installBundle: bundleInstallState(inventory),
+      installBundle: bundleInstallState(inventory, hostPlatform),
       status: {
         runtime: inventoryStatusName(findInventoryOrNull(inventory, "runtime")),
         codexConfig: inventoryStatusName(findInventoryOrNull(inventory, "codex-config")),
         userSkills: inventoryStatusName(findInventoryOrNull(inventory, "user-skills")),
         hooks: inventoryStatusName(findInventoryOrNull(inventory, "hooks")),
         customAgents: inventoryStatusName(findInventoryOrNull(inventory, "custom-agents")),
-        installBundle: bundleInstallState(inventory)
+        installBundle: bundleInstallState(inventory, hostPlatform)
       }
     }
   };
@@ -474,8 +478,11 @@ function findInventoryOrNull(inventory: InventoryItem[], name: string): Inventor
   return inventory.find((item) => item.name === name) ?? null;
 }
 
-function bundleInstallState(inventory: InventoryItem[]): "installed" | "missing" {
-  return CORE_INSTALL_BUNDLE_TARGETS.every(
+function bundleInstallState(
+  inventory: InventoryItem[],
+  hostPlatform: HostPlatform = detectPlatform()
+): "installed" | "missing" {
+  return installableCoreInstallBundleTargets(hostPlatform).every(
     (name) => findInventory(inventory, name).status === InventoryStatus.Installed
   )
     ? "installed"

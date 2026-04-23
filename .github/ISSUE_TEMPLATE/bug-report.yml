@@ -30,7 +30,7 @@ body:
       label: Reproduction steps
       description: List exact steps, commands, or TUI actions.
       placeholder: |
-        1. Run `cargo run -p sane`
+        1. Run `pnpm start`
         2. Open Codex profile preview
         3. Apply profile
         4. ...

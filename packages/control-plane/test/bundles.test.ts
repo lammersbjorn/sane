@@ -68,6 +68,33 @@ describe("bundled install/remove operations", () => {
     );
   });
 
+  it("skips hooks from export-all on native Windows", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    const result = exportAll(paths, codexPaths, "windows");
+
+    expect(result.kind).toBe(OperationKind.ExportAll);
+    expect(result.details).toContain("export user-skills: installed core skills");
+    expect(result.details).toContain("export global-agents: installed managed block");
+    expect(result.details).toContain(
+      "export custom-agents: installed sane-agent, sane-reviewer, and sane-explorer"
+    );
+    expect(result.details).not.toContain("export hooks: installed managed SessionStart hook");
+    expect(result.inventory.find((item) => item.name === "user-skills")?.status).toBe(
+      InventoryStatus.Installed
+    );
+    expect(result.inventory.find((item) => item.name === "global-agents")?.status).toBe(
+      InventoryStatus.Installed
+    );
+    expect(result.inventory.find((item) => item.name === "custom-agents")?.status).toBe(
+      InventoryStatus.Installed
+    );
+    expect(result.inventory.find((item) => item.name === "hooks")).toBeUndefined();
+  });
+
   it("uninstalls current managed user-level targets together", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();

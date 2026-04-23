@@ -136,7 +136,7 @@ function sectionOverviewLines(
     }
     case "install": {
       const install = models.install;
-      return [
+      const lines = [
         ...dashboard.activeSection.description,
         "",
         `install bundle state: ${install.bundleStatus}`,
@@ -145,6 +145,11 @@ function sectionOverviewLines(
           : `bundle targets missing: ${install.missingTargets.join(", ")}`,
         `optional Codex tools: ${install.integrationsStatus.label} (${install.integrationsRecommendedChangeCount} recommended changes)`
       ];
+      const hooksInventory = install.inventory.find((item) => item.name === "hooks");
+      if (hooksInventory?.status.asString() === "invalid" && hooksInventory.repairHint?.includes("native Windows")) {
+        lines.push("hooks note: native Windows cannot use Codex hooks; use WSL for hook-enabled flows");
+      }
+      return lines;
     }
     case "preferences": {
       const preferences = models.preferences();

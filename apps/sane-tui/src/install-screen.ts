@@ -68,7 +68,11 @@ export function loadInstallScreenFromStatusBundle(
 ): InstallScreenModel {
   const status = inspectInstallStatusFromStatusBundle(paths, codexPaths, statusBundle);
   const inventory = status.inventory;
-  const actions = buildInstallActionRows(listSectionActions("install"), status.actionStatus);
+  const actions = buildInstallActionRows(listSectionActions("install"), status.actionStatus).map((action) =>
+    action.id === "export_all"
+      ? { ...action, includes: exportAllIncludes(inventory) }
+      : action
+  );
 
   return {
     summary: "Install",
@@ -91,4 +95,14 @@ export function loadInstallScreenFromStatusBundle(
       installAll: () => executeOperation(paths, () => exportAll(paths, codexPaths))
     }
   };
+}
+
+function exportAllIncludes(
+  inventory: ReturnType<typeof inspectInstallStatus>["inventory"]
+): InstallAction["includes"] {
+  const hookInventory = inventory.find((item) => item.name === "hooks");
+  return hookInventory?.status.asString() === "invalid"
+    && hookInventory.repairHint?.includes("native Windows")
+    ? ["user-skills", "global-agents", "custom-agents"]
+    : ["user-skills", "global-agents", "hooks", "custom-agents"];
 }

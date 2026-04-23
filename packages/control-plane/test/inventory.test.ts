@@ -200,6 +200,23 @@ describe("full inventory and doctor", () => {
     expect(bundle.counts.invalid).toBeGreaterThan(0);
   });
 
+  it("marks hooks invalid but does not block the install bundle on native Windows", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    exportUserSkills(paths, codexPaths);
+    exportGlobalAgents(paths, codexPaths);
+    exportCustomAgents(paths, codexPaths);
+
+    const bundle = inspectStatusBundle(paths, codexPaths, "windows");
+
+    expect(bundle.primary.hooks?.status).toBe(InventoryStatus.Invalid);
+    expect(bundle.primary.status.hooks).toBe("invalid");
+    expect(bundle.primary.installBundle).toBe("installed");
+  });
+
   it("formats doctor install and export hints with exact labels", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();

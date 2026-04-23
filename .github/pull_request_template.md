@@ -7,9 +7,8 @@
 
 - [ ] docs updated if behavior or UX changed
 - [ ] tests added or updated where needed
-- [ ] `cargo fmt --check`
-- [ ] `cargo check`
-- [ ] `cargo test`
+- [ ] `pnpm test`
+- [ ] `pnpm typecheck`
 
 ## Notes for reviewers
 

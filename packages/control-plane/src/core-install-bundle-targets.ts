@@ -1,5 +1,5 @@
 import { type OperationResult } from "@sane/core";
-import { type CodexPaths, type ProjectPaths } from "@sane/platform";
+import { detectPlatform, type CodexPaths, type HostPlatform, type ProjectPaths } from "@sane/platform";
 
 import {
   exportGlobalAgents,
@@ -23,6 +23,14 @@ export const CORE_INSTALL_BUNDLE_TARGETS = [
 
 export type CoreInstallBundleTarget = (typeof CORE_INSTALL_BUNDLE_TARGETS)[number];
 
+export function installableCoreInstallBundleTargets(
+  hostPlatform: HostPlatform = detectPlatform()
+): CoreInstallBundleTarget[] {
+  return hostPlatform === "windows"
+    ? CORE_INSTALL_BUNDLE_TARGETS.filter((target) => target !== "hooks")
+    : [...CORE_INSTALL_BUNDLE_TARGETS];
+}
+
 const EXPORT_ACTIONS: Record<
   CoreInstallBundleTarget,
   (paths: ProjectPaths, codexPaths: CodexPaths) => OperationResult
@@ -42,9 +50,12 @@ const UNINSTALL_ACTIONS: Record<CoreInstallBundleTarget, (codexPaths: CodexPaths
 
 export function exportCoreInstallBundleTargets(
   paths: ProjectPaths,
-  codexPaths: CodexPaths
+  codexPaths: CodexPaths,
+  hostPlatform: HostPlatform = detectPlatform()
 ): OperationResult[] {
-  return CORE_INSTALL_BUNDLE_TARGETS.map((target) => EXPORT_ACTIONS[target](paths, codexPaths));
+  return installableCoreInstallBundleTargets(hostPlatform).map((target) =>
+    EXPORT_ACTIONS[target](paths, codexPaths)
+  );
 }
 
 export function uninstallCoreInstallBundleTargets(codexPaths: CodexPaths): OperationResult[] {

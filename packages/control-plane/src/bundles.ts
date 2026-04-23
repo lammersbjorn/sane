@@ -1,16 +1,20 @@
 import { OperationKind, OperationResult } from "@sane/core";
-import { type CodexPaths, type ProjectPaths } from "@sane/platform";
+import { detectPlatform, type CodexPaths, type HostPlatform, type ProjectPaths } from "@sane/platform";
 
 import {
   exportCoreInstallBundleTargets,
   uninstallCoreInstallBundleTargets
 } from "./core-install-bundle-targets.js";
 
-export function exportAll(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
+export function exportAll(
+  paths: ProjectPaths,
+  codexPaths: CodexPaths,
+  hostPlatform: HostPlatform = detectPlatform()
+): OperationResult {
   return mergeResults(
     OperationKind.ExportAll,
     "export all: installed managed targets",
-    exportCoreInstallBundleTargets(paths, codexPaths)
+    exportCoreInstallBundleTargets(paths, codexPaths, hostPlatform)
   );
 }
 

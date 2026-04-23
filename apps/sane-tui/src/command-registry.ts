@@ -137,7 +137,8 @@ export const COMMAND_METADATA_REGISTRY = {
       description: [
         "Install Sane into Codex on purpose.",
         "Current install bundle:",
-        "user skills, global AGENTS.md block, hooks, sane-agent, sane-reviewer, sane-explorer",
+        "user skills, global AGENTS.md block, sane-agent, sane-reviewer, sane-explorer",
+        "On macOS/Linux, hooks can join that bundle. On native Windows, use WSL for hook-enabled flows.",
         "User-level install changes your own Codex setup.",
         "Repo-level install is explicit and optional.",
         "Nothing here should silently take over a repo."
@@ -608,7 +609,8 @@ export const COMMAND_METADATA_REGISTRY = {
       help: [
         "Add or refresh everything Sane manages in Codex.",
         "",
-        "This installs Sane's core user skills, global AGENTS block, hooks, and custom agents.",
+        "This installs Sane's core user skills, global AGENTS block, and custom agents.",
+        "On macOS/Linux, it also installs hooks. On native Windows, use WSL for hook-enabled flows.",
         "Use this after changing packs or defaults so Codex matches current Sane config."
       ],
       confirmation: null,

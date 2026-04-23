@@ -72,8 +72,8 @@ describe('project path parity', () => {
   it('accepts a file start path', () => {
     const dir = makeTempDir();
     mkdirSync(join(dir, '.git'));
-    const file = join(dir, 'crates', 'sane-platform', 'src', 'lib.rs');
-    mkdirSync(join(dir, 'crates', 'sane-platform', 'src'), { recursive: true });
+    const file = join(dir, 'packages', 'platform', 'src', 'index.ts');
+    mkdirSync(join(dir, 'packages', 'platform', 'src'), { recursive: true });
     writeFileSync(file, '// test\n');
 
     const discovered = discoverProjectPaths(file);

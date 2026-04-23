@@ -1,8 +1,8 @@
 import { InventoryStatus } from "@sane/core";
-import { type CodexPaths, type ProjectPaths } from "@sane/platform";
+import { detectPlatform, type CodexPaths, type HostPlatform, type ProjectPaths } from "@sane/platform";
 
 import { inspectCodexProfileFamilySnapshot } from "./codex-config.js";
-import { CORE_INSTALL_BUNDLE_TARGETS } from "./core-install-bundle-targets.js";
+import { installableCoreInstallBundleTargets } from "./core-install-bundle-targets.js";
 import { inspectStatusBundle } from "./inventory.js";
 import {
   managedStatusKindFromInventory,
@@ -42,19 +42,26 @@ export type InstallActionStatusMap = InstallStatusSnapshot["actionStatus"];
 
 export function inspectInstallStatus(
   paths: ProjectPaths,
-  codexPaths: CodexPaths
+  codexPaths: CodexPaths,
+  hostPlatform: HostPlatform = detectPlatform()
 ): InstallStatusSnapshot {
-  return inspectInstallStatusFromStatusBundle(paths, codexPaths, inspectStatusBundle(paths, codexPaths));
+  return inspectInstallStatusFromStatusBundle(
+    paths,
+    codexPaths,
+    inspectStatusBundle(paths, codexPaths, hostPlatform),
+    hostPlatform
+  );
 }
 
 export function inspectInstallStatusFromStatusBundle(
   _paths: ProjectPaths,
   codexPaths: CodexPaths,
-  statusBundle: ReturnType<typeof inspectStatusBundle>
+  statusBundle: ReturnType<typeof inspectStatusBundle>,
+  hostPlatform: HostPlatform = inferHostPlatformFromStatusBundle(statusBundle)
 ): InstallStatusSnapshot {
   const inventory = statusBundle.codexNative;
   const integrationsProfile = inspectCodexProfileFamilySnapshot(codexPaths).integrations;
-  const missingTargets = missingBundleTargets(inventory);
+  const missingTargets = missingBundleTargets(inventory, hostPlatform);
   const bundleStatus = statusBundle.primary.installBundle;
   const integrationsStatusSnapshot = integrationsStatus(integrationsProfile.audit.status);
 
@@ -92,11 +99,22 @@ function inventoryStatus(
 }
 
 function missingBundleTargets(
-  inventory: ReturnType<typeof inspectStatusBundle>["codexNative"]
+  inventory: ReturnType<typeof inspectStatusBundle>["codexNative"],
+  hostPlatform: HostPlatform = detectPlatform()
 ): string[] {
-  return CORE_INSTALL_BUNDLE_TARGETS.filter(
+  return installableCoreInstallBundleTargets(hostPlatform).filter(
     (name) => inventory.find((item) => item.name === name)?.status !== InventoryStatus.Installed
   );
+}
+
+function inferHostPlatformFromStatusBundle(
+  statusBundle: ReturnType<typeof inspectStatusBundle>
+): HostPlatform {
+  const hooksInventory = statusBundle.codexNative.find((item) => item.name === "hooks");
+  return hooksInventory?.status === InventoryStatus.Invalid
+    && hooksInventory.repairHint?.includes("native Windows")
+    ? "windows"
+    : detectPlatform();
 }
 
 function compatibilityStatus(

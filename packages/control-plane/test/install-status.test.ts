@@ -131,4 +131,20 @@ describe("install status snapshot", () => {
       inspectInstallStatus(paths, codexPaths)
     );
   });
+
+  it("treats hooks as outside the install bundle on native Windows", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    exportAll(paths, codexPaths, "windows");
+    const bundle = inspectStatusBundle(paths, codexPaths, "windows");
+    const status = inspectInstallStatusFromStatusBundle(paths, codexPaths, bundle, "windows");
+
+    expect(status.bundleStatus).toBe("installed");
+    expect(status.missingTargets).toEqual([]);
+    expect(status.actionStatus.export_all).toEqual({ kind: "installed", label: "installed" });
+    expect(status.actionStatus.export_hooks).toEqual({ kind: "invalid", label: "invalid" });
+  });
 });
