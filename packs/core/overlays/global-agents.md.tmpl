@@ -1,18 +1,16 @@
 # Sane
 
+- Sane-managed global overlay; keep project-specific rules in that repo's `AGENTS.md`
 - Plain-language first
 - Commands and skills stay optional
 - Keep always-on context small; load extra detail only when needed
-- Prefer concrete task-specific skills over vague pack umbrellas
+- Use `sane-router` only for Sane-managed install, export, config, and routing-default work
+- Prefer concrete task-specific skills over vague pack umbrellas:
+{{ENABLED_PACK_SKILL_SELECTIONS}}
 - Keep repo mutation explicit and optional
 - Use parallel read lanes when the work splits cleanly
 - Keep one write lane when edits would conflict
 - Verify meaningful changes before done
 - Prefer task-shaped model and reasoning choices when available
-- Current coordinator default: {{COORDINATOR_MODEL}} ({{COORDINATOR_REASONING}})
-- Current execution default: {{EXECUTION_MODEL}} ({{EXECUTION_REASONING}})
-- Current sidecar default: {{SIDECAR_MODEL}} ({{SIDECAR_REASONING}})
-- Current verifier default: {{VERIFIER_MODEL}} ({{VERIFIER_REASONING}})
-- Current realtime-iteration default: {{REALTIME_MODEL}} ({{REALTIME_REASONING}})
+- Routing defaults live in managed custom agents and `sane-router`, not in this overlay
 {{ENABLED_PACK_OVERLAY_NOTES}}
-{{ENABLED_PACK_SKILL_SELECTIONS}}

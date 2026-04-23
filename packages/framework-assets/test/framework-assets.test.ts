@@ -280,6 +280,9 @@ describe("framework asset parity", () => {
 
     expect(body).toBe(expected);
     expect(body).toContain("frontend-craft pack active");
+    expect(body).toContain("Use `sane-router` only for Sane-managed install");
+    expect(body).toContain("Routing defaults live in managed custom agents and `sane-router`");
+    expect(body).not.toContain("Current coordinator default");
     expect(body).not.toContain("caveman pack active");
     expect(body).not.toContain("rtk pack active");
     expect(body).not.toContain("{{");
@@ -315,6 +318,9 @@ describe("framework asset parity", () => {
     expect(body).toBe(expected);
     expect(body).toContain("Start from repo `AGENTS.md`");
     expect(body).toContain("Use the repo's own verify commands");
+    expect(body).toContain("Sane-managed repo overlay");
+    expect(body).not.toContain("Current coordinator default");
+    expect(body).not.toContain("task picks:");
     expect(body).not.toBe(createSaneGlobalAgentsOverlay(packs, roles));
     expect(body).not.toContain("{{");
   });
