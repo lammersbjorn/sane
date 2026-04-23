@@ -25,6 +25,9 @@ export const OPTIONAL_PACK_METADATA = [
   name: OptionalPackName;
   configKey: keyof GuidancePacks;
 }>;
+const OPTIONAL_PACK_METADATA_BY_NAME = Object.fromEntries(
+  OPTIONAL_PACK_METADATA.map((entry) => [entry.name, entry])
+) as Record<OptionalPackName, (typeof OPTIONAL_PACK_METADATA)[number]>;
 
 export interface GuidancePacks {
   caveman: boolean;
@@ -154,20 +157,11 @@ export function optionalPackNames(): OptionalPackName[] {
 }
 
 export function optionalPackConfigKey(pack: OptionalPackName): keyof GuidancePacks {
-  return OPTIONAL_PACK_METADATA.find((entry) => entry.name === pack)!.configKey;
+  return optionalPackMetadata(pack).configKey;
 }
 
 export function isOptionalPackEnabled(pack: OptionalPackName, packs: GuidancePacks): boolean {
-  switch (pack) {
-    case "caveman":
-      return packs.caveman;
-    case "cavemem":
-      return packs.cavemem;
-    case "rtk":
-      return packs.rtk;
-    case "frontend-craft":
-      return packs.frontendCraft;
-  }
+  return packs[optionalPackConfigKey(pack)];
 }
 
 export function enabledOptionalPackNames(packs: GuidancePacks): OptionalPackName[] {
@@ -232,7 +226,7 @@ export function optionalPackSkillNames(pack: string): string[] {
 }
 
 export function optionalPackSkills(pack: string): OptionalPackSkillAsset[] {
-  const entry = CORE_PACK_MANIFEST.optionalPacks[pack];
+  const entry = optionalPackManifestEntry(pack);
   if (!entry) {
     return [];
   }
@@ -271,7 +265,7 @@ export function createOptionalPackSkills(pack: string): Array<{
 }
 
 export function optionalPackProvenance(pack: string): PackAssetProvenance | undefined {
-  return CORE_PACK_MANIFEST.optionalPacks[pack]?.provenance;
+  return optionalPackManifestEntry(pack)?.provenance;
 }
 
 export function corePackAssetSourceProvenance(path: string): PackAssetSourceProvenance | undefined {
@@ -343,9 +337,9 @@ function renderTemplate(template: string, replacements: Record<string, string>):
 function enabledPackEntries(
   packs: GuidancePacks
 ): Array<[string, CorePackManifest["optionalPacks"][string]]> {
-  return Object.entries(CORE_PACK_MANIFEST.optionalPacks).filter(([key]) =>
-    OPTIONAL_PACK_NAMES.includes(key as OptionalPackName) && isOptionalPackEnabled(key as OptionalPackName, packs)
-  );
+  return optionalPackNames()
+    .filter((pack) => isOptionalPackEnabled(pack, packs))
+    .map((pack) => [pack, optionalPackManifestEntry(pack)!]);
 }
 
 function enabledPackSkillSelections(packs: GuidancePacks): string {
@@ -361,4 +355,12 @@ function enabledPackSkillSelections(packs: GuidancePacks): string {
       })
     )
     .join("\n");
+}
+
+function optionalPackMetadata(pack: OptionalPackName): (typeof OPTIONAL_PACK_METADATA)[number] {
+  return OPTIONAL_PACK_METADATA_BY_NAME[pack];
+}
+
+function optionalPackManifestEntry(pack: string): CorePackManifestEntry | undefined {
+  return CORE_PACK_MANIFEST.optionalPacks[pack];
 }
