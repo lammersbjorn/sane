@@ -13,6 +13,8 @@ export interface NoticeView {
   footer: "Enter, Space, or Esc closes this message.";
 }
 
+const DEFAULT_MAX_RESULT_LINES = 10;
+
 export function buildLastResultView(
   result: OperationResult | null,
   fallback: string
@@ -24,19 +26,9 @@ export function buildLastResultView(
     };
   }
 
-  const lines = [result.summary];
-  lines.push(...result.details.slice(0, 3));
-
-  if (result.inventory.length > 0) {
-    lines.push(`inventory: ${result.inventory.length} item(s)`);
-  }
-  if (result.pathsTouched.length > 0) {
-    lines.push(`paths touched: ${result.pathsTouched.length}`);
-  }
-
   return {
     title: "Latest Status",
-    lines
+    lines: compactLines(resultLines(result), DEFAULT_MAX_RESULT_LINES)
   };
 }
 
@@ -55,4 +47,18 @@ export function buildNotice(
     body: compact.lines.join("\n"),
     footer: "Enter, Space, or Esc closes this message."
   };
+}
+
+export function resultLines(result: OperationResult): string[] {
+  return result.renderText().split("\n").filter((line) => line.length > 0);
+}
+
+export function compactLines(lines: string[], maxLines: number): string[] {
+  if (lines.length <= maxLines) {
+    return lines;
+  }
+
+  const visible = lines.slice(0, Math.max(1, maxLines - 1));
+  visible.push(`... ${lines.length - visible.length} more line(s)`);
+  return visible;
 }

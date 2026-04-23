@@ -99,6 +99,6 @@ describe("result panel layer", () => {
     expect(panel.lines[0]).toBe("Completed `Show everything Sane currently manages`.");
     expect(panel.lines.some((line) => line.includes("managed targets inspected"))).toBe(true);
     expect(panel.lines).toHaveLength(4);
-    expect(panel.lines.at(-1)).toMatch(/more|\.{3}|…/i);
+    expect(panel.lines.at(-1)).toMatch(/more line\(s\)$/);
   });
 });

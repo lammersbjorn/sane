@@ -1,6 +1,6 @@
 import { type OperationResult } from "@sane/core";
 
-import { buildNotice } from "@sane/sane-tui/result-panel.js";
+import { buildNotice, compactLines, resultLines } from "@sane/sane-tui/result-panel.js";
 import { type UiCommandId } from "@sane/sane-tui/command-registry.js";
 
 export interface ResultNotice {
@@ -34,24 +34,11 @@ export function renderLastResult(input: {
   result: OperationResult;
   maxLines: number;
 }): LastResultPanel {
-  const lines = [
-    `Completed \`${input.actionLabel}\`.`,
-    input.result.summary,
-    ...input.result.details,
-    ...(input.result.pathsTouched.length > 0 ? [`paths touched: ${input.result.pathsTouched.length}`] : [])
-  ];
-
-  if (lines.length > input.maxLines) {
-    const compact = lines.slice(0, input.maxLines);
-    compact[compact.length - 1] = "...";
-    return {
-      title: "Last Result",
-      lines: compact
-    };
-  }
-
   return {
     title: "Last Result",
-    lines
+    lines: compactLines(
+      [`Completed \`${input.actionLabel}\`.`, ...resultLines(input.result)],
+      input.maxLines
+    )
   };
 }

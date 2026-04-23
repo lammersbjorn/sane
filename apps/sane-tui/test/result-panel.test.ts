@@ -25,4 +25,29 @@ describe("result panel helpers", () => {
     expect(buildNotice("reset_telemetry_data", result)?.title).toBe("Reset");
     expect(buildNotice("show_status", result)).toBeNull();
   });
+
+  it("preserves exact rendered result lines before truncating", () => {
+    const result = new OperationResult({
+      kind: OperationKind.ShowStatus,
+      summary: "managed targets inspected",
+      details: [
+        "runtime: installed",
+        "codex-config: installed",
+        "hooks: missing",
+        "user-skills: missing",
+        "custom-agents: missing",
+        "drift: 1 issue(s)",
+        "doctor: ok",
+        "summary: healthy",
+        "paths: ~/.codex/config.toml",
+        "backups: 3"
+      ]
+    });
+
+    const view = buildLastResultView(result, "fallback");
+
+    expect(view.lines[0]).toBe("managed targets inspected");
+    expect(view.lines).toContain("runtime: installed");
+    expect(view.lines.at(-1)).toMatch(/more line\(s\)$/);
+  });
 });
