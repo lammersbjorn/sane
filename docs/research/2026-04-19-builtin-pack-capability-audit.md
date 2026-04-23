@@ -67,7 +67,7 @@ Why `v1`:
 
 Owns:
 - safer shell command routing
-- environment/policy integration when RTK is present
+- RTK-routed shell integration when the pack is enabled
 - capability-only pack behavior for now, not a mirrored standalone skill
 
 Why `v1`:

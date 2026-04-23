@@ -11,7 +11,7 @@ Keep this file small. Repo-specific detail belongs in targeted skills, not in al
 
 ## Startup Rules
 
-- RTK policy is active here. Route shell work through `rtk`.
+- RTK is mandatory in this repo. Route shell work through `rtk`.
 - Use repo files and current local state before guessing from chat or memory.
 - For product, architecture, self-hosting, or exported-surface work, load `.agents/skills/sane-self-hosting/SKILL.md`.
 
