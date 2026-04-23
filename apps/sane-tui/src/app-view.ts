@@ -17,6 +17,7 @@ export interface SaneTuiAppView {
   subtitle: "Codex-native onboarding and setup";
   projectLabel: string;
   recommendedNextStep: string;
+  recommendedActionId: ReturnType<typeof loadDashboardView>["recommendedActionId"];
   tabs: {
     title: "Sections";
     selected: string;

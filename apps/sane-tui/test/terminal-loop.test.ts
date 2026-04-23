@@ -99,7 +99,7 @@ describe("terminal loop", () => {
     stdin.emit("data", "\u001b[B");
     stdin.emit("data", "\r");
 
-    expect(stdout.writes.at(-1)).toContain("[Latest Status]");
+    expect(stdout.writes.at(-1)).toContain("Selected action: 2. View your current Codex settings");
 
     stdin.emit("data", "\u0003");
 

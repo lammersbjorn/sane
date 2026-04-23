@@ -43,6 +43,17 @@ describe("text driver", () => {
     expect(runtime.render()).toContain("Section: install");
   });
 
+  it("re-renders visible selection chrome after key navigation", () => {
+    const runtime = createTextTuiRuntime(
+      createProjectPaths(makeTempDir()),
+      createCodexPaths(makeTempDir())
+    );
+
+    expect(runtime.render()).toContain("> 1. Create Sane's local project files (recommended)");
+    runtime.handleInput("down");
+    expect(runtime.render()).toContain("> 2. View your current Codex settings");
+  });
+
   it("shows overlay state after entering an editor", () => {
     const runtime = createTextTuiRuntime(
       createProjectPaths(makeTempDir()),

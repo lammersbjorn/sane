@@ -9,8 +9,12 @@ export function renderTextAppView(view: SaneTuiAppView, viewport: TextViewport =
   const sections = [
     `${view.title} | ${view.subtitle}`,
     `Project: ${view.projectLabel}`,
+    `Sections: ${formatTabs(view)}`,
     `Section: ${view.tabs.selected}`,
     `Recommended: ${view.recommendedNextStep}`,
+    "",
+    "[Actions]",
+    ...formatActions(view),
     "",
     `[${view.sectionOverviewTitle}]`,
     ...view.sectionOverviewLines,
@@ -37,6 +41,20 @@ export function renderTextAppView(view: SaneTuiAppView, viewport: TextViewport =
   ];
 
   return fitViewport(lines, viewport).join("\n");
+}
+
+function formatTabs(view: SaneTuiAppView): string {
+  return view.tabs.items
+    .map((item) => (item.id === view.tabs.selected ? `[${item.label}]` : item.label))
+    .join(" | ");
+}
+
+function formatActions(view: SaneTuiAppView): string[] {
+  return view.actions.map((action) => {
+    const selected = action.id === view.selectedAction.id ? ">" : " ";
+    const recommended = action.id === view.recommendedActionId ? " (recommended)" : "";
+    return `${selected} ${action.label}${recommended}`;
+  });
 }
 
 function overlayLines(view: SaneTuiAppView["overlay"]): string[] {

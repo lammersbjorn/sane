@@ -30,6 +30,11 @@ describe("text renderer", () => {
     const output = renderTextAppView(loadAppView(shell));
 
     expect(output).toContain("Sane | Codex-native onboarding and setup");
+    expect(output).toContain("Sections: [Start here]");
+    expect(output).toContain("Set up preferences");
+    expect(output).toContain("Install to Codex");
+    expect(output).toContain("[Actions]");
+    expect(output).toContain("> 1. Create Sane's local project files (recommended)");
     expect(output).toContain("[Section Overview]");
     expect(output).toContain("[Selected Step Details]");
     expect(output).toContain("[Latest Status]");
@@ -52,6 +57,16 @@ describe("text renderer", () => {
     expect(output).toContain("title: Saved");
     expect(output).toContain("saved body");
     expect(output).toContain("Enter, Space, or Esc closes this message.");
+  });
+
+  it("shows selection changes in the rendered action list", () => {
+    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
+    shell.activeActionIndex = 1;
+
+    const output = renderTextAppView(loadAppView(shell));
+
+    expect(output).toContain("  1. Create Sane's local project files (recommended)");
+    expect(output).toContain("> 2. View your current Codex settings");
   });
 
   it("fits output into a bounded viewport", () => {
