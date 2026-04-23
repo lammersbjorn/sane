@@ -37,8 +37,10 @@ import { exportOpencodeAgents, uninstallOpencodeAgents } from "@sane/control-pla
 import { executeConfigSave, executeOperation } from "@sane/control-plane/history.js";
 import {
   doctor,
+  inspectOnboardingSnapshotFromStatusBundle,
   inspectStatusBundle
 } from "@sane/control-plane/inventory.js";
+import { inspectInstallStatusFromStatusBundle } from "@sane/control-plane/install-status.js";
 import { showStatus } from "@sane/control-plane";
 import { previewPolicy } from "@sane/control-plane/policy-preview.js";
 import {
@@ -125,7 +127,7 @@ export function createTuiShell(
     sections: listSections(hostPlatform),
     statusSnapshot,
     activeSectionId: sectionId,
-    activeActionIndex: 0,
+    activeActionIndex: defaultActionIndex(sectionId, statusSnapshot, paths, codexPaths, hostPlatform),
     activeEditor: null,
     pendingConfirmation: null,
     notice: null,
@@ -139,7 +141,13 @@ export function createTuiShell(
 
 export function selectSection(shell: TuiShell, sectionId: TuiSectionId): void {
   shell.activeSectionId = sectionId;
-  shell.activeActionIndex = 0;
+  shell.activeActionIndex = defaultActionIndex(
+    sectionId,
+    shell.statusSnapshot,
+    shell.paths,
+    shell.codexPaths,
+    shell.hostPlatform
+  );
   shell.activeEditor = null;
 }
 
@@ -174,6 +182,29 @@ export function currentAction(shell: TuiShell): SectionActionMetadata {
 
 export function projectLabel(shell: TuiShell): string {
   return basename(shell.paths.projectRoot);
+}
+
+function defaultActionIndex(
+  sectionId: TuiSectionId,
+  statusSnapshot: ShellStatusSnapshot,
+  paths: ProjectPaths,
+  codexPaths: CodexPaths,
+  hostPlatform: HostPlatform
+): number {
+  const actions = listSectionActions(sectionId, hostPlatform);
+  const recommendedActionId =
+    sectionId === "get_started"
+      ? inspectOnboardingSnapshotFromStatusBundle(paths, statusSnapshot.statusBundle).recommendedActionId
+      : sectionId === "install"
+        ? inspectInstallStatusFromStatusBundle(paths, codexPaths, statusSnapshot.statusBundle, hostPlatform).recommendedActionId
+        : null;
+
+  if (!recommendedActionId) {
+    return 0;
+  }
+
+  const recommendedIndex = actions.findIndex((action) => action.id === recommendedActionId);
+  return recommendedIndex >= 0 ? recommendedIndex : 0;
 }
 
 export function runSelectedAction(shell: TuiShell): OperationResult | null {

@@ -219,10 +219,9 @@ describe("tui shell", () => {
 
     moveSelection(shell, "section", 1);
     moveSelection(shell, "section", 1);
-    moveSelection(shell, "action", 1);
-    moveSelection(shell, "action", 1);
-    moveSelection(shell, "action", 1);
-    moveSelection(shell, "action", 1);
+    while (currentAction(shell).id !== "apply_integrations_profile") {
+      moveSelection(shell, "action", 1);
+    }
 
     expect(currentAction(shell).id).toBe("apply_integrations_profile");
     expect(existsSync(codexPaths.configToml)).toBe(false);
@@ -238,7 +237,7 @@ describe("tui shell", () => {
     expect(shell.notice?.title).toBe("Applied");
     expect(shell.notice?.section).toBe("install");
     expect(shell.activeSectionId).toBe("install");
-    expect(shell.activeActionIndex).toBe(0);
+    expect(currentAction(shell).id).toBe("export_all");
     expect(existsSync(codexPaths.configToml)).toBe(true);
   });
 

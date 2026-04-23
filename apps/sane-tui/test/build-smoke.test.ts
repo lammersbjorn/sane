@@ -31,7 +31,7 @@ describe("built sane tui bin", () => {
 
     expect(inspect.status).toBe(0);
     expect(inspect.stdout).toContain("Section: inspect");
-    expect(inspect.stdout).toContain("[Status]");
+    expect(inspect.stdout).toContain("Inspect Details");
 
     const pack = spawnSync("pnpm", ["pack"], {
       cwd: distDir,

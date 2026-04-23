@@ -139,6 +139,7 @@ Implemented:
 - no-args TUI now opens into section-based onboarding instead of a flat settings/action wall
 - `sane settings` is the direct shortcut into configure mode
 - TypeScript TUI now has explicit shell, view, editor, and overlay model layers
+- public TS TUI now renders as a framed rail + dominant detail pane instead of one long debug-style text dump, with narrow-terminal fallback and Start Here opening on the recommended action for the current state
 - TypeScript TUI now also owns pure input/key handling plus internal non-interactive CLI parsing/execution for backend verbs, direct `settings` / `inspect` / `repair` section shortcuts, and `hook session-start`, and the public shipped entrypoint is now TypeScript-owned
 - TS runtime resolution now works for internal text and live terminal preview paths via workspace package `exports`, self-package app imports, terminal-loop wiring, and `tsx`; the remaining blockers are real terminal parity plus a deliberate packaged public entrypoint
 - internal TS preview launch is now unified through one smart `tsx` entrypoint that chooses live terminal on TTY launch commands and falls back to text for non-TTY or backend command flows

@@ -18,6 +18,7 @@ export interface SaneTuiAppView {
   projectLabel: string;
   recommendedNextStep: string;
   recommendedActionId: ReturnType<typeof loadDashboardView>["recommendedActionId"];
+  attentionItems: ReturnType<typeof loadDashboardView>["attentionItems"];
   tabs: {
     title: "Sections";
     selected: string;
@@ -113,12 +114,16 @@ function sectionOverviewLines(
     case "get_started": {
       const lines = [
         `Recommended now: ${dashboard.recommendedNextStep}`,
-        `Status now: ${models.getStarted.statusLine}`
+        `Status now: ${models.getStarted.statusLine}`,
+        "",
+        "Guided flow"
       ];
+      lines.push(...models.getStarted.steps.map((step) => `${step.title}: ${step.impact}`));
       if (dashboard.recommendedActionId) {
         const action = dashboard.actions.find((item) => item.id === dashboard.recommendedActionId);
         if (action) {
-          lines.push(`Primary action: ${action.label}`);
+          lines.push("");
+          lines.push(`Recommended action: ${action.label}`);
         }
       }
       if (dashboard.attentionItems.length > 0) {
@@ -330,8 +335,28 @@ function detailSelectedActionHelp(action: SelectedAction, details: string[]): st
 }
 
 function selectedActionHelp(action: SelectedAction, details?: string[]): string[] {
-  const lines = [`Selected action: ${action.label}`, "", ...action.help];
+  const lines = [
+    `Selected action: ${action.label}`,
+    impactLine(action),
+    `Files touched: ${action.filesTouched.join(", ")}`,
+    "",
+    ...action.help
+  ];
   return details ? [...lines, "", ...details] : lines;
+}
+
+function impactLine(action: SelectedAction): string {
+  if (action.kind === "editor") {
+    return "Impact: changes Sane defaults only after you save.";
+  }
+
+  if (!action.repoMutation) {
+    return action.id.startsWith("apply_") || action.id.startsWith("backup_") || action.id.startsWith("restore_")
+      ? "Impact: changes user-level Codex files, not this repo."
+      : "Impact: read-only visibility.";
+  }
+
+  return "Impact: writes repo-local or exported Sane-managed files.";
 }
 
 function footerLine(chips: ReturnType<typeof loadDashboardView>["chips"]): string {

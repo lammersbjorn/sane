@@ -24,48 +24,34 @@ afterEach(() => {
 });
 
 describe("text renderer", () => {
-  it("renders the core app view sections into one text frame", () => {
+  it("renders the public tui frame with a rail and dominant detail pane", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
 
     const output = renderTextAppView(loadAppView(shell));
 
     expect(output).toContain("Sane | Codex-native onboarding and setup");
+    expect(output).toContain("Section: get_started");
     expect(output).toContain("Sections: [Start here]");
     expect(output).toContain("Set up preferences");
     expect(output).toContain("Install to Codex");
-    expect(output).toContain("[Status]");
     expect(output).toContain("Runtime: missing");
-    expect(output).toContain("[Actions]");
-    expect(output).toContain("> 1. Create Sane's local project files (recommended)");
-    expect(output).toContain("[Section Overview]");
-    expect(output).toContain("[Selected Step Details]");
-    expect(output).toContain("[Latest Status]");
-    expect(output).toContain("[Now]");
+    expect(output).toContain("| Actions");
+    expect(output).toContain("| > 1. Create Sane's local");
+    expect(output).toContain("Get Started Details");
+    expect(output).toContain("Section overview");
+    expect(output).toContain("Selected step");
+    expect(output).toContain("Latest Status");
   });
 
-  it("renders status chips as readable rows with primary chips first", () => {
+  it("renders a compact statusline with the primary surfaces", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
-    const view = loadAppView(shell);
+    const output = renderTextAppView(loadAppView(shell));
 
-    const output = renderTextAppView(view);
-    const lines = output.split("\n");
-    const statusStart = lines.indexOf("[Status]");
-    const actionsStart = lines.indexOf("[Actions]");
-    expect(statusStart).toBeGreaterThanOrEqual(0);
-    expect(actionsStart).toBeGreaterThan(statusStart);
-
-    const statusBlock = lines.slice(statusStart + 1, actionsStart);
-    const statusLines = statusBlock.filter((line) => line.length > 0);
-    const primaryIds = new Set(["runtime", "codex-config", "user-skills", "hooks", "drift"]);
-    const expectedStatusLines = [
-      ...view.chips.filter((chip) => primaryIds.has(chip.id)),
-      ...view.chips.filter((chip) => !primaryIds.has(chip.id))
-    ].map((chip) => `${chip.label}: ${chip.value}`);
-
-    expect(statusLines).toEqual(expectedStatusLines);
-    if (view.chips.some((chip) => !primaryIds.has(chip.id))) {
-      expect(statusBlock).toContain("");
-    }
+    expect(output).toContain("Runtime: missing");
+    expect(output).toContain("Codex config: missing");
+    expect(output).toContain("User skills: missing");
+    expect(output).toContain("Hooks: missing");
+    expect(output).toContain("Drift: 1 issue(s)");
   });
 
   it("renders overlay state when present", () => {
@@ -80,7 +66,6 @@ describe("text renderer", () => {
     const output = renderTextAppView(loadAppView(shell));
 
     expect(output).toContain("[Overlay: Saved]");
-    expect(output).toContain("kind: notice");
     expect(output).toContain("| saved body");
     expect(output).toContain("Enter, Space, or Esc closes this message.");
   });
@@ -91,8 +76,8 @@ describe("text renderer", () => {
 
     const output = renderTextAppView(loadAppView(shell));
 
-    expect(output).toContain("  1. Create Sane's local project files (recommended)");
-    expect(output).toContain("> 2. View your current Codex settings");
+    expect(output).toContain("[recommended]");
+    expect(output).toContain("| > 2. View your current Codex");
   });
 
   it("fits output into a bounded viewport", () => {
@@ -107,7 +92,7 @@ describe("text renderer", () => {
     expect(lines).toHaveLength(8);
     expect(lines.every((line) => line.length <= 32)).toBe(true);
     expect(output).toContain("...");
-    expect(output).toContain("[Now]");
+    expect(output).toContain("Sane | Codex-native onboarding");
   });
 
   it("adds ansi styling only when requested", () => {
@@ -119,8 +104,9 @@ describe("text renderer", () => {
 
     expect(output).toContain("\u001b[1mSane | Codex-native onboarding and setup\u001b[0m");
     expect(output).toContain("\u001b[33mRuntime: missing\u001b[0m");
-    expect(output).toContain("\u001b[7m> 1. Create Sane's local project files (recommended)\u001b[0m");
-    expect(output).toContain("\u001b[1;36m[Actions]\u001b[0m");
+    expect(output).toContain("\u001b[7m[Start here]\u001b[0m");
+    expect(output).toContain("\u001b[7m| > 1. Create Sane's local");
+    expect(output).toContain("\u001b[1;36m| Actions");
   });
 
   it("renders editor overlays as distinct framed sections", () => {
@@ -130,7 +116,7 @@ describe("text renderer", () => {
     const output = renderTextAppView(loadAppView(shell));
 
     expect(output).toContain("[Overlay: Model Defaults]");
-    expect(output).toContain("[Last Result]");
-    expect(output).toContain("[Field Help]");
+    expect(output).toContain("Last Result");
+    expect(output).toContain("Field Help");
   });
 });

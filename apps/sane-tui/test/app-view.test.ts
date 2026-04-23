@@ -10,7 +10,7 @@ import { createDefaultLocalConfig } from "@sane/config";
 import { saveConfig } from "@sane/control-plane/preferences.js";
 
 import { loadAppView } from "@sane/sane-tui/app-view.js";
-import { createTuiShell, moveSelection, runSelectedAction, selectSection } from "@sane/sane-tui/shell.js";
+import { createTuiShell, currentAction, moveSelection, runSelectedAction, selectSection } from "@sane/sane-tui/shell.js";
 
 const tempDirs: string[] = [];
 
@@ -513,7 +513,7 @@ describe("app view", () => {
   it("surfaces integrations preview payload for the install apply action too", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
     selectSection(shell, "install");
-    for (let index = 0; index < 4; index += 1) {
+    for (let index = 0; index < 12 && currentAction(shell).id !== "apply_integrations_profile"; index += 1) {
       moveSelection(shell, "action", 1);
     }
 
@@ -554,7 +554,7 @@ describe("app view", () => {
     const inspectScreen = await import("@sane/sane-tui/inspect-screen.js");
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
     selectSection(shell, "install");
-    for (let index = 0; index < 4; index += 1) {
+    for (let index = 0; index < 12 && currentAction(shell).id !== "apply_integrations_profile"; index += 1) {
       moveSelection(shell, "action", 1);
     }
 

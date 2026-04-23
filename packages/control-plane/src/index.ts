@@ -41,7 +41,7 @@ import {
   inspectStatusBundle,
   showStatusFromStatusBundle
 } from "./inventory.js";
-import { formatLatestPolicyPreviewLines } from "./policy-preview-presenter.js";
+import { formatRuntimeSummaryPolicyPreviewLines } from "./policy-preview-presenter.js";
 import { previewPolicy, previewPolicyForCurrentRun } from "./policy-preview.js";
 import { showConfig } from "./preferences.js";
 import { inspectLocalConfigFamily } from "./local-config.js";
@@ -255,6 +255,7 @@ function buildRuntimeSummary(
     historyCounts,
     historyPreview
   } = runtimeState;
+  const currentPolicyPreview = previewPolicyForCurrentRun(paths, current);
   const currentRunStatus = inventoryStatusFromRuntimeLayer(runtimeState.layerStatus.currentRun);
   const summaryStatus = inventoryStatusFromRuntimeLayer(runtimeState.layerStatus.summary);
   const briefStatus = inventoryStatusFromRuntimeLayer(runtimeState.layerStatus.brief);
@@ -294,9 +295,7 @@ function buildRuntimeSummary(
     details.push(...briefPreviewLines(brief));
   }
 
-  if (latestPolicyPreview.status === "present") {
-    details.push(...formatLatestPolicyPreviewLines(latestPolicyPreview, { mode: "runtime-summary" }));
-  }
+  details.push(...formatRuntimeSummaryPolicyPreviewLines(latestPolicyPreview, currentPolicyPreview));
 
   return new OperationResult({
     kind: OperationKind.ShowRuntimeSummary,

@@ -45,20 +45,20 @@ Keep the current mainline moving until there is a real blocker. Delegate side ta
 5. Preserve the repo's own terminology and current surface names. If the user points at a file, command, path, screen, or label, inspect it before arguing from memory.
 6. Use parallel read/research lanes aggressively when safe. Keep one write lane when edits would conflict.
 7. Delegate side tasks and bounded side lanes by default when possible so mainline progress does not stall.
-7. If the user injects a side task:
+8. If the user injects a side task:
    - delegate it when possible
    - do it directly only when delegation does not make sense
    - then resume the mainline automatically
-8. When a repo exposes local subagents, tools, or skills, prefer using them instead of ad hoc habits so the workflow can self-improve later.
-9. Keep model and reasoning choice task-shaped instead of reusing one default everywhere.
-10. Use the lightest process that still works:
+9. When a repo exposes local subagents, tools, or skills, prefer using them instead of ad hoc habits so the workflow can self-improve later.
+10. Keep model and reasoning choice task-shaped instead of reusing one default everywhere.
+11. Use the lightest process that still works:
    - no mandatory mega-plan unless ambiguity or risk is real
    - no per-tool narration
    - brief milestone updates only
    - answer from context directly when no extra tooling is needed
-11. If you reread or re-edit the same area twice without real progress, switch approach instead of looping.
-12. After any side answer, research result, checkpoint, or verify pass, keep going on the mainline unless the user explicitly paused or a real blocker exists.
-13. Stop only for a real blocker:
+12. If you reread or re-edit the same area twice without real progress, switch approach instead of looping.
+13. After any side answer, research result, checkpoint, or verify pass, keep going on the mainline unless the user explicitly paused or a real blocker exists.
+14. Stop only for a real blocker:
    - missing required decision the repo/context does not answer
    - missing credential or dependency with no workaround
    - destructive risk requiring approval

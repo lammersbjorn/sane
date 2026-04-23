@@ -22,6 +22,7 @@ export interface GetStartedStep {
     | "apply_codex_profile"
     | "export_all";
   title: string;
+  impact: string;
   filesTouched: string[];
 }
 
@@ -55,6 +56,7 @@ export function loadGetStartedScreenFromStatusBundle(
   const steps = listSectionActions("get_started", hostPlatform).map((action) => ({
     id: action.id as GetStartedStep["id"],
     title: action.label,
+    impact: onboardingStepImpact(action.id as GetStartedStep["id"]),
     filesTouched:
       action.id === "export_all"
         ? exportAllFilesTouched(statusBundle)
@@ -90,6 +92,23 @@ function recommendedNextStep(reason: OnboardingReasonId): string {
       return "Install Sane into Codex so Codex can use Sane's guidance.";
     default:
       return "Review configure or inspect sections and change only what you actually want.";
+  }
+}
+
+function onboardingStepImpact(stepId: GetStartedStep["id"]): string {
+  switch (stepId) {
+    case "install_runtime":
+      return "Create repo-local `.sane/` state and config files.";
+    case "show_codex_config":
+      return "Read current `~/.codex/config.toml` before changing anything.";
+    case "preview_codex_profile":
+      return "Preview Sane's recommended Codex defaults and hooks.";
+    case "backup_codex_config":
+      return "Save a rollback copy of current Codex settings into `.sane/backups`.";
+    case "apply_codex_profile":
+      return "Write Sane's core Codex defaults into `~/.codex/config.toml`.";
+    case "export_all":
+      return "Install Sane's user skills, AGENTS block, and custom agents into Codex.";
   }
 }
 

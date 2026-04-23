@@ -49,9 +49,9 @@ describe("text driver", () => {
       createCodexPaths(makeTempDir())
     );
 
-    expect(runtime.render()).toContain("> 1. Create Sane's local project files (recommended)");
+    expect(runtime.render()).toContain("| > 1. Create Sane's local");
     runtime.handleInput("down");
-    expect(runtime.render()).toContain("> 2. View your current Codex settings");
+    expect(runtime.render()).toContain("| > 2. View your current Codex");
   });
 
   it("shows overlay state after entering an editor", () => {
@@ -65,8 +65,7 @@ describe("text driver", () => {
     const frame = runtime.render();
 
     expect(frame).toContain("[Overlay: Model Defaults]");
-    expect(frame).toContain("kind: config");
-    expect(frame).toContain("[Field Help]");
+    expect(frame).toContain("Field Help");
   });
 
   it("can bootstrap from discovery", () => {

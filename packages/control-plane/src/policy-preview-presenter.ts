@@ -36,6 +36,20 @@ export interface InspectCurrentPolicyPreview {
   } | null;
 }
 
+export function formatRuntimeSummaryPolicyPreviewLines(
+  latestPolicyPreview: LatestPolicyPreviewSnapshot,
+  currentPolicyPreview: InspectCurrentPolicyPreview
+): string[] {
+  return [
+    ...formatLatestPolicyPreviewLines(latestPolicyPreview, {
+      mode: "runtime-summary",
+      inputPrefix: "latest policy input"
+    }),
+    formatCurrentPolicyPreviewLine(currentPolicyPreview, "current policy preview"),
+    ...formatCurrentPolicyScenarioLines(currentPolicyPreview)
+  ];
+}
+
 export function formatInspectPolicyPreviewLines(
   latestPolicyPreview: LatestPolicyPreviewSnapshot,
   currentPolicyPreview: InspectCurrentPolicyPreview,

@@ -49,6 +49,9 @@ describe("showRuntimeSummary", () => {
     expect(result.details).toContain("latest event (read-only local visibility): missing");
     expect(result.details).toContain("latest decision (read-only local visibility): missing");
     expect(result.details).toContain("latest artifact (read-only local visibility): missing");
+    expect(result.details).toContain(
+      "current policy preview: policy preview: rendered adaptive obligation scenarios; 5 scenarios"
+    );
     expect(result.pathsTouched).toEqual([
       paths.currentRunPath,
       paths.summaryPath,
@@ -84,6 +87,15 @@ describe("showRuntimeSummary", () => {
     expect(result.details).toContain("completed milestones: none");
     expect(result.details).toContain("brief preview:");
     expect(result.details).toContain("# Sane Brief");
+    expect(result.details).toContain(
+      "current policy preview: policy preview: rendered adaptive obligation scenarios; 6 scenarios"
+    );
+    expect(
+      result.details.some((line) =>
+        line.startsWith("current preview scenario current-run-inspect:")
+        && line.includes("trace reasons verify_light via")
+      )
+    ).toBe(true);
     expect(showRuntimeProgress(paths)).toEqual({
       phase: "setup",
       verificationStatus: "pending"
@@ -185,6 +197,15 @@ describe("showRuntimeSummary", () => {
     expect(result.details).toContain(
       "latest policy trace simple-question: keep_direct_answers_light via keep_direct_answers_light"
     );
+    expect(result.details).toContain(
+      "current policy preview: policy preview: rendered adaptive obligation scenarios; 6 scenarios"
+    );
+    expect(
+      result.details.some((line) =>
+        line.startsWith("current preview scenario current-run-inspect:")
+        && line.includes("trace reasons verify_light via")
+      )
+    ).toBe(true);
     expect(result.details).toContain(
       "latest event (read-only local visibility): ts 1700000001, action install-runtime, result ok, summary created runtime handoff baseline"
     );

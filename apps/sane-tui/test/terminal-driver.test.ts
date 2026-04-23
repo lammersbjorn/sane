@@ -38,7 +38,7 @@ describe("terminal driver", () => {
     expect(enter.key).toBe("enter");
     expect(enter.keys).toEqual(["enter"]);
     expect(enter.result?.summary).toContain("codex-config: missing");
-    expect(enter.frame).toContain("[Latest Status]");
+    expect(enter.frame).toContain("Latest Status");
     expect(enter.shouldExit).toBe(false);
   });
 
