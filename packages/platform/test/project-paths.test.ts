@@ -57,6 +57,14 @@ describe('project path parity', () => {
     expect(paths.telemetryQueuePath).toBe(join(dir, '.sane', 'telemetry', 'queue.jsonl'));
   });
 
+  it('normalizes createProjectPaths roots before deriving runtime paths', () => {
+    const dir = makeTempDir();
+    const paths = createProjectPaths(join(dir, 'workspace', '..'));
+
+    expect(paths.projectRoot).toBe(dir);
+    expect(paths.runtimeRoot).toBe(join(dir, '.sane'));
+  });
+
   it('walks up to pnpm-workspace.yaml from a nested directory', () => {
     const dir = makeTempDir();
     writeFileSync(join(dir, 'pnpm-workspace.yaml'), 'packages:\n  - "apps/*"\n');
@@ -64,6 +72,16 @@ describe('project path parity', () => {
     mkdirSync(nested, { recursive: true });
 
     const discovered = discoverProjectPaths(nested);
+
+    expect(discovered.projectRoot).toBe(dir);
+    expect(discovered.runtimeRoot).toBe(join(dir, '.sane'));
+  });
+
+  it('falls back from a missing nested start path to the enclosing repo root', () => {
+    const dir = makeTempDir();
+    mkdirSync(join(dir, '.git'));
+
+    const discovered = discoverProjectPaths(join(dir, 'packages', 'platform', 'src', 'missing.ts'));
 
     expect(discovered.projectRoot).toBe(dir);
     expect(discovered.runtimeRoot).toBe(join(dir, '.sane'));
@@ -81,6 +99,18 @@ describe('project path parity', () => {
     expect(discovered.projectRoot).toBe(dir);
   });
 
+  it('normalizes dot-segment start paths before discovery', () => {
+    const dir = makeTempDir();
+    writeFileSync(join(dir, 'pnpm-workspace.yaml'), 'packages:\n  - "apps/*"\n');
+    const nested = join(dir, 'apps', 'sane-tui', 'src');
+    mkdirSync(nested, { recursive: true });
+
+    const discovered = discoverProjectPaths(join(nested, '..', '.', 'src', 'index.ts'));
+
+    expect(discovered.projectRoot).toBe(dir);
+    expect(discovered.runtimeRoot).toBe(join(dir, '.sane'));
+  });
+
   it('falls back to the nearest package.json when no workspace marker exists', () => {
     const dir = makeTempDir();
     writeFileSync(join(dir, 'package.json'), '{ "name": "sane-test" }\n');
@@ -90,6 +120,19 @@ describe('project path parity', () => {
     const discovered = discoverProjectPaths(nested);
 
     expect(discovered.projectRoot).toBe(dir);
+  });
+
+  it('keeps repo or workspace roots ahead of nested package.json markers', () => {
+    const dir = makeTempDir();
+    writeFileSync(join(dir, 'pnpm-workspace.yaml'), 'packages:\n  - "packages/*"\n');
+    const packageRoot = join(dir, 'packages', 'platform');
+    mkdirSync(packageRoot, { recursive: true });
+    writeFileSync(join(packageRoot, 'package.json'), '{ "name": "@sane/platform" }\n');
+
+    const discovered = discoverProjectPaths(join(packageRoot, 'src'));
+
+    expect(discovered.projectRoot).toBe(dir);
+    expect(discovered.runtimeRoot).toBe(join(dir, '.sane'));
   });
 
   it('uses .sane when repo markers are absent', () => {

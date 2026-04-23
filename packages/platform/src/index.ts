@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, statSync } from 'node:fs';
 import { homedir as osHomedir } from 'node:os';
-import { dirname, join, parse } from 'node:path';
+import { dirname, join, parse, resolve } from 'node:path';
 
 export type StateFile =
   | 'config'
@@ -66,18 +66,19 @@ export interface HomeDirEnv {
 export type HostPlatform = 'macos' | 'linux' | 'windows';
 
 export function createProjectPaths(projectRoot: string): ProjectPaths {
-  const repoAgentsDir = join(projectRoot, '.agents');
-  const runtimeRoot = join(projectRoot, '.sane');
+  const canonicalProjectRoot = resolve(projectRoot);
+  const repoAgentsDir = join(canonicalProjectRoot, '.agents');
+  const runtimeRoot = join(canonicalProjectRoot, '.sane');
   const stateDir = join(runtimeRoot, 'state');
   const cacheDir = join(runtimeRoot, 'cache');
   const backupsDir = join(runtimeRoot, 'backups');
   const telemetryDir = join(runtimeRoot, 'telemetry');
 
   return {
-    projectRoot,
+    projectRoot: canonicalProjectRoot,
     repoAgentsDir,
     repoSkillsDir: join(repoAgentsDir, 'skills'),
-    repoAgentsMd: join(projectRoot, 'AGENTS.md'),
+    repoAgentsMd: join(canonicalProjectRoot, 'AGENTS.md'),
     runtimeRoot,
     configPath: join(runtimeRoot, 'config.local.toml'),
     stateDir,
@@ -234,17 +235,19 @@ export function isProjectRoot(candidate: string): boolean {
 }
 
 export function startDirForDiscovery(startPath: string): string {
+  const canonicalStartPath = resolve(startPath);
+
   try {
-    if (statSync(startPath).isDirectory()) {
-      return startPath;
+    if (statSync(canonicalStartPath).isDirectory()) {
+      return canonicalStartPath;
     }
   } catch {
     // Missing paths fall back to the parent when possible.
   }
 
-  const parent = dirname(startPath);
-  if (parent === startPath) {
-    return parse(startPath).root || '.';
+  const parent = dirname(canonicalStartPath);
+  if (parent === canonicalStartPath) {
+    return parse(canonicalStartPath).root || '.';
   }
 
   return parent;
