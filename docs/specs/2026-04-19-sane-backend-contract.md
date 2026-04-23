@@ -187,6 +187,7 @@ These are the backend actions the TUI is allowed to call in the current phase.
   - latest persisted snapshot may include typed input classification per scenario for Inspect/runtime-summary visibility
   - keep typed scenario/orchestration/continuation/trace payloads available for internal history/state plumbing even if current user-facing render stays compact
   - continuation guidance may express internal stop posture such as answer directly, continue until verified, continue until blocked, self-repair until unblocked, or close when verified
+  - normalize current-run phase aliases conservatively: `done` / `complete` / `finished` map to closing posture, while `error` / `failed` / `failing` map to blocked self-repair posture
   - exist to verify obligation rules without presenting a shipped live orchestration runtime
 
 ### Doctor / Status

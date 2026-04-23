@@ -272,13 +272,16 @@ function deriveRunState(
   if (hasAny(phase, ["blocked", "stalled"])) {
     return RunState.Blocked;
   }
+  if (hasAny(phase, ["error", "errored", "failed", "failing"])) {
+    return RunState.Blocked;
+  }
   if (blockerCount > 0 && (taskShape === TaskShape.LongRunning || activeTaskCount >= 4)) {
     return RunState.Blocked;
   }
   if (hasAny(phase, ["validating", "reviewing"])) {
     return RunState.Validating;
   }
-  if (hasAny(phase, ["closing"])) {
+  if (hasAny(phase, ["closing", "done", "complete", "completed", "finished"])) {
     return RunState.Closing;
   }
   if (hasAny(phase, ["executing", "working", "editing", "implementing"])) {

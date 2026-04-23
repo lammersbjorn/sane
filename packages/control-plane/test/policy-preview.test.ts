@@ -487,6 +487,50 @@ describe("policy preview", () => {
     });
   });
 
+  it("maps completed current-run phases to closing policy posture", () => {
+    const scenario = buildCurrentRunInspectPreview({
+      version: 2,
+      objective: "finish docs update",
+      phase: "done",
+      activeTasks: [],
+      blockingQuestions: [],
+      verification: {
+        status: "passed",
+        summary: "checks passed"
+      },
+      lastCompactionTsUnix: 1_700_000_000,
+      extra: {}
+    });
+
+    expect(scenario.input.runState).toBe("closing");
+    expect(scenario.continuation).toEqual({
+      strategy: "close_when_verified",
+      stopCondition: "closed"
+    });
+  });
+
+  it("maps failed current-run phases to blocked self-repair posture", () => {
+    const scenario = buildCurrentRunInspectPreview({
+      version: 2,
+      objective: "finish release checklist",
+      phase: "failed",
+      activeTasks: ["verify release build"],
+      blockingQuestions: [],
+      verification: {
+        status: "failed",
+        summary: "release build failed"
+      },
+      lastCompactionTsUnix: 1_700_000_000,
+      extra: {}
+    });
+
+    expect(scenario.input.runState).toBe("blocked");
+    expect(scenario.continuation).toEqual({
+      strategy: "self_repair_until_unblocked",
+      stopCondition: "unblocked_or_needs_input"
+    });
+  });
+
   it("derives stalled debug high-risk heuristics from failed verification", () => {
     const scenario = buildCurrentRunInspectPreview({
       version: 2,
