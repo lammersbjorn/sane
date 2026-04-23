@@ -40,12 +40,15 @@ describe("app view", () => {
     expect(view.sectionOverviewLines[0]).toContain("Recommended now:");
     expect(view.selectedHelpLines[0]).toContain("Selected action:");
     expect(view.latestStatusTitle).toBe("Latest Status");
+    expect(view.mode.id).toBe("browse");
+    expect(view.mode.label).toBe("Browse");
     expect(view.footerTitle).toBe("Now");
     expect(view.footer.navHint).toContain("left/right or tab");
     expect(view.footer.navHint).toContain("q quits");
     expect(view.footer.status.runtime).toBe("missing");
     expect(view.footer.status.codex).toBe("missing");
     expect(view.footerLines[0]).toContain("left/right or tab change section");
+    expect(view.footerLines[0]).toContain("mode browse");
     expect(view.footerLines[0]).toContain("q quits");
     expect(view.footerLines[0]).toContain("runtime");
     expect(view.footerLines[0]).toContain("drift");
@@ -170,6 +173,17 @@ describe("app view", () => {
     expect(vi.mocked(inspectScreen.inspectOverviewLines)).toHaveBeenCalledTimes(1);
     vi.doUnmock("@sane/sane-tui/inspect-screen.js");
     vi.resetModules();
+  });
+
+  it("surfaces editor mode when a preferences editor is open", () => {
+    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()), "settings");
+    runSelectedAction(shell);
+
+    const view = loadAppView(shell);
+
+    expect(view.mode.id).toBe("config");
+    expect(view.mode.label).toBe("Edit Models");
+    expect(view.footer.navHint).toContain("enter saves");
   });
 
   it("threads shell status bundle into inspect when the inspect section is opened", async () => {

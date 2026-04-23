@@ -105,7 +105,8 @@ function renderHeader(view: SaneTuiAppView, width: number): string[] {
     ),
     ...wrapLines(`Section: ${view.tabs.selected}`, width),
     ...wrapLines(`Sections: ${formatTabs(view)}`, width),
-    ...wrapLines(statusline(view), width)
+    ...wrapLines(statusline(view), width),
+    ...wrapLines(`Mode: ${view.mode.label} | ${view.mode.hint}`, width)
   ];
 }
 

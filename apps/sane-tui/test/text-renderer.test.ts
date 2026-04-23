@@ -32,6 +32,7 @@ describe("text renderer", () => {
     expect(output).toContain("Sane | Codex-native onboarding and setup");
     expect(output).toContain("Section: get_started");
     expect(output).toContain("Sections: [Start here]");
+    expect(output).toContain("Mode: Browse");
     expect(output).toContain("Set up preferences");
     expect(output).toContain("Install to Codex");
     expect(output).toContain("Runtime: missing");
@@ -68,6 +69,7 @@ describe("text renderer", () => {
     expect(output).toContain("[Overlay: Saved]");
     expect(output).toContain("| saved body");
     expect(output).toContain("Enter, Space, or Esc closes this message.");
+    expect(output).toContain("Mode: Notice");
   });
 
   it("shows selection changes in the rendered action list", () => {
@@ -116,6 +118,7 @@ describe("text renderer", () => {
     const output = renderTextAppView(loadAppView(shell));
 
     expect(output).toContain("[Overlay: Model Defaults]");
+    expect(output).toContain("Mode: Edit Models");
     expect(output).toContain("Last Result");
     expect(output).toContain("Field Help");
   });

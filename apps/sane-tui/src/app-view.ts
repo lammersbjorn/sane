@@ -35,10 +35,15 @@ export interface SaneTuiAppView {
   selectedHelpLines: string[];
   latestStatusTitle: string;
   latestStatusLines: string[];
+  mode: {
+    id: "browse" | "confirm" | "notice" | "config" | "packs" | "privacy";
+    label: string;
+    hint: string;
+  };
   footerTitle: "Now";
   footerLines: string[];
   footer: {
-    navHint: "left/right or tab change section  |  up/down or j/k change option  |  enter runs  |  q quits";
+    navHint: string;
     status: Record<"runtime" | "codex" | "user" | "hooks", string>;
   };
   overlay: OverlayModel;
@@ -89,10 +94,11 @@ export function loadAppView(shell: TuiShell): SaneTuiAppView {
     selectedHelpLines: selectedActionHelpLines(shell, getStarted, inspect, preferences),
     latestStatusTitle: dashboard.lastResult.title,
     latestStatusLines: dashboard.lastResult.lines,
+    mode: currentMode(shell),
     footerTitle: "Now",
-    footerLines: [footerLine(dashboard.chips)],
+    footerLines: [footerLine(dashboard.chips, currentMode(shell))],
     footer: {
-      navHint: "left/right or tab change section  |  up/down or j/k change option  |  enter runs  |  q quits",
+      navHint: currentMode(shell).hint,
       status: footerStatusMap(dashboard.chips)
     },
     overlay: loadOverlayModel(shell)
@@ -359,8 +365,11 @@ function impactLine(action: SelectedAction): string {
   return "Impact: writes repo-local or exported Sane-managed files.";
 }
 
-function footerLine(chips: ReturnType<typeof loadDashboardView>["chips"]): string {
-  return `left/right or tab change section  |  up/down or j/k change option  |  enter runs  |  q quits  |  ${compactStatusLine(chips)}`;
+function footerLine(
+  chips: ReturnType<typeof loadDashboardView>["chips"],
+  mode: SaneTuiAppView["mode"]
+): string {
+  return `mode ${mode.label.toLowerCase()}  |  ${mode.hint}  |  ${compactStatusLine(chips)}`;
 }
 
 function compactStatusLine(chips: ReturnType<typeof loadDashboardView>["chips"]): string {
@@ -393,6 +402,54 @@ function compactStatus(value: string): string {
 
 function presentFlag(value: boolean): string {
   return value ? "present" : "missing";
+}
+
+function currentMode(shell: TuiShell): SaneTuiAppView["mode"] {
+  if (shell.notice) {
+    return {
+      id: "notice",
+      label: "Notice",
+      hint: "enter, space, or esc closes this message"
+    };
+  }
+
+  if (shell.pendingConfirmation) {
+    return {
+      id: "confirm",
+      label: "Confirm",
+      hint: "enter or y runs it  |  esc or n cancels"
+    };
+  }
+
+  if (shell.activeEditor?.kind === "config") {
+    return {
+      id: "config",
+      label: "Edit Models",
+      hint: "up/down picks field  |  left/right changes value  |  enter saves  |  r resets  |  esc backs out"
+    };
+  }
+
+  if (shell.activeEditor?.kind === "packs") {
+    return {
+      id: "packs",
+      label: "Edit Packs",
+      hint: "up/down picks pack  |  space toggles  |  enter saves  |  r resets  |  esc backs out"
+    };
+  }
+
+  if (shell.activeEditor?.kind === "privacy") {
+    return {
+      id: "privacy",
+      label: "Edit Privacy",
+      hint: "left/right changes consent  |  enter saves  |  d deletes telemetry data  |  esc backs out"
+    };
+  }
+
+  return {
+    id: "browse",
+    label: "Browse",
+    hint: "left/right or tab change section  |  up/down or j/k change option  |  enter runs  |  q quits"
+  };
 }
 
 function lazy<T>(load: () => T): () => T {
