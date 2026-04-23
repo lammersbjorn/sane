@@ -34,6 +34,22 @@ type InventoryStatusName =
   | "present_without_sane_block"
   | "removed";
 
+type DoctorInventoryName =
+  | "runtime"
+  | "config"
+  | "current-run"
+  | "summary"
+  | "brief"
+  | "pack-core"
+  | "codex-config"
+  | "user-skills"
+  | "repo-skills"
+  | "repo-agents"
+  | "global-agents"
+  | "hooks"
+  | "custom-agents"
+  | "opencode-agents";
+
 export interface OptionalPackSnapshot {
   name: OptionalPackName;
   inventoryName: `pack-${OptionalPackName}`;
@@ -100,6 +116,58 @@ export interface DoctorSnapshot {
   lines: string[];
 }
 
+const DOCTOR_ROW_NAMES: DoctorInventoryName[] = [
+  "runtime",
+  "config",
+  "current-run",
+  "summary",
+  "brief",
+  "pack-core",
+  "codex-config",
+  "user-skills",
+  "repo-skills",
+  "repo-agents",
+  "global-agents",
+  "hooks",
+  "custom-agents",
+  "opencode-agents"
+];
+
+const DOCTOR_STATUS_FORMATTERS: Partial<Record<DoctorInventoryName, (item: InventoryItem) => string>> = {
+  runtime: (item) => (item.status === InventoryStatus.Installed ? "ok" : item.status.asString()),
+  config: (item) =>
+    item.status === InventoryStatus.Installed
+      ? "ok"
+      : item.status === InventoryStatus.Missing
+        ? "missing"
+        : item.status === InventoryStatus.Invalid
+          ? "invalid (rerun install)"
+          : item.status.asString(),
+  "current-run": (item) =>
+    doctorInstallFileLabel(item, "current-run.json"),
+  summary: (item) => doctorInstallFileLabel(item, "summary.json"),
+  brief: (item) =>
+    item.status === InventoryStatus.Installed ? "ok" : "missing BRIEF.md (rerun install)",
+  "pack-core": doctorPackLabel,
+  "codex-config": (item) => doctorManagedConfigLabel(item, "apply codex-profile", "~/.codex/config.toml"),
+  "user-skills": (item) => doctorExportLabel(item, "export user-skills"),
+  "repo-skills": (item) =>
+    item.status === InventoryStatus.Disabled ? "disabled (optional repo export)" : doctorExportLabel(item, "export repo-skills"),
+  "repo-agents": (item) =>
+    item.status === InventoryStatus.Disabled
+      ? "disabled (optional repo export)"
+      : item.status === InventoryStatus.PresentWithoutSaneBlock
+        ? "present without Sane block"
+        : doctorExportLabel(item, "export repo-agents"),
+  "global-agents": (item) =>
+    item.status === InventoryStatus.PresentWithoutSaneBlock
+      ? "present without Sane block"
+      : doctorExportLabel(item, "export global-agents"),
+  hooks: (item) => doctorManagedConfigLabel(item, "export hooks", "~/.codex/hooks.json"),
+  "custom-agents": (item) => doctorExportLabel(item, "export custom-agents"),
+  "opencode-agents": (item) => doctorExportLabel(item, "export opencode-agents")
+};
+
 export function showStatus(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
   return showStatusFromStatusBundle(inspectStatusBundle(paths, codexPaths));
 }
@@ -142,25 +210,15 @@ export function inspectDoctorSnapshot(
   const configBackups = listCanonicalBackupSiblings(paths.configPath);
   const summaryBackups = listCanonicalBackupSiblings(paths.summaryPath);
   const lines = [
-    `runtime: ${doctorStatus(findInventory(bundle.inventory, "runtime"))}`,
-    `config: ${doctorStatus(findInventory(bundle.inventory, "config"))}`,
+    ...DOCTOR_ROW_NAMES.slice(0, 2).map((name) => doctorInventoryLine(bundle.inventory, name)),
     `config-backups: ${canonicalBackupHistorySummary(configBackups)}`,
-    `current-run: ${doctorStatus(findInventory(bundle.inventory, "current-run"))}`,
-    `summary: ${doctorStatus(findInventory(bundle.inventory, "summary"))}`,
+    ...DOCTOR_ROW_NAMES.slice(2, 4).map((name) => doctorInventoryLine(bundle.inventory, name)),
     `summary-backups: ${canonicalBackupHistorySummary(summaryBackups)}`,
-    `brief: ${doctorStatus(findInventory(bundle.inventory, "brief"))}`,
-    `pack-core: ${doctorStatus(findInventory(bundle.inventory, "pack-core"))}`,
+    ...DOCTOR_ROW_NAMES.slice(4, 6).map((name) => doctorInventoryLine(bundle.inventory, name)),
     ...optionalPackNames().map((pack) =>
-      `${optionalPackInventoryName(pack)}: ${doctorStatus(findInventory(bundle.inventory, optionalPackInventoryName(pack)))}`
+      doctorInventoryLine(bundle.inventory, optionalPackInventoryName(pack))
     ),
-    `codex-config: ${doctorStatus(findInventory(bundle.inventory, "codex-config"))}`,
-    `user-skills: ${doctorStatus(findInventory(bundle.inventory, "user-skills"))}`,
-    `repo-skills: ${doctorStatus(findInventory(bundle.inventory, "repo-skills"))}`,
-    `repo-agents: ${doctorStatus(findInventory(bundle.inventory, "repo-agents"))}`,
-    `global-agents: ${doctorStatus(findInventory(bundle.inventory, "global-agents"))}`,
-    `hooks: ${doctorStatus(findInventory(bundle.inventory, "hooks"))}`,
-    `custom-agents: ${doctorStatus(findInventory(bundle.inventory, "custom-agents"))}`,
-    `opencode-agents: ${doctorStatus(findInventory(bundle.inventory, "opencode-agents"))}`,
+    ...DOCTOR_ROW_NAMES.slice(6).map((name) => doctorInventoryLine(bundle.inventory, name)),
     `root: ${paths.runtimeRoot}`,
     `codex-home: ${codexPaths.codexHome}`
   ];
@@ -475,102 +533,68 @@ function inventoryStatusName(item: InventoryItem | null): InventoryStatusName {
 }
 
 function doctorStatus(item: InventoryItem): string {
-  switch (item.name) {
-    case "config":
-      return item.status === InventoryStatus.Installed
-        ? "ok"
-        : item.status === InventoryStatus.Missing
-          ? "missing"
-          : item.status === InventoryStatus.Invalid
-            ? "invalid (rerun install)"
-            : item.status.asString();
-    case "current-run":
-      return item.status === InventoryStatus.Installed
-        ? "ok"
-        : item.status === InventoryStatus.Missing
-          ? "missing current-run.json (rerun install)"
-          : item.status === InventoryStatus.Invalid
-            ? "invalid current-run.json (rerun install)"
-            : item.status.asString();
-    case "summary":
-      return item.status === InventoryStatus.Installed
-        ? "ok"
-        : item.status === InventoryStatus.Missing
-          ? "missing summary.json (rerun install)"
-          : item.status === InventoryStatus.Invalid
-            ? "invalid summary.json (rerun install)"
-            : item.status.asString();
-    case "brief":
-      return item.status === InventoryStatus.Installed ? "ok" : "missing BRIEF.md (rerun install)";
-    case "pack-core":
-    case "pack-caveman":
-    case "pack-cavemem":
-    case "pack-rtk":
-    case "pack-frontend-craft":
-      return item.status === InventoryStatus.Installed
-        ? "enabled"
-        : item.status === InventoryStatus.Configured
-          ? "enabled (config only)"
-          : item.status === InventoryStatus.Disabled
-            ? "disabled"
-            : item.status === InventoryStatus.Missing
-              ? "missing config (run `install`)"
-              : item.status === InventoryStatus.Invalid
-                ? "invalid config (repair config first)"
-                : item.status.asString();
-    case "runtime":
-      return item.status === InventoryStatus.Installed ? "ok" : item.status.asString();
-    case "user-skills":
-      return codexDoctorStatus(item, "export user-skills");
-    case "repo-skills":
-      return item.status === InventoryStatus.Disabled
-        ? "disabled (optional repo export)"
-        : codexDoctorStatus(item, "export repo-skills");
-    case "repo-agents":
-      return item.status === InventoryStatus.Disabled
-        ? "disabled (optional repo export)"
-        : item.status === InventoryStatus.PresentWithoutSaneBlock
-          ? "present without Sane block"
-          : codexDoctorStatus(item, "export repo-agents");
-    case "codex-config":
-      return item.status === InventoryStatus.Installed
-        ? "installed"
-      : item.status === InventoryStatus.Missing
-          ? "missing (run `apply codex-profile`)"
-        : item.status === InventoryStatus.Invalid
-            ? "invalid (repair ~/.codex/config.toml)"
-            : presentManagedStatus(managedStatusKindFromInventory(item.status)).label;
-    case "global-agents":
-      return item.status === InventoryStatus.PresentWithoutSaneBlock
-        ? "present without Sane block"
-        : codexDoctorStatus(item, "export global-agents");
-    case "hooks":
-      return item.status === InventoryStatus.Installed
-        ? "installed"
-      : item.status === InventoryStatus.Missing
-          ? "missing (run `export hooks`)"
-        : item.status === InventoryStatus.Invalid
-            ? "invalid (repair ~/.codex/hooks.json)"
-            : presentManagedStatus(managedStatusKindFromInventory(item.status)).label;
-    case "custom-agents":
-      return codexDoctorStatus(item, "export custom-agents");
-    default:
-      return item.status.asString();
+  if (item.name.startsWith("pack-")) {
+    return doctorPackLabel(item);
   }
+
+  const formatter = DOCTOR_STATUS_FORMATTERS[item.name as DoctorInventoryName];
+  return formatter ? formatter(item) : item.status.asString();
 }
 
 function optionalPackInventoryName(pack: OptionalPackName): `pack-${OptionalPackName}` {
   return `pack-${pack}`;
 }
 
-function codexDoctorStatus(item: InventoryItem, exportCommand: string): string {
+function doctorInventoryLine(inventory: InventoryItem[], name: string): string {
+  return `${name}: ${doctorStatus(findInventory(inventory, name))}`;
+}
+
+function doctorManagedFallback(item: InventoryItem): string {
+  return presentManagedStatus(managedStatusKindFromInventory(item.status)).label;
+}
+
+function doctorInstallFileLabel(item: InventoryItem, filename: string): string {
+  return item.status === InventoryStatus.Installed
+    ? "ok"
+    : item.status === InventoryStatus.Missing
+      ? `missing ${filename} (rerun install)`
+      : item.status === InventoryStatus.Invalid
+        ? `invalid ${filename} (rerun install)`
+        : item.status.asString();
+}
+
+function doctorPackLabel(item: InventoryItem): string {
+  return item.status === InventoryStatus.Installed
+    ? "enabled"
+    : item.status === InventoryStatus.Configured
+      ? "enabled (config only)"
+      : item.status === InventoryStatus.Disabled
+        ? "disabled"
+        : item.status === InventoryStatus.Missing
+          ? "missing config (run `install`)"
+          : item.status === InventoryStatus.Invalid
+            ? "invalid config (repair config first)"
+            : item.status.asString();
+}
+
+function doctorManagedConfigLabel(item: InventoryItem, applyCommand: string, repairPath: string): string {
+  return item.status === InventoryStatus.Installed
+    ? "installed"
+    : item.status === InventoryStatus.Missing
+      ? `missing (run \`${applyCommand}\`)`
+      : item.status === InventoryStatus.Invalid
+        ? `invalid (repair ${repairPath})`
+        : doctorManagedFallback(item);
+}
+
+function doctorExportLabel(item: InventoryItem, exportCommand: string): string {
   return item.status === InventoryStatus.Installed
     ? "installed"
     : item.status === InventoryStatus.Missing
       ? `missing (run \`${exportCommand}\`)`
       : item.status === InventoryStatus.Invalid
         ? `invalid (rerun \`${exportCommand}\`)`
-        : presentManagedStatus(managedStatusKindFromInventory(item.status)).label;
+        : doctorManagedFallback(item);
 }
 
 function collectPathsTouched(inventory: InventoryItem[]): string[] {

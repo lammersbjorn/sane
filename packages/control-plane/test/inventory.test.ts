@@ -206,6 +206,24 @@ describe("full inventory and doctor", () => {
     expect(bundle.counts.invalid).toBeGreaterThan(0);
   });
 
+  it("formats doctor install and export hints with exact labels", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    const doctorSnapshot = inspectDoctorSnapshot(paths, codexPaths);
+
+    expect(doctorSnapshot.lines).toContain("current-run: missing current-run.json (rerun install)");
+    expect(doctorSnapshot.lines).toContain("summary: missing summary.json (rerun install)");
+    expect(doctorSnapshot.lines).toContain("codex-config: missing (run `apply codex-profile`)");
+    expect(doctorSnapshot.lines).toContain("repo-skills: disabled (optional repo export)");
+    expect(doctorSnapshot.lines).toContain("repo-agents: disabled (optional repo export)");
+    expect(doctorSnapshot.lines).toContain("hooks: missing (run `export hooks`)");
+    expect(doctorSnapshot.lines).toContain("custom-agents: missing (run `export custom-agents`)");
+    expect(doctorSnapshot.lines).toContain("opencode-agents: missing (run `export opencode-agents`)");
+  });
+
   it("reports installed codex-native surfaces and enabled exported packs", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
