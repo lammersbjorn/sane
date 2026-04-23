@@ -1,0 +1,115 @@
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+import { createCodexPaths, createProjectPaths } from "@sane/platform";
+import { afterEach, describe, expect, it } from "vitest";
+
+import { handleTuiInput } from "@/input-driver.js";
+import { createTuiShell, currentAction } from "@/shell.js";
+
+const tempDirs: string[] = [];
+
+function makeTempDir(): string {
+  const dir = mkdtempSync(join(tmpdir(), "sane-input-driver-"));
+  tempDirs.push(dir);
+  return dir;
+}
+
+afterEach(() => {
+  while (tempDirs.length > 0) {
+    rmSync(tempDirs.pop()!, { recursive: true, force: true });
+  }
+});
+
+describe("input driver", () => {
+  it("moves through sections and actions with arrow keys", () => {
+    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
+
+    handleTuiInput(shell, "right");
+    expect(shell.activeSectionId).toBe("preferences");
+
+    handleTuiInput(shell, "down");
+    expect(currentAction(shell).id).toBe("open_pack_editor");
+
+    handleTuiInput(shell, "left");
+    expect(shell.activeSectionId).toBe("get_started");
+    expect(currentAction(shell).id).toBe("install_runtime");
+  });
+
+  it("routes risky actions through confirmation keys", () => {
+    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
+
+    for (let index = 0; index < 4; index += 1) {
+      handleTuiInput(shell, "down");
+    }
+    expect(currentAction(shell).id).toBe("apply_codex_profile");
+
+    expect(handleTuiInput(shell, "enter")).toBeNull();
+    expect(shell.pendingConfirmation?.commandId).toBe("apply_codex_profile");
+
+    const result = handleTuiInput(shell, "y");
+    expect(result?.summary).toContain("codex-profile apply");
+    expect(shell.pendingConfirmation).toBeNull();
+    expect(shell.notice?.title).toBe("Applied");
+
+    handleTuiInput(shell, "escape");
+    expect(shell.notice).toBeNull();
+  });
+
+  it("opens, edits, saves, and cancels editors from input keys", () => {
+    const paths = createProjectPaths(makeTempDir());
+    const codexPaths = createCodexPaths(makeTempDir());
+    const shell = createTuiShell(paths, codexPaths, "settings");
+
+    expect(currentAction(shell).id).toBe("open_config_editor");
+    handleTuiInput(shell, "enter");
+    expect(shell.activeEditor?.kind).toBe("config");
+
+    const before = shell.activeEditor?.config.models.coordinator.model;
+    handleTuiInput(shell, "right");
+    expect(shell.activeEditor?.config.models.coordinator.model).not.toBe(before);
+    expect(handleTuiInput(shell, "enter")?.summary).toContain("config: saved");
+    expect(shell.notice?.title).toBe("Saved");
+
+    handleTuiInput(shell, "escape");
+    handleTuiInput(shell, "enter");
+    expect(shell.activeEditor?.kind).toBe("config");
+    handleTuiInput(shell, "escape");
+    expect(shell.activeEditor).toBeNull();
+    expect(shell.lastResult.lines).toContain("Closed editor. Nothing changed.");
+  });
+
+  it("toggles packs and resets telemetry from editor-specific keys", () => {
+    const paths = createProjectPaths(makeTempDir());
+    const codexPaths = createCodexPaths(makeTempDir());
+    const shell = createTuiShell(paths, codexPaths, "settings");
+
+    handleTuiInput(shell, "down");
+    expect(currentAction(shell).id).toBe("open_pack_editor");
+    handleTuiInput(shell, "enter");
+    expect(shell.activeEditor?.kind).toBe("packs");
+    handleTuiInput(shell, "space");
+    if (shell.activeEditor?.kind !== "packs") {
+      throw new Error("expected packs editor");
+    }
+    expect(shell.activeEditor.config.packs.caveman).toBe(true);
+    handleTuiInput(shell, "escape");
+
+    handleTuiInput(shell, "down");
+    expect(currentAction(shell).id).toBe("open_privacy_editor");
+    handleTuiInput(shell, "enter");
+    expect(shell.activeEditor?.kind).toBe("privacy");
+    handleTuiInput(shell, "right");
+    expect(handleTuiInput(shell, "enter")?.summary).toContain("config: saved");
+    expect(existsSync(paths.telemetryDir)).toBe(true);
+
+    handleTuiInput(shell, "escape");
+    handleTuiInput(shell, "down");
+    handleTuiInput(shell, "down");
+    handleTuiInput(shell, "enter");
+    expect(shell.activeEditor?.kind).toBe("privacy");
+    expect(handleTuiInput(shell, "d")?.summary).toBe("telemetry reset: removed local telemetry data");
+    expect(existsSync(paths.telemetryDir)).toBe(false);
+  });
+});

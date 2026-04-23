@@ -220,6 +220,15 @@ export function dismissNotice(shell: TuiShell): void {
   shell.notice = null;
 }
 
+export function cancelActiveEditor(shell: TuiShell): void {
+  if (!shell.activeEditor) {
+    return;
+  }
+
+  shell.activeEditor = null;
+  shell.lastResult = buildLastResultView(null, "Closed editor. Nothing changed.");
+}
+
 export function moveEditorSelection(shell: TuiShell, delta: 1 | -1): void {
   if (!shell.activeEditor) {
     return;
