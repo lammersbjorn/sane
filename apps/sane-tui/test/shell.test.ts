@@ -77,7 +77,7 @@ describe("tui shell", () => {
     expect(shell.statusSnapshot.runtimeState.current?.phase).toBe("setup");
   });
 
-  it("hydrates the initial last-result copy from the backend history helper", () => {
+  it("hydrates the initial last-result copy from the canonical runtime snapshot", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const paths = createProjectPaths(projectRoot);

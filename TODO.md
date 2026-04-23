@@ -127,6 +127,7 @@ Implemented:
 - runtime inspect/summary fields now derive from one `runtime-state.ts` helper that owns layered-state fallback, history preview, latest policy preview, and per-layer presence/invalid/missing truth
 - policy preview current-run reads and operation-history summary promotion now also go through that same canonical runtime-state boundary instead of reopening handoff files directly
 - operation-history writes now seed or repair the canonical `.sane` handoff baseline before persisting new events/decisions/artifacts, so non-install operations no longer leave `current-run` missing
+- no-args TUI boot now also derives its initial last-result line from the canonical runtime-state history preview instead of reopening events JSONL directly
 - install/repair action rows now use one shared TUI builder and preserve typed status objects instead of flattening them into strings at screen load time
 - preferences now have a typed family snapshot so show-config, preferences screen, and editable/default config helpers stop rebuilding the same saved-config/env/routing state separately
 - TUI Inspect now shows read-only policy-preview snapshot visibility derived from the latest current run instead of command-only access

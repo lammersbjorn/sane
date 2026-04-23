@@ -34,7 +34,7 @@ import {
   exportHooks
 } from "@sane/control-plane/hooks-custom-agents.js";
 import { exportOpencodeAgents, uninstallOpencodeAgents } from "@sane/control-plane/opencode-native.js";
-import { executeConfigSave, executeOperation, readLastOperationSummary } from "@sane/control-plane/history.js";
+import { executeConfigSave, executeOperation } from "@sane/control-plane/history.js";
 import {
   doctor,
   inspectStatusBundle
@@ -115,8 +115,8 @@ export function createTuiShell(
   launchShortcut: keyof typeof COMMAND_METADATA_REGISTRY.shortcuts = "default"
 ): TuiShell {
   const sectionId = COMMAND_METADATA_REGISTRY.shortcuts[launchShortcut];
-  const lastSummary = readLastOperationSummary(paths);
   const statusSnapshot = buildStatusSnapshot(paths, codexPaths);
+  const lastSummary = statusSnapshot.runtimeState.historyPreview.latestEvent?.summary ?? null;
   return {
     paths,
     codexPaths,

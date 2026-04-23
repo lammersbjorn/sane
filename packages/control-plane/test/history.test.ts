@@ -17,7 +17,6 @@ import { exportAll } from "../src/bundles.js";
 import {
   executeConfigSave,
   executeOperation,
-  readLastOperationSummary,
   recordOperation
 } from "../src/history.js";
 import { installRuntime } from "../src/index.js";
@@ -100,20 +99,6 @@ describe("operation history plumbing", () => {
 
     expect(result.summary).toBe("export all: installed managed targets");
     expect(events.at(-1)?.action).toBe("export_all");
-  });
-
-  it("reads the last recorded operation summary for boot-time consumers", () => {
-    const projectRoot = makeTempDir();
-    const homeDir = makeTempDir();
-    const paths = createProjectPaths(projectRoot);
-    const codexPaths = createCodexPaths(homeDir);
-
-    expect(readLastOperationSummary(paths)).toBeNull();
-
-    installRuntime(paths, codexPaths);
-    executeOperation(paths, () => exportAll(paths, codexPaths));
-
-    expect(readLastOperationSummary(paths)).toBe("export all: installed managed targets");
   });
 
   it("recordOperation keeps promoted summary entries unique across repeats", () => {

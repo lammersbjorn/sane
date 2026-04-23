@@ -10,8 +10,6 @@ import {
   createEventRecord,
   createPolicyPreviewDecisionContext,
   promoteRunSummary,
-  parseEventRecordJson,
-  readJsonlLastRecord,
   stringifyArtifactRecord,
   stringifyDecisionRecord,
   stringifyEventRecord,
@@ -25,10 +23,6 @@ import {
   inspectRuntimeState,
   writeRuntimeSummaryAndBrief
 } from "./runtime-state.js";
-
-export function readLastOperationSummary(paths: ProjectPaths): string | null {
-  return readJsonlLastRecord(paths.eventsPath, parseEventRecordJson)?.summary ?? null;
-}
 
 export function executeConfigSave(paths: ProjectPaths, config: LocalConfig): OperationResult {
   const result = saveConfig(paths, config);
