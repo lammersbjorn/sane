@@ -194,6 +194,10 @@ const PACK_INVENTORY_TARGETS: PackInventoryTarget[] = [
   }))
 ];
 
+const OPTIONAL_PACK_INVENTORY_TARGETS = PACK_INVENTORY_TARGETS.filter(
+  (target): target is Extract<PackInventoryTarget, { packName: OptionalPackName }> => target.packName !== "core"
+);
+
 export function showStatus(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
   return showStatusFromStatusBundle(inspectStatusBundle(paths, codexPaths));
 }
@@ -350,17 +354,16 @@ function inspectPackInventory(paths: ProjectPaths, codexPaths: CodexPaths): Inve
 }
 
 function inspectOptionalPackSnapshots(inventory: InventoryItem[]): OptionalPackSnapshot[] {
-  return optionalPackNames().map((name) => {
-    const inventoryName = optionalPackInventoryName(name);
+  return OPTIONAL_PACK_INVENTORY_TARGETS.map(({ packName, inventoryName }) => {
     const item = findInventoryOrNull(inventory, inventoryName);
 
     return {
-      name,
+      name: packName,
       inventoryName,
       status: inventoryStatusName(item),
-      skillName: optionalPackSkillNames(name)[0] ?? null,
-      skillNames: optionalPackSkillNames(name),
-      provenance: optionalPackProvenance(name) ?? null
+      skillName: optionalPackSkillNames(packName)[0] ?? null,
+      skillNames: optionalPackSkillNames(packName),
+      provenance: optionalPackProvenance(packName) ?? null
     };
   });
 }
