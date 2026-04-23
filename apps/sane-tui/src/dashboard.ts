@@ -24,6 +24,39 @@ export interface DashboardView {
   chips: DashboardChip[];
 }
 
+const PRIMARY_STATUS_CHIP_SPECS = [
+  {
+    id: "runtime",
+    label: "Runtime",
+    pick: (status: TuiShell["statusSnapshot"]["statusBundle"]["primary"]["status"]) => status.runtime
+  },
+  {
+    id: "codex-config",
+    label: "Codex config",
+    pick: (status: TuiShell["statusSnapshot"]["statusBundle"]["primary"]["status"]) => status.codexConfig
+  },
+  {
+    id: "user-skills",
+    label: "User skills",
+    pick: (status: TuiShell["statusSnapshot"]["statusBundle"]["primary"]["status"]) => status.userSkills
+  },
+  {
+    id: "hooks",
+    label: "Hooks",
+    pick: (status: TuiShell["statusSnapshot"]["statusBundle"]["primary"]["status"]) => status.hooks
+  }
+] as const;
+
+const VALUE_TONE_OVERRIDES: Partial<Record<string, DashboardChip["tone"]>> = {
+  installed: "ok",
+  ok: "ok",
+  none: "ok",
+  missing: "warn",
+  invalid: "warn",
+  failed: "warn",
+  "present without Sane block": "warn"
+};
+
 export function loadDashboardView(
   shell: TuiShell,
   getStarted: ReturnType<typeof getStartedScreen.loadGetStartedScreen> = getStartedScreen.loadGetStartedScreen(
@@ -50,24 +83,17 @@ export function loadDashboardView(
 
 function buildStatusChips(statusSnapshot: TuiShell["statusSnapshot"]): DashboardChip[] {
   const { statusBundle, runtimeProgress } = statusSnapshot;
-  const wanted = [
-    "runtime",
-    "codex-config",
-    "user-skills",
-    "hooks"
-  ] as const;
-  const chips: DashboardChip[] = [];
-
-  for (const name of wanted) {
-    const presentation = primaryStatusPresentation(statusBundle, name);
-
-    chips.push({
-      id: name,
-      label: chipLabel(name),
+  const chips: DashboardChip[] = PRIMARY_STATUS_CHIP_SPECS.map((chip) => {
+    const presentation = presentManagedStatus(
+      chip.pick(statusBundle.primary.status) as ManagedStatusKind
+    );
+    return {
+      id: chip.id,
+      label: chip.label,
       value: presentation.label,
       tone: presentation.tone
-    });
-  }
+    };
+  });
 
   const customAgents = presentManagedStatus(
     statusBundle.primary.status.customAgents as ManagedStatusKind
@@ -113,50 +139,6 @@ function buildStatusChips(statusSnapshot: TuiShell["statusSnapshot"]): Dashboard
   return chips;
 }
 
-function primaryStatusPresentation(
-  statusBundle: TuiShell["statusSnapshot"]["statusBundle"],
-  name: "runtime" | "codex-config" | "user-skills" | "hooks"
-): ReturnType<typeof presentManagedStatus> {
-  switch (name) {
-    case "runtime":
-      return presentManagedStatus(statusBundle.primary.status.runtime as ManagedStatusKind);
-    case "codex-config":
-      return presentManagedStatus(statusBundle.primary.status.codexConfig as ManagedStatusKind);
-    case "user-skills":
-      return presentManagedStatus(statusBundle.primary.status.userSkills as ManagedStatusKind);
-    case "hooks":
-      return presentManagedStatus(statusBundle.primary.status.hooks as ManagedStatusKind);
-  }
-}
-
-function chipLabel(name: string): string {
-  switch (name) {
-    case "runtime":
-      return "Runtime";
-    case "codex-config":
-      return "Codex config";
-    case "user-skills":
-      return "User skills";
-    case "hooks":
-      return "Hooks";
-    case "custom-agents":
-      return "Custom agents";
-    default:
-      return name;
-  }
-}
-
 function toneForValue(value: string): DashboardChip["tone"] {
-  if (value === "installed" || value === "ok" || value === "none") {
-    return "ok";
-  }
-  if (
-    value === "missing" ||
-    value === "invalid" ||
-    value === "failed" ||
-    value === "present without Sane block"
-  ) {
-    return "warn";
-  }
-  return "muted";
+  return VALUE_TONE_OVERRIDES[value] ?? "muted";
 }
