@@ -300,6 +300,7 @@ Current implementation note:
 - current TUI status panel renders those two groups separately
 - current hooks target is user-level only and uses the `sane` binary itself as the managed `SessionStart` command
 - current Windows behavior marks hooks as unavailable/invalid and should steer users toward WSL for hook-enabled flows
+- current path/install hardening covers workspace/project-root discovery, home/Codex/OpenCode path derivation, whitespace-only env fallback, native Windows hook exclusion, and preloaded Windows status inference
 - current custom-agents target installs two read-only managed agents: `sane-reviewer` and `sane-explorer`
 - current Codex config work supports narrow explicit opt-in writes for the core profile
 - current integrations profile work supports narrow explicit opt-in writes for recommended MCP servers only

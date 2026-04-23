@@ -133,6 +133,7 @@ Implemented:
 - no-args TUI boot now also derives its initial last-result line from the canonical runtime-state history preview instead of reopening events JSONL directly
 - install/repair action rows now use one shared TUI builder and preserve typed status objects instead of flattening them into strings at screen load time
 - native Windows no longer keeps unsupported hooks in onboarding attention items or `export all` touched-file lists once the supported install bundle is satisfied; onboarding now points users at WSL without treating hooks as a blocking bundle requirement
+- cross-platform path/install hardening now covers project root discovery, home/Codex/OpenCode path derivation, whitespace-only env fallbacks, native Windows hook exclusion, and preloaded Windows status inference through targeted platform/control-plane tests
 - preferences now have a typed family snapshot so show-config, preferences screen, and editable/default config helpers stop rebuilding the same saved-config/env/routing state separately
 - TUI Inspect now shows read-only policy-preview snapshot visibility derived from the latest current run instead of command-only access
 - Inspect overview presentation now lives in a shared control-plane presenter, with drift/provenance formatting pulled out of the TUI screen layer
@@ -238,7 +239,7 @@ pnpm check
   - may research / plan / implement / verify across a long run
   - should keep going until requested result is reached unless blocked
   - optional shortcut name/command still open
-- [ ] Windows/macOS/Linux path and install hardening passes
+- [x] Windows/macOS/Linux path and install hardening passes
 - [ ] Packaging/distribution rollout after `v1`:
   - GitHub Releases
   - Homebrew tap
