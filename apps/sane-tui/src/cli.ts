@@ -4,8 +4,13 @@ import { renderSessionStartHookOutput } from "@sane/control-plane/session-start-
 
 import { type BackendCommandId } from "@/command-registry.js";
 import { executeUiCommand } from "@/shell.js";
+import { createTextTuiRuntimeFromDiscovery } from "@/text-driver.js";
 
 export type ParsedCliCommand =
+  | {
+      kind: "launch";
+      launchShortcut: "default" | "settings";
+    }
   | {
       kind: "backend";
       commandId: BackendCommandId;
@@ -60,6 +65,14 @@ const BACKEND_COMMAND_ALIASES: ReadonlyArray<{
 ] as const;
 
 export function parseCliArgs(args: readonly string[]): ParsedCliCommand {
+  if (args.length === 0) {
+    return { kind: "launch", launchShortcut: "default" };
+  }
+
+  if (matchesArgs(args, ["settings"])) {
+    return { kind: "launch", launchShortcut: "settings" };
+  }
+
   if (matchesArgs(args, ["hook", "session-start"])) {
     return { kind: "hook", event: "session-start" };
   }
@@ -81,6 +94,15 @@ export function runCliCommandFromDiscovery(
   env: HomeDirEnv = process.env
 ): CliRunResult {
   const parsed = parseCliArgs(args);
+
+  if (parsed.kind === "launch") {
+    return {
+      exitCode: 0,
+      output: createTextTuiRuntimeFromDiscovery(startPath, env, {
+        launchShortcut: parsed.launchShortcut
+      }).render()
+    };
+  }
 
   if (parsed.kind === "hook") {
     return {

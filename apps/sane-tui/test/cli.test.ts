@@ -22,6 +22,14 @@ afterEach(() => {
 
 describe("ts cli command parsing", () => {
   it("maps backend argv onto current TS command ids", () => {
+    expect(parseCliArgs([])).toEqual({
+      kind: "launch",
+      launchShortcut: "default"
+    });
+    expect(parseCliArgs(["settings"])).toEqual({
+      kind: "launch",
+      launchShortcut: "settings"
+    });
     expect(parseCliArgs(["install"])).toEqual({
       kind: "backend",
       commandId: "install_runtime"
@@ -37,12 +45,25 @@ describe("ts cli command parsing", () => {
   });
 
   it("rejects unsupported argv", () => {
-    expect(() => parseCliArgs([])).toThrow("unsupported command: <none>");
-    expect(() => parseCliArgs(["settings"])).toThrow("unsupported command: settings");
+    expect(() => parseCliArgs(["nonsense"])).toThrow("unsupported command: nonsense");
   });
 });
 
 describe("ts cli command execution", () => {
+  it("renders the default TS text runtime for no-args launch and settings", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    writeFileSync(join(projectRoot, "Cargo.toml"), "[workspace]\n");
+
+    const start = runCliCommandFromDiscovery([], projectRoot, { HOME: homeDir });
+    const settings = runCliCommandFromDiscovery(["settings"], projectRoot, { HOME: homeDir });
+
+    expect(start.exitCode).toBe(0);
+    expect(start.output).toContain("Section: get_started");
+    expect(settings.exitCode).toBe(0);
+    expect(settings.output).toContain("Section: preferences");
+  });
+
   it("runs backend commands through discovery", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
