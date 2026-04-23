@@ -64,8 +64,20 @@ Keep this explicit and ordered by migration value:
 
 1. Public startup / packaging cutover
    - the public shipped entrypoint is still Rust-owned today via `cargo run -p sane --`.
-   - internal TS text preview now works through `tsx`, workspace package `exports`, and self-package app imports.
+   - internal TS launch now works through the `apps/sane-tui/bin/sane.mjs` shim, smart `tsx` preview routing, workspace package `exports`, and self-package app imports.
    - do not flip the public path until terminal parity and packaging are deliberate.
+   - explicit cutover checklist:
+     - [x] internal TS launch supports no-args and `settings`
+     - [x] internal TS launch supports backend verbs and `hook session-start`
+     - [x] TS preview can launch as text for non-TTY and live alt-screen for TTY
+     - [x] TS terminal path has visible section tabs, visible action list, selected-action marker, and recommended-action marker
+     - [x] TS terminal path handles left/right/up/down, `tab`/`backtab`, `h/j/k/l`, `enter`, `esc`, and `q`
+     - [x] TS terminal path respects viewport width/height and redraws on resize
+     - [x] local TS bin shim exists at `apps/sane-tui/bin/sane.mjs`
+     - [ ] public root `start` / `start:settings` switched from Rust to TS
+     - [ ] public README/setup docs switched from Cargo-first to TS-first
+     - [ ] packaged/public CLI story declared for `@sane/sane-tui` instead of internal-only preview/bin usage
+     - [ ] Rust `main.rs` launch/command glue removed after TS path is the documented public entrypoint
 2. Policy-preview legacy cleanup
    - `packages/control-plane/src/policy-preview.ts` is the current source of truth.
    - `crates/sane-tui/src/main.rs` still has a legacy `debug policy-preview` path; treat it as migration-only until it can be removed.

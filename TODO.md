@@ -260,6 +260,13 @@ pnpm check
 - [ ] Exact contents/split of `Sane`'s own minimal self-hosting `AGENTS.md` vs repo skill files
 - [ ] Exact self-hosting milestone checklist
 - [ ] Exact TypeScript package split and Rust retirement/cutover checklist, ordered highest-to-lowest migration value: policy-preview cutover, Rust workspace bootstrap retirement, leftover compatibility glue cleanup
+  - [x] internal TS launch supports no-args / `settings`, backend verbs, and `hook session-start`
+  - [x] internal TS preview is smart-routed across non-TTY text vs TTY live terminal
+  - [x] TS terminal preview has visible nav chrome, key parity, viewport fitting, resize redraw, and a local bin shim
+  - [ ] switch public root `start` / `start:settings` away from Rust
+  - [ ] switch public README/setup docs away from Cargo-first instructions
+  - [ ] declare the packaged/public CLI story for `@sane/sane-tui`
+  - [ ] remove Rust launch/compat glue only after the TS path is the documented public entrypoint
 - [ ] Exact post-`v1` packaging automation sequence
 - [ ] Exact default attribution surface if onboarding opt-in ships:
   - README badge
