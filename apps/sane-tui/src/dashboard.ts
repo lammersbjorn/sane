@@ -82,7 +82,7 @@ export function loadDashboardView(
 }
 
 function buildStatusChips(statusSnapshot: TuiShell["statusSnapshot"]): DashboardChip[] {
-  const { statusBundle, runtimeProgress } = statusSnapshot;
+  const { statusBundle, runtimeState } = statusSnapshot;
   const chips: DashboardChip[] = PRIMARY_STATUS_CHIP_SPECS.map((chip) => {
     const presentation = presentManagedStatus(
       chip.pick(statusBundle.primary.status) as ManagedStatusKind
@@ -121,18 +121,18 @@ function buildStatusChips(statusSnapshot: TuiShell["statusSnapshot"]): Dashboard
     tone: statusBundle.driftItems.length === 0 ? "ok" : "warn"
   });
 
-  if (runtimeProgress) {
+  if (runtimeState.current) {
     chips.push({
       id: "phase",
       label: "Phase",
-      value: runtimeProgress.phase,
-      tone: toneForValue(runtimeProgress.phase)
+      value: runtimeState.current.phase,
+      tone: toneForValue(runtimeState.current.phase)
     });
     chips.push({
       id: "verification",
       label: "Verification",
-      value: runtimeProgress.verificationStatus,
-      tone: toneForValue(runtimeProgress.verificationStatus)
+      value: runtimeState.current.verification.status,
+      tone: toneForValue(runtimeState.current.verification.status)
     });
   }
 

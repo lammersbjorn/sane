@@ -12,6 +12,7 @@ import { executeOperation } from "@sane/control-plane/history.js";
 import * as inventory from "@sane/control-plane/inventory.js";
 import { saveConfig } from "@sane/control-plane/preferences.js";
 import { createDefaultLocalConfig } from "@sane/config";
+import * as runtimeState from "@sane/control-plane/runtime-state.js";
 import {
   confirmPendingAction,
   createTuiShell,
@@ -60,29 +61,20 @@ describe("tui shell", () => {
     const paths = createProjectPaths(projectRoot);
     const codexPaths = createCodexPaths(homeDir);
     const statusBundleSpy = vi.spyOn(inventory, "inspectStatusBundle");
-    const statusFromBundleSpy = vi.spyOn(inventory, "showStatusFromStatusBundle");
-    const statusWrapperSpy = vi.spyOn(inventory, "showStatus");
-    const progressSpy = vi.spyOn(controlPlane, "showRuntimeProgress");
+    const runtimeStateSpy = vi.spyOn(runtimeState, "inspectRuntimeState");
     const shell = createTuiShell(paths, codexPaths);
 
-    expect(shell.status).toBe(shell.statusSnapshot.status);
     expect(shell.statusSnapshot.statusBundle.primary.status.runtime).toBe("missing");
-    expect(shell.statusSnapshot.runtimeProgress).toBeNull();
+    expect(shell.statusSnapshot.runtimeState.current).toBeNull();
 
     statusBundleSpy.mockClear();
-    statusFromBundleSpy.mockClear();
-    statusWrapperSpy.mockClear();
-    progressSpy.mockClear();
+    runtimeStateSpy.mockClear();
     runSelectedAction(shell);
 
     expect(statusBundleSpy).toHaveBeenCalledWith(paths, codexPaths);
-    expect(statusFromBundleSpy).toHaveBeenCalledTimes(1);
-    expect(statusFromBundleSpy).toHaveBeenCalledWith(shell.statusSnapshot.statusBundle);
-    expect(statusWrapperSpy).not.toHaveBeenCalled();
-    expect(progressSpy).toHaveBeenCalledWith(paths);
-    expect(shell.status).toBe(shell.statusSnapshot.status);
+    expect(runtimeStateSpy).toHaveBeenCalledWith(paths);
     expect(shell.statusSnapshot.statusBundle.primary.status.runtime).toBe("installed");
-    expect(shell.statusSnapshot.runtimeProgress?.phase).toBe("setup");
+    expect(shell.statusSnapshot.runtimeState.current?.phase).toBe("setup");
   });
 
   it("hydrates the initial last-result copy from the backend history helper", () => {

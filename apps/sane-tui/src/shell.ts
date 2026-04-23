@@ -35,10 +35,9 @@ import { exportOpencodeAgents, uninstallOpencodeAgents } from "@sane/control-pla
 import { executeConfigSave, executeOperation, readLastOperationSummary } from "@sane/control-plane/history.js";
 import {
   doctor,
-  inspectStatusBundle,
-  showStatus,
-  showStatusFromStatusBundle
+  inspectStatusBundle
 } from "@sane/control-plane/inventory.js";
+import { showStatus } from "@sane/control-plane";
 import { previewPolicy } from "@sane/control-plane/policy-preview.js";
 import {
   inspectEditablePreferencesConfig,
@@ -47,11 +46,11 @@ import {
 } from "@sane/control-plane/preferences.js";
 import {
   installRuntime,
-  showRuntimeProgress,
   showRuntimeSummary,
   uninstallRepoAgents,
   uninstallRepoSkills
 } from "@sane/control-plane";
+import { inspectRuntimeState } from "@sane/control-plane/runtime-state.js";
 
 import {
   COMMAND_METADATA_REGISTRY,
@@ -95,7 +94,6 @@ export interface TuiShell {
   codexPaths: CodexPaths;
   sections: ReturnType<typeof COMMAND_METADATA_REGISTRY.sections.slice>;
   statusSnapshot: ShellStatusSnapshot;
-  status: ReturnType<typeof showStatus>;
   activeSectionId: TuiSectionId;
   activeActionIndex: number;
   activeEditor: ConfigEditorState | PackEditorState | PrivacyEditorState | null;
@@ -105,9 +103,8 @@ export interface TuiShell {
 }
 
 export interface ShellStatusSnapshot {
-  status: ReturnType<typeof showStatus>;
   statusBundle: ReturnType<typeof inspectStatusBundle>;
-  runtimeProgress: ReturnType<typeof showRuntimeProgress>;
+  runtimeState: ReturnType<typeof inspectRuntimeState>;
 }
 
 export function createTuiShell(
@@ -123,7 +120,6 @@ export function createTuiShell(
     codexPaths,
     sections: COMMAND_METADATA_REGISTRY.sections.slice(),
     statusSnapshot,
-    status: statusSnapshot.status,
     activeSectionId: sectionId,
     activeActionIndex: 0,
     activeEditor: null,
@@ -428,17 +424,14 @@ export function executeUiCommand(
 }
 
 function buildStatusSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): ShellStatusSnapshot {
-  const statusBundle = inspectStatusBundle(paths, codexPaths);
   return {
-    status: showStatusFromStatusBundle(statusBundle),
-    statusBundle,
-    runtimeProgress: showRuntimeProgress(paths)
+    statusBundle: inspectStatusBundle(paths, codexPaths),
+    runtimeState: inspectRuntimeState(paths)
   };
 }
 
 function refreshStatusSnapshot(shell: TuiShell): void {
   shell.statusSnapshot = buildStatusSnapshot(shell.paths, shell.codexPaths);
-  shell.status = shell.statusSnapshot.status;
 }
 
 function buildPendingConfirmation(action: SectionActionMetadata): PendingConfirmation {

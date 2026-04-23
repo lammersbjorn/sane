@@ -4,7 +4,6 @@ import { join } from "node:path";
 
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import * as controlPlane from "@sane/control-plane";
 import * as inventory from "@sane/control-plane/inventory.js";
 
 import { installRuntime } from "@sane/control-plane";
@@ -140,14 +139,10 @@ describe("dashboard view", () => {
       steps: []
     });
     const statusBundleSpy = vi.spyOn(inventory, "inspectStatusBundle");
-    const progressSpy = vi.spyOn(controlPlane, "showRuntimeProgress");
-    const summarySpy = vi.spyOn(controlPlane, "showRuntimeSummary");
 
     const view = loadDashboardView(shell);
 
     expect(statusBundleSpy).not.toHaveBeenCalled();
-    expect(progressSpy).not.toHaveBeenCalled();
-    expect(summarySpy).not.toHaveBeenCalled();
     expect(view.chips.find((chip) => chip.id === "phase")).toBeUndefined();
     expect(view.chips.find((chip) => chip.id === "verification")).toBeUndefined();
   });
@@ -204,9 +199,24 @@ describe("dashboard view", () => {
             installBundle: "installed"
           }
         }
+      },
+      runtimeState: {
+        ...shell.statusSnapshot.runtimeState,
+        current: {
+          version: 2,
+          objective: "initialize sane runtime",
+          phase: "setup",
+          activeTasks: ["install sane runtime"],
+          blockingQuestions: [],
+          verification: {
+            status: "pending",
+            summary: "runtime scaffolding created"
+          },
+          lastCompactionTsUnix: null,
+          extra: {}
+        }
       }
     };
-    shell.status = shell.statusSnapshot.status;
 
     const view = loadDashboardView(shell);
 
@@ -215,5 +225,7 @@ describe("dashboard view", () => {
     expect(view.chips.find((chip) => chip.id === "user-skills")?.value).toBe("installed");
     expect(view.chips.find((chip) => chip.id === "hooks")?.value).toBe("installed");
     expect(view.chips.find((chip) => chip.id === "install_bundle")?.value).toBe("installed");
+    expect(view.chips.find((chip) => chip.id === "phase")?.value).toBe("setup");
+    expect(view.chips.find((chip) => chip.id === "verification")?.value).toBe("pending");
   });
 });
