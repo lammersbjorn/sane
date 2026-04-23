@@ -53,11 +53,14 @@ import {
 import {
   ensureRuntimeHandoffBaseline,
   inspectRuntimeState,
-  loadRuntimeHandoffState,
   runtimeHistoryPaths,
   runtimeStatePaths
 } from "./runtime-state.js";
-import { managedStatusKindFromInventory, presentManagedStatus } from "./status-presenter.js";
+import {
+  inventoryStatusFromRuntimeLayer,
+  presentInventoryStatus,
+  runtimeLayerLabelFromInventory
+} from "./status-presenter.js";
 
 interface InstallCanonicalRewrite {
   name: "config" | "current-run" | "summary";
@@ -165,13 +168,13 @@ export function doctorRuntime(paths: ProjectPaths): OperationResult {
   return new OperationResult({
     kind: OperationKind.Doctor,
     summary: [
-      `runtime: ${doctorStatus(findInventory(inventory, "runtime"))}`,
-      `config: ${doctorStatus(findInventory(inventory, "config"))}`,
+      `runtime: ${findInventory(inventory, "runtime") ? presentInventoryStatus(findInventory(inventory, "runtime")?.status).label : "unknown"}`,
+      `config: ${findInventory(inventory, "config") ? presentInventoryStatus(findInventory(inventory, "config")?.status).label : "unknown"}`,
       `config-backups: ${canonicalBackupHistorySummary(configBackups)}`,
-      `current-run: ${doctorStatus(findInventory(inventory, "current-run"))}`,
-      `summary: ${doctorStatus(findInventory(inventory, "summary"))}`,
+      `current-run: ${findInventory(inventory, "current-run") ? presentInventoryStatus(findInventory(inventory, "current-run")?.status).label : "unknown"}`,
+      `summary: ${findInventory(inventory, "summary") ? presentInventoryStatus(findInventory(inventory, "summary")?.status).label : "unknown"}`,
       `summary-backups: ${canonicalBackupHistorySummary(summaryBackups)}`,
-      `brief: ${doctorStatus(findInventory(inventory, "brief"))}`,
+      `brief: ${findInventory(inventory, "brief") ? presentInventoryStatus(findInventory(inventory, "brief")?.status).label : "unknown"}`,
       `root: ${paths.runtimeRoot}`
     ].join("\n"),
     details: [],
@@ -232,7 +235,7 @@ export function inspectSnapshotFromStatusBundle(
     driftItems: statusBundle.driftItems.map((item) => ({
       name: item.name,
       path: item.path,
-      status: presentManagedStatus(managedStatusKindFromInventory(item.status)).label,
+      status: presentInventoryStatus(item.status).label,
       repairHint: item.repairHint
     })),
     policyPreview: previewPolicyForCurrentRun(paths, runtimeState.current)
@@ -256,9 +259,9 @@ function buildRuntimeSummary(paths: ProjectPaths, runtimeState: RuntimeStateSnap
     briefStatus
   } = runtimeState;
   const details = [
-    `current-run: ${runtimeLayerLabel(currentRunStatus)} at ${paths.currentRunPath}`,
-    `summary: ${runtimeLayerLabel(summaryStatus)} at ${paths.summaryPath}`,
-    `brief: ${runtimeLayerLabel(briefStatus)} at ${paths.briefPath}`,
+    `current-run: ${runtimeLayerLabelFromInventory(currentRunStatus)} at ${paths.currentRunPath}`,
+    `summary: ${runtimeLayerLabelFromInventory(summaryStatus)} at ${paths.summaryPath}`,
+    `brief: ${runtimeLayerLabelFromInventory(briefStatus)} at ${paths.briefPath}`,
     `events: ${historyCounts.events} at ${paths.eventsPath}`,
     `decisions: ${historyCounts.decisions} at ${paths.decisionsPath}`,
     `artifacts: ${historyCounts.artifacts} at ${paths.artifactsPath}`,
@@ -331,9 +334,9 @@ function inspectRuntimeStateSnapshot(paths: ProjectPaths): RuntimeStateSnapshot 
     historyCounts: runtimeState.historyCounts,
     historyPreview: runtimeState.historyPreview,
     latestPolicyPreview: runtimeState.latestPolicyPreview,
-    currentRunStatus: inventoryStatusFromLayeredState(runtimeState.layerStatus.currentRun),
-    summaryStatus: inventoryStatusFromLayeredState(runtimeState.layerStatus.summary),
-    briefStatus: inventoryStatusFromLayeredState(runtimeState.layerStatus.brief)
+    currentRunStatus: inventoryStatusFromRuntimeLayer(runtimeState.layerStatus.currentRun),
+    summaryStatus: inventoryStatusFromRuntimeLayer(runtimeState.layerStatus.summary),
+    briefStatus: inventoryStatusFromRuntimeLayer(runtimeState.layerStatus.brief)
   };
 }
 
@@ -473,18 +476,6 @@ function briefPreviewLines(brief: string): string[] {
     .slice(0, 4);
 }
 
-function doctorStatus(
-  item:
-    | {
-        status: InventoryStatus;
-      }
-    | undefined
-): string {
-  return item
-    ? presentManagedStatus(managedStatusKindFromInventory(item.status)).label
-    : "unknown";
-}
-
 function installPathsTouched(paths: ProjectPaths): string[] {
   return [paths.configPath, ...runtimeStatePaths(paths)];
 }
@@ -536,32 +527,6 @@ function readStatus(read: () => unknown): InventoryStatus {
 
 function fileStatus(path: string): InventoryStatus {
   return existsSync(path) ? InventoryStatus.Installed : InventoryStatus.Missing;
-}
-
-function inventoryStatusFromLayeredState(
-  status: "present" | "invalid" | "missing"
-): InventoryStatus {
-  switch (status) {
-    case "present":
-      return InventoryStatus.Installed;
-    case "invalid":
-      return InventoryStatus.Invalid;
-    case "missing":
-      return InventoryStatus.Missing;
-  }
-}
-
-function runtimeLayerLabel(status: InventoryStatus): string {
-  switch (status) {
-    case InventoryStatus.Installed:
-      return "present";
-    case InventoryStatus.Invalid:
-      return "invalid";
-    case InventoryStatus.Missing:
-      return "missing";
-  }
-
-  return "missing";
 }
 
 function repairHintForPath(path: string): string | null {

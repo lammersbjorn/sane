@@ -145,6 +145,7 @@ Implemented:
 - TypeScript TUI bootstrap can now discover both project root and Codex home through `@sane/platform`
 - local config source/current/recommended truth now has a shared family snapshot helper, reused by preferences and install-time config seeding instead of duplicating saved-vs-recommended branching
 - TypeScript workspace tests now run on plain `vitest`/`vitest/config` with native `resolve.tsconfigPaths`, not `vite-plus`
+- inventory-status labels and runtime-layer present/invalid/missing conversion now go through shared status-presentation helpers instead of repeated inline mapping in control-plane
 - canonical state rewrites now create timestamped `.bak` sibling backups before replacing existing JSON/TOML files
 - canonical rewrite helpers now expose typed metadata (`rewritten_path`, `backup_path`, `first_write`)
 - canonical backup sibling listing helpers now return matching backups newest-first for repair/rollback flows

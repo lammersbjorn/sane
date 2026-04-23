@@ -1,5 +1,7 @@
 import { InventoryStatus } from "@sane/core";
 
+export type RuntimeLayerKind = "present" | "invalid" | "missing";
+
 export type ManagedStatusKind =
   | "installed"
   | "configured"
@@ -54,4 +56,34 @@ export function presentManagedStatus(kind: ManagedStatusKind): ManagedStatusPres
           ? "warn"
           : "muted"
   };
+}
+
+export function presentInventoryStatus(
+  status: InventoryStatus | undefined
+): ManagedStatusPresentation {
+  return presentManagedStatus(managedStatusKindFromInventory(status));
+}
+
+export function inventoryStatusFromRuntimeLayer(status: RuntimeLayerKind): InventoryStatus {
+  switch (status) {
+    case "present":
+      return InventoryStatus.Installed;
+    case "invalid":
+      return InventoryStatus.Invalid;
+    case "missing":
+      return InventoryStatus.Missing;
+  }
+}
+
+export function runtimeLayerLabelFromInventory(status: InventoryStatus): RuntimeLayerKind {
+  switch (status) {
+    case InventoryStatus.Installed:
+      return "present";
+    case InventoryStatus.Invalid:
+      return "invalid";
+    case InventoryStatus.Missing:
+      return "missing";
+  }
+
+  return "missing";
 }
