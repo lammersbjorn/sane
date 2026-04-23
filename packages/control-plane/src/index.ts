@@ -202,7 +202,7 @@ export function inspectSnapshotFromStatusBundle(
   codexPaths: CodexPaths,
   statusBundle: ReturnType<typeof inspectStatusBundle>
 ): InspectSnapshot {
-  const runtimeState = inspectRuntimeState(paths);
+  const runtimeState = statusBundle.runtimeState;
   const doctorResult = doctorForStatusBundle(paths, codexPaths, statusBundle);
   const doctorSnapshot = inspectDoctorSnapshot(paths, codexPaths, statusBundle);
   const codexProfileFamily = inspectCodexProfileFamilySnapshot(codexPaths);
