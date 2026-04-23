@@ -573,7 +573,7 @@ export function loadLayeredStateBundle(paths: CanonicalStatePaths): LayeredState
     },
     latestPolicyPreview: paths.decisionsPath
       ? readLatestPolicyPreviewSnapshot(paths.decisionsPath)
-      : missingLatestPolicyPreviewSnapshot(),
+      : createMissingLatestPolicyPreviewSnapshot(),
   };
 }
 
@@ -856,13 +856,13 @@ export function readLatestPolicyPreviewDecision(path: string): DecisionRecord | 
 export function readLatestPolicyPreviewSnapshot(path: string): LatestPolicyPreviewSnapshot {
   const latestPolicyDecision = readLatestPolicyPreviewDecision(path);
   if (!latestPolicyDecision) {
-    return missingLatestPolicyPreviewSnapshot();
+    return createMissingLatestPolicyPreviewSnapshot();
   }
 
   const latestPolicyContext = policyPreviewDecisionContext(latestPolicyDecision);
 
   if (!latestPolicyContext) {
-    return missingLatestPolicyPreviewSnapshot();
+    return createMissingLatestPolicyPreviewSnapshot();
   }
 
   const scenarioIds = latestPolicyContext.scenarios.flatMap((scenario) =>
@@ -892,7 +892,7 @@ export function readLatestPolicyPreviewSnapshot(path: string): LatestPolicyPrevi
   };
 }
 
-function missingLatestPolicyPreviewSnapshot(): LatestPolicyPreviewSnapshot {
+export function createMissingLatestPolicyPreviewSnapshot(): LatestPolicyPreviewSnapshot {
   return {
     status: 'missing',
     scenarioCount: 0,

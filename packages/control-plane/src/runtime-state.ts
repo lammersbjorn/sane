@@ -5,6 +5,7 @@ import {
   buildRunBrief,
   type CanonicalRewriteResult,
   createCanonicalStatePaths,
+  createMissingLatestPolicyPreviewSnapshot,
   loadLayeredStateBundle,
   readCurrentRunState,
   readRunSummary,
@@ -197,7 +198,7 @@ export function inspectRuntimeState(paths: ProjectPaths): RuntimeInspectSnapshot
       latestDecision: null,
       latestArtifact: null
     },
-    latestPolicyPreview: missingLatestPolicyPreview()
+    latestPolicyPreview: createMissingLatestPolicyPreviewSnapshot()
   };
 }
 
@@ -233,15 +234,4 @@ function fallbackLayerStatus(path: string, value: unknown): LayeredStateLayerSta
   }
 
   return existsSync(path) ? "invalid" : "missing";
-}
-
-function missingLatestPolicyPreview(): LatestPolicyPreviewSnapshot {
-  return {
-    status: "missing",
-    scenarioCount: 0,
-    scenarioIds: [],
-    scenarios: [],
-    tsUnix: null,
-    summary: null
-  };
 }

@@ -12,6 +12,7 @@ import {
   createDefaultRunSummary,
   createDecisionRecord,
   createEventRecord,
+  createMissingLatestPolicyPreviewSnapshot,
   createPolicyPreviewDecisionContext,
   listCanonicalBackupSiblings,
   loadLayeredStateBundle,
@@ -710,6 +711,17 @@ describe('typed record parity', () => {
 
     expect(() => readLatestPolicyPreviewSnapshot(path)).not.toThrow();
     expect(readLatestPolicyPreviewSnapshot(path)).toEqual({
+      status: 'missing',
+      scenarioCount: 0,
+      scenarioIds: [],
+      scenarios: [],
+      tsUnix: null,
+      summary: null,
+    });
+  });
+
+  it('exposes one canonical missing latest-policy-preview snapshot factory', () => {
+    expect(createMissingLatestPolicyPreviewSnapshot()).toEqual({
       status: 'missing',
       scenarioCount: 0,
       scenarioIds: [],

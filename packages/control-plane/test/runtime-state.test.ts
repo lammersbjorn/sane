@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import {
   appendJsonlRecord,
+  createMissingLatestPolicyPreviewSnapshot,
   createDecisionRecord,
   stringifyDecisionRecord
 } from "@sane/state";
@@ -51,14 +52,7 @@ describe("inspectRuntimeState", () => {
         latestDecision: null,
         latestArtifact: null
       },
-      latestPolicyPreview: {
-        status: "missing",
-        scenarioCount: 0,
-        scenarioIds: [],
-        scenarios: [],
-        tsUnix: null,
-        summary: null
-      }
+      latestPolicyPreview: createMissingLatestPolicyPreviewSnapshot()
     });
   });
 
