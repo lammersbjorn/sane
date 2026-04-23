@@ -20,7 +20,11 @@ import {
 } from "@sane/state";
 
 import { saveConfig } from "./preferences.js";
-import { inspectRuntimeState, writeRuntimeSummaryAndBrief } from "./runtime-state.js";
+import {
+  ensureRuntimeHandoffBaseline,
+  inspectRuntimeState,
+  writeRuntimeSummaryAndBrief
+} from "./runtime-state.js";
 
 export function readLastOperationSummary(paths: ProjectPaths): string | null {
   return readJsonlLastRecord(paths.eventsPath, parseEventRecordJson)?.summary ?? null;
@@ -42,6 +46,7 @@ export function executeOperation(
 }
 
 export function recordOperation(paths: ProjectPaths, result: OperationResult): void {
+  ensureRuntimeHandoffBaseline(paths);
   const runtime = inspectRuntimeState(paths);
   const current = runtime.current ?? createDefaultCurrentRunState("unknown");
   persistOperationState(paths, result, runtime.summary, current);

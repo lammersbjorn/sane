@@ -22,6 +22,7 @@ import {
 } from "../src/history.js";
 import { installRuntime } from "../src/index.js";
 import { previewPolicy } from "../src/policy-preview.js";
+import { inspectRuntimeState } from "../src/runtime-state.js";
 
 const tempDirs: string[] = [];
 
@@ -52,6 +53,20 @@ describe("operation history plumbing", () => {
     expect(events.at(-1)?.action).toBe("show_config");
     expect(summary.filesTouched).toContain(paths.configPath);
     expect(brief).toContain(paths.configPath);
+    expect(inspectRuntimeState(paths)).toMatchObject({
+      current: expect.objectContaining({
+        phase: "setup"
+      }),
+      summary: expect.objectContaining({
+        filesTouched: expect.arrayContaining([paths.configPath])
+      }),
+      brief: expect.any(String),
+      layerStatus: {
+        currentRun: "present",
+        summary: "present",
+        brief: "present"
+      }
+    });
   });
 
   it("recordOperation promotes milestones and artifact records", () => {
@@ -168,5 +183,33 @@ describe("operation history plumbing", () => {
       ])
     });
     expect(summary.completedMilestones).toHaveLength(0);
+  });
+
+  it("repairs invalid runtime handoff files before recording operation history", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    installRuntime(paths, codexPaths);
+    rmSync(paths.currentRunPath);
+    rmSync(paths.summaryPath);
+
+    executeOperation(paths, () => exportAll(paths, codexPaths));
+
+    expect(inspectRuntimeState(paths)).toMatchObject({
+      current: expect.objectContaining({
+        phase: "setup"
+      }),
+      summary: expect.objectContaining({
+        completedMilestones: expect.arrayContaining(["Sane installed into Codex"])
+      }),
+      brief: expect.any(String),
+      layerStatus: {
+        currentRun: "present",
+        summary: "present",
+        brief: "present"
+      }
+    });
   });
 });
