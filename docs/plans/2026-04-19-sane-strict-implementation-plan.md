@@ -74,6 +74,7 @@ Keep this explicit and ordered by migration value:
      - [x] TS terminal path handles left/right/up/down, `tab`/`backtab`, `h/j/k/l`, `enter`, `esc`, and `q`
      - [x] TS terminal path respects viewport width/height and redraws on resize
      - [x] local TS bin shim exists at `apps/sane-tui/bin/sane.mjs`
+     - [x] internal TS build can emit a bundled `dist/bin/sane.cjs` that runs without `tsx`
      - [ ] public root `start` / `start:settings` switched from Rust to TS
      - [ ] public README/setup docs switched from Cargo-first to TS-first
      - [ ] packaged/public CLI story declared for `@sane/sane-tui` instead of internal-only preview/bin usage

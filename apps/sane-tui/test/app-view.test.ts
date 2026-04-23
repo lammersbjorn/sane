@@ -531,11 +531,13 @@ describe("app view", () => {
     selectSection(shell, "install");
 
     const view = loadAppView(shell);
+    const overview = view.sectionOverviewLines.join("\n");
 
-    expect(view.sectionOverviewLines.join("\n")).toContain("Current install bundle:");
-    expect(view.sectionOverviewLines.join("\n")).toContain("install bundle state:");
-    expect(view.sectionOverviewLines.join("\n")).toContain("bundle targets missing:");
-    expect(view.sectionOverviewLines.join("\n")).toContain("optional Codex tools: missing (3 recommended changes)");
+    expect(overview).toContain("Current install bundle:");
+    expect(overview.match(/Current install bundle:/g)).toHaveLength(1);
+    expect(overview).toContain("install bundle state:");
+    expect(overview).toContain("bundle targets missing:");
+    expect(overview).toContain("optional Codex tools: missing (3 recommended changes)");
   });
 
   it("loads inspect snapshot once when install overview and selected help both need it", async () => {

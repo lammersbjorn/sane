@@ -143,6 +143,7 @@ Implemented:
 - TS runtime resolution now works for internal text and live terminal preview paths via workspace package `exports`, self-package app imports, terminal-loop wiring, and `tsx`; the remaining blockers are real terminal parity plus a deliberate packaged public entrypoint
 - internal TS preview launch is now unified through one smart `tsx` entrypoint that chooses live terminal on TTY launch commands and falls back to text for non-TTY or backend command flows
 - `@sane/sane-tui` now also exposes a local `sane` bin shim that routes through the smart preview entrypoint; in this workspace the internal root launcher uses `node apps/sane-tui/bin/sane.mjs` directly while the package `bin` metadata stays ready for later packaged cutover work
+- `@sane/sane-tui` now also has an internal bundled build lane via `tsup`, emitting `dist/bin/sane.cjs` that can run `inspect` and backend verbs without `tsx` at runtime
 - app-local TUI imports now use `@/*`, and workspace package imports now use `@sane/*`
 - optional repo-local skill export now exists as an explicit separate target and is not part of `export all`
 - optional repo-local AGENTS export now exists as an explicit separate target and is not part of `export all`
@@ -261,9 +262,10 @@ pnpm check
 - [ ] Exact self-hosting milestone checklist
 - [ ] Exact TypeScript package split and Rust retirement/cutover checklist, ordered highest-to-lowest migration value: policy-preview cutover, Rust workspace bootstrap retirement, leftover compatibility glue cleanup
 - [x] internal TS launch supports no-args / `settings` / `inspect` / `repair`, backend verbs, and `hook session-start`
-  - [x] internal TS preview is smart-routed across non-TTY text vs TTY live terminal
-  - [x] TS terminal preview has visible nav chrome, key parity, viewport fitting, resize redraw, and a local bin shim
-  - [ ] switch public root `start` / `start:settings` away from Rust
+- [x] internal TS preview is smart-routed across non-TTY text vs TTY live terminal
+- [x] TS terminal preview has visible nav chrome, key parity, viewport fitting, resize redraw, and a local bin shim
+- [x] internal TS build can emit a bundled `dist/bin/sane.cjs` and smoke-run it without `tsx`
+- [ ] switch public root `start` / `start:settings` away from Rust
   - [ ] switch public README/setup docs away from Cargo-first instructions
   - [ ] declare the packaged/public CLI story for `@sane/sane-tui`
   - [ ] remove Rust launch/compat glue only after the TS path is the documented public entrypoint

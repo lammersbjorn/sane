@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -138,8 +138,7 @@ interface CorePackManifest {
   assetSources?: CorePackAssetSources;
 }
 
-const SRC_DIR = dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = resolve(SRC_DIR, "../../..");
+const REPO_ROOT = discoverRepoRoot(candidateRepoRootStarts());
 const CORE_PACK_ROOT = resolve(REPO_ROOT, "packs/core");
 const CORE_PACK_MANIFEST = readCorePackManifest();
 
@@ -444,6 +443,41 @@ export function createSaneOpencodeExplorerAgentTemplateWithPacks(
 
 function readCorePackManifest(): CorePackManifest {
   return JSON.parse(readCoreAsset("manifest.json")) as CorePackManifest;
+}
+
+function candidateRepoRootStarts(): string[] {
+  const starts = new Set<string>([process.cwd(), dirname(process.argv[1] ?? process.cwd())]);
+
+  try {
+    starts.add(dirname(fileURLToPath(import.meta.url)));
+  } catch {
+    if (typeof __dirname === "string") {
+      starts.add(__dirname);
+    }
+  }
+
+  return [...starts];
+}
+
+function discoverRepoRoot(startDirs: string[]): string {
+  for (const startDir of startDirs) {
+    let current = startDir;
+
+    while (true) {
+      if (existsSync(resolve(current, "packs/core/manifest.json"))) {
+        return current;
+      }
+
+      const parent = resolve(current, "..");
+      if (parent === current) {
+        break;
+      }
+
+      current = parent;
+    }
+  }
+
+  throw new Error(`unable to locate repo root from ${startDirs.join(", ")}`);
 }
 
 function readCoreAsset(path: string): string {

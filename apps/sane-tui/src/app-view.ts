@@ -137,7 +137,6 @@ function sectionOverviewLines(
     case "install": {
       const install = models.install;
       return [
-        "Current install bundle:",
         ...dashboard.activeSection.description,
         "",
         `install bundle state: ${install.bundleStatus}`,

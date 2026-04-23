@@ -10,6 +10,7 @@ Current role:
 - owns pure input/key handling on top of the shell state machine
 - owns internal non-interactive TS CLI parsing/execution for backend verbs, section shortcuts, and hook output
 - exposes internal smart/text/live preview paths through `tsx`
+- exposes an internal bundled build lane that emits `dist/bin/sane.cjs` without needing `tsx` at runtime
 - owns render-ready dashboard / overlay / app view models
 - owns internal text-frame rendering scaffolding for the future TS terminal driver
 - owns internal text-driver glue that wires discovery, shell, input, and text rendering together
@@ -66,6 +67,8 @@ pnpm --filter @sane/sane-tui run preview settings
 pnpm --filter @sane/sane-tui run preview inspect
 pnpm --filter @sane/sane-tui run preview:terminal settings
 pnpm --filter @sane/sane-tui run preview:text settings
+pnpm --filter @sane/sane-tui run build
+node apps/sane-tui/dist/bin/sane.cjs inspect
 pnpm --filter @sane/sane-tui test
 pnpm --filter @sane/sane-tui typecheck
 ```

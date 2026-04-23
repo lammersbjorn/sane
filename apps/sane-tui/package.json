@@ -10,6 +10,8 @@
     "./*.js": "./src/*.ts"
   },
   "scripts": {
+    "build": "tsup --config tsup.config.ts",
+    "build:smoke": "pnpm run build && node ./dist/bin/sane.cjs inspect",
     "preview": "tsx ./bin/sane-preview.ts",
     "preview:terminal": "tsx ./bin/sane-terminal-preview.ts",
     "preview:text": "tsx ./bin/sane-text-preview.ts",
@@ -28,6 +30,7 @@
   "devDependencies": {
     "typescript": "^5.9.3",
     "tsx": "^4.21.0",
+    "tsup": "^8.5.1",
     "vitest": "catalog:"
   }
 }
