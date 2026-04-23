@@ -173,5 +173,6 @@ describe("inspect presenter", () => {
     expect(lines).toContain(
       "hooks: invalid (Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows.)"
     );
+    expect(lines.filter((line) => line === "")).toHaveLength(3);
   });
 });

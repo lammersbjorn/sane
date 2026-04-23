@@ -79,9 +79,11 @@ export function formatInspectOverviewLines(snapshot: InspectOverviewSnapshot): s
     `latest event (read-only local visibility): ${formatLatestHistoryEventPreview(snapshot.runtimeHistoryPreview.latestEvent)}`,
     `latest decision (read-only local visibility): ${formatLatestHistoryDecisionPreview(snapshot.runtimeHistoryPreview.latestDecision)}`,
     `latest artifact (read-only local visibility): ${formatLatestHistoryArtifactPreview(snapshot.runtimeHistoryPreview.latestArtifact)}`,
+    "",
     ...formatInspectPolicyPreviewLines(snapshot.latestPolicyPreview, snapshot.policyPreview, {
       inputPrefix: "latest policy input"
     }),
+    "",
     formatInspectOptionalPackProvenanceLine(snapshot.statusBundle.optionalPacks),
     `local config view: ${snapshot.localConfig.summary}`,
     `Codex config view: ${snapshot.codexConfig.summary}`,
@@ -91,6 +93,7 @@ export function formatInspectOverviewLines(snapshot: InspectOverviewSnapshot): s
     `statusline profile: ${snapshot.statuslineAudit.status} (${snapshot.statuslineAudit.recommendedChangeCount} recommended changes)`,
     `statusline apply: ${snapshot.statuslineApply.status} (${snapshot.statuslineApply.appliedKeys.length} keys)`,
     `statusline preview: ${snapshot.statuslinePreview.summary}`,
+    "",
     formatInspectDriftSummaryLine(snapshot.driftItems)
   ].concat(formatInspectDriftItemLines(snapshot.driftItems));
 }

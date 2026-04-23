@@ -103,6 +103,17 @@ describe("dashboard view", () => {
     });
   });
 
+  it("hides unknown runtime progress chips until current-run state is meaningful", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const shell = createTuiShell(createProjectPaths(projectRoot), createCodexPaths(homeDir));
+
+    const view = loadDashboardView(shell);
+
+    expect(view.chips.find((chip) => chip.id === "phase")).toBeUndefined();
+    expect(view.chips.find((chip) => chip.id === "verification")).toBeUndefined();
+  });
+
   it("does not derive runtime chips from runtime summary detail text", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();

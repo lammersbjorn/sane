@@ -123,18 +123,23 @@ function buildStatusChips(statusSnapshot: TuiShell["statusSnapshot"]): Dashboard
   });
 
   if (runtimeState.current) {
-    chips.push({
-      id: "phase",
-      label: "Phase",
-      value: runtimeState.current.phase,
-      tone: toneForValue(runtimeState.current.phase)
-    });
-    chips.push({
-      id: "verification",
-      label: "Verification",
-      value: runtimeState.current.verification.status,
-      tone: toneForValue(runtimeState.current.verification.status)
-    });
+    if (runtimeState.current.phase !== "unknown") {
+      chips.push({
+        id: "phase",
+        label: "Phase",
+        value: runtimeState.current.phase,
+        tone: toneForValue(runtimeState.current.phase)
+      });
+    }
+
+    if (runtimeState.current.verification.status !== "unknown") {
+      chips.push({
+        id: "verification",
+        label: "Verification",
+        value: runtimeState.current.verification.status,
+        tone: toneForValue(runtimeState.current.verification.status)
+      });
+    }
   }
 
   return chips;
