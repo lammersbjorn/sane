@@ -25,7 +25,7 @@ describe("sane bin shim", () => {
   it("runs the smart preview in text mode for settings", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
-    writeFileSync(join(projectRoot, "Cargo.toml"), "[workspace]\n");
+    writeFileSync(join(projectRoot, "pnpm-workspace.yaml"), 'packages:\n  - "apps/*"\n');
 
     const result = spawnSync(process.execPath, [BIN_PATH, "settings"], {
       cwd: projectRoot,
@@ -43,7 +43,7 @@ describe("sane bin shim", () => {
   it("runs section shortcuts through the smart preview shim", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
-    writeFileSync(join(projectRoot, "Cargo.toml"), "[workspace]\n");
+    writeFileSync(join(projectRoot, "pnpm-workspace.yaml"), 'packages:\n  - "apps/*"\n');
 
     const result = spawnSync(process.execPath, [BIN_PATH, "inspect"], {
       cwd: projectRoot,
@@ -61,7 +61,7 @@ describe("sane bin shim", () => {
   it("routes backend commands through the same shim", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
-    writeFileSync(join(projectRoot, "Cargo.toml"), "[workspace]\n");
+    writeFileSync(join(projectRoot, "pnpm-workspace.yaml"), 'packages:\n  - "apps/*"\n');
 
     const result = spawnSync(process.execPath, [BIN_PATH, "install"], {
       cwd: projectRoot,

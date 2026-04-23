@@ -1,7 +1,0 @@
-[package]
-name = "sane-policy"
-edition.workspace = true
-license.workspace = true
-version.workspace = true
-
-[dependencies]

@@ -26,7 +26,7 @@ afterEach(() => {
 });
 
 describe("install screen model", () => {
-  it("lists the full codex-native install surface in Rust order", () => {
+  it("lists the full codex-native install surface in current order", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const paths = createProjectPaths(projectRoot);

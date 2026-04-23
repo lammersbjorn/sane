@@ -37,7 +37,7 @@ The TUI should feel like:
   - `apps/sane-tui/src/overlay-models.ts`
 
 These layers are already implemented in TypeScript and should stay thin, typed, and renderer-friendly.
-The current policy-preview source of truth is `packages/control-plane/src/policy-preview.ts`; the Rust `debug policy-preview` path in `crates/sane-tui/src/main.rs` is legacy migration-only.
+The current policy-preview source of truth is `packages/control-plane/src/policy-preview.ts`.
 Optional pack registry ownership (optional pack names + config-key mapping + enabled/disabled selectors) lives in `@sane/framework-assets`; TUI editor/overlay and control-plane consumers should reuse those shared helpers instead of local pack lists.
 
 ### 1. Welcome Shell

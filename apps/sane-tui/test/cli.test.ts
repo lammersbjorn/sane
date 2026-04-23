@@ -69,7 +69,7 @@ describe("ts cli command execution", () => {
   it("renders the default TS text runtime for no-args launch and settings", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
-    writeFileSync(join(projectRoot, "Cargo.toml"), "[workspace]\n");
+    writeFileSync(join(projectRoot, "pnpm-workspace.yaml"), 'packages:\n  - "apps/*"\n');
 
     const start = runCliCommandFromDiscovery([], projectRoot, { HOME: homeDir });
     const settings = runCliCommandFromDiscovery(["settings"], projectRoot, { HOME: homeDir });
@@ -83,7 +83,7 @@ describe("ts cli command execution", () => {
   it("renders section launch shortcuts through discovery", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
-    writeFileSync(join(projectRoot, "Cargo.toml"), "[workspace]\n");
+    writeFileSync(join(projectRoot, "pnpm-workspace.yaml"), 'packages:\n  - "apps/*"\n');
 
     const inspect = runCliCommandFromDiscovery(["inspect"], projectRoot, { HOME: homeDir });
     const repair = runCliCommandFromDiscovery(["repair"], projectRoot, { HOME: homeDir });
@@ -98,7 +98,7 @@ describe("ts cli command execution", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const nested = join(projectRoot, "apps", "sane-tui", "src");
-    writeFileSync(join(projectRoot, "Cargo.toml"), "[workspace]\n");
+    writeFileSync(join(projectRoot, "pnpm-workspace.yaml"), 'packages:\n  - "apps/*"\n');
 
     const result = runCliCommandFromDiscovery(["install"], nested, { HOME: homeDir });
 
@@ -111,7 +111,7 @@ describe("ts cli command execution", () => {
   it("prints the managed session-start hook payload verbatim", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
-    writeFileSync(join(projectRoot, "Cargo.toml"), "[workspace]\n");
+    writeFileSync(join(projectRoot, "pnpm-workspace.yaml"), 'packages:\n  - "apps/*"\n');
 
     const result = runCliCommandFromDiscovery(["hook", "session-start"], projectRoot, {
       HOME: homeDir

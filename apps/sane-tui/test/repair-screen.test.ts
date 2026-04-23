@@ -29,7 +29,7 @@ afterEach(() => {
 });
 
 describe("repair screen model", () => {
-  it("lists repair actions in Rust order with confirmation copy", () => {
+  it("lists repair actions in current order with confirmation copy", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const paths = createProjectPaths(projectRoot);

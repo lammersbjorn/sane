@@ -73,7 +73,7 @@ describe("text driver", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const nested = join(projectRoot, "apps", "sane-tui", "src");
-    writeFileSync(join(projectRoot, "Cargo.toml"), "[workspace]\n");
+    writeFileSync(join(projectRoot, "pnpm-workspace.yaml"), 'packages:\n  - "apps/*"\n');
 
     const runtime = createTextTuiRuntimeFromDiscovery(nested, { HOME: homeDir }, {
       launchShortcut: "settings"

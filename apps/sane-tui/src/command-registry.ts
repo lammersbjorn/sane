@@ -1,7 +1,6 @@
 import { OperationKind } from "@sane/core";
 
 export type TuiSectionId = "get_started" | "preferences" | "install" | "inspect" | "repair";
-export type RustSectionId = "StartHere" | "Configure" | "Exports" | "Inspect" | "Repair";
 export type LaunchShortcut = "default" | "settings" | "inspect" | "repair";
 
 export type BackendCommandId =
@@ -83,7 +82,6 @@ export interface CommandPlacement {
 
 export interface TuiSectionMetadata {
   id: TuiSectionId;
-  rustSection: RustSectionId;
   tabLabel: string;
   docLabel: string;
   description: string[];
@@ -106,7 +104,6 @@ export const COMMAND_METADATA_REGISTRY = {
   sections: [
     {
       id: "get_started",
-      rustSection: "StartHere",
       tabLabel: "Start here",
       docLabel: "Get Started",
       launchShortcut: "default",
@@ -122,7 +119,6 @@ export const COMMAND_METADATA_REGISTRY = {
     },
     {
       id: "preferences",
-      rustSection: "Configure",
       tabLabel: "Set up preferences",
       docLabel: "Preferences",
       launchShortcut: "settings",
@@ -136,7 +132,6 @@ export const COMMAND_METADATA_REGISTRY = {
     },
     {
       id: "install",
-      rustSection: "Exports",
       tabLabel: "Install to Codex",
       docLabel: "Install",
       description: [
@@ -150,7 +145,6 @@ export const COMMAND_METADATA_REGISTRY = {
     },
     {
       id: "inspect",
-      rustSection: "Inspect",
       tabLabel: "Inspect",
       docLabel: "Inspect",
       launchShortcut: "inspect",
@@ -164,7 +158,6 @@ export const COMMAND_METADATA_REGISTRY = {
     },
     {
       id: "repair",
-      rustSection: "Repair",
       tabLabel: "Repair or remove",
       docLabel: "Repair",
       launchShortcut: "repair",

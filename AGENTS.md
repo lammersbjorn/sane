@@ -18,7 +18,6 @@ Keep this file small. Repo-specific detail belongs in targeted skills, not in al
 ## Verify
 
 - Default verify: `rtk run 'pnpm test && pnpm typecheck'`
-- If you touch legacy Rust paths, also run: `rtk run 'cargo test'`
 
 ## Done Means
 

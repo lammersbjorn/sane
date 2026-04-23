@@ -52,11 +52,10 @@ Implemented:
   - `@sane/core`
   - `@sane/framework-assets`
   - `@sane/platform`
-  - `@sane/policy`
-  - `@sane/state`
+- `@sane/policy`
+- `@sane/state`
 - current policy-preview source of truth is `packages/control-plane/src/policy-preview.ts`; the TS TUI layers consume it directly
-- legacy Rust `debug policy-preview` in `crates/sane-tui/src/main.rs` remains migration-only, not the product source of truth
-- Rust workspace bootstrap remains migration scaffolding only
+- the legacy Rust workspace has been removed; the shipped path is now TS-only
 - public GitHub repo
 - dual license
 - repo-owned commit-msg hook
@@ -260,7 +259,7 @@ pnpm check
   - preserve normal fallback for `implementation` / `verifier` / unavailable-plan cases
 - [ ] Exact contents/split of `Sane`'s own minimal self-hosting `AGENTS.md` vs repo skill files
 - [ ] Exact self-hosting milestone checklist
-- [ ] Exact TypeScript package split and Rust retirement/cutover checklist, ordered highest-to-lowest migration value: policy-preview cutover, Rust workspace bootstrap retirement, leftover compatibility glue cleanup
+- [ ] Exact TypeScript package split and TS-only packaging checklist
 - [x] internal TS launch supports no-args / `settings` / `inspect` / `repair`, backend verbs, and `hook session-start`
 - [x] internal TS preview is smart-routed across non-TTY text vs TTY live terminal
 - [x] TS terminal preview has visible nav chrome, key parity, viewport fitting, resize redraw, and a local bin shim
@@ -268,8 +267,8 @@ pnpm check
 - [x] switch public root `start` / `start:settings` away from Rust
   - [x] switch public README/setup docs away from Cargo-first instructions
   - [x] declare the packaged/public CLI story for `@sane/sane-tui`
-    current story: root public start uses the built TS path; internal source preview uses `apps/sane-tui/bin/sane.mjs`; internal built preview uses `dist/bin/sane.cjs`; explicit Rust fallback stays on `start:rust`; eventual package/public CLI should point at built output after parity
-  - [ ] remove Rust launch/compat glue only after the TS path is the documented public entrypoint
+    current story: root public start uses the built TS path; internal source preview uses `apps/sane-tui/bin/sane.mjs`; internal built preview uses `dist/bin/sane.cjs`; eventual package/public CLI should point at built output after parity
+  - [x] remove the legacy Rust workspace and fallback startup path
 - [ ] Exact post-`v1` packaging automation sequence
 - [ ] Exact default attribution surface if onboarding opt-in ships:
   - README badge

@@ -26,7 +26,6 @@ This contract covers only:
 Current implementation note:
 
 - the active policy-preview path is TypeScript control-plane code in `packages/control-plane/src/policy-preview.ts`
-- the Rust `debug policy-preview` path in `crates/sane-tui/src/main.rs` is legacy migration-only, not contract source of truth
 
 It does not yet cover:
 

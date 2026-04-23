@@ -16,7 +16,7 @@ Current role:
 - owns internal text-driver glue that wires discovery, shell, input, and text rendering together
 - owns terminal-key decoding for the future real TS key loop
 - owns terminal-driver glue that maps raw terminal input into the TS runtime
-- does not yet own the shipped public terminal UI path
+- now owns the shipped public terminal UI path through the built root `pnpm start` flow
 
 Important files:
 
@@ -54,7 +54,7 @@ Boundary rules:
 - keep this package focused on TUI state and view models
 - reuse `packages/control-plane` for backend operations
 - reuse `packages/config`, `packages/platform`, and `packages/state` for source-of-truth logic
-- do not reintroduce hardcoded Rust-only behavior if the TS layer can own it cleanly
+- do not reintroduce legacy-stack behavior if the TS layer can own it cleanly
 - keep product framing aligned with `docs/decisions/2026-04-19-sane-decision-log.md`
 
 Current package story:
@@ -63,7 +63,6 @@ Current package story:
 - internal source preview path is `apps/sane-tui/bin/sane.mjs`, which shells through `tsx`
 - internal built preview path is `apps/sane-tui/dist/bin/sane.cjs`, emitted by `pnpm --filter @sane/sane-tui run build`
 - eventual package/public CLI should point at the built output, not the source `tsx` shim
-- Rust fallback remains explicit through `pnpm run start:rust` while migration finishes
 
 Verification:
 

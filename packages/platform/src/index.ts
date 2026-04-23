@@ -100,14 +100,19 @@ export function createProjectPaths(projectRoot: string): ProjectPaths {
 
 export function discoverProjectPaths(startPath: string): ProjectPaths {
   const startDir = startDirForDiscovery(startPath);
+  let packageRoot: string | undefined;
 
   for (const candidate of ancestors(startDir)) {
-    if (isProjectRoot(candidate)) {
+    const marker = projectRootMarker(candidate);
+    if (marker === 'workspace' || marker === 'git' || marker === 'runtime') {
       return createProjectPaths(candidate);
+    }
+    if (marker === 'package' && !packageRoot) {
+      packageRoot = candidate;
     }
   }
 
-  return createProjectPaths(startDir);
+  return createProjectPaths(packageRoot ?? startDir);
 }
 
 export function ensureRuntimeDirs(paths: ProjectPaths): void {
@@ -218,11 +223,7 @@ export function resolveHomeDir(env: HomeDirEnv): string | undefined {
 }
 
 export function isProjectRoot(candidate: string): boolean {
-  return (
-    existsSync(join(candidate, 'Cargo.toml')) ||
-    existsSync(join(candidate, '.git')) ||
-    existsSync(join(candidate, '.sane'))
-  );
+  return projectRootMarker(candidate) !== undefined;
 }
 
 export function startDirForDiscovery(startPath: string): string {
@@ -231,7 +232,7 @@ export function startDirForDiscovery(startPath: string): string {
       return startPath;
     }
   } catch {
-    // Missing paths follow the Rust behavior: use the parent when possible.
+    // Missing paths fall back to the parent when possible.
   }
 
   const parent = dirname(startPath);
@@ -256,6 +257,28 @@ function ancestors(startPath: string): string[] {
   }
 
   return chain;
+}
+
+type ProjectRootMarker = 'runtime' | 'git' | 'workspace' | 'package';
+
+function projectRootMarker(candidate: string): ProjectRootMarker | undefined {
+  if (existsSync(join(candidate, '.sane'))) {
+    return 'runtime';
+  }
+
+  if (existsSync(join(candidate, '.git'))) {
+    return 'git';
+  }
+
+  if (existsSync(join(candidate, 'pnpm-workspace.yaml'))) {
+    return 'workspace';
+  }
+
+  if (existsSync(join(candidate, 'package.json'))) {
+    return 'package';
+  }
+
+  return undefined;
 }
 
 function nonEmpty(value: string | undefined): string | undefined {

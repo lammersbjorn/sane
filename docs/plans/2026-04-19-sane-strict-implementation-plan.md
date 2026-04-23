@@ -58,35 +58,15 @@ Do not mix them.
 - Temporary bridge code is allowed only to preserve behavior while landing parity.
 - Migration work must not be used to reopen product philosophy, add wrapper ritual, or widen repo self-hosting guidance.
 
-## Remaining Rust-Owned Scope
+## TS-Only Runtime Status
 
-Keep this explicit and ordered by migration value:
+Current state:
 
-1. Public startup / packaging cutover
-   - the public repo-root entrypoint now routes through the built TS path via `pnpm start` / `pnpm run start:settings`.
-   - explicit Rust fallback still exists via `pnpm run start:rust`.
-   - internal TS launch now works through the `apps/sane-tui/bin/sane.mjs` shim, smart `tsx` preview routing, workspace package `exports`, and self-package app imports.
-   - do not flip the public path until terminal parity and packaging are deliberate.
-   - explicit cutover checklist:
-    - [x] internal TS launch supports no-args plus direct `settings` / `inspect` / `repair` section shortcuts
-     - [x] internal TS launch supports backend verbs and `hook session-start`
-     - [x] TS preview can launch as text for non-TTY and live alt-screen for TTY
-     - [x] TS terminal path has visible section tabs, visible action list, selected-action marker, and recommended-action marker
-     - [x] TS terminal path handles left/right/up/down, `tab`/`backtab`, `h/j/k/l`, `enter`, `esc`, and `q`
-     - [x] TS terminal path respects viewport width/height and redraws on resize
-     - [x] local TS bin shim exists at `apps/sane-tui/bin/sane.mjs`
-     - [x] internal TS build can emit a bundled `dist/bin/sane.cjs` that runs without `tsx`
-     - [x] public root `start` / `start:settings` switched from Rust to TS
-     - [x] public README/setup docs switched from Cargo-first to TS-first
-     - [x] packaged/public CLI story declared for `@sane/sane-tui`: source preview stays on `bin/sane.mjs`; built preview stays on `dist/bin/sane.cjs`; root public start uses the built path; explicit Rust fallback remains until parity is fully accepted; eventual package/public CLI points at built output only after parity
-     - [ ] Rust `main.rs` launch/command glue removed after TS path is the documented public entrypoint
-2. Policy-preview legacy cleanup
-   - `packages/control-plane/src/policy-preview.ts` is the current source of truth.
-   - `crates/sane-tui/src/main.rs` still has a legacy `debug policy-preview` path; treat it as migration-only until it can be removed.
-3. Rust workspace bootstrap retirement
-   - keep only the minimal bootstrap / cutover scaffolding needed to land the TS-first stack split.
-4. Leftover Rust compatibility glue
-   - remove only after the TS path owns the user-visible behavior and tests.
+- public repo-root entrypoint routes through the built TS path via `pnpm start` / `pnpm run start:settings`
+- internal TS launch works through the `apps/sane-tui/bin/sane.mjs` shim, smart `tsx` preview routing, workspace package `exports`, and self-package app imports
+- internal TS build emits `apps/sane-tui/dist/bin/sane.cjs` for runtime use without `tsx`
+- the legacy Rust workspace and fallback startup path have been removed
+- remaining TUI work is now about TS polish and packaging, not mixed-stack cutover
 
 ## Git Progress Tracking
 

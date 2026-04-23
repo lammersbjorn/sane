@@ -173,7 +173,6 @@ These are still undecided and should stay out of `Locked`.
 - Any additional export surfaces beyond the current user skill, repo skills, repo `AGENTS.md` block, global `AGENTS.md` block, hooks, and custom agents
 - Exact model preset matrix and routing rules
 - Exact control-surface implementation details within the TypeScript-first stack
-- Exact migration sequencing and Rust retirement/cutover checklist
 - Final product name for the later end-to-end outcome-runner flow
 - Exact self-hosting milestone checklist
 - Exact telemetry schema

@@ -48,7 +48,7 @@ describe("tui app bootstrap", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const nested = join(projectRoot, "apps", "sane-tui", "src");
-    writeFileSync(join(projectRoot, "Cargo.toml"), "[workspace]\n");
+    writeFileSync(join(projectRoot, "pnpm-workspace.yaml"), 'packages:\n  - "apps/*"\n');
 
     const app = createSaneTuiAppFromDiscovery(nested, { HOME: homeDir }, {
       launchShortcut: "settings"

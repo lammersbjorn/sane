@@ -8,8 +8,6 @@
     "start:settings": "pnpm --filter @sane/sane-tui run build && node ./apps/sane-tui/dist/bin/sane.cjs settings",
     "start:inspect": "pnpm --filter @sane/sane-tui run build && node ./apps/sane-tui/dist/bin/sane.cjs inspect",
     "start:repair": "pnpm --filter @sane/sane-tui run build && node ./apps/sane-tui/dist/bin/sane.cjs repair",
-    "start:rust": "cargo run -p sane --",
-    "start:rust:settings": "cargo run -p sane -- settings",
     "start:ts-live-preview": "pnpm --filter @sane/sane-tui run preview:terminal",
     "start:ts-live-preview:settings": "pnpm --filter @sane/sane-tui run preview:terminal settings",
     "start:ts-preview": "node ./apps/sane-tui/bin/sane.mjs",

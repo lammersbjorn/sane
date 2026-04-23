@@ -56,10 +56,10 @@ describe('project path parity', () => {
     expect(paths.telemetryQueuePath).toBe(join(dir, '.sane', 'telemetry', 'queue.jsonl'));
   });
 
-  it('walks up to Cargo.toml from a nested directory', () => {
+  it('walks up to pnpm-workspace.yaml from a nested directory', () => {
     const dir = makeTempDir();
-    writeFileSync(join(dir, 'Cargo.toml'), '[workspace]\n');
-    const nested = join(dir, 'crates', 'sane-tui', 'src');
+    writeFileSync(join(dir, 'pnpm-workspace.yaml'), 'packages:\n  - "apps/*"\n');
+    const nested = join(dir, 'apps', 'sane-tui', 'src');
     mkdirSync(nested, { recursive: true });
 
     const discovered = discoverProjectPaths(nested);
@@ -76,6 +76,17 @@ describe('project path parity', () => {
     writeFileSync(file, '// test\n');
 
     const discovered = discoverProjectPaths(file);
+
+    expect(discovered.projectRoot).toBe(dir);
+  });
+
+  it('falls back to the nearest package.json when no workspace marker exists', () => {
+    const dir = makeTempDir();
+    writeFileSync(join(dir, 'package.json'), '{ "name": "sane-test" }\n');
+    const nested = join(dir, 'src');
+    mkdirSync(nested, { recursive: true });
+
+    const discovered = discoverProjectPaths(nested);
 
     expect(discovered.projectRoot).toBe(dir);
   });

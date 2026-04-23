@@ -11,7 +11,7 @@
 <p align="center">
   <img alt="Status" src="https://img.shields.io/badge/status-pre--release-d97706?style=flat-square">
   <img alt="Platforms" src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-2563eb?style=flat-square">
-  <img alt="Rust" src="https://img.shields.io/badge/built%20with-Rust-b45309?style=flat-square">
+  <img alt="TypeScript" src="https://img.shields.io/badge/built%20with-TypeScript-2563eb?style=flat-square">
   <img alt="License" src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-15803d?style=flat-square">
 </p>
 
@@ -194,13 +194,6 @@ pnpm run start:inspect
 pnpm run start:repair
 ```
 
-Rust fallback still exists while the migration finishes:
-
-```bash
-pnpm run start:rust
-pnpm run start:rust:settings
-```
-
 If you want the longer user-story version, read [docs/what-sane-does.md](./docs/what-sane-does.md).
 
 ## Today Vs Later
@@ -255,12 +248,7 @@ Design rules:
 <details>
 <summary><strong>Workspace docs</strong></summary>
 
-- [`crates/sane-tui/README.md`](./crates/sane-tui/README.md)
-- [`crates/sane-core/README.md`](./crates/sane-core/README.md)
-- [`crates/sane-config/README.md`](./crates/sane-config/README.md)
-- [`crates/sane-platform/README.md`](./crates/sane-platform/README.md)
-- [`crates/sane-state/README.md`](./crates/sane-state/README.md)
-- [`crates/sane-policy/README.md`](./crates/sane-policy/README.md)
+- [`apps/sane-tui/README.md`](./apps/sane-tui/README.md)
 - [`docs/decisions/2026-04-19-sane-decision-log.md`](./docs/decisions/2026-04-19-sane-decision-log.md)
 
 </details>

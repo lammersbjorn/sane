@@ -64,7 +64,6 @@ Work on `Sane` itself without turning this repo's self-hosting setup into a gene
 
 - docs or instruction-surface-only changes: inspect diff for the touched files
 - TS or exported-template changes: `rtk run 'pnpm test && pnpm typecheck'`
-- legacy Rust paths only if touched: `rtk run 'cargo test'`
 
 ## Gotchas / Safety
 
