@@ -366,6 +366,43 @@ export function outcomeRunnerPreflightFixtures(): readonly PolicyEvalFixture[] {
           }
         ]
       }
+    },
+    {
+      caseId: "b8-intake-stop-boundary",
+      input: {
+        intent: Intent.Design,
+        taskShape: TaskShape.Local,
+        risk: Level.Medium,
+        ambiguity: Level.Medium,
+        parallelism: Parallelism.None,
+        contextPressure: Level.Low,
+        runState: RunState.Exploring
+      },
+      expected: {
+        obligations: [
+          PolicyObligation.Planning
+        ],
+        roles: {
+          coordinator: true,
+          sidecar: false,
+          verifier: false
+        },
+        orchestration: {
+          subagents: SubagentStrategy.SoloOnly,
+          subagentReadiness: SubagentReadinessReason.TaskTooSmall,
+          verifierTiming: VerifierTiming.None
+        },
+        continuation: {
+          strategy: ContinuationStrategy.ContinueUntilBlocked,
+          stopCondition: StopCondition.RealBlockerOrExplicitPause
+        },
+        trace: [
+          {
+            obligation: PolicyObligation.Planning,
+            rule: PolicyRule.NeedsUpfrontPlanning
+          }
+        ]
+      }
     }
   ];
 }

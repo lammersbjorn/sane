@@ -231,11 +231,12 @@ describe("policy eval harness", () => {
 
     expect(fixtures.map((fixture) => fixture.caseId)).toEqual([
       "b8-long-run-preflight",
-      "b8-blocked-self-repair-boundary"
+      "b8-blocked-self-repair-boundary",
+      "b8-intake-stop-boundary"
     ]);
     expect(evaluatePolicyFixtures(fixtures)).toEqual({
       passed: true,
-      caseCount: 2,
+      caseCount: 3,
       failureCount: 0,
       failures: []
     });
@@ -278,6 +279,27 @@ describe("policy eval harness", () => {
         continuation: {
           strategy: ContinuationStrategy.SelfRepairUntilUnblocked,
           stopCondition: StopCondition.UnblockedOrNeedsInput
+        }
+      })
+    );
+    expect(fixtures.find((fixture) => fixture.caseId === "b8-intake-stop-boundary")?.expected).toEqual(
+      expect.objectContaining({
+        obligations: [
+          Obligation.Planning
+        ],
+        roles: {
+          coordinator: true,
+          sidecar: false,
+          verifier: false
+        },
+        orchestration: expect.objectContaining({
+          subagents: SubagentStrategy.SoloOnly,
+          subagentReadiness: SubagentReadinessReason.TaskTooSmall,
+          verifierTiming: VerifierTiming.None
+        }),
+        continuation: {
+          strategy: ContinuationStrategy.ContinueUntilBlocked,
+          stopCondition: StopCondition.RealBlockerOrExplicitPause
         }
       })
     );

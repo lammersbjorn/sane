@@ -10,6 +10,22 @@ import {
 } from "@sane/sane-tui/index.js";
 
 describe("command metadata registry", () => {
+  it("does not expose a B8 outcome runner command yet", () => {
+    const shippedCommandIds = new Set([
+      ...Object.keys(COMMAND_METADATA_REGISTRY.commands),
+      ...COMMAND_METADATA_REGISTRY.placements.map((placement) => placement.commandId),
+      ...listSections().flatMap((section) => listSectionActions(section.id).map((action) => action.id))
+    ]);
+
+    expect([...shippedCommandIds].sort()).not.toEqual(
+      expect.arrayContaining([
+        "outcome_runner",
+        "run_outcome",
+        "start_outcome_runner"
+      ])
+    );
+  });
+
   it("exports normalized command specs, placements, and shortcuts", () => {
     expect(COMMAND_METADATA_REGISTRY).toBeDefined();
     expect(COMMAND_METADATA_REGISTRY.shortcuts.default).toBe("get_started");

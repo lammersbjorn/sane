@@ -10,6 +10,14 @@ import {
 } from "../src/index.js";
 
 describe("operation result rendering", () => {
+  it("does not expose a B8 outcome runner operation yet", () => {
+    const operationKindNames = Object.keys(OperationKind);
+
+    expect(operationKindNames).not.toContain("OutcomeRunner");
+    expect(operationKindNames).not.toContain("RunOutcome");
+    expect(operationKindNames).not.toContain("StartOutcomeRunner");
+  });
+
   it("renders multiple inventory scopes under separate headings", () => {
     const result = new OperationResult({
       kind: OperationKind.ShowStatus,

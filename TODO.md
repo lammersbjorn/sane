@@ -236,6 +236,7 @@ pnpm check
 - [ ] Later end-to-end outcome runner:
   - future only, not part of the current user-facing product surface
   - current allowed work is preflight/eval coverage and readiness docs only
+  - guardrail tests pin no runner operation, TUI command, or CLI alias until the B8 runtime actually ships
   - any future one-shot command for idea-to-finished-result work must stay secondary to plain-language invocation
   - plain-language first
   - may ask targeted follow-up questions

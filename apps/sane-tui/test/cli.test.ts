@@ -78,6 +78,9 @@ describe("ts cli command parsing", () => {
 
   it("rejects unsupported argv", () => {
     expect(() => parseCliArgs(["nonsense"])).toThrow("unsupported command: nonsense");
+    expect(() => parseCliArgs(["runner"])).toThrow("unsupported command: runner");
+    expect(() => parseCliArgs(["outcome", "runner"])).toThrow("unsupported command: outcome runner");
+    expect(() => parseCliArgs(["run", "outcome"])).toThrow("unsupported command: run outcome");
     expect(() => parseCliArgs(["--width"])).toThrow("missing value for --width");
     expect(() => parseCliArgs(["--height", "0"])).toThrow("invalid value for --height: 0");
   });

@@ -380,6 +380,7 @@ Prerequisites:
 
 Current allowed work:
 - preflight fixtures and docs that prove the policy shape for long-running outcome work
+- test-only no-runner surface guardrails across core operations and TUI commands / aliases
 - guardrails that keep the runner future-only until the runtime, verification, compaction, and stop-condition boundaries are explicit
 - read-only inspection of readiness signals
 
