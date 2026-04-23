@@ -403,13 +403,11 @@ Current repo already has:
 - current managed surfaces
 - doctor coverage
 
-Current mismatch with locked product direction:
-- packaging/distribution plan not yet reflected clearly enough in plan/docs
-
 Resolved mismatch:
 - pack/plugin-ready architecture is now reflected as internal manifest/template boundaries only
 - builtin pack scope is locked by `R1`: `core`, `caveman`, `rtk`, and `frontend-craft`
 - no public plugin API ships in `v1`; later pack changes require a fresh capability audit, provenance, and install/inspect/uninstall coverage
+- packaging/distribution docs now separate the real local packaged-build path from post-`v1` public release automation
 
 ## Working Rule For Any Agent
 
