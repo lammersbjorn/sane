@@ -15,7 +15,7 @@ Current role:
 - owns internal text-driver glue that wires discovery, shell, input, and text rendering together
 - owns terminal-key decoding for the future real TS key loop
 - owns terminal-driver glue that maps raw terminal input into the TS runtime
-- does not yet render a real terminal UI by itself
+- does not yet own the shipped public terminal UI path
 
 Important files:
 
@@ -59,6 +59,7 @@ Boundary rules:
 Verification:
 
 ```bash
+node apps/sane-tui/bin/sane.mjs settings
 pnpm --filter @sane/sane-tui run preview settings
 pnpm --filter @sane/sane-tui run preview:terminal settings
 pnpm --filter @sane/sane-tui run preview:text settings

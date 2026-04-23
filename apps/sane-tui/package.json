@@ -2,6 +2,9 @@
   "name": "@sane/sane-tui",
   "private": true,
   "type": "module",
+  "bin": {
+    "sane": "./bin/sane.mjs"
+  },
   "exports": {
     ".": "./src/index.ts",
     "./*.js": "./src/*.ts"
