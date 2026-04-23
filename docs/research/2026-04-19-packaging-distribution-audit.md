@@ -172,3 +172,40 @@ Best current plan:
   - winget for Windows
 - secondary channel later:
   - Scoop
+
+## Post-v1 Automation Sequence
+
+Do not add release automation before the packaged CLI shape is stable. Once `v1`
+is cut-ready, automate in this order:
+
+1. `release:verify`
+   - run the root verification baseline
+   - run `pnpm --filter @sane/sane-tui run build:smoke`
+   - run `pnpm pack` from `apps/sane-tui/dist`
+   - assert the package exposes only the public `sane` bin and no workspace-only metadata
+2. GitHub Release artifact job
+   - build from the tagged commit only
+   - upload the npm tarball plus checksum files as release assets
+   - keep GitHub Releases as the canonical artifact source for downstream package managers
+3. npm publish job
+   - publish the generated `apps/sane-tui/dist` package, not the workspace package
+   - keep the public package/bin name `sane`
+   - require provenance/2FA-compatible release credentials before enabling unattended publish
+4. Homebrew tap update
+   - consume the versioned GitHub Release artifact and checksum
+   - run `brew audit --strict` and formula install/test in CI before opening or merging the tap update
+5. winget manifest update
+   - consume the versioned GitHub Release zip/tarball and checksums
+   - generate/update manifests with `wingetcreate` or equivalent only after the Windows artifact URL is stable
+   - submit to `microsoft/winget-pkgs`; do not treat this repo as the winget manifest source of truth
+6. Scoop bucket update
+   - consume the same versioned GitHub Release artifact
+   - include autoupdate metadata only after release URL and checksum naming are stable
+   - keep Scoop secondary to winget for Windows
+
+Current source re-check on 2026-04-23:
+
+- GitHub release assets remain the right base for versioned downloadable artifacts.
+- Homebrew still expects maintainable formulae and strict audit/test discipline.
+- Microsoft still routes winget submissions through `microsoft/winget-pkgs`.
+- Scoop manifests still fit zip-based CLI tools and can later use autoupdate metadata.

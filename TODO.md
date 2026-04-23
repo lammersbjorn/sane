@@ -284,7 +284,7 @@ pnpm check
   - [x] declare the packaged/public CLI story for `@sane/sane-tui`
     current story: root public start uses the built TS path; internal source preview uses `apps/sane-tui/bin/sane.mjs`; internal built preview uses `dist/bin/sane.cjs`; generated distribution metadata lives at `dist/package.json` and points the package CLI at the built output
   - [x] remove the legacy workspace and fallback startup path
-- [ ] Exact post-`v1` packaging automation sequence
+- [x] Exact post-`v1` packaging automation sequence (`docs/research/2026-04-19-packaging-distribution-audit.md` pins verify, GitHub Release assets, npm publish, Homebrew, winget, then Scoop)
 - [ ] Exact default attribution surface if onboarding opt-in ships:
   - README badge
   - README credits line
