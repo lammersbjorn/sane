@@ -131,6 +131,15 @@ export interface DoctorSnapshot {
   lines: string[];
 }
 
+interface OnboardingLookups {
+  runtime: InventoryItem | null;
+  config: InventoryItem | null;
+  codexConfig: InventoryItem | null;
+  userSkills: InventoryItem | null;
+  hooks: InventoryItem | null;
+  customAgents: InventoryItem | null;
+}
+
 const DOCTOR_ROW_NAMES: DoctorInventoryName[] = [
   "runtime",
   "config",
@@ -245,8 +254,8 @@ export function inspectDoctorSnapshot(
     ...DOCTOR_ROW_NAMES.slice(2, 4).map((name) => doctorInventoryLine(bundle.inventory, name)),
     `summary-backups: ${canonicalBackupHistorySummary(summaryBackups)}`,
     ...DOCTOR_ROW_NAMES.slice(4, 6).map((name) => doctorInventoryLine(bundle.inventory, name)),
-    ...optionalPackNames().map((pack) =>
-      doctorInventoryLine(bundle.inventory, optionalPackInventoryName(pack))
+    ...OPTIONAL_PACK_INVENTORY_TARGETS.map(({ inventoryName }) =>
+      doctorInventoryLine(bundle.inventory, inventoryName)
     ),
     ...DOCTOR_ROW_NAMES.slice(6).map((name) => doctorInventoryLine(bundle.inventory, name)),
     `root: ${paths.runtimeRoot}`,
@@ -490,14 +499,12 @@ function countStatuses(inventory: InventoryItem[]): Record<InventoryStatusName, 
 function recommendedOnboardingAction(
   statusBundle: StatusBundle
 ): OnboardingSnapshot["recommendedActionId"] {
-  const runtime = statusBundle.primary.runtime;
-  const config = findInventoryOrNull(statusBundle.inventory, "config");
-  const codexConfig = statusBundle.primary.codexConfig;
+  const lookups = loadOnboardingLookups(statusBundle);
 
-  if (isMissingOrInvalid(runtime?.status) || isMissingOrInvalid(config?.status)) {
+  if (isMissingOrInvalid(lookups.runtime?.status) || isMissingOrInvalid(lookups.config?.status)) {
     return "install_runtime";
   }
-  if (isMissingOrInvalid(codexConfig?.status)) {
+  if (isMissingOrInvalid(lookups.codexConfig?.status)) {
     return "show_codex_config";
   }
   if (statusBundle.primary.installBundle !== "installed") {
@@ -523,35 +530,41 @@ function onboardingAttentionItems(
   paths: ProjectPaths,
   statusBundle: StatusBundle
 ): OnboardingAttentionItem[] {
+  const lookups = loadOnboardingLookups(statusBundle);
   const items: OnboardingAttentionItem[] = [];
-  const runtime = statusBundle.primary.runtime;
-  const config = findInventoryOrNull(statusBundle.inventory, "config");
-  const codexConfig = statusBundle.primary.codexConfig;
-  const userSkills = statusBundle.primary.userSkills;
-  const hooks = statusBundle.primary.hooks;
-  const customAgents = statusBundle.primary.customAgents;
 
-  if (isMissingOrInvalid(runtime?.status) || isMissingOrInvalid(config?.status)) {
-    items.push({ id: "runtime", status: inventoryStatusName(runtime) });
+  if (isMissingOrInvalid(lookups.runtime?.status) || isMissingOrInvalid(lookups.config?.status)) {
+    items.push({ id: "runtime", status: inventoryStatusName(lookups.runtime) });
     items.push({
       id: "config",
-      status: existsSync(paths.configPath) ? inventoryStatusName(config) : "missing"
+      status: existsSync(paths.configPath) ? inventoryStatusName(lookups.config) : "missing"
     });
   }
-  if (isMissingOrInvalid(codexConfig?.status)) {
-    items.push({ id: "codex-config", status: inventoryStatusName(codexConfig) });
+  if (isMissingOrInvalid(lookups.codexConfig?.status)) {
+    items.push({ id: "codex-config", status: inventoryStatusName(lookups.codexConfig) });
   }
-  if (isMissingOrInvalid(userSkills?.status)) {
-    items.push({ id: "user-skills", status: inventoryStatusName(userSkills) });
+  if (isMissingOrInvalid(lookups.userSkills?.status)) {
+    items.push({ id: "user-skills", status: inventoryStatusName(lookups.userSkills) });
   }
-  if (isMissingOrInvalid(hooks?.status)) {
-    items.push({ id: "hooks", status: inventoryStatusName(hooks) });
+  if (isMissingOrInvalid(lookups.hooks?.status)) {
+    items.push({ id: "hooks", status: inventoryStatusName(lookups.hooks) });
   }
-  if (isMissingOrInvalid(customAgents?.status)) {
-    items.push({ id: "custom-agents", status: inventoryStatusName(customAgents) });
+  if (isMissingOrInvalid(lookups.customAgents?.status)) {
+    items.push({ id: "custom-agents", status: inventoryStatusName(lookups.customAgents) });
   }
 
   return items;
+}
+
+function loadOnboardingLookups(statusBundle: StatusBundle): OnboardingLookups {
+  return {
+    runtime: statusBundle.primary.runtime,
+    config: findInventoryOrNull(statusBundle.inventory, "config"),
+    codexConfig: statusBundle.primary.codexConfig,
+    userSkills: statusBundle.primary.userSkills,
+    hooks: statusBundle.primary.hooks,
+    customAgents: statusBundle.primary.customAgents
+  };
 }
 
 function isMissingOrInvalid(status: InventoryStatus | undefined): boolean {
