@@ -132,6 +132,36 @@ describe("preferences control plane", () => {
     expect(existsSync(paths.telemetryDir)).toBe(false);
   });
 
+  it("removes stale telemetry files when privacy is reduced", () => {
+    const projectRoot = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const productImprovement = createDefaultLocalConfig();
+    productImprovement.privacy.telemetry = "product-improvement";
+    const localOnly = createDefaultLocalConfig();
+    localOnly.privacy.telemetry = "local-only";
+    const off = createDefaultLocalConfig();
+    off.privacy.telemetry = "off";
+
+    saveConfig(paths, productImprovement);
+    expect(existsSync(paths.telemetryQueuePath)).toBe(true);
+
+    saveConfig(paths, localOnly);
+    expect(inspectTelemetrySnapshot(paths)).toEqual({
+      dirPresent: true,
+      summaryPresent: true,
+      eventsPresent: true,
+      queuePresent: false
+    });
+
+    saveConfig(paths, off);
+    expect(inspectTelemetrySnapshot(paths)).toEqual({
+      dirPresent: false,
+      summaryPresent: false,
+      eventsPresent: false,
+      queuePresent: false
+    });
+  });
+
   it("builds a local-or-recommended preferences snapshot for TUI consumers", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
@@ -183,7 +213,7 @@ describe("preferences control plane", () => {
       source: "local",
       telemetry: "off",
       telemetryFiles: {
-        dirPresent: true,
+        dirPresent: false,
         summaryPresent: false,
         eventsPresent: false,
         queuePresent: false

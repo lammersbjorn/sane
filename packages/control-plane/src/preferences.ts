@@ -318,6 +318,7 @@ function presentFlag(value: boolean): string {
 
 function ensureTelemetryFiles(paths: ProjectPaths, level: TelemetryLevel): void {
   if (level === "off") {
+    rmSync(paths.telemetryDir, { recursive: true, force: true });
     return;
   }
 
@@ -327,7 +328,10 @@ function ensureTelemetryFiles(paths: ProjectPaths, level: TelemetryLevel): void 
 
   if (level === "product-improvement") {
     ensureFileWithDefault(paths.telemetryQueuePath, "");
+    return;
   }
+
+  rmSync(paths.telemetryQueuePath, { force: true });
 }
 
 function ensureFileWithDefault(path: string, body: string): void {
