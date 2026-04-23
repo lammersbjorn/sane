@@ -10,6 +10,7 @@ Current role:
 - owns pure input/key handling on top of the shell state machine
 - owns internal non-interactive TS CLI parsing/execution for backend verbs and hook output
 - owns render-ready dashboard / overlay / app view models
+- owns internal text-frame rendering scaffolding for the future TS terminal driver
 - does not yet render a real terminal UI by itself
 
 Important files:
@@ -32,6 +33,8 @@ Important files:
   - pure key/input mapping for the TS shell state machine
 - `src/cli.ts`
   - internal TS CLI parser/executor for backend commands and `hook session-start`
+- `src/text-renderer.ts`
+  - internal text-frame renderer for the TS app view
 
 Boundary rules:
 
