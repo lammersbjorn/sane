@@ -62,7 +62,7 @@ Current package story:
 - public repo entrypoint now goes through the built root `pnpm start` / `pnpm run start:settings` scripts
 - internal source preview path is `apps/sane-tui/bin/sane.mjs`, which shells through `tsx`
 - internal built preview path is `apps/sane-tui/dist/bin/sane.cjs`, emitted by `pnpm --filter @sane/sane-tui run build`
-- eventual package/public CLI should point at the built output, not the source `tsx` shim
+- generated distribution metadata now lives in `apps/sane-tui/dist/package.json`, which points the package CLI at the built output
 
 Verification:
 

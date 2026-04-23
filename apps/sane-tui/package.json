@@ -2,6 +2,7 @@
   "name": "@sane/sane-tui",
   "private": true,
   "type": "module",
+  "version": "0.1.0",
   "bin": {
     "sane": "./bin/sane.mjs"
   },
@@ -11,7 +12,8 @@
   },
   "scripts": {
     "build": "tsup --config tsup.config.ts",
-    "build:smoke": "pnpm run build && node ./dist/bin/sane.cjs inspect",
+    "build:package": "pnpm run build && node ./scripts/write-dist-package.mjs",
+    "build:smoke": "pnpm run build:package && node ./dist/bin/sane.cjs inspect",
     "preview": "tsx ./bin/sane-preview.ts",
     "preview:built": "node ./dist/bin/sane.cjs",
     "preview:terminal": "tsx ./bin/sane-terminal-preview.ts",

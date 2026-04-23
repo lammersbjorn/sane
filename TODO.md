@@ -267,7 +267,7 @@ pnpm check
 - [x] switch public root `start` / `start:settings` away from Rust
   - [x] switch public README/setup docs away from Cargo-first instructions
   - [x] declare the packaged/public CLI story for `@sane/sane-tui`
-    current story: root public start uses the built TS path; internal source preview uses `apps/sane-tui/bin/sane.mjs`; internal built preview uses `dist/bin/sane.cjs`; eventual package/public CLI should point at built output after parity
+    current story: root public start uses the built TS path; internal source preview uses `apps/sane-tui/bin/sane.mjs`; internal built preview uses `dist/bin/sane.cjs`; generated distribution metadata lives at `dist/package.json` and points the package CLI at the built output
   - [x] remove the legacy Rust workspace and fallback startup path
 - [ ] Exact post-`v1` packaging automation sequence
 - [ ] Exact default attribution surface if onboarding opt-in ships:
