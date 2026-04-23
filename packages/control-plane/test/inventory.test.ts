@@ -217,7 +217,13 @@ describe("full inventory and doctor", () => {
         'command = "context7"',
         "",
         "[mcp_servers.experimental_sidecar]",
-        'command = "experimental"'
+        'command = "experimental"',
+        "",
+        "[plugins.local_lab]",
+        "enabled = true",
+        "",
+        "[plugins.disabled_lab]",
+        "enabled = false"
       ].join("\n")
     );
 
@@ -232,6 +238,12 @@ describe("full inventory and doctor", () => {
         path: codexPaths.configToml,
         message:
           "unmanaged Codex MCP server 'experimental_sidecar' is outside Sane's known profiles"
+      },
+      {
+        kind: "unmanaged_plugin",
+        target: "plugins.local_lab",
+        path: codexPaths.configToml,
+        message: "enabled Codex plugin 'local_lab' is outside Sane's managed profiles"
       }
     ]);
   });

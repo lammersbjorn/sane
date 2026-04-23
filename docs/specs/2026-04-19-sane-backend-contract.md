@@ -177,7 +177,7 @@ These are the backend actions the TUI is allowed to call in the current phase.
 - `show_status`
   - read structured inventory for all current managed targets
   - keep touched paths explicit for auditability
-  - canonical status bundles include warning-only conflict signals for invalid Codex config and unmanaged `mcp_servers.*` entries without changing inventory status or attempting repair
+  - canonical status bundles include warning-only conflict signals for invalid Codex config, unmanaged `mcp_servers.*`, and enabled `plugins.*` entries without changing inventory status or attempting repair
   - current `show_status` output remains inventory-only; Inspect renders the conflict warnings
   - may remain a backend/dev escape hatch under the later TUI
 
@@ -203,7 +203,7 @@ These are the backend actions the TUI is allowed to call in the current phase.
 - inspect optional repo-local AGENTS overlay presence
 - inspect managed global AGENTS block presence
 - inspect user-level Codex config presence / parse validity
-- surface warning-only Codex config conflicts in Inspect; do not auto-fix unmanaged setup
+- surface warning-only Codex config conflicts in Inspect; do not auto-fix unmanaged MCP/plugin setup
 - inspect optional OpenCode-agent export presence
 - emit repair hints
 

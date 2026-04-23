@@ -116,7 +116,10 @@ export interface CodexConfigBackupSnapshot {
   latestBackupPath: string | null;
 }
 
-export type CodexConfigConflictWarningKind = "invalid_config" | "unmanaged_mcp_server";
+export type CodexConfigConflictWarningKind =
+  | "invalid_config"
+  | "unmanaged_mcp_server"
+  | "unmanaged_plugin";
 
 export interface CodexConfigConflictWarning {
   kind: CodexConfigConflictWarningKind;
@@ -751,7 +754,7 @@ export function inspectCodexConfigConflictWarnings(
   }
 
   const mcpServers = sortedKeys(asTomlTable(config.mcp_servers));
-  return mcpServers
+  const mcpWarnings = mcpServers
     .filter((name) => !SANE_KNOWN_MCP_SERVERS.has(name))
     .map((name) => ({
       kind: "unmanaged_mcp_server" as const,
@@ -759,6 +762,17 @@ export function inspectCodexConfigConflictWarnings(
       path: codexPaths.configToml,
       message: `unmanaged Codex MCP server '${name}' is outside Sane's known profiles`
     }));
+  const plugins = asTomlTable(config.plugins);
+  const pluginWarnings = sortedKeys(plugins)
+    .filter((name) => asTomlTable(plugins?.[name])?.enabled === true)
+    .map((name) => ({
+      kind: "unmanaged_plugin" as const,
+      target: `plugins.${name}`,
+      path: codexPaths.configToml,
+      message: `enabled Codex plugin '${name}' is outside Sane's managed profiles`
+    }));
+
+  return [...mcpWarnings, ...pluginWarnings];
 }
 
 function recommendedLocalConfig(codexPaths: CodexPaths): LocalConfig {

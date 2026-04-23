@@ -378,7 +378,7 @@ Prerequisites:
 
 Later phase follow-on:
 - broaden the detect-and-warn conflict checker for pre-existing user setup that could interfere with Sane-managed behavior
-- current conflict warnings cover invalid Codex config and unmanaged `mcp_servers.*`; later work should extend to plugins, config drift, and related Codex-adjacent setup before making assumptions about a clean environment
+- current conflict warnings cover invalid Codex config, unmanaged `mcp_servers.*`, and enabled `plugins.*`; later work should extend to config drift and related Codex-adjacent setup before making assumptions about a clean environment
 - treat this as detect-and-warn first, not auto-fix
 
 ## Current Known Repo Mismatch
