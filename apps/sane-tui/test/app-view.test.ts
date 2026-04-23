@@ -43,6 +43,7 @@ describe("app view", () => {
     expect(view.footerTitle).toBe("Now");
     expect(view.footer.navHint).toContain("left/right");
     expect(view.footer.status.runtime).toBe("missing");
+    expect(view.footer.status.codex).toBe("missing");
     expect(view.footerLines[0]).toContain("left/right change section");
     expect(view.footerLines[0]).toContain("runtime");
     expect(view.footerLines[0]).toContain("drift");

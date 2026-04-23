@@ -42,6 +42,13 @@ export interface SaneTuiAppView {
   overlay: OverlayModel;
 }
 
+const FOOTER_STATUS_SPECS = [
+  { id: "runtime", label: "runtime" },
+  { id: "codex-config", label: "codex" },
+  { id: "user-skills", label: "user" },
+  { id: "hooks", label: "hooks" }
+] as const;
+
 export function loadAppView(shell: TuiShell): SaneTuiAppView {
   const getStarted = loadGetStartedScreen(
     shell.paths,
@@ -84,12 +91,7 @@ export function loadAppView(shell: TuiShell): SaneTuiAppView {
     footerLines: [footerLine(dashboard.chips)],
     footer: {
       navHint: "left/right change section  |  up/down change option  |  enter runs",
-      status: {
-        runtime: footerStatus(dashboard.chips, "runtime"),
-        codex: footerStatus(dashboard.chips, "codex-config"),
-        user: footerStatus(dashboard.chips, "user-skills"),
-        hooks: footerStatus(dashboard.chips, "hooks")
-      }
+      status: footerStatusMap(dashboard.chips)
     },
     overlay: loadOverlayModel(shell)
   };
@@ -317,20 +319,23 @@ function footerLine(chips: ReturnType<typeof loadDashboardView>["chips"]): strin
 }
 
 function compactStatusLine(chips: ReturnType<typeof loadDashboardView>["chips"]): string {
-  const runtime = footerStatus(chips, "runtime");
-  const codex = footerStatus(chips, "codex-config");
-  const user = footerStatus(chips, "user-skills");
-  const hooks = footerStatus(chips, "hooks");
   const drift = chipValue(chips, "drift") === "none" ? "ok" : chipValue(chips, "drift");
 
-  return `runtime ${runtime}  codex ${codex}  user ${user}  hooks ${hooks}  drift ${drift}`;
+  return [
+    ...FOOTER_STATUS_SPECS.map(
+      ({ id, label }) => `${label} ${compactStatus(chipValue(chips, id))}`
+    ),
+    `drift ${drift}`
+  ].join("  ");
 }
 
-function footerStatus(
-  chips: ReturnType<typeof loadDashboardView>["chips"],
-  name: "runtime" | "codex-config" | "user-skills" | "hooks"
-): string {
-  return compactStatus(chipValue(chips, name));
+function footerStatusMap(chips: ReturnType<typeof loadDashboardView>["chips"]): SaneTuiAppView["footer"]["status"] {
+  return {
+    runtime: compactStatus(chipValue(chips, "runtime")),
+    codex: compactStatus(chipValue(chips, "codex-config")),
+    user: compactStatus(chipValue(chips, "user-skills")),
+    hooks: compactStatus(chipValue(chips, "hooks"))
+  };
 }
 
 function chipValue(chips: ReturnType<typeof loadDashboardView>["chips"], id: string): string {
