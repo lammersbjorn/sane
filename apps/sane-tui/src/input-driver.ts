@@ -20,6 +20,8 @@ export type TuiInputKey =
   | "right"
   | "up"
   | "down"
+  | "tab"
+  | "backtab"
   | "enter"
   | "escape"
   | "space"
@@ -62,6 +64,12 @@ export function handleTuiInput(shell: TuiShell, key: TuiInputKey): OperationResu
       moveSelection(shell, "section", -1);
       return null;
     case "right":
+      moveSelection(shell, "section", 1);
+      return null;
+    case "backtab":
+      moveSelection(shell, "section", -1);
+      return null;
+    case "tab":
       moveSelection(shell, "section", 1);
       return null;
     case "up":

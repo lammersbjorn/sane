@@ -37,6 +37,16 @@ describe("input driver", () => {
     expect(currentAction(shell).id).toBe("install_runtime");
   });
 
+  it("moves through sections with tab and backtab too", () => {
+    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
+
+    handleTuiInput(shell, "tab");
+    expect(shell.activeSectionId).toBe("preferences");
+
+    handleTuiInput(shell, "backtab");
+    expect(shell.activeSectionId).toBe("get_started");
+  });
+
   it("routes risky actions through confirmation keys", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
 

@@ -53,6 +53,11 @@ export function startTerminalLoop(
     }
 
     const step = stepTerminalDriver(runtime, input);
+    if (step.shouldExit) {
+      stop();
+      return;
+    }
+
     io.stdout.write(renderTerminalFrame(step.frame));
   };
 

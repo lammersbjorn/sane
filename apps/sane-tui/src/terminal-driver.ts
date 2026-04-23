@@ -1,20 +1,39 @@
 import { type OperationResult } from "@sane/core";
 
-import { parseTerminalKey } from "@sane/sane-tui/terminal-keys.js";
+import {
+  parseTerminalInput,
+  parseTerminalKey,
+  type TerminalInputKey
+} from "@sane/sane-tui/terminal-keys.js";
 import { type TextTuiRuntime } from "@sane/sane-tui/text-driver.js";
 
 export interface TerminalStepResult {
-  key: ReturnType<typeof parseTerminalKey>;
+  key: TerminalInputKey | null;
+  keys: TerminalInputKey[];
   result: OperationResult | null;
   frame: string;
+  shouldExit: boolean;
 }
 
 export function stepTerminalDriver(runtime: TextTuiRuntime, input: string): TerminalStepResult {
-  const key = parseTerminalKey(input);
-  const result = key ? runtime.handleInput(key) : null;
+  const keys = parseTerminalInput(input);
+  let result: OperationResult | null = null;
+  let shouldExit = false;
+
+  for (const key of keys) {
+    if (key === "quit") {
+      shouldExit = true;
+      break;
+    }
+
+    result = runtime.handleInput(key);
+  }
+
   return {
-    key,
+    key: keys.at(-1) ?? parseTerminalKey(input),
+    keys,
     result,
-    frame: runtime.render()
+    frame: runtime.render(),
+    shouldExit
   };
 }

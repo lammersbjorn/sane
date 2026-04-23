@@ -95,4 +95,49 @@ describe("terminal loop", () => {
     expect(stdin.paused).toBe(1);
     expect(writes.at(-1)).toBe("\u001b[?25h\u001b[?1049l");
   });
+
+  it("stops on q without requiring ctrl-c", () => {
+    const runtime = createTextTuiRuntime(
+      createProjectPaths(makeTempDir()),
+      createCodexPaths(makeTempDir())
+    );
+    const stdin = new FakeStdin();
+    const writes: string[] = [];
+
+    startTerminalLoop(runtime, {
+      stdin,
+      stdout: {
+        write: (chunk) => writes.push(chunk)
+      }
+    });
+
+    stdin.emit("data", "q");
+
+    expect(stdin.rawModes).toEqual([true, false]);
+    expect(stdin.paused).toBe(1);
+    expect(writes.at(-1)).toBe("\u001b[?25h\u001b[?1049l");
+  });
+
+  it("handles batched terminal chunks before quitting", () => {
+    const runtime = createTextTuiRuntime(
+      createProjectPaths(makeTempDir()),
+      createCodexPaths(makeTempDir()),
+      { launchShortcut: "settings" }
+    );
+    const stdin = new FakeStdin();
+    const writes: string[] = [];
+
+    startTerminalLoop(runtime, {
+      stdin,
+      stdout: {
+        write: (chunk) => writes.push(chunk)
+      }
+    });
+
+    stdin.emit("data", "\tq");
+
+    expect(stdin.rawModes).toEqual([true, false]);
+    expect(stdin.paused).toBe(1);
+    expect(writes.at(-1)).toBe("\u001b[?25h\u001b[?1049l");
+  });
 });

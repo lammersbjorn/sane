@@ -31,12 +31,30 @@ describe("terminal driver", () => {
 
     const down = stepTerminalDriver(runtime, "\u001b[B");
     expect(down.key).toBe("down");
+    expect(down.keys).toEqual(["down"]);
     expect(down.result).toBeNull();
 
     const enter = stepTerminalDriver(runtime, "\r");
     expect(enter.key).toBe("enter");
+    expect(enter.keys).toEqual(["enter"]);
     expect(enter.result?.summary).toContain("codex-config: missing");
     expect(enter.frame).toContain("[Latest Status]");
+    expect(enter.shouldExit).toBe(false);
+  });
+
+  it("maps quit input without mutating runtime state", () => {
+    const runtime = createTextTuiRuntime(
+      createProjectPaths(makeTempDir()),
+      createCodexPaths(makeTempDir())
+    );
+
+    const step = stepTerminalDriver(runtime, "q");
+
+    expect(step.key).toBe("quit");
+    expect(step.keys).toEqual(["quit"]);
+    expect(step.result).toBeNull();
+    expect(step.shouldExit).toBe(true);
+    expect(step.frame).toContain("Section: get_started");
   });
 
   it("ignores unknown terminal input and keeps rendering", () => {
@@ -45,10 +63,27 @@ describe("terminal driver", () => {
       createCodexPaths(makeTempDir())
     );
 
-    const step = stepTerminalDriver(runtime, "q");
+    const step = stepTerminalDriver(runtime, "x");
 
     expect(step.key).toBeNull();
+    expect(step.keys).toEqual([]);
     expect(step.result).toBeNull();
+    expect(step.shouldExit).toBe(false);
     expect(step.frame).toContain("Section: get_started");
+  });
+
+  it("handles batched terminal chunks in order and still exits on quit", () => {
+    const runtime = createTextTuiRuntime(
+      createProjectPaths(makeTempDir()),
+      createCodexPaths(makeTempDir()),
+      { launchShortcut: "settings" }
+    );
+
+    const step = stepTerminalDriver(runtime, "\tq");
+
+    expect(step.keys).toEqual(["tab", "quit"]);
+    expect(step.key).toBe("quit");
+    expect(step.shouldExit).toBe(true);
+    expect(step.frame).toContain("Section: install");
   });
 });
