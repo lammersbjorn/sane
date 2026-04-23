@@ -53,4 +53,19 @@ describe("text renderer", () => {
     expect(output).toContain("saved body");
     expect(output).toContain("Enter, Space, or Esc closes this message.");
   });
+
+  it("fits output into a bounded viewport", () => {
+    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()), "settings");
+
+    const output = renderTextAppView(loadAppView(shell), {
+      width: 32,
+      height: 8
+    });
+
+    const lines = output.split("\n");
+    expect(lines).toHaveLength(8);
+    expect(lines.every((line) => line.length <= 32)).toBe(true);
+    expect(output).toContain("...");
+    expect(output).toContain("[Now]");
+  });
 });

@@ -1,5 +1,6 @@
 import { stepTerminalDriver } from "@sane/sane-tui/terminal-driver.js";
 import { type TextTuiRuntime } from "@sane/sane-tui/text-driver.js";
+import { type TextViewport } from "@sane/sane-tui/text-renderer.js";
 
 const ENTER_ALT_SCREEN = "\u001b[?1049h\u001b[?25l";
 const EXIT_ALT_SCREEN = "\u001b[?25h\u001b[?1049l";
@@ -16,6 +17,10 @@ export interface TerminalLoopReadable {
 
 export interface TerminalLoopWritable {
   write: (chunk: string) => void;
+  columns?: number;
+  rows?: number;
+  on?: (event: "resize", listener: () => void) => void;
+  off?: (event: "resize", listener: () => void) => void;
 }
 
 export interface TerminalLoopIo {
@@ -40,6 +45,7 @@ export function startTerminalLoop(
 
     stopped = true;
     io.stdin.off("data", onData);
+    io.stdout.off?.("resize", onResize);
     io.stdin.setRawMode?.(false);
     io.stdin.pause();
     io.stdout.write(EXIT_ALT_SCREEN);
@@ -58,18 +64,30 @@ export function startTerminalLoop(
       return;
     }
 
-    io.stdout.write(renderTerminalFrame(step.frame));
+    io.stdout.write(renderTerminalFrame(runtime.render(currentViewport(io.stdout))));
+  };
+
+  const onResize = () => {
+    io.stdout.write(renderTerminalFrame(runtime.render(currentViewport(io.stdout))));
   };
 
   io.stdin.setRawMode?.(true);
   io.stdin.resume();
   io.stdin.on("data", onData);
+  io.stdout.on?.("resize", onResize);
   io.stdout.write(ENTER_ALT_SCREEN);
-  io.stdout.write(renderTerminalFrame(runtime.render()));
+  io.stdout.write(renderTerminalFrame(runtime.render(currentViewport(io.stdout))));
 
   return { stop };
 }
 
 function renderTerminalFrame(frame: string): string {
   return `${RESET_VIEWPORT}${frame}`;
+}
+
+function currentViewport(stdout: TerminalLoopWritable): TextViewport {
+  return {
+    width: stdout.columns,
+    height: stdout.rows
+  };
 }

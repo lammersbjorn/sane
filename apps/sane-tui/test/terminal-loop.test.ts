@@ -41,6 +41,22 @@ class FakeStdin extends EventEmitter {
   }
 }
 
+class FakeStdout extends EventEmitter {
+  columns: number;
+  rows: number;
+  writes: string[] = [];
+
+  constructor(columns = 120, rows = 40) {
+    super();
+    this.columns = columns;
+    this.rows = rows;
+  }
+
+  write(chunk: string) {
+    this.writes.push(chunk);
+  }
+}
+
 describe("terminal loop", () => {
   it("boots raw mode, alternate screen, and renders the first frame", () => {
     const runtime = createTextTuiRuntime(
@@ -48,25 +64,23 @@ describe("terminal loop", () => {
       createCodexPaths(makeTempDir())
     );
     const stdin = new FakeStdin();
-    const writes: string[] = [];
+    const stdout = new FakeStdout();
 
     const controller = startTerminalLoop(runtime, {
       stdin,
-      stdout: {
-        write: (chunk) => writes.push(chunk)
-      }
+      stdout
     });
 
     expect(stdin.rawModes).toEqual([true]);
     expect(stdin.resumed).toBe(1);
-    expect(writes[0]).toBe("\u001b[?1049h\u001b[?25l");
-    expect(writes[1]).toContain("\u001b[2J\u001b[H");
-    expect(writes[1]).toContain("Section: get_started");
+    expect(stdout.writes[0]).toBe("\u001b[?1049h\u001b[?25l");
+    expect(stdout.writes[1]).toContain("\u001b[2J\u001b[H");
+    expect(stdout.writes[1]).toContain("Section: get_started");
 
     controller.stop();
     expect(stdin.rawModes).toEqual([true, false]);
     expect(stdin.paused).toBe(1);
-    expect(writes.at(-1)).toBe("\u001b[?25h\u001b[?1049l");
+    expect(stdout.writes.at(-1)).toBe("\u001b[?25h\u001b[?1049l");
   });
 
   it("renders updated frames from terminal input and stops on ctrl-c", () => {
@@ -75,25 +89,23 @@ describe("terminal loop", () => {
       createCodexPaths(makeTempDir())
     );
     const stdin = new FakeStdin();
-    const writes: string[] = [];
+    const stdout = new FakeStdout();
 
     startTerminalLoop(runtime, {
       stdin,
-      stdout: {
-        write: (chunk) => writes.push(chunk)
-      }
+      stdout
     });
 
     stdin.emit("data", "\u001b[B");
     stdin.emit("data", "\r");
 
-    expect(writes.at(-1)).toContain("[Latest Status]");
+    expect(stdout.writes.at(-1)).toContain("[Latest Status]");
 
     stdin.emit("data", "\u0003");
 
     expect(stdin.rawModes).toEqual([true, false]);
     expect(stdin.paused).toBe(1);
-    expect(writes.at(-1)).toBe("\u001b[?25h\u001b[?1049l");
+    expect(stdout.writes.at(-1)).toBe("\u001b[?25h\u001b[?1049l");
   });
 
   it("stops on q without requiring ctrl-c", () => {
@@ -102,20 +114,18 @@ describe("terminal loop", () => {
       createCodexPaths(makeTempDir())
     );
     const stdin = new FakeStdin();
-    const writes: string[] = [];
+    const stdout = new FakeStdout();
 
     startTerminalLoop(runtime, {
       stdin,
-      stdout: {
-        write: (chunk) => writes.push(chunk)
-      }
+      stdout
     });
 
     stdin.emit("data", "q");
 
     expect(stdin.rawModes).toEqual([true, false]);
     expect(stdin.paused).toBe(1);
-    expect(writes.at(-1)).toBe("\u001b[?25h\u001b[?1049l");
+    expect(stdout.writes.at(-1)).toBe("\u001b[?25h\u001b[?1049l");
   });
 
   it("handles batched terminal chunks before quitting", () => {
@@ -125,19 +135,39 @@ describe("terminal loop", () => {
       { launchShortcut: "settings" }
     );
     const stdin = new FakeStdin();
-    const writes: string[] = [];
+    const stdout = new FakeStdout();
 
     startTerminalLoop(runtime, {
       stdin,
-      stdout: {
-        write: (chunk) => writes.push(chunk)
-      }
+      stdout
     });
 
     stdin.emit("data", "\tq");
 
     expect(stdin.rawModes).toEqual([true, false]);
     expect(stdin.paused).toBe(1);
-    expect(writes.at(-1)).toBe("\u001b[?25h\u001b[?1049l");
+    expect(stdout.writes.at(-1)).toBe("\u001b[?25h\u001b[?1049l");
+  });
+
+  it("re-renders within the current viewport on resize", () => {
+    const runtime = createTextTuiRuntime(
+      createProjectPaths(makeTempDir()),
+      createCodexPaths(makeTempDir()),
+      { launchShortcut: "settings" }
+    );
+    const stdin = new FakeStdin();
+    const stdout = new FakeStdout(48, 12);
+
+    startTerminalLoop(runtime, {
+      stdin,
+      stdout
+    });
+
+    stdout.columns = 32;
+    stdout.rows = 8;
+    stdout.emit("resize");
+
+    expect(stdout.writes.at(-1)).toContain("\u001b[2J\u001b[H");
+    expect(stdout.writes.at(-1)).toContain("...");
   });
 });

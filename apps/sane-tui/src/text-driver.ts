@@ -10,11 +10,11 @@ import {
 import { loadAppView } from "@sane/sane-tui/app-view.js";
 import { type TuiInputKey, handleTuiInput } from "@sane/sane-tui/input-driver.js";
 import { createSaneTuiApp, type SaneTuiApp } from "@sane/sane-tui/main.js";
-import { renderTextAppView } from "@sane/sane-tui/text-renderer.js";
+import { renderTextAppView, type TextViewport } from "@sane/sane-tui/text-renderer.js";
 
 export interface TextTuiRuntime {
   app: SaneTuiApp;
-  render: () => string;
+  render: (viewport?: TextViewport) => string;
   handleInput: (key: TuiInputKey) => OperationResult | null;
 }
 
@@ -27,7 +27,7 @@ export function createTextTuiRuntime(
 
   return {
     app,
-    render: () => renderTextAppView(loadAppView(app.shell)),
+    render: (viewport) => renderTextAppView(loadAppView(app.shell), viewport),
     handleInput: (key) => handleTuiInput(app.shell, key)
   };
 }
