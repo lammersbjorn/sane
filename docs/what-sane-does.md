@@ -154,7 +154,7 @@ This structure is what lets `Sane` stay framework-first without becoming a wrapp
 | Onboarding-first TUI | Packaging and distribution polish |
 | Settings/configure flow | Post-`v1` pack expansion/contraction execution |
 | Preview/apply/restore for narrow Codex config | Broader adaptive orchestration |
-| Recommended integrations profile | Later end-to-end outcome runner / one-shot flow |
+| Recommended integrations profile | Preflight-only groundwork for a later outcome runner / one-shot flow |
 | Cloudflare provider profile | Additional future packaging channels |
 | Optional OpenCode-agent export | Additional future packaging channels |
 | Export, inspect, doctor, uninstall | More post-`v1` expansion work |

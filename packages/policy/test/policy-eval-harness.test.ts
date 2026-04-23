@@ -16,6 +16,7 @@ import {
   b7PolicyEvalFixtures,
   canonicalPolicyEvalFixtures,
   evaluatePolicyFixtures,
+  outcomeRunnerPreflightFixtures,
   type PolicyEvalFixture
 } from "../src/index.js";
 
@@ -220,6 +221,63 @@ describe("policy eval harness", () => {
         continuation: {
           strategy: ContinuationStrategy.CloseWhenVerified,
           stopCondition: StopCondition.Closed
+        }
+      })
+    );
+  });
+
+  it("evaluates the B8 outcome-runner preflight policy suite without shipping a runner", () => {
+    const fixtures = outcomeRunnerPreflightFixtures();
+
+    expect(fixtures.map((fixture) => fixture.caseId)).toEqual([
+      "b8-long-run-preflight",
+      "b8-blocked-self-repair-boundary"
+    ]);
+    expect(evaluatePolicyFixtures(fixtures)).toEqual({
+      passed: true,
+      caseCount: 2,
+      failureCount: 0,
+      failures: []
+    });
+    expect(fixtures.find((fixture) => fixture.caseId === "b8-long-run-preflight")?.expected).toEqual(
+      expect.objectContaining({
+        obligations: [
+          Obligation.Planning,
+          Obligation.Review,
+          Obligation.SubagentEligible,
+          Obligation.ContextCompaction
+        ],
+        orchestration: expect.objectContaining({
+          subagents: SubagentStrategy.AllowIndependentSlices,
+          subagentReadiness: SubagentReadinessReason.IndependentSlicesReady
+        }),
+        continuation: {
+          strategy: ContinuationStrategy.ContinueUntilVerified,
+          stopCondition: StopCondition.Verified
+        }
+      })
+    );
+    expect(fixtures.find((fixture) => fixture.caseId === "b8-blocked-self-repair-boundary")?.expected).toEqual(
+      expect.objectContaining({
+        obligations: [
+          Obligation.Planning,
+          Obligation.Review,
+          Obligation.ContextCompaction,
+          Obligation.SelfRepair
+        ],
+        roles: {
+          coordinator: true,
+          sidecar: false,
+          verifier: true
+        },
+        orchestration: expect.objectContaining({
+          subagents: SubagentStrategy.SoloOnly,
+          subagentReadiness: SubagentReadinessReason.RunStateDisallowsDelegation,
+          verifierTiming: VerifierTiming.ThroughoutExecution
+        }),
+        continuation: {
+          strategy: ContinuationStrategy.SelfRepairUntilUnblocked,
+          stopCondition: StopCondition.UnblockedOrNeedsInput
         }
       })
     );

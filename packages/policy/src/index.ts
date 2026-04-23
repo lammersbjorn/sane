@@ -13,6 +13,7 @@ export {
   b7PolicyEvalFixtures,
   canonicalPolicyEvalFixtures,
   evaluatePolicyFixtures,
+  outcomeRunnerPreflightFixtures,
   type PolicyEvalExpected,
   type PolicyEvalFailure,
   type PolicyEvalFixture,

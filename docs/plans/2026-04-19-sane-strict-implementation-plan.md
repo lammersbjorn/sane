@@ -378,6 +378,17 @@ Prerequisites:
 - initial verification/eval harness in place, then broadened before any runner ships
 - bounded self-repair and issue-relay policy in place
 
+Current allowed work:
+- preflight fixtures and docs that prove the policy shape for long-running outcome work
+- guardrails that keep the runner future-only until the runtime, verification, compaction, and stop-condition boundaries are explicit
+- read-only inspection of readiness signals
+
+Not allowed yet:
+- user-facing runner command
+- command ritual for daily prompting
+- autonomous mutation loop
+- presenting B8 as shipped product behavior
+
 Later phase follow-on:
 - broaden the detect-and-warn conflict checker for pre-existing user setup that could interfere with Sane-managed behavior
 - current conflict warnings cover invalid Codex config, disabled `features.codex_hooks`, unmanaged `mcp_servers.*`, and enabled `plugins.*`; later work should extend to config drift and related Codex-adjacent setup before making assumptions about a clean environment

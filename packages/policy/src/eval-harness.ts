@@ -261,6 +261,115 @@ export function b7PolicyEvalFixtures(): readonly PolicyEvalFixture[] {
   ];
 }
 
+export function outcomeRunnerPreflightFixtures(): readonly PolicyEvalFixture[] {
+  return [
+    {
+      caseId: "b8-long-run-preflight",
+      input: {
+        intent: Intent.Orchestrate,
+        taskShape: TaskShape.LongRunning,
+        risk: Level.High,
+        ambiguity: Level.Medium,
+        parallelism: Parallelism.Clear,
+        contextPressure: Level.High,
+        runState: RunState.Executing
+      },
+      expected: {
+        obligations: [
+          PolicyObligation.Planning,
+          PolicyObligation.Review,
+          PolicyObligation.SubagentEligible,
+          PolicyObligation.ContextCompaction
+        ],
+        roles: {
+          coordinator: true,
+          sidecar: true,
+          verifier: true
+        },
+        orchestration: {
+          subagents: SubagentStrategy.AllowIndependentSlices,
+          subagentReadiness: SubagentReadinessReason.IndependentSlicesReady,
+          verifierTiming: VerifierTiming.ClosingGate
+        },
+        continuation: {
+          strategy: ContinuationStrategy.ContinueUntilVerified,
+          stopCondition: StopCondition.Verified
+        },
+        trace: [
+          {
+            obligation: PolicyObligation.Planning,
+            rule: PolicyRule.NeedsUpfrontPlanning
+          },
+          {
+            obligation: PolicyObligation.Review,
+            rule: PolicyRule.NeedsIndependentReview
+          },
+          {
+            obligation: PolicyObligation.SubagentEligible,
+            rule: PolicyRule.ParallelWorkCanUseSubagents
+          },
+          {
+            obligation: PolicyObligation.ContextCompaction,
+            rule: PolicyRule.ContextNeedsCompaction
+          }
+        ]
+      }
+    },
+    {
+      caseId: "b8-blocked-self-repair-boundary",
+      input: {
+        intent: Intent.Orchestrate,
+        taskShape: TaskShape.LongRunning,
+        risk: Level.High,
+        ambiguity: Level.High,
+        parallelism: Parallelism.Clear,
+        contextPressure: Level.High,
+        runState: RunState.Blocked
+      },
+      expected: {
+        obligations: [
+          PolicyObligation.Planning,
+          PolicyObligation.Review,
+          PolicyObligation.ContextCompaction,
+          PolicyObligation.SelfRepair
+        ],
+        roles: {
+          coordinator: true,
+          sidecar: false,
+          verifier: true
+        },
+        orchestration: {
+          subagents: SubagentStrategy.SoloOnly,
+          subagentReadiness: SubagentReadinessReason.RunStateDisallowsDelegation,
+          verifierTiming: VerifierTiming.ThroughoutExecution
+        },
+        continuation: {
+          strategy: ContinuationStrategy.SelfRepairUntilUnblocked,
+          stopCondition: StopCondition.UnblockedOrNeedsInput
+        },
+        trace: [
+          {
+            obligation: PolicyObligation.Planning,
+            rule: PolicyRule.NeedsUpfrontPlanning
+          },
+          {
+            obligation: PolicyObligation.Review,
+            rule: PolicyRule.NeedsIndependentReview
+          },
+          {
+            obligation: PolicyObligation.ContextCompaction,
+            rule: PolicyRule.ContextNeedsCompaction
+          },
+          {
+            obligation: PolicyObligation.SelfRepair,
+            rule: PolicyRule.BlockedRunNeedsSelfRepair
+          }
+        ]
+      }
+    }
+  ];
+}
+
 function evaluatePolicyFixture(fixture: PolicyEvalFixture): PolicyEvalFailure[] {
   const explanation = explain(fixture.input);
   const failures: PolicyEvalFailure[] = [];
