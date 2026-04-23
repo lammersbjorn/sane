@@ -86,7 +86,7 @@ Implemented:
 - built-in pack set currently remains fixed: always-on `core` plus optional `caveman`, `rtk`, and `frontend-craft`
 - optional pack registry helpers (name/config-key mapping + enabled/disabled selection) now live in `@sane/framework-assets` and are reused by TUI/editor + control-plane inventory/export paths
 - optional packs now show `configured` vs `installed` truthfully depending on whether managed user-skill assets were exported
-- `frontend-craft` currently exports exactly two concrete skills: `design-taste-frontend` and `impeccable`
+- `frontend-craft` currently exports every pinned upstream `Leonxlnx/taste-skill` skill plus `impeccable`, including `gpt-taste` for ambitious GPT/Codex frontend work and `image-taste-frontend` for image-first art direction
 - `rtk` currently stays capability-only (router/overlay behavior, no dedicated skill export directory)
 - default continuity now stays scoped to Codex-native exports plus thin local `.sane` state; Codex native `memories` remain outside the default path
 - exported `sane-router` skill and global AGENTS overlay now reflect enabled guidance packs and current routing defaults

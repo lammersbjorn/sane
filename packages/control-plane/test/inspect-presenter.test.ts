@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { InventoryStatus } from "@sane/core";
+import { optionalPackSkillNames } from "@sane/framework-assets";
 
 import {
   formatInspectDriftItemLines,
@@ -37,7 +38,7 @@ describe("inspect presenter", () => {
         inventoryName: "pack-frontend-craft",
         status: "disabled",
         skillName: "design-taste-frontend",
-        skillNames: ["design-taste-frontend", "impeccable"],
+        skillNames: optionalPackSkillNames("frontend-craft"),
         provenance: {
           kind: "derived",
           note: "taste + impeccable",
@@ -51,7 +52,7 @@ describe("inspect presenter", () => {
     ]);
 
     expect(line).toBe(
-      "optional pack provenance: caveman configured (sane-caveman; derived from caveman); rtk disabled (no skills; internal); frontend-craft disabled (design-taste-frontend + impeccable; derived from taste-skill + impeccable)"
+      `optional pack provenance: caveman configured (sane-caveman; derived from caveman); rtk disabled (no skills; internal); frontend-craft disabled (${optionalPackSkillNames("frontend-craft").join(" + ")}; derived from taste-skill + impeccable)`
     );
   });
 

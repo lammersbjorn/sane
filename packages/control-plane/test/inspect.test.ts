@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createDefaultLocalConfig } from "@sane/config";
+import { optionalPackSkillNames } from "@sane/framework-assets";
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { appendJsonlRecord, createDecisionRecord, stringifyDecisionRecord } from "@sane/state";
 import { afterEach, describe, expect, it } from "vitest";
@@ -94,7 +95,7 @@ describe("inspect snapshot", () => {
     expect(overview).toContain("primary surfaces:");
     expect(overview).toContain("statusline profile: missing");
     expect(overview).toContain(
-      "optional pack provenance: caveman configured (sane-caveman; derived from caveman); rtk disabled (no skills; internal); frontend-craft disabled (design-taste-frontend + impeccable; derived from taste-skill + impeccable)"
+      `optional pack provenance: caveman configured (sane-caveman; derived from caveman); rtk disabled (no skills; internal); frontend-craft disabled (${optionalPackSkillNames("frontend-craft").join(" + ")}; derived from taste-skill + impeccable)`
     );
   });
 

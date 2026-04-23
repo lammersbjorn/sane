@@ -59,9 +59,9 @@ Current managed export behavior also depends on local config:
 - exported `sane-router` skill content can reflect enabled guidance packs and current routing defaults
 - exported global and repo `AGENTS.md` overlays can reflect enabled guidance packs and current routing defaults
 - status/doctor should flag those assets as invalid when current exports drift from enabled guidance-pack or routing config
-- enabled optional packs may materialize as additional managed user skills during `export_user_skills` (currently `sane-caveman`, `design-taste-frontend`, and `impeccable`)
+- enabled optional packs may materialize as additional managed user skills during `export_user_skills` (currently `sane-caveman`, the full pinned upstream `Leonxlnx/taste-skill` skill suite, and `impeccable`)
 - enabled optional packs may materialize as additional managed repo skills during `export_repo_skills` (same exported skill names as user scope)
-- `frontend-craft` currently exports exactly two concrete skills: `design-taste-frontend` and `impeccable`
+- `frontend-craft` currently exports every upstream `Leonxlnx/taste-skill` skill plus `impeccable`, so agents can select task-specific Taste variants such as `gpt-taste` and `image-taste-frontend`
 - capability-only packs (`rtk`) do not export dedicated skill directories, but they still change and can be enforced through router/overlay/custom-agent output
 - installed `caveman` pack guidance is enforced through exported router guidance, overlays, and custom-agent templates; it is not just an advisory inspect note
 - default continuity should still come from scoped Codex-native exports plus thin local `.sane` state, not Codex native `memories`

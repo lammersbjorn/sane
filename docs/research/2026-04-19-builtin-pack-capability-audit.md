@@ -79,7 +79,7 @@ Why bundled together in `v1`:
   - `Taste Skill` explicitly positions `gpt-taste` / dedicated GPT variants for GPT/Codex use, while `Uncodixfy` stays closer to a single anti-pattern file
 - recommendation:
   - replace `uncodixfy` as the primary upstream reference inside `frontend-craft`
-  - keep `frontend-craft` as one curated Sane pack, not a raw mirror of every upstream skill file
+  - keep `frontend-craft` as one curated Sane pack, backed by a pinned full upstream Taste Skill suite so agents can select the specific Taste variant needed for the task
 
 Current references:
 - [Taste Skill site](https://www.tasteskill.dev/)
@@ -203,5 +203,5 @@ Do not expose a public pack API yet.
 `R1` answer:
 - `v1` should ship a curated builtin set of four packs: `core`, `caveman`, `rtk`, and `frontend-craft`.
 - `frontend-craft` should use `Taste Skill` as the primary upstream inspiration/reference instead of `Uncodixfy`.
-- `Taste Skill`-style frontend direction and `impeccable` should stay bundled together initially under `frontend-craft`.
+- the full pinned upstream `Leonxlnx/taste-skill` skill suite and `impeccable` should stay bundled together initially under `frontend-craft`.
 - marketplace/plugin extensibility remains deferred until after `v1`.

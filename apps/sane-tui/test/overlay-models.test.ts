@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
+import { optionalPackSkillNames } from "@sane/framework-assets";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { loadOverlayModel } from "@sane/sane-tui/overlay-models.js";
@@ -77,7 +78,9 @@ describe("overlay models", () => {
     expect(overlay.detailsLines.some((line: string) => line.includes("selected pack: frontend-craft"))).toBe(
       true
     );
-    expect(overlay.detailsLines).toContain("exports: design-taste-frontend, impeccable");
+    expect(overlay.detailsLines).toContain(
+      `exports: ${optionalPackSkillNames("frontend-craft").join(", ")}`
+    );
 
     shell.activeEditor = null;
     moveSelection(shell, "action", 1);

@@ -48,6 +48,30 @@ import {
 const TEST_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(TEST_DIR, "../../..");
 const CORE_PACK_ROOT = resolve(REPO_ROOT, "packs/core");
+const FRONTEND_CRAFT_SKILL_NAMES = [
+  SANE_FRONTEND_CRAFT_PACK_SKILL_NAME,
+  "gpt-taste",
+  "image-taste-frontend",
+  "redesign-existing-projects",
+  "high-end-visual-design",
+  "full-output-enforcement",
+  "minimalist-ui",
+  "industrial-brutalist-ui",
+  "stitch-design-taste",
+  SANE_FRONTEND_REVIEW_PACK_SKILL_NAME
+] as const;
+const FRONTEND_CRAFT_SELECTION_LINES = [
+  "- frontend-craft task picks: implementation, restyle, frontend-build -> design-taste-frontend",
+  "- frontend-craft task picks: ambitious-frontend-build, gsap-motion, high-variance-layout -> gpt-taste",
+  "- frontend-craft task picks: image-first-design, visual-reference, premium-landing-page -> image-taste-frontend",
+  "- frontend-craft task picks: redesign, existing-project, visual-upgrade -> redesign-existing-projects",
+  "- frontend-craft task picks: soft-premium-ui, agency-style, visual-polish -> high-end-visual-design",
+  "- frontend-craft task picks: complete-output, no-placeholders, long-generation -> full-output-enforcement",
+  "- frontend-craft task picks: minimalist-ui, editorial-ui, clean-interface -> minimalist-ui",
+  "- frontend-craft task picks: brutalist-ui, mechanical-interface, bold-dashboard -> industrial-brutalist-ui",
+  "- frontend-craft task picks: stitch-design, design-system, semantic-design -> stitch-design-taste",
+  "- frontend-craft task picks: review, audit, critique, polish -> impeccable"
+] as const;
 
 interface CorePackManifest {
   name: string;
@@ -154,7 +178,10 @@ describe("framework asset parity", () => {
     expect(manifestSkills(manifest.optionalPacks["frontend-craft"])[0]?.name).toBe(
       SANE_FRONTEND_CRAFT_PACK_SKILL_NAME
     );
-    expect(manifestSkills(manifest.optionalPacks["frontend-craft"])[1]?.name).toBe(
+    expect(manifestSkills(manifest.optionalPacks["frontend-craft"]).map((skill) => skill.name)).toEqual(
+      FRONTEND_CRAFT_SKILL_NAMES
+    );
+    expect(manifestSkills(manifest.optionalPacks["frontend-craft"]).at(-1)?.name).toBe(
       SANE_FRONTEND_REVIEW_PACK_SKILL_NAME
     );
     expect(manifest.optionalPacks.caveman.provenance.kind).toBe("derived");
@@ -246,12 +273,9 @@ describe("framework asset parity", () => {
       REALTIME_MODEL: roles.realtimeModel,
       REALTIME_REASONING: roles.realtimeReasoning,
       ENABLED_PACK_OVERLAY_NOTES: [
-        "- frontend-craft pack active: for frontend work, pick the real task-specific frontend skills (`design-taste-frontend`, `impeccable`) instead of vague pack wrappers"
+        "- frontend-craft pack active: for frontend work, pick the real task-specific frontend skills (`design-taste-frontend`, `gpt-taste`, `image-taste-frontend`, Taste variants, `impeccable`) instead of vague pack wrappers"
       ].join("\n"),
-      ENABLED_PACK_SKILL_SELECTIONS: [
-        "- frontend-craft task picks: implementation, restyle, frontend-build -> design-taste-frontend",
-        "- frontend-craft task picks: review, audit, critique, polish -> impeccable"
-      ].join("\n")
+      ENABLED_PACK_SKILL_SELECTIONS: FRONTEND_CRAFT_SELECTION_LINES.join("\n")
     });
 
     expect(body).toBe(expected);
@@ -310,10 +334,7 @@ describe("framework asset parity", () => {
     }
 
     const frontendCraft = createOptionalPackSkill("frontend-craft");
-    expect(optionalPackSkillNames("frontend-craft")).toEqual([
-      SANE_FRONTEND_CRAFT_PACK_SKILL_NAME,
-      SANE_FRONTEND_REVIEW_PACK_SKILL_NAME
-    ]);
+    expect(optionalPackSkillNames("frontend-craft")).toEqual(FRONTEND_CRAFT_SKILL_NAMES);
     expect(createOptionalPackSkills("frontend-craft")).toEqual([
       {
         name: SANE_FRONTEND_CRAFT_PACK_SKILL_NAME,
@@ -321,8 +342,53 @@ describe("framework asset parity", () => {
         resources: []
       },
       {
+        name: "gpt-taste",
+        content: readCoreAsset("skills/vendor/frontend/gpt-tasteskill/SKILL.md"),
+        resources: []
+      },
+      {
+        name: "image-taste-frontend",
+        content: readCoreAsset("skills/vendor/frontend/images-taste-skill/SKILL.md"),
+        resources: []
+      },
+      {
+        name: "redesign-existing-projects",
+        content: readCoreAsset("skills/vendor/frontend/redesign-skill/SKILL.md"),
+        resources: []
+      },
+      {
+        name: "high-end-visual-design",
+        content: readCoreAsset("skills/vendor/frontend/soft-skill/SKILL.md"),
+        resources: []
+      },
+      {
+        name: "full-output-enforcement",
+        content: readCoreAsset("skills/vendor/frontend/output-skill/SKILL.md"),
+        resources: []
+      },
+      {
+        name: "minimalist-ui",
+        content: readCoreAsset("skills/vendor/frontend/minimalist-skill/SKILL.md"),
+        resources: []
+      },
+      {
+        name: "industrial-brutalist-ui",
+        content: readCoreAsset("skills/vendor/frontend/brutalist-skill/SKILL.md"),
+        resources: []
+      },
+      {
+        name: "stitch-design-taste",
+        content: readCoreAsset("skills/vendor/frontend/stitch-skill/SKILL.md"),
+        resources: [
+          {
+            path: "DESIGN.md",
+            content: readCoreAsset("skills/vendor/frontend/stitch-skill/DESIGN.md")
+          }
+        ]
+      },
+      {
         name: SANE_FRONTEND_REVIEW_PACK_SKILL_NAME,
-        content: readCoreAsset(manifestSkills(manifest.optionalPacks["frontend-craft"])[1]!.path),
+        content: readCoreAsset(manifestSkills(manifest.optionalPacks["frontend-craft"]).at(-1)!.path),
         resources: [
           {
             path: "reference/color-and-contrast.md",
@@ -368,7 +434,22 @@ describe("framework asset parity", () => {
     expect(frontendCraft).toContain("DESIGN_VARIANCE");
     expect(frontendCraft).toContain("ANTI-EMOJI POLICY");
 
-    const frontendReview = createOptionalPackSkills("frontend-craft")[1]?.content ?? "";
+    const frontendSkills = createOptionalPackSkills("frontend-craft");
+    expect(frontendSkills.find((skill) => skill.name === "gpt-taste")?.content).toContain(
+      "CORE DIRECTIVE: AWWWARDS-LEVEL DESIGN ENGINEERING"
+    );
+    expect(frontendSkills.find((skill) => skill.name === "image-taste-frontend")?.content).toContain(
+      "CORE DIRECTIVE: IMAGE-FIRST WEBSITE DESIGN TO CODE"
+    );
+    expect(frontendSkills.find((skill) => skill.name === "stitch-design-taste")?.resources).toEqual([
+      {
+        path: "DESIGN.md",
+        content: readCoreAsset("skills/vendor/frontend/stitch-skill/DESIGN.md")
+      }
+    ]);
+
+    const frontendReview =
+      createOptionalPackSkills("frontend-craft").find((skill) => skill.name === "impeccable")?.content ?? "";
     expect(frontendReview).toContain("name: impeccable");
     expect(frontendReview).toContain("Context Gathering Protocol");
     expect(frontendReview).toContain("Run impeccable teach");
@@ -395,15 +476,15 @@ describe("framework asset parity", () => {
     });
     expect(optionalPackProvenance("frontend-craft")).toEqual({
       kind: "derived",
-      note: "Pinned vendored mirrors of Taste Skill and Impeccable, exported under their upstream skill names instead of Sane-written wrapper prose.",
+      note: "Pinned vendored mirror of every upstream Taste Skill skill plus Impeccable, exported under upstream skill names instead of Sane-written wrapper prose.",
       updateStrategy: "pinned-manual",
       upstreams: [
         {
           name: "taste-skill",
-          role: "primary",
+          role: "primary-skill-suite",
           url: "https://github.com/Leonxlnx/taste-skill",
-          ref: "f0eea3f4409c7de76118be0149dafcf2a0031e50",
-          path: "skills/taste-skill/SKILL.md",
+          ref: "39dc15944b4ada367984489726b3849f400511ec",
+          path: "skills/",
           license: null
         },
         {

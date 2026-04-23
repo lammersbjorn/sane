@@ -12,6 +12,7 @@ import {
   SANE_REPO_AGENTS_END,
   createOptionalPackSkill,
   createOptionalPackSkills,
+  optionalPackSkillNames,
   createSaneGlobalAgentsOverlay,
   createSaneRepoAgentsOverlay,
   createSaneRouterSkill
@@ -102,10 +103,12 @@ describe("codex-native skills and agents", () => {
     const exportedSkills = createOptionalPackSkills("frontend-craft");
     const skillPaths = exportedSkills.map((skill) => join(codexPaths.userSkillsDir, skill.name, "SKILL.md"));
 
-    expect(skillPaths).toEqual([
-      join(codexPaths.userSkillsDir, "design-taste-frontend", "SKILL.md"),
-      join(codexPaths.userSkillsDir, "impeccable", "SKILL.md")
-    ]);
+    expect(exportedSkills.map((skill) => skill.name)).toEqual(optionalPackSkillNames("frontend-craft"));
+    expect(skillPaths).toEqual(
+      optionalPackSkillNames("frontend-craft").map((name) =>
+        join(codexPaths.userSkillsDir, name, "SKILL.md")
+      )
+    );
     expect(result.pathsTouched).toEqual(expect.arrayContaining(skillPaths));
     for (const [index, skill] of exportedSkills.entries()) {
       expect(readFileSync(skillPaths[index]!, "utf8")).toBe(skill.content);
@@ -118,6 +121,13 @@ describe("codex-native skills and agents", () => {
     ).toBe(
       exportedSkills.find((skill) => skill.name === "impeccable")!.resources.find(
         (resource) => resource.path === "reference/typography.md"
+      )!.content
+    );
+    expect(
+      readFileSync(join(codexPaths.userSkillsDir, "stitch-design-taste", "DESIGN.md"), "utf8")
+    ).toBe(
+      exportedSkills.find((skill) => skill.name === "stitch-design-taste")!.resources.find(
+        (resource) => resource.path === "DESIGN.md"
       )!.content
     );
   });

@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createDefaultLocalConfig } from "@sane/config";
+import { optionalPackSkillNames } from "@sane/framework-assets";
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { appendJsonlRecord, createDecisionRecord, stringifyDecisionRecord } from "@sane/state";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -67,7 +68,7 @@ describe("inspect screen model", () => {
             inventoryName: "pack-frontend-craft",
             status: "disabled",
             skillName: "design-taste-frontend",
-            skillNames: ["design-taste-frontend", "impeccable"],
+            skillNames: optionalPackSkillNames("frontend-craft"),
             provenance: {
               kind: "derived",
               note: "taste + impeccable",
@@ -145,7 +146,7 @@ describe("inspect screen model", () => {
       "hooks: invalid (Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows.)"
     );
     expect(lines).toContain(
-      "optional pack provenance: caveman configured (sane-caveman; derived from caveman); rtk disabled (no skills; internal); frontend-craft disabled (design-taste-frontend + impeccable; derived from taste-skill + impeccable)"
+      `optional pack provenance: caveman configured (sane-caveman; derived from caveman); rtk disabled (no skills; internal); frontend-craft disabled (${optionalPackSkillNames("frontend-craft").join(" + ")}; derived from taste-skill + impeccable)`
     );
     expect(lines).toEqual(formatSharedInspectOverviewLines(snapshot));
   });
@@ -237,7 +238,7 @@ describe("inspect screen model", () => {
       expect.objectContaining({
         name: "frontend-craft",
         status: "disabled",
-        skillNames: ["design-taste-frontend", "impeccable"],
+        skillNames: optionalPackSkillNames("frontend-craft"),
         provenance: expect.objectContaining({
           kind: "derived"
         })
@@ -272,7 +273,7 @@ describe("inspect screen model", () => {
     );
     expect(screen.overviewLines.join("\n")).toContain("statusline profile: missing (3 recommended changes)");
     expect(screen.overviewLines.join("\n")).toContain(
-      "optional pack provenance: caveman configured (sane-caveman; derived from caveman); rtk disabled (no skills; internal); frontend-craft disabled (design-taste-frontend + impeccable; derived from taste-skill + impeccable)"
+      `optional pack provenance: caveman configured (sane-caveman; derived from caveman); rtk disabled (no skills; internal); frontend-craft disabled (${optionalPackSkillNames("frontend-craft").join(" + ")}; derived from taste-skill + impeccable)`
     );
   });
 

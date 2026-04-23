@@ -4,6 +4,7 @@ import { join } from "node:path";
 
 import { createDefaultLocalConfig } from "@sane/config";
 import { InventoryStatus } from "@sane/core";
+import { optionalPackSkillNames } from "@sane/framework-assets";
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -101,7 +102,7 @@ describe("full inventory and doctor", () => {
         inventoryName: "pack-frontend-craft",
         status: "disabled",
         skillName: "design-taste-frontend",
-        skillNames: ["design-taste-frontend", "impeccable"],
+        skillNames: optionalPackSkillNames("frontend-craft"),
         provenance: expect.objectContaining({
           kind: "derived"
         })
@@ -339,7 +340,7 @@ describe("full inventory and doctor", () => {
     expect(bundle.optionalPacks.find((item) => item.name === "frontend-craft")).toEqual(
       expect.objectContaining({
         status: "configured",
-        skillNames: ["design-taste-frontend", "impeccable"]
+        skillNames: optionalPackSkillNames("frontend-craft")
       })
     );
     expect(bundle.inventory.find((item) => item.name === "pack-frontend-craft")?.status).toBe(
@@ -367,7 +368,7 @@ describe("full inventory and doctor", () => {
     expect(bundle.optionalPacks.find((item) => item.name === "frontend-craft")).toEqual(
       expect.objectContaining({
         status: "invalid",
-        skillNames: ["design-taste-frontend", "impeccable"]
+        skillNames: optionalPackSkillNames("frontend-craft")
       })
     );
     expect(bundle.inventory.find((item) => item.name === "pack-frontend-craft")?.status).toBe(
