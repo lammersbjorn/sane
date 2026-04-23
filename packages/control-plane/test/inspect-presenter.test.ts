@@ -141,6 +141,16 @@ describe("inspect presenter", () => {
         latestDecision: null,
         latestArtifact: null
       },
+      selfHostingShadow: {
+        mode: "shadow-inspect-only",
+        runnerEnabled: false,
+        status: "blocked",
+        checks: [
+          { status: "pass" },
+          { status: "warn" },
+          { status: "block" }
+        ]
+      },
       latestPolicyPreview: { status: "missing" },
       policyPreview: {
         summary: "policy preview: rendered adaptive obligation scenarios",
@@ -173,6 +183,9 @@ describe("inspect presenter", () => {
       "status counts: installed 1, configured 1, disabled 2, missing 3, invalid 1, drift 1"
     );
     expect(lines).toContain("latest policy snapshot: missing (current-run-derived read-only view)");
+    expect(lines).toContain(
+      "self-hosting shadow (read-only): blocked, runner disabled, checks pass 1, warn 1, block 1"
+    );
     expect(lines).toContain(
       "optional pack provenance: caveman configured (sane-caveman; derived from caveman)"
     );
