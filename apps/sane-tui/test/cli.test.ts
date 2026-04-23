@@ -38,6 +38,22 @@ describe("ts cli command parsing", () => {
       kind: "launch",
       launchShortcut: "inspect"
     });
+    expect(parseCliArgs(["--", "--width", "100", "--height", "32"])).toEqual({
+      kind: "launch",
+      launchShortcut: "default",
+      viewport: {
+        width: 100,
+        height: 32
+      }
+    });
+    expect(parseCliArgs(["settings", "--height", "20"])).toEqual({
+      kind: "launch",
+      launchShortcut: "settings",
+      viewport: {
+        width: 100,
+        height: 20
+      }
+    });
     expect(parseCliArgs(["repair"])).toEqual({
       kind: "launch",
       launchShortcut: "repair"
@@ -62,6 +78,8 @@ describe("ts cli command parsing", () => {
 
   it("rejects unsupported argv", () => {
     expect(() => parseCliArgs(["nonsense"])).toThrow("unsupported command: nonsense");
+    expect(() => parseCliArgs(["--width"])).toThrow("missing value for --width");
+    expect(() => parseCliArgs(["--height", "0"])).toThrow("invalid value for --height: 0");
   });
 });
 
@@ -78,6 +96,22 @@ describe("ts cli command execution", () => {
     expect(start.output).toContain("Section: get_started");
     expect(settings.exitCode).toBe(0);
     expect(settings.output).toContain("Section: preferences");
+  });
+
+  it("renders launch output with explicit preview viewport flags", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    writeFileSync(join(projectRoot, "pnpm-workspace.yaml"), 'packages:\n  - "apps/*"\n');
+
+    const result = runCliCommandFromDiscovery(
+      ["--width", "80", "--height", "12"],
+      projectRoot,
+      { HOME: homeDir }
+    );
+
+    expect(result.exitCode).toBe(0);
+    expect(result.output).toContain("Section: get_started");
+    expect(result.output.split("\n").length).toBeLessThanOrEqual(12);
   });
 
   it("renders section launch shortcuts through discovery", () => {

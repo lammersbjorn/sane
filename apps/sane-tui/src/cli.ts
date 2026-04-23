@@ -4,12 +4,14 @@ import { renderSessionStartHookOutput } from "@sane/control-plane/session-start-
 
 import { type BackendCommandId, type LaunchShortcut } from "@sane/sane-tui/command-registry.js";
 import { executeUiCommand } from "@sane/sane-tui/shell.js";
+import { type TextViewport } from "@sane/sane-tui/text-renderer.js";
 import { createTextTuiRuntimeFromDiscovery } from "@sane/sane-tui/text-driver.js";
 
 export type ParsedCliCommand =
   | {
       kind: "launch";
       launchShortcut: LaunchShortcut;
+      viewport?: TextViewport;
     }
   | {
       kind: "backend";
@@ -67,15 +69,15 @@ const BACKEND_COMMAND_ALIASES: ReadonlyArray<{
 ] as const;
 
 export function parseCliArgs(args: readonly string[]): ParsedCliCommand {
-  const normalizedArgs = normalizeCliArgs(args);
+  const { args: normalizedArgs, viewport } = parseRenderOptions(normalizeCliArgs(args));
 
   if (normalizedArgs.length === 0) {
-    return { kind: "launch", launchShortcut: "default" };
+    return { kind: "launch", launchShortcut: "default", viewport };
   }
 
   const launchShortcut = parseLaunchShortcut(normalizedArgs);
   if (launchShortcut) {
-    return { kind: "launch", launchShortcut };
+    return { kind: "launch", launchShortcut, viewport };
   }
 
   if (matchesArgs(normalizedArgs, ["hook", "session-start"])) {
@@ -105,7 +107,7 @@ export function runCliCommandFromDiscovery(
       exitCode: 0,
       output: createTextTuiRuntimeFromDiscovery(startPath, env, {
         launchShortcut: parsed.launchShortcut
-      }).render()
+      }).render(parsed.viewport)
     };
   }
 
@@ -131,6 +133,49 @@ function matchesArgs(actual: readonly string[], expected: readonly string[]): bo
 
 function normalizeCliArgs(args: readonly string[]): readonly string[] {
   return args[0] === "--" ? args.slice(1) : args;
+}
+
+function parseRenderOptions(args: readonly string[]): {
+  args: readonly string[];
+  viewport?: TextViewport;
+} {
+  const remaining: string[] = [];
+  let width: number | undefined;
+  let height: number | undefined;
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--width" || arg === "--height") {
+      const raw = args[index + 1];
+      if (!raw) {
+        throw new Error(`missing value for ${arg}`);
+      }
+      const parsed = Number.parseInt(raw, 10);
+      if (!Number.isFinite(parsed) || parsed <= 0) {
+        throw new Error(`invalid value for ${arg}: ${raw}`);
+      }
+      if (arg === "--width") {
+        width = parsed;
+      } else {
+        height = parsed;
+      }
+      index += 1;
+    } else {
+      remaining.push(arg);
+    }
+  }
+
+  if (width === undefined && height === undefined) {
+    return { args: remaining };
+  }
+
+  return {
+    args: remaining,
+    viewport: {
+      width: width ?? 100,
+      height: height ?? 32
+    }
+  };
 }
 
 function parseLaunchShortcut(args: readonly string[]): LaunchShortcut | null {
