@@ -23,6 +23,16 @@ describe("preview launch planning", () => {
       kind: "terminal",
       launchShortcut: "settings"
     });
+
+    expect(
+      planPreviewLaunch(["inspect"], {
+        stdinIsTty: true,
+        stdoutIsTty: true
+      })
+    ).toEqual({
+      kind: "terminal",
+      launchShortcut: "inspect"
+    });
   });
 
   it("falls back to text rendering when tty is unavailable", () => {

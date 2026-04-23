@@ -67,11 +67,15 @@ function formatStatusChips(view: SaneTuiAppView): string[] {
     .filter((chip) => !primaryIds.includes(chip.id))
     .map((chip) => `${chip.label}: ${chip.value}`);
 
-  const lines = [primary.join("  |  ")];
-  if (secondary.length > 0) {
-    lines.push(secondary.join("  |  "));
+  if (primary.length === 0) {
+    return secondary;
   }
-  return lines;
+
+  if (secondary.length === 0) {
+    return primary;
+  }
+
+  return [...primary, "", ...secondary];
 }
 
 function formatOverlay(view: SaneTuiAppView["overlay"]): string[] {
@@ -158,7 +162,7 @@ function styleLine(line: string, index: number, lineCount: number, view: SaneTui
     return ansi("2", line);
   }
 
-  if (line.includes("Runtime: ") || line.includes("Codex config: ")) {
+  if (hasStatusChipToken(line, view.chips)) {
     return styleStatusChipLine(line, view);
   }
 
@@ -184,6 +188,10 @@ function styleStatusChipLine(line: string, view: SaneTuiAppView): string {
 
     return styled.replace(token, ansi(statusToneCode(chip.tone), token));
   }, line);
+}
+
+function hasStatusChipToken(line: string, chips: SaneTuiAppView["chips"]): boolean {
+  return chips.some((chip) => line.includes(`${chip.label}: ${chip.value}`));
 }
 
 function truncateWidth(lines: string[], width?: number): string[] {

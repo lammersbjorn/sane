@@ -43,6 +43,31 @@ describe("text renderer", () => {
     expect(output).toContain("[Now]");
   });
 
+  it("renders status chips as readable rows with primary chips first", () => {
+    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
+    const view = loadAppView(shell);
+
+    const output = renderTextAppView(view);
+    const lines = output.split("\n");
+    const statusStart = lines.indexOf("[Status]");
+    const actionsStart = lines.indexOf("[Actions]");
+    expect(statusStart).toBeGreaterThanOrEqual(0);
+    expect(actionsStart).toBeGreaterThan(statusStart);
+
+    const statusBlock = lines.slice(statusStart + 1, actionsStart);
+    const statusLines = statusBlock.filter((line) => line.length > 0);
+    const primaryIds = new Set(["runtime", "codex-config", "user-skills", "hooks", "drift"]);
+    const expectedStatusLines = [
+      ...view.chips.filter((chip) => primaryIds.has(chip.id)),
+      ...view.chips.filter((chip) => !primaryIds.has(chip.id))
+    ].map((chip) => `${chip.label}: ${chip.value}`);
+
+    expect(statusLines).toEqual(expectedStatusLines);
+    if (view.chips.some((chip) => !primaryIds.has(chip.id))) {
+      expect(statusBlock).toContain("");
+    }
+  });
+
   it("renders overlay state when present", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()), "settings");
     shell.notice = {

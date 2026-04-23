@@ -2,6 +2,7 @@ import { OperationKind } from "@sane/core";
 
 export type TuiSectionId = "get_started" | "preferences" | "install" | "inspect" | "repair";
 export type RustSectionId = "StartHere" | "Configure" | "Exports" | "Inspect" | "Repair";
+export type LaunchShortcut = "default" | "settings" | "inspect" | "repair";
 
 export type BackendCommandId =
   | "install_runtime"
@@ -86,7 +87,7 @@ export interface TuiSectionMetadata {
   tabLabel: string;
   docLabel: string;
   description: string[];
-  launchShortcut?: "default" | "settings";
+  launchShortcut?: LaunchShortcut;
 }
 
 export interface SectionActionMetadata extends CommandSpec {
@@ -98,7 +99,9 @@ export interface SectionActionMetadata extends CommandSpec {
 export const COMMAND_METADATA_REGISTRY = {
   shortcuts: {
     default: "get_started",
-    settings: "preferences"
+    settings: "preferences",
+    inspect: "inspect",
+    repair: "repair"
   } as const,
   sections: [
     {
@@ -150,6 +153,7 @@ export const COMMAND_METADATA_REGISTRY = {
       rustSection: "Inspect",
       tabLabel: "Inspect",
       docLabel: "Inspect",
+      launchShortcut: "inspect",
       description: [
         "Inspect is read-only visibility before you change anything.",
         "Inspect includes status summary, doctor result, current-run-derived handoff visibility, local config view, Codex config view, and export drift view.",
@@ -163,6 +167,7 @@ export const COMMAND_METADATA_REGISTRY = {
       rustSection: "Repair",
       tabLabel: "Repair or remove",
       docLabel: "Repair",
+      launchShortcut: "repair",
       description: [
         "Repair, restore, and uninstall tools.",
         "Use backup and restore when settings changes went wrong.",

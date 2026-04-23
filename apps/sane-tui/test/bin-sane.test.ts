@@ -40,6 +40,24 @@ describe("sane bin shim", () => {
     expect(result.stdout).toContain("Section: preferences");
   });
 
+  it("runs section shortcuts through the smart preview shim", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    writeFileSync(join(projectRoot, "Cargo.toml"), "[workspace]\n");
+
+    const result = spawnSync(process.execPath, [BIN_PATH, "inspect"], {
+      cwd: projectRoot,
+      env: {
+        ...process.env,
+        HOME: homeDir
+      },
+      encoding: "utf8"
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Section: inspect");
+  });
+
   it("routes backend commands through the same shim", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();

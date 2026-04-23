@@ -30,6 +30,14 @@ describe("ts cli command parsing", () => {
       kind: "launch",
       launchShortcut: "settings"
     });
+    expect(parseCliArgs(["inspect"])).toEqual({
+      kind: "launch",
+      launchShortcut: "inspect"
+    });
+    expect(parseCliArgs(["repair"])).toEqual({
+      kind: "launch",
+      launchShortcut: "repair"
+    });
     expect(parseCliArgs(["install"])).toEqual({
       kind: "backend",
       commandId: "install_runtime"
@@ -66,6 +74,20 @@ describe("ts cli command execution", () => {
     expect(start.output).toContain("Section: get_started");
     expect(settings.exitCode).toBe(0);
     expect(settings.output).toContain("Section: preferences");
+  });
+
+  it("renders section launch shortcuts through discovery", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    writeFileSync(join(projectRoot, "Cargo.toml"), "[workspace]\n");
+
+    const inspect = runCliCommandFromDiscovery(["inspect"], projectRoot, { HOME: homeDir });
+    const repair = runCliCommandFromDiscovery(["repair"], projectRoot, { HOME: homeDir });
+
+    expect(inspect.exitCode).toBe(0);
+    expect(inspect.output).toContain("Section: inspect");
+    expect(repair.exitCode).toBe(0);
+    expect(repair.output).toContain("Section: repair");
   });
 
   it("runs backend commands through discovery", () => {

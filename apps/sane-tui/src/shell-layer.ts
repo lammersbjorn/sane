@@ -10,7 +10,7 @@ import {
   runSelectedAction as runShellSelectedAction,
   type TuiShell
 } from "@sane/sane-tui/shell.js";
-import { type TuiSectionId, type UiCommandId } from "@sane/sane-tui/command-registry.js";
+import { type LaunchShortcut, type TuiSectionId, type UiCommandId } from "@sane/sane-tui/command-registry.js";
 
 export interface ShellLayerState {
   sectionId: TuiSectionId;
@@ -21,7 +21,7 @@ export interface ShellLayerState {
 }
 
 export function createShellState(input?: {
-  launchShortcut?: "default" | "settings";
+  launchShortcut?: LaunchShortcut;
 }): ShellLayerState {
   const projectRoot = mkdtempSync(join(tmpdir(), "sane-shell-project-"));
   const homeDir = mkdtempSync(join(tmpdir(), "sane-shell-home-"));

@@ -8,6 +8,7 @@ import {
   type ProjectPaths
 } from "@sane/platform";
 
+import { type LaunchShortcut } from "@sane/sane-tui/command-registry.js";
 import { loadDashboardView, type DashboardView } from "@sane/sane-tui/dashboard.js";
 import { createTuiShell, type TuiShell } from "@sane/sane-tui/shell.js";
 
@@ -21,7 +22,7 @@ export interface SaneTuiApp {
 export function createSaneTuiApp(
   paths: ProjectPaths,
   codexPaths: CodexPaths,
-  input?: { launchShortcut?: "default" | "settings" }
+  input?: { launchShortcut?: LaunchShortcut }
 ): SaneTuiApp {
   const shell = createTuiShell(paths, codexPaths, input?.launchShortcut ?? "default");
   return {
@@ -35,7 +36,7 @@ export function createSaneTuiApp(
 export function createSaneTuiAppFromRoots(
   projectRoot: string,
   homeDir: string,
-  input?: { launchShortcut?: "default" | "settings" }
+  input?: { launchShortcut?: LaunchShortcut }
 ): SaneTuiApp {
   return createSaneTuiApp(
     createProjectPaths(projectRoot),
@@ -47,7 +48,7 @@ export function createSaneTuiAppFromRoots(
 export function createSaneTuiAppFromDiscovery(
   startPath: string,
   env: HomeDirEnv = process.env,
-  input?: { launchShortcut?: "default" | "settings" }
+  input?: { launchShortcut?: LaunchShortcut }
 ): SaneTuiApp {
   return createSaneTuiApp(
     discoverProjectPaths(startPath),

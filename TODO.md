@@ -139,7 +139,7 @@ Implemented:
 - no-args TUI now opens into section-based onboarding instead of a flat settings/action wall
 - `sane settings` is the direct shortcut into configure mode
 - TypeScript TUI now has explicit shell, view, editor, and overlay model layers
-- TypeScript TUI now also owns pure input/key handling plus internal non-interactive CLI parsing/execution for backend verbs and `hook session-start`, while the public shipped entrypoint still remains Rust-owned for now
+- TypeScript TUI now also owns pure input/key handling plus internal non-interactive CLI parsing/execution for backend verbs, direct `settings` / `inspect` / `repair` section shortcuts, and `hook session-start`, while the public shipped entrypoint still remains Rust-owned for now
 - TS runtime resolution now works for internal text and live terminal preview paths via workspace package `exports`, self-package app imports, terminal-loop wiring, and `tsx`; the remaining blockers are real terminal parity plus a deliberate packaged public entrypoint
 - internal TS preview launch is now unified through one smart `tsx` entrypoint that chooses live terminal on TTY launch commands and falls back to text for non-TTY or backend command flows
 - `@sane/sane-tui` now also exposes a local `sane` bin shim that routes through the smart preview entrypoint; in this workspace the internal root launcher uses `node apps/sane-tui/bin/sane.mjs` directly while the package `bin` metadata stays ready for later packaged cutover work
@@ -260,7 +260,7 @@ pnpm check
 - [ ] Exact contents/split of `Sane`'s own minimal self-hosting `AGENTS.md` vs repo skill files
 - [ ] Exact self-hosting milestone checklist
 - [ ] Exact TypeScript package split and Rust retirement/cutover checklist, ordered highest-to-lowest migration value: policy-preview cutover, Rust workspace bootstrap retirement, leftover compatibility glue cleanup
-  - [x] internal TS launch supports no-args / `settings`, backend verbs, and `hook session-start`
+- [x] internal TS launch supports no-args / `settings` / `inspect` / `repair`, backend verbs, and `hook session-start`
   - [x] internal TS preview is smart-routed across non-TTY text vs TTY live terminal
   - [x] TS terminal preview has visible nav chrome, key parity, viewport fitting, resize redraw, and a local bin shim
   - [ ] switch public root `start` / `start:settings` away from Rust

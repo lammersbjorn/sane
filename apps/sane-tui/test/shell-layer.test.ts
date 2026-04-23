@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { listSectionActions, type TuiSectionId, type UiCommandId } from "@sane/sane-tui/index.js";
+import { listSectionActions, type LaunchShortcut, type TuiSectionId, type UiCommandId } from "@sane/sane-tui/index.js";
 
 interface ShellState {
   sectionId: TuiSectionId;
@@ -10,7 +10,7 @@ interface ShellState {
 }
 
 interface ShellLayerModule {
-  createShellState(input?: { launchShortcut?: "default" | "settings" }): ShellState;
+  createShellState(input?: { launchShortcut?: LaunchShortcut }): ShellState;
   moveSectionSelection(state: ShellState, step: 1 | -1): ShellState;
   moveActionSelection(state: ShellState, step: 1 | -1): ShellState;
   runSelectedAction(state: ShellState): ShellState;
@@ -42,6 +42,15 @@ describe("shell layer", () => {
     const state = shell.createShellState({ launchShortcut: "settings" });
 
     expect(state.sectionId).toBe("preferences");
+    expect(state.actionIndex).toBe(0);
+  });
+
+  it("supports inspect shortcut launch into inspect", async () => {
+    const shell = await loadShellLayer();
+
+    const state = shell.createShellState({ launchShortcut: "inspect" });
+
+    expect(state.sectionId).toBe("inspect");
     expect(state.actionIndex).toBe(0);
   });
 

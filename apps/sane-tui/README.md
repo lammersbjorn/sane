@@ -8,7 +8,7 @@ Current role:
 - owns screen loaders for `Get Started`, `Preferences`, `Install`, `Inspect`, and `Repair`
 - owns shell state for section selection, confirmations, notices, and editor flows
 - owns pure input/key handling on top of the shell state machine
-- owns internal non-interactive TS CLI parsing/execution for backend verbs and hook output
+- owns internal non-interactive TS CLI parsing/execution for backend verbs, section shortcuts, and hook output
 - exposes internal smart/text/live preview paths through `tsx`
 - owns render-ready dashboard / overlay / app view models
 - owns internal text-frame rendering scaffolding for the future TS terminal driver
@@ -60,7 +60,10 @@ Verification:
 
 ```bash
 node apps/sane-tui/bin/sane.mjs settings
+node apps/sane-tui/bin/sane.mjs inspect
+node apps/sane-tui/bin/sane.mjs repair
 pnpm --filter @sane/sane-tui run preview settings
+pnpm --filter @sane/sane-tui run preview inspect
 pnpm --filter @sane/sane-tui run preview:terminal settings
 pnpm --filter @sane/sane-tui run preview:text settings
 pnpm --filter @sane/sane-tui test

@@ -2,14 +2,14 @@ import { type HomeDirEnv, discoverCodexPaths, discoverProjectPaths } from "@sane
 
 import { renderSessionStartHookOutput } from "@sane/control-plane/session-start-hook.js";
 
-import { type BackendCommandId } from "@sane/sane-tui/command-registry.js";
+import { type BackendCommandId, type LaunchShortcut } from "@sane/sane-tui/command-registry.js";
 import { executeUiCommand } from "@sane/sane-tui/shell.js";
 import { createTextTuiRuntimeFromDiscovery } from "@sane/sane-tui/text-driver.js";
 
 export type ParsedCliCommand =
   | {
       kind: "launch";
-      launchShortcut: "default" | "settings";
+      launchShortcut: LaunchShortcut;
     }
   | {
       kind: "backend";
@@ -71,8 +71,9 @@ export function parseCliArgs(args: readonly string[]): ParsedCliCommand {
     return { kind: "launch", launchShortcut: "default" };
   }
 
-  if (matchesArgs(args, ["settings"])) {
-    return { kind: "launch", launchShortcut: "settings" };
+  const launchShortcut = parseLaunchShortcut(args);
+  if (launchShortcut) {
+    return { kind: "launch", launchShortcut };
   }
 
   if (matchesArgs(args, ["hook", "session-start"])) {
@@ -124,4 +125,19 @@ export function runCliCommandFromDiscovery(
 
 function matchesArgs(actual: readonly string[], expected: readonly string[]): boolean {
   return actual.length === expected.length && expected.every((part, index) => actual[index] === part);
+}
+
+function parseLaunchShortcut(args: readonly string[]): LaunchShortcut | null {
+  if (args.length !== 1) {
+    return null;
+  }
+
+  switch (args[0]) {
+    case "settings":
+    case "inspect":
+    case "repair":
+      return args[0];
+    default:
+      return null;
+  }
 }

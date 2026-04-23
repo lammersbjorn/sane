@@ -1,3 +1,4 @@
+import { type LaunchShortcut } from "@sane/sane-tui/command-registry.js";
 import { parseCliArgs } from "@sane/sane-tui/cli.js";
 
 export interface PreviewIoState {
@@ -8,7 +9,7 @@ export interface PreviewIoState {
 export type PreviewLaunchPlan =
   | {
       kind: "terminal";
-      launchShortcut: "default" | "settings";
+      launchShortcut: LaunchShortcut;
     }
   | {
       kind: "text";
