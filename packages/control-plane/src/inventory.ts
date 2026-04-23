@@ -22,7 +22,7 @@ import { inspectCustomAgentsInventory, inspectHooksInventory } from "./hooks-cus
 import { inspectSavedLocalConfig } from "./local-config.js";
 import { managedStatusKindFromInventory, presentManagedStatus } from "./status-presenter.js";
 import { inspectOpencodeAgentsInventory } from "./opencode-native.js";
-import { showRuntimeStatus } from "./index.js";
+import { inspectRuntimeInventory } from "./runtime-inventory.js";
 
 type InventoryItem = OperationResult["inventory"][number];
 type InventoryStatusName =
@@ -270,7 +270,7 @@ export function inspectDoctorSnapshot(
 
 export function inspectStatusBundle(paths: ProjectPaths, codexPaths: CodexPaths): StatusBundle {
   const inventory = [
-    ...showRuntimeStatus(paths).inventory,
+    ...inspectRuntimeInventory(paths),
     ...inspectPackInventory(paths, codexPaths),
     inspectCodexConfigInventory(codexPaths),
     ...inspectCodexSkillsAndAgents(paths, codexPaths),

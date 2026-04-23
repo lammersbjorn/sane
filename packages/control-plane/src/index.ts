@@ -1,4 +1,4 @@
-import { existsSync, statSync, writeFileSync } from "node:fs";
+import { statSync, writeFileSync } from "node:fs";
 
 import {
   createRecommendedLocalConfig,
@@ -56,6 +56,7 @@ import {
   runtimeHistoryPaths,
   runtimeStatePaths
 } from "./runtime-state.js";
+import { inspectRuntimeInventory } from "./runtime-inventory.js";
 import {
   inventoryStatusFromRuntimeLayer,
   presentInventoryStatus,
@@ -370,51 +371,6 @@ function recommendedLocalConfig(codexPaths: CodexPaths): LocalConfig {
   );
 }
 
-function inspectRuntimeInventory(paths: ProjectPaths) {
-  const runtimeState = inspectRuntimeState(paths);
-  const currentRunStatus = inventoryStatusFromRuntimeLayer(runtimeState.layerStatus.currentRun);
-  const summaryStatus = inventoryStatusFromRuntimeLayer(runtimeState.layerStatus.summary);
-  const briefStatus = inventoryStatusFromRuntimeLayer(runtimeState.layerStatus.brief);
-
-  return [
-    {
-      name: "runtime",
-      scope: InventoryScope.LocalRuntime,
-      status: fileStatus(paths.runtimeRoot),
-      path: paths.runtimeRoot,
-      repairHint: null
-    },
-    {
-      name: "config",
-      scope: InventoryScope.LocalRuntime,
-      status: readStatus(() => readLocalConfig(paths.configPath)),
-      path: paths.configPath,
-      repairHint: repairHintForPath(paths.configPath)
-    },
-    {
-      name: "current-run",
-      scope: InventoryScope.LocalRuntime,
-      status: currentRunStatus,
-      path: paths.currentRunPath,
-      repairHint: repairHintForPath(paths.currentRunPath)
-    },
-    {
-      name: "summary",
-      scope: InventoryScope.LocalRuntime,
-      status: summaryStatus,
-      path: paths.summaryPath,
-      repairHint: repairHintForPath(paths.summaryPath)
-    },
-    {
-      name: "brief",
-      scope: InventoryScope.LocalRuntime,
-      status: briefStatus,
-      path: paths.briefPath,
-      repairHint: repairHintForPath(paths.briefPath)
-    }
-  ];
-}
-
 function ensureFileWithDefault(path: string, defaultContents: string): void {
   try {
     writeFileSync(path, defaultContents, {
@@ -492,23 +448,6 @@ function collectPathsTouched(
 
 function findInventory<T extends { name: string }>(inventory: T[], name: string): T | undefined {
   return inventory.find((item) => item.name === name);
-}
-
-function readStatus(read: () => unknown): InventoryStatus {
-  try {
-    read();
-    return InventoryStatus.Installed;
-  } catch {
-    return InventoryStatus.Invalid;
-  }
-}
-
-function fileStatus(path: string): InventoryStatus {
-  return existsSync(path) ? InventoryStatus.Installed : InventoryStatus.Missing;
-}
-
-function repairHintForPath(path: string): string | null {
-  return existsSync(path) ? null : "rerun `install`";
 }
 
 export * from "./codex-native.js";
