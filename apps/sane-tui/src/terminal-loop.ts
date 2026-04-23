@@ -87,6 +87,7 @@ function renderTerminalFrame(frame: string): string {
 
 function currentViewport(stdout: TerminalLoopWritable): TextViewport {
   return {
+    ansi: true,
     width: stdout.columns,
     height: stdout.rows
   };

@@ -83,4 +83,16 @@ describe("text renderer", () => {
     expect(output).toContain("...");
     expect(output).toContain("[Now]");
   });
+
+  it("adds ansi styling only when requested", () => {
+    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
+
+    const output = renderTextAppView(loadAppView(shell), {
+      ansi: true
+    });
+
+    expect(output).toContain("\u001b[1mSane | Codex-native onboarding and setup\u001b[0m");
+    expect(output).toContain("\u001b[7m> 1. Create Sane's local project files (recommended)\u001b[0m");
+    expect(output).toContain("\u001b[1;36m[Actions]\u001b[0m");
+  });
 });

@@ -3,6 +3,7 @@ import { type SaneTuiAppView } from "@sane/sane-tui/app-view.js";
 export interface TextViewport {
   width?: number;
   height?: number;
+  ansi?: boolean;
 }
 
 export function renderTextAppView(view: SaneTuiAppView, viewport: TextViewport = {}): string {
@@ -40,7 +41,7 @@ export function renderTextAppView(view: SaneTuiAppView, viewport: TextViewport =
     ...overlayLines(view.overlay)
   ];
 
-  return fitViewport(lines, viewport).join("\n");
+  return decorateAnsi(fitViewport(lines, viewport), viewport).join("\n");
 }
 
 function formatTabs(view: SaneTuiAppView): string {
@@ -78,6 +79,44 @@ function fitViewport(lines: string[], viewport: TextViewport): string[] {
   return fitHeight(truncateWidth(lines, viewport.width), viewport.height);
 }
 
+function decorateAnsi(lines: string[], viewport: TextViewport): string[] {
+  if (!viewport.ansi) {
+    return lines;
+  }
+
+  return lines.map((line, index) => styleLine(line, index, lines.length));
+}
+
+function styleLine(line: string, index: number, lineCount: number): string {
+  if (index === 0) {
+    return ansi("1", line);
+  }
+
+  if (line.startsWith("Sections: ")) {
+    return styleSectionsLine(line);
+  }
+
+  if (line.startsWith("> ")) {
+    return ansi("7", line);
+  }
+
+  if (line.startsWith("[") && line.endsWith("]")) {
+    return ansi("1;36", line);
+  }
+
+  if (index === lineCount - 1) {
+    return ansi("2", line);
+  }
+
+  return line;
+}
+
+function styleSectionsLine(line: string): string {
+  const prefix = "Sections: ";
+  const content = line.slice(prefix.length).replace(/\[[^\]]+\]/g, (match) => ansi("7", match));
+  return `${ansi("1", prefix)}${content}`;
+}
+
 function truncateWidth(lines: string[], width?: number): string[] {
   if (!width || width < 4) {
     return lines;
@@ -113,4 +152,8 @@ function fitHeight(lines: string[], height?: number): string[] {
 
   const head = lines.slice(0, height - 3);
   return [...head, "...", lines.at(-2)!, lines.at(-1)!];
+}
+
+function ansi(code: string, text: string): string {
+  return `\u001b[${code}m${text}\u001b[0m`;
 }
