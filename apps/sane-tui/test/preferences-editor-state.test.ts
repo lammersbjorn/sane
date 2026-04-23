@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createDefaultLocalConfig } from "@sane/config";
 
 import {
+  CONFIG_FIELD_METADATA,
   createConfigEditorState,
   createPackEditorState,
   createPrivacyEditorState,
@@ -21,6 +22,21 @@ function expectSaveResetAffordances(
   expected: { canSave: boolean; canReset: boolean }
 ): void {
   expect(value).toEqual(expect.objectContaining(expected));
+}
+
+function configFieldValue(field: keyof typeof CONFIG_FIELD_METADATA, config: ReturnType<typeof createDefaultLocalConfig>): string {
+  return CONFIG_FIELD_METADATA[field].value(config);
+}
+
+function selectConfigField(
+  editor: ReturnType<typeof createConfigEditorState>,
+  index: number
+): ReturnType<typeof createConfigEditorState> {
+  let next = editor;
+  for (let offset = 0; offset < index; offset += 1) {
+    next = moveConfigFieldSelection(next, 1);
+  }
+  return next;
 }
 
 describe("preferences editor state", () => {
@@ -62,6 +78,33 @@ describe("preferences editor state", () => {
 
     const reset = resetConfigEditor(cycled);
     expect(reset.config).toEqual(defaults);
+  });
+
+  it("cycles each config field through its declared values", () => {
+    const defaults = createDefaultLocalConfig();
+    const editor = createConfigEditorState(defaults, defaults);
+
+    editor.fields.forEach((field, index) => {
+      const selected = selectConfigField(editor, index);
+      const next = cycleSelectedConfigField(selected, 1);
+
+      expect(configFieldValue(field, next.config)).not.toBe(configFieldValue(field, defaults));
+    });
+
+    const reverseModel = cycleSelectedConfigField(editor, -1);
+    expect(reverseModel.config.models.coordinator.model).toBe(
+      CONFIG_FIELD_METADATA.coordinator_model.options.at(-1)
+    );
+
+    const reasoningEditor = moveConfigFieldSelection(editor, 1);
+    const reverseReasoning = cycleSelectedConfigField(reasoningEditor, -1);
+    const reasoningOptions = [...CONFIG_FIELD_METADATA.coordinator_reasoning.options];
+    const defaultReasoning = defaults.models.coordinator.reasoningEffort;
+    expect(reverseReasoning.config.models.coordinator.reasoningEffort).toBe(
+      reasoningOptions[
+        (reasoningOptions.indexOf(defaultReasoning) + reasoningOptions.length - 1) % reasoningOptions.length
+      ]
+    );
   });
 
   it("toggles optional packs with core locked on and resets to defaults", () => {

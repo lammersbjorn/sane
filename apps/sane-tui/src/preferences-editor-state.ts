@@ -48,14 +48,86 @@ export interface PrivacyEditorState {
   canReset: boolean;
 }
 
-const CONFIG_FIELDS: ConfigFieldId[] = [
-  "coordinator_model",
-  "coordinator_reasoning",
-  "sidecar_model",
-  "sidecar_reasoning",
-  "verifier_model",
-  "verifier_reasoning"
-];
+export interface ConfigFieldMetadata {
+  label: string;
+  explanation: string;
+  options: typeof PICKER_MODELS | typeof REASONING_EFFORTS;
+  value: (config: LocalConfig) => string;
+  applyStep: (config: LocalConfig, step: 1 | -1) => void;
+}
+
+export const CONFIG_FIELD_METADATA: Record<ConfigFieldId, ConfigFieldMetadata> = {
+  coordinator_model: {
+    label: "Coordinator model",
+    explanation:
+      "Editable default model for highest-context work: planning, shaping, integration, and hard calls.",
+    options: PICKER_MODELS,
+    value: (config) => config.models.coordinator.model,
+    applyStep: (config, step) => {
+      config.models.coordinator.model = cycleValue(PICKER_MODELS, config.models.coordinator.model, step);
+    }
+  },
+  coordinator_reasoning: {
+    label: "Coordinator reasoning",
+    explanation: "Default reasoning depth for the main coordinator role.",
+    options: REASONING_EFFORTS,
+    value: (config) => config.models.coordinator.reasoningEffort,
+    applyStep: (config, step) => {
+      config.models.coordinator.reasoningEffort = cycleValue(
+        REASONING_EFFORTS,
+        config.models.coordinator.reasoningEffort,
+        step
+      );
+    }
+  },
+  sidecar_model: {
+    label: "Sidecar model",
+    explanation:
+      "Editable default model for bounded helper work that should not consume coordinator budget.",
+    options: PICKER_MODELS,
+    value: (config) => config.models.sidecar.model,
+    applyStep: (config, step) => {
+      config.models.sidecar.model = cycleValue(PICKER_MODELS, config.models.sidecar.model, step);
+    }
+  },
+  sidecar_reasoning: {
+    label: "Sidecar reasoning",
+    explanation: "Default reasoning depth for sidecar tasks such as narrow inspections or support work.",
+    options: REASONING_EFFORTS,
+    value: (config) => config.models.sidecar.reasoningEffort,
+    applyStep: (config, step) => {
+      config.models.sidecar.reasoningEffort = cycleValue(
+        REASONING_EFFORTS,
+        config.models.sidecar.reasoningEffort,
+        step
+      );
+    }
+  },
+  verifier_model: {
+    label: "Verifier model",
+    explanation: "Editable default model when Sane runs reviewer or checker work.",
+    options: PICKER_MODELS,
+    value: (config) => config.models.verifier.model,
+    applyStep: (config, step) => {
+      config.models.verifier.model = cycleValue(PICKER_MODELS, config.models.verifier.model, step);
+    }
+  },
+  verifier_reasoning: {
+    label: "Verifier reasoning",
+    explanation: "Default reasoning depth for review, checking, and verification tasks.",
+    options: REASONING_EFFORTS,
+    value: (config) => config.models.verifier.reasoningEffort,
+    applyStep: (config, step) => {
+      config.models.verifier.reasoningEffort = cycleValue(
+        REASONING_EFFORTS,
+        config.models.verifier.reasoningEffort,
+        step
+      );
+    }
+  }
+};
+
+const CONFIG_FIELDS: ConfigFieldId[] = Object.keys(CONFIG_FIELD_METADATA) as ConfigFieldId[];
 
 const PACK_FIELD_ID_BY_NAME: Record<OptionalPackName, PackFieldId> = {
   caveman: "caveman",
@@ -112,39 +184,7 @@ export function cycleSelectedConfigField(
 ): ConfigEditorState {
   const next = structuredClone(state);
   const field = state.fields[state.selected]!;
-
-  switch (field) {
-    case "coordinator_model":
-      next.config.models.coordinator.model = cycleValue(PICKER_MODELS, next.config.models.coordinator.model, step);
-      break;
-    case "coordinator_reasoning":
-      next.config.models.coordinator.reasoningEffort = cycleValue(
-        REASONING_EFFORTS,
-        next.config.models.coordinator.reasoningEffort,
-        step
-      );
-      break;
-    case "sidecar_model":
-      next.config.models.sidecar.model = cycleValue(PICKER_MODELS, next.config.models.sidecar.model, step);
-      break;
-    case "sidecar_reasoning":
-      next.config.models.sidecar.reasoningEffort = cycleValue(
-        REASONING_EFFORTS,
-        next.config.models.sidecar.reasoningEffort,
-        step
-      );
-      break;
-    case "verifier_model":
-      next.config.models.verifier.model = cycleValue(PICKER_MODELS, next.config.models.verifier.model, step);
-      break;
-    case "verifier_reasoning":
-      next.config.models.verifier.reasoningEffort = cycleValue(
-        REASONING_EFFORTS,
-        next.config.models.verifier.reasoningEffort,
-        step
-      );
-      break;
-  }
+  CONFIG_FIELD_METADATA[field].applyStep(next.config, step);
 
   return withConfigAffordances(next);
 }

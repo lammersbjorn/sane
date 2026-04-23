@@ -1,10 +1,10 @@
-import { PICKER_MODELS, REASONING_EFFORTS, enabledPackNames as configEnabledPackNames } from "@sane/config";
+import { enabledPackNames as configEnabledPackNames } from "@sane/config";
 import { inspectPrivacyTransparencySnapshot } from "@sane/control-plane/preferences.js";
 import { optionalPackSkillNames } from "@sane/framework-assets";
 
 import {
+  CONFIG_FIELD_METADATA,
   type ConfigEditorState,
-  type ConfigFieldId,
   type PackEditorState,
   type PackFieldId,
   packFieldPackName,
@@ -38,49 +38,6 @@ export interface NoticeOverlayModel {
 }
 
 export type OverlayModel = EditorOverlayModel | ConfirmOverlayModel | NoticeOverlayModel | null;
-
-const CONFIG_FIELD_METADATA: Record<
-  ConfigFieldId,
-  {
-    label: string;
-    explanation: string;
-    value: (editor: ConfigEditorState) => string;
-  }
-> = {
-  coordinator_model: {
-    label: "Coordinator model",
-    explanation:
-      "Editable default model for highest-context work: planning, shaping, integration, and hard calls.",
-    value: (editor) => editor.config.models.coordinator.model
-  },
-  coordinator_reasoning: {
-    label: "Coordinator reasoning",
-    explanation: "Default reasoning depth for the main coordinator role.",
-    value: (editor) => editor.config.models.coordinator.reasoningEffort
-  },
-  sidecar_model: {
-    label: "Sidecar model",
-    explanation:
-      "Editable default model for bounded helper work that should not consume coordinator budget.",
-    value: (editor) => editor.config.models.sidecar.model
-  },
-  sidecar_reasoning: {
-    label: "Sidecar reasoning",
-    explanation: "Default reasoning depth for sidecar tasks such as narrow inspections or support work.",
-    value: (editor) => editor.config.models.sidecar.reasoningEffort
-  },
-  verifier_model: {
-    label: "Verifier model",
-    explanation: "Editable default model when Sane runs reviewer or checker work.",
-    value: (editor) => editor.config.models.verifier.model
-  },
-  verifier_reasoning: {
-    label: "Verifier reasoning",
-    explanation: "Default reasoning depth for review, checking, and verification tasks.",
-    value: (editor) => editor.config.models.verifier.reasoningEffort
-  }
-};
-
 const PACK_FIELD_EXPLANATIONS: Record<PackFieldId, string> = {
   caveman:
     "Compressed communication guidance. Useful when you want less token-heavy prose by default.",
@@ -160,7 +117,7 @@ export function loadOverlayModel(shell: TuiShell): OverlayModel {
 function configFieldHelpLines(editor: ConfigEditorState): string[] {
   const field = editor.fields[editor.selected]!;
   const metadata = CONFIG_FIELD_METADATA[field];
-  const value = metadata.value(editor);
+  const value = metadata.value(editor.config);
   const lines = [
     metadata.label,
     `Current value: ${value}`,
@@ -180,9 +137,9 @@ function configFieldHelpLines(editor: ConfigEditorState): string[] {
   ];
 
   if (field.endsWith("_model")) {
-    lines.push(PICKER_MODELS.join(", "));
+    lines.push(metadata.options.join(", "));
   } else {
-    lines.push(REASONING_EFFORTS.join(", "));
+    lines.push(metadata.options.join(", "));
   }
 
   return lines;
