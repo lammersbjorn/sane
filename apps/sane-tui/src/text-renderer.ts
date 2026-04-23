@@ -14,6 +14,9 @@ export function renderTextAppView(view: SaneTuiAppView, viewport: TextViewport =
     `Section: ${view.tabs.selected}`,
     `Recommended: ${view.recommendedNextStep}`,
     "",
+    "[Status]",
+    ...formatStatusChips(view),
+    "",
     "[Actions]",
     ...formatActions(view),
     "",
@@ -56,6 +59,22 @@ function formatActions(view: SaneTuiAppView): string[] {
     const recommended = action.id === view.recommendedActionId ? " (recommended)" : "";
     return `${selected} ${action.label}${recommended}`;
   });
+}
+
+function formatStatusChips(view: SaneTuiAppView): string[] {
+  const primaryIds = ["runtime", "codex-config", "user-skills", "hooks", "drift"];
+  const primary = view.chips
+    .filter((chip) => primaryIds.includes(chip.id))
+    .map((chip) => `${chip.label}: ${chip.value}`);
+  const secondary = view.chips
+    .filter((chip) => !primaryIds.includes(chip.id))
+    .map((chip) => `${chip.label}: ${chip.value}`);
+
+  const lines = [primary.join("  |  ")];
+  if (secondary.length > 0) {
+    lines.push(secondary.join("  |  "));
+  }
+  return lines;
 }
 
 function overlayLines(view: SaneTuiAppView["overlay"]): string[] {

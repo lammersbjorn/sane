@@ -33,6 +33,8 @@ describe("text renderer", () => {
     expect(output).toContain("Sections: [Start here]");
     expect(output).toContain("Set up preferences");
     expect(output).toContain("Install to Codex");
+    expect(output).toContain("[Status]");
+    expect(output).toContain("Runtime: missing");
     expect(output).toContain("[Actions]");
     expect(output).toContain("> 1. Create Sane's local project files (recommended)");
     expect(output).toContain("[Section Overview]");
