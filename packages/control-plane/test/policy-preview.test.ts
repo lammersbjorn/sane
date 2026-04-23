@@ -206,6 +206,185 @@ describe("policy preview", () => {
     ]);
   });
 
+  it("derives design architectural executing heuristics from current-run state", () => {
+    const scenario = buildCurrentRunInspectPreview({
+      version: 2,
+      objective: "plan self-hosting migration",
+      phase: "implementing",
+      activeTasks: ["audit current state", "map migration steps", "draft rollout plan"],
+      blockingQuestions: [],
+      verification: {
+        status: "pending",
+        summary: "not yet started"
+      },
+      lastCompactionTsUnix: 1_700_000_000,
+      extra: {}
+    });
+
+    expect(scenario.input).toEqual({
+      intent: "design",
+      taskShape: "architectural",
+      risk: "high",
+      ambiguity: "low",
+      parallelism: "possible",
+      contextPressure: "medium",
+      runState: "executing"
+    });
+    expect(scenario.obligations).toEqual(["planning", "review"]);
+  });
+
+  it("derives edit multi-file executing heuristics from current-run state", () => {
+    const scenario = buildCurrentRunInspectPreview({
+      version: 2,
+      objective: "update docs",
+      phase: "editing",
+      activeTasks: ["touch changelog", "patch docs", "sync config"],
+      blockingQuestions: [],
+      verification: {
+        status: "pending",
+        summary: "queued"
+      },
+      lastCompactionTsUnix: 1_700_000_000,
+      extra: {}
+    });
+
+    expect(scenario.input).toEqual({
+      intent: "edit",
+      taskShape: "multi_file",
+      risk: "medium",
+      ambiguity: "low",
+      parallelism: "possible",
+      contextPressure: "medium",
+      runState: "executing"
+    });
+    expect(scenario.obligations).toEqual(["tdd", "review"]);
+  });
+
+  it("derives orchestrate long-running executing heuristics from current-run state", () => {
+    const scenario = buildCurrentRunInspectPreview({
+      version: 2,
+      objective: "keep going with the long run",
+      phase: "working",
+      activeTasks: [
+        "scan backlog",
+        "slice work",
+        "assign slices",
+        "track progress",
+        "close loop"
+      ],
+      blockingQuestions: [],
+      verification: {
+        status: "pending",
+        summary: "in flight"
+      },
+      lastCompactionTsUnix: 1_700_000_000,
+      extra: {}
+    });
+
+    expect(scenario.input).toEqual({
+      intent: "orchestrate",
+      taskShape: "long_running",
+      risk: "high",
+      ambiguity: "low",
+      parallelism: "clear",
+      contextPressure: "high",
+      runState: "executing"
+    });
+    expect(scenario.obligations).toEqual([
+      "planning",
+      "review",
+      "subagent_eligible",
+      "context_compaction"
+    ]);
+  });
+
+  it("derives question trivial validating heuristics from current-run state", () => {
+    const scenario = buildCurrentRunInspectPreview({
+      version: 2,
+      objective: "what should we do next?",
+      phase: "reviewing",
+      activeTasks: [],
+      blockingQuestions: [],
+      verification: {
+        status: "pending",
+        summary: "waiting"
+      },
+      lastCompactionTsUnix: 1_700_000_000,
+      extra: {}
+    });
+
+    expect(scenario.input).toEqual({
+      intent: "question",
+      taskShape: "trivial",
+      risk: "low",
+      ambiguity: "low",
+      parallelism: "none",
+      contextPressure: "low",
+      runState: "validating"
+    });
+    expect(scenario.obligations).toEqual(["direct_answer", "review"]);
+  });
+
+  it("derives question trivial closing heuristics from current-run state", () => {
+    const scenario = buildCurrentRunInspectPreview({
+      version: 2,
+      objective: "what should we close out next?",
+      phase: "closing",
+      activeTasks: [],
+      blockingQuestions: [],
+      verification: {
+        status: "pending",
+        summary: "waiting"
+      },
+      lastCompactionTsUnix: 1_700_000_000,
+      extra: {}
+    });
+
+    expect(scenario.input).toEqual({
+      intent: "question",
+      taskShape: "trivial",
+      risk: "low",
+      ambiguity: "low",
+      parallelism: "none",
+      contextPressure: "low",
+      runState: "closing"
+    });
+    expect(scenario.obligations).toEqual(["direct_answer", "review"]);
+  });
+
+  it("derives stalled debug high-risk heuristics from failed verification", () => {
+    const scenario = buildCurrentRunInspectPreview({
+      version: 2,
+      objective: "debug deploy error",
+      phase: "stalled",
+      activeTasks: ["reproduce deploy error"],
+      blockingQuestions: [],
+      verification: {
+        status: "failed",
+        summary: "repro failed"
+      },
+      lastCompactionTsUnix: 1_700_000_000,
+      extra: {}
+    });
+
+    expect(scenario.input).toEqual({
+      intent: "debug",
+      taskShape: "local",
+      risk: "high",
+      ambiguity: "low",
+      parallelism: "none",
+      contextPressure: "low",
+      runState: "blocked"
+    });
+    expect(scenario.obligations).toEqual([
+      "debug_rigor",
+      "verify_light",
+      "planning",
+      "review",
+      "self_repair"
+    ]);
+  });
+
   it("keeps canonical five scenarios when current-run is missing", () => {
     const projectRoot = makeTempDir();
     const paths = createProjectPaths(projectRoot);
