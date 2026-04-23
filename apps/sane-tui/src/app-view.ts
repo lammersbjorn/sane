@@ -221,6 +221,7 @@ function formatProfileActionHelp(
 
 type SelectedAction = ReturnType<typeof currentAction>;
 type SelectedActionHelpBuilder = (action: SelectedAction) => string[];
+type ProfileActionHelpModel = Parameters<typeof formatProfileActionHelp>[1];
 
 function selectedActionHelpBuilders(
   getStarted: ReturnType<typeof loadGetStartedScreen>,
@@ -228,46 +229,25 @@ function selectedActionHelpBuilders(
   preferences: () => ReturnType<typeof loadPreferencesScreen>
 ): Partial<Record<UiCommandId, SelectedActionHelpBuilder>> {
   return {
-    preview_codex_profile: (action) =>
-      formatProfileActionHelp(action, {
-        auditStatus: getStarted.codexProfileAudit.status,
-        recommendedChangeCount: getStarted.codexProfileAudit.recommendedChangeCount,
-        applyStatus: getStarted.codexProfileApply.status,
-        appliedKeyCount: getStarted.codexProfileApply.appliedKeys.length,
-        appliedKeyLabel: "changes",
-        details: getStarted.codexProfilePreview.details
-      }),
-    apply_codex_profile: (action) =>
-      formatProfileActionHelp(action, {
-        auditStatus: getStarted.codexProfileAudit.status,
-        recommendedChangeCount: getStarted.codexProfileAudit.recommendedChangeCount,
-        applyStatus: getStarted.codexProfileApply.status,
-        appliedKeyCount: getStarted.codexProfileApply.appliedKeys.length,
-        appliedKeyLabel: "changes",
-        details: getStarted.codexProfilePreview.details
-      }),
-    preview_integrations_profile: (action) => {
+    ...profileActionHelpBuilders(["preview_codex_profile", "apply_codex_profile"], () => ({
+      auditStatus: getStarted.codexProfileAudit.status,
+      recommendedChangeCount: getStarted.codexProfileAudit.recommendedChangeCount,
+      applyStatus: getStarted.codexProfileApply.status,
+      appliedKeyCount: getStarted.codexProfileApply.appliedKeys.length,
+      appliedKeyLabel: "changes",
+      details: getStarted.codexProfilePreview.details
+    })),
+    ...profileActionHelpBuilders(["preview_integrations_profile", "apply_integrations_profile"], () => {
       const model = inspect();
-      return formatProfileActionHelp(action, {
+      return {
         auditStatus: model.integrationsAudit.status,
         recommendedChangeCount: model.integrationsAudit.recommendedChangeCount,
         applyStatus: model.integrationsApply.status,
         appliedKeyCount: model.integrationsApply.appliedKeys.length,
         appliedKeyLabel: "keys",
         details: model.integrationsPreview.details
-      });
-    },
-    apply_integrations_profile: (action) => {
-      const model = inspect();
-      return formatProfileActionHelp(action, {
-        auditStatus: model.integrationsAudit.status,
-        recommendedChangeCount: model.integrationsAudit.recommendedChangeCount,
-        applyStatus: model.integrationsApply.status,
-        appliedKeyCount: model.integrationsApply.appliedKeys.length,
-        appliedKeyLabel: "keys",
-        details: model.integrationsPreview.details
-      });
-    },
+      };
+    }),
     show_runtime_summary: (action) => {
       const model = inspect();
       return detailSelectedActionHelp(action, [
@@ -287,51 +267,41 @@ function selectedActionHelpBuilders(
           current: "current preview"
         })
       ),
-    preview_cloudflare_profile: (action) => {
+    ...profileActionHelpBuilders(["preview_cloudflare_profile", "apply_cloudflare_profile"], () => {
       const model = preferences();
-      return formatProfileActionHelp(action, {
+      return {
         auditStatus: model.cloudflareAudit.status,
         recommendedChangeCount: model.cloudflareAudit.recommendedChangeCount,
         applyStatus: model.cloudflareApply.status,
         appliedKeyCount: model.cloudflareApply.appliedKeys.length,
         appliedKeyLabel: "keys",
         details: model.cloudflarePreview.details
-      });
-    },
-    apply_cloudflare_profile: (action) => {
+      };
+    }),
+    ...profileActionHelpBuilders(["preview_opencode_profile", "apply_opencode_profile"], () => {
       const model = preferences();
-      return formatProfileActionHelp(action, {
-        auditStatus: model.cloudflareAudit.status,
-        recommendedChangeCount: model.cloudflareAudit.recommendedChangeCount,
-        applyStatus: model.cloudflareApply.status,
-        appliedKeyCount: model.cloudflareApply.appliedKeys.length,
-        appliedKeyLabel: "keys",
-        details: model.cloudflarePreview.details
-      });
-    },
-    preview_opencode_profile: (action) => {
-      const model = preferences();
-      return formatProfileActionHelp(action, {
+      return {
         auditStatus: model.opencodeAudit.status,
         recommendedChangeCount: model.opencodeAudit.recommendedChangeCount,
         applyStatus: model.opencodeApply.status,
         appliedKeyCount: model.opencodeApply.appliedKeys.length,
         appliedKeyLabel: "keys",
         details: model.opencodePreview.details
-      });
-    },
-    apply_opencode_profile: (action) => {
-      const model = preferences();
-      return formatProfileActionHelp(action, {
-        auditStatus: model.opencodeAudit.status,
-        recommendedChangeCount: model.opencodeAudit.recommendedChangeCount,
-        applyStatus: model.opencodeApply.status,
-        appliedKeyCount: model.opencodeApply.appliedKeys.length,
-        appliedKeyLabel: "keys",
-        details: model.opencodePreview.details
-      });
-    }
+      };
+    })
   };
+}
+
+function profileActionHelpBuilders<const T extends UiCommandId[]>(
+  ids: T,
+  loadProfile: () => ProfileActionHelpModel
+): Partial<Record<T[number], SelectedActionHelpBuilder>> {
+  return Object.fromEntries(
+    ids.map((id) => [
+      id,
+      (action: SelectedAction) => formatProfileActionHelp(action, loadProfile())
+    ])
+  ) as Partial<Record<T[number], SelectedActionHelpBuilder>>;
 }
 
 function baseSelectedActionHelp(action: SelectedAction): string[] {
