@@ -429,6 +429,64 @@ describe("policy preview", () => {
     });
   });
 
+  it("keeps validating current-run previews read-only and open until verified", () => {
+    const projectRoot = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+
+    const result = previewPolicyForCurrentRun(paths, {
+      version: 2,
+      objective: "update docs",
+      phase: "validating",
+      activeTasks: ["check generated files"],
+      blockingQuestions: [],
+      verification: {
+        status: "pending",
+        summary: "waiting for checks"
+      },
+      lastCompactionTsUnix: 1_700_000_000,
+      extra: {}
+    });
+    const scenario = result.policyPreview?.scenarios.at(-1);
+
+    expect(result.pathsTouched).toEqual([]);
+    expect(result.inventory).toEqual([]);
+    expect(result.details.at(-1)).toContain("current-run-inspect:");
+    expect(scenario?.input.runState).toBe("validating");
+    expect(scenario?.continuation).toEqual({
+      strategy: "continue_until_verified",
+      stopCondition: "verified"
+    });
+  });
+
+  it("keeps closing current-run previews read-only and closes only after verification", () => {
+    const projectRoot = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+
+    const result = previewPolicyForCurrentRun(paths, {
+      version: 2,
+      objective: "what should we close out next?",
+      phase: "closing",
+      activeTasks: [],
+      blockingQuestions: [],
+      verification: {
+        status: "pending",
+        summary: "waiting"
+      },
+      lastCompactionTsUnix: 1_700_000_000,
+      extra: {}
+    });
+    const scenario = result.policyPreview?.scenarios.at(-1);
+
+    expect(result.pathsTouched).toEqual([]);
+    expect(result.inventory).toEqual([]);
+    expect(result.details.at(-1)).toContain("current-run-inspect:");
+    expect(scenario?.input.runState).toBe("closing");
+    expect(scenario?.continuation).toEqual({
+      strategy: "close_when_verified",
+      stopCondition: "closed"
+    });
+  });
+
   it("derives stalled debug high-risk heuristics from failed verification", () => {
     const scenario = buildCurrentRunInspectPreview({
       version: 2,

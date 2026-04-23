@@ -335,6 +335,40 @@ describe("recommendContinuation", () => {
       stopCondition: StopCondition.RealBlockerOrExplicitPause
     });
   });
+
+  it("keeps validating work moving until verification is complete", () => {
+    const input = {
+      intent: Intent.Edit,
+      taskShape: TaskShape.Local,
+      risk: Level.Low,
+      ambiguity: Level.Low,
+      parallelism: Parallelism.None,
+      contextPressure: Level.Low,
+      runState: RunState.Validating
+    };
+
+    expect(recommendContinuation(input, evaluate(input))).toEqual({
+      strategy: ContinuationStrategy.ContinueUntilVerified,
+      stopCondition: StopCondition.Verified
+    });
+  });
+
+  it("closes closing-state work only after verification", () => {
+    const input = {
+      intent: Intent.Question,
+      taskShape: TaskShape.Trivial,
+      risk: Level.Low,
+      ambiguity: Level.Low,
+      parallelism: Parallelism.None,
+      contextPressure: Level.Low,
+      runState: RunState.Closing
+    };
+
+    expect(recommendContinuation(input, evaluate(input))).toEqual({
+      strategy: ContinuationStrategy.CloseWhenVerified,
+      stopCondition: StopCondition.Closed
+    });
+  });
 });
 
 describe("explain", () => {
