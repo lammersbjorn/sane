@@ -251,6 +251,8 @@ Allowed onboarding choice:
 - optional "Built with Sane" style attribution prompt for users who want to support the project
 - must never be preselected
 - must show exact target file(s) and exact text before apply
+- default surface, if this ships, is a short README credit line
+- README badge and "both" remain explicit alternate choices only, not the default
 
 Not allowed:
 - pack browser yet

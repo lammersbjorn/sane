@@ -195,15 +195,16 @@ If added later:
 
 Allowed shapes:
 
-- README badge
-- short README credit line
-- both
+- default: short README credit line
+- alternate explicit choice: README badge
+- alternate explicit choice: both
 
 Not allowed:
 
 - hidden insertion
 - default-on
 - writing attribution without showing the patch preview
+- remote badge image as the default attribution surface
 
 ## Landed Direction
 
