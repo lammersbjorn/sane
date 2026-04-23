@@ -229,15 +229,12 @@ Avoid:
 
 ## Legacy Compatibility
 
-`gpt-5.1-codex-max` should not be a recommended default in `Sane`.
-
-Use it only as a legacy compatibility path if:
-- an older local config already contains it
-- the current environment exposes nothing better
+`gpt-5.1-codex-max` should not be an active detected model or recommended default in `Sane`.
 
 That means:
-- keep parser compatibility if needed
+- ignore it when reading active Codex model caches
 - keep it out of the normal picker/default story
+- keep parser compatibility only if a future migration specifically needs it
 - do not rank it above `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.3-codex`, or `gpt-5.2`
 
 Popular-but-unverified rule:

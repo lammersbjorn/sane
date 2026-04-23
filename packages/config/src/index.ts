@@ -14,7 +14,6 @@ export const AVAILABLE_MODELS = [
   'gpt-5-codex',
   'gpt-5.1-codex',
   'gpt-5.1-codex-mini',
-  'gpt-5.1-codex-max',
 ] as const;
 
 export const PICKER_MODELS = [
@@ -108,7 +107,6 @@ const COORDINATOR_PRIORITY = [
   'gpt-5.1-codex',
   'gpt-5-codex',
   'gpt-5.1-codex-mini',
-  'gpt-5.1-codex-max',
 ] as const;
 const EXECUTION_PRIORITY = [
   'gpt-5.3-codex',
@@ -120,7 +118,6 @@ const EXECUTION_PRIORITY = [
   'gpt-5-codex',
   'gpt-5.4-mini',
   'gpt-5.1-codex-mini',
-  'gpt-5.1-codex-max',
 ] as const;
 const SIDECAR_PRIORITY = [
   'gpt-5.4-mini',
@@ -132,7 +129,6 @@ const SIDECAR_PRIORITY = [
   'gpt-5.1-codex-mini',
   'gpt-5.1-codex',
   'gpt-5-codex',
-  'gpt-5.1-codex-max',
 ] as const;
 const VERIFIER_PRIORITY = [
   'gpt-5.5',
@@ -144,7 +140,6 @@ const VERIFIER_PRIORITY = [
   'gpt-5.1-codex',
   'gpt-5-codex',
   'gpt-5.1-codex-mini',
-  'gpt-5.1-codex-max',
 ] as const;
 const REALTIME_PRIORITY = [
   'gpt-5.3-codex-spark',
@@ -156,7 +151,6 @@ const REALTIME_PRIORITY = [
   'gpt-5.1-codex-mini',
   'gpt-5.1-codex',
   'gpt-5-codex',
-  'gpt-5.1-codex-max',
 ] as const;
 const COORDINATOR_REASONING: readonly ReasoningEffort[] = ['high', 'xhigh', 'medium', 'low'];
 const EXECUTION_REASONING: readonly ReasoningEffort[] = ['medium', 'high', 'low', 'xhigh'];

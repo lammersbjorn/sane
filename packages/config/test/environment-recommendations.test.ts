@@ -396,10 +396,6 @@ describe('environment-aware recommendations', () => {
           slug: 'gpt-5.4-mini',
           reasoningEfforts: ['low', 'medium'],
         },
-        {
-          slug: 'gpt-5.1-codex-max',
-          reasoningEfforts: ['high', 'xhigh'],
-        },
       ],
     });
   });
@@ -478,7 +474,7 @@ describe('environment-aware recommendations', () => {
     });
   });
 
-  it('keeps gpt-5.1-codex-max as last-resort fallback behind newer Codex models', () => {
+  it('ignores gpt-5.1-codex-max when deriving modern model recommendations', () => {
     const environment: CodexEnvironment = {
       planType: 'pro',
       availableModels: [
@@ -576,32 +572,16 @@ describe('environment-aware recommendations', () => {
     });
   });
 
-  it('falls back to gpt-5.1-codex-max only when it is the only detected model', () => {
-    const environment: CodexEnvironment = {
-      planType: 'free',
-      availableModels: [
-        {
-          slug: 'gpt-5.1-codex-max',
-          reasoningEfforts: ['high', 'xhigh'],
-        },
-      ],
-    };
-
-    const config = createRecommendedLocalConfig(environment);
-
-    expect(config.models).toEqual({
-      coordinator: {
-        model: 'gpt-5.1-codex-max',
-        reasoningEffort: 'high',
-      },
-      sidecar: {
-        model: 'gpt-5.1-codex-max',
-        reasoningEffort: 'high',
-      },
-      verifier: {
-        model: 'gpt-5.1-codex-max',
-        reasoningEffort: 'high',
-      },
-    });
+  it('filters gpt-5.1-codex-max out of detected active models', () => {
+    expect(
+      detectAvailableModelsFromJson({
+        models: [
+          {
+            slug: 'gpt-5.1-codex-max',
+            supported_reasoning_levels: ['high', 'xhigh'],
+          },
+        ],
+      }),
+    ).toEqual([]);
   });
 });
