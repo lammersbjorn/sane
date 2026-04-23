@@ -8,6 +8,7 @@ export * from "@sane/sane-tui/main.js";
 export * from "@sane/sane-tui/overlay-models.js";
 export * from "@sane/sane-tui/preferences-screen.js";
 export * from "@sane/sane-tui/preferences-editor-state.js";
+export * from "@sane/sane-tui/preview-launch.js";
 export * from "@sane/sane-tui/repair-screen.js";
 export * from "@sane/sane-tui/result-panel.js";
 export * from "@sane/sane-tui/result-panel-layer.js";

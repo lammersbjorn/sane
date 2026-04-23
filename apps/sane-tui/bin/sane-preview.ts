@@ -1,13 +1,17 @@
-import { parseCliArgs, runCliCommandFromDiscovery } from "../src/cli.js";
+import { runCliCommandFromDiscovery } from "../src/cli.js";
+import { planPreviewLaunch } from "../src/preview-launch.js";
 import { startTerminalLoop } from "../src/terminal-loop.js";
 import { createTextTuiRuntimeFromDiscovery } from "../src/text-driver.js";
 
 const args = process.argv.slice(2);
-const parsed = parseCliArgs(args);
+const plan = planPreviewLaunch(args, {
+  stdinIsTty: Boolean(process.stdin.isTTY),
+  stdoutIsTty: Boolean(process.stdout.isTTY)
+});
 
-if (parsed.kind === "launch" && process.stdin.isTTY && process.stdout.isTTY) {
+if (plan.kind === "terminal") {
   const runtime = createTextTuiRuntimeFromDiscovery(process.cwd(), process.env, {
-    launchShortcut: parsed.launchShortcut
+    launchShortcut: plan.launchShortcut
   });
 
   const controller = startTerminalLoop(runtime, {
@@ -34,7 +38,7 @@ if (parsed.kind === "launch" && process.stdin.isTTY && process.stdout.isTTY) {
     process.exit(0);
   });
 } else {
-  const result = runCliCommandFromDiscovery(args, process.cwd(), process.env);
+  const result = runCliCommandFromDiscovery(plan.args, process.cwd(), process.env);
   process.stdout.write(result.output.endsWith("\n") ? result.output : `${result.output}\n`);
   process.exitCode = result.exitCode;
 }
