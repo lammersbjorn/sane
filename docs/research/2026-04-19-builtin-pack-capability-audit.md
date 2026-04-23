@@ -52,18 +52,7 @@ Why `v1`:
 - directly aligned with Sane’s speed/token philosophy
 - broad utility for long sessions
 
-### 3. `cavemem`
-
-Owns:
-- durable memory compression / handoff support
-- brief / compaction helpers
-- capability-only pack behavior for now, not a mirrored standalone skill
-
-Why `v1`:
-- directly tied to long-session continuity
-- complements the `R3` state model
-
-### 4. `rtk`
+### 3. `rtk`
 
 Owns:
 - safer shell command routing
@@ -74,7 +63,7 @@ Why `v1`:
 - already part of your real workflow
 - concrete QoL, not abstract framework theater
 
-### 5. `frontend-craft`
+### 4. `frontend-craft`
 
 Initial contents:
 - `Taste Skill` / `gpt-taste`
@@ -173,9 +162,6 @@ Why not default:
 `caveman`
 - terse communication + token economy
 
-`cavemem`
-- durable memory + compaction helpers, currently capability-only
-
 `rtk`
 - shell execution discipline, currently capability-only
 
@@ -198,7 +184,6 @@ Why not default:
 Ship `v1` with this builtin pack set:
 - `core`
 - `caveman`
-- `cavemem`
 - `rtk`
 - `frontend-craft`
 
@@ -216,7 +201,7 @@ Do not expose a public pack API yet.
 ## Decision
 
 `R1` answer:
-- `v1` should ship a curated builtin set of five packs: `core`, `caveman`, `cavemem`, `rtk`, and `frontend-craft`.
+- `v1` should ship a curated builtin set of four packs: `core`, `caveman`, `rtk`, and `frontend-craft`.
 - `frontend-craft` should use `Taste Skill` as the primary upstream inspiration/reference instead of `Uncodixfy`.
 - `Taste Skill`-style frontend direction and `impeccable` should stay bundled together initially under `frontend-craft`.
 - marketplace/plugin extensibility remains deferred until after `v1`.

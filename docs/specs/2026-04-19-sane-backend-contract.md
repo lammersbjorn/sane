@@ -55,7 +55,7 @@ Current managed targets are:
 9. narrow explicit opt-in profile management for user-level Codex config at `~/.codex/config.toml`
 
 Current managed export behavior also depends on local config:
-- built-in pack set is fixed today: always-on `core` plus optional `caveman`, `cavemem`, `rtk`, and `frontend-craft`
+- built-in pack set is fixed today: always-on `core` plus optional `caveman`, `rtk`, and `frontend-craft`
 - exported core skills currently include `sane-router` plus `continue`
 - exported `sane-router` skill content can reflect enabled guidance packs and current routing defaults
 - exported global and repo `AGENTS.md` overlays can reflect enabled guidance packs and current routing defaults
@@ -63,8 +63,8 @@ Current managed export behavior also depends on local config:
 - enabled optional packs may materialize as additional managed user skills during `export_user_skills` (currently `sane-caveman`, `design-taste-frontend`, and `impeccable`)
 - enabled optional packs may materialize as additional managed repo skills during `export_repo_skills` (same exported skill names as user scope)
 - `frontend-craft` currently exports exactly two concrete skills: `design-taste-frontend` and `impeccable`
-- capability-only packs (`cavemem` and `rtk`) do not export dedicated skill directories, but they still change and can be enforced through router/overlay/custom-agent output
-- installed `caveman` and `cavemem` packs are enforced through exported router guidance, overlays, and custom-agent templates; they are not just advisory inspect notes
+- capability-only packs (`rtk`) do not export dedicated skill directories, but they still change and can be enforced through router/overlay/custom-agent output
+- installed `caveman` pack guidance is enforced through exported router guidance, overlays, and custom-agent templates; it is not just an advisory inspect note
 - repo-local `AGENTS.md` overlay export should stay distinct from the global overlay while reusing the same underlying routing state
 - built-in pack manifests may also carry read-only provenance metadata for bundled upstream-derived skills or MCP references
 - that provenance is inspectable metadata only, not a live fetch/update contract

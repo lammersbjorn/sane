@@ -86,6 +86,9 @@ Primary source:
 - Avoid interfering with other agent frameworks in cloned repos
 - Optional shared / exported layer later
 - Local state should balance readability and token efficiency
+- `Sane` should not depend on a third-party global memory system for default continuity
+- Default continuity should come from scoped Codex-native exports plus thin local `.sane` state
+- Third-party memory systems may exist later only as explicit optional integrations, not as default startup replay
 
 ### TUI / Installation
 

@@ -50,7 +50,7 @@ describe("full inventory and doctor", () => {
 
     const bundle = inspectStatusBundle(paths, codexPaths);
 
-    expect(bundle.inventory).toHaveLength(18);
+    expect(bundle.inventory).toHaveLength(17);
     expect(bundle.localRuntime.map((item) => item.name)).toEqual([
       "runtime",
       "config",
@@ -59,7 +59,6 @@ describe("full inventory and doctor", () => {
       "brief",
       "pack-core",
       "pack-caveman",
-      "pack-cavemem",
       "pack-rtk",
       "pack-frontend-craft"
     ]);
@@ -82,16 +81,6 @@ describe("full inventory and doctor", () => {
         status: "configured",
         skillName: "sane-caveman",
         skillNames: ["sane-caveman"],
-        provenance: expect.objectContaining({
-          kind: "derived"
-        })
-      }),
-      expect.objectContaining({
-        name: "cavemem",
-        inventoryName: "pack-cavemem",
-        status: "disabled",
-        skillName: null,
-        skillNames: [],
         provenance: expect.objectContaining({
           kind: "derived"
         })

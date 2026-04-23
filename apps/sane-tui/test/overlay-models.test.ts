@@ -65,10 +65,10 @@ describe("overlay models", () => {
     if (!overlay || overlay.kind !== "packs") {
       throw new Error("expected packs overlay");
     }
-    expect(overlay.detailsLines.some((line: string) => line.includes("selected pack: cavemem"))).toBe(true);
+    expect(overlay.detailsLines.some((line: string) => line.includes("selected pack: rtk"))).toBe(true);
     expect(overlay.detailsLines).toContain("exports: no dedicated skills");
 
-    shell.activeEditor.selected = 3;
+    shell.activeEditor.selected = 2;
     overlay = loadOverlayModel(shell);
     expect(overlay?.kind).toBe("packs");
     if (!overlay || overlay.kind !== "packs") {

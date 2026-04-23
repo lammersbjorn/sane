@@ -78,7 +78,6 @@ describe('local config parity', () => {
     expect(enabledPackNames(config.packs)).toEqual([
       'core',
       'caveman',
-      'cavemem',
       'rtk',
       'frontend-craft',
     ]);

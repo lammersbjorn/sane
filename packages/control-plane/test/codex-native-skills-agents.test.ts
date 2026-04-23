@@ -68,7 +68,6 @@ describe("codex-native skills and agents", () => {
       createSaneRouterSkill(
         {
           caveman: true,
-          cavemem: false,
           rtk: false,
           frontendCraft: false
         },
@@ -161,7 +160,6 @@ describe("codex-native skills and agents", () => {
       createSaneGlobalAgentsOverlay(
         {
           caveman: false,
-          cavemem: false,
           rtk: true,
           frontendCraft: false
         },
@@ -175,7 +173,6 @@ describe("codex-native skills and agents", () => {
       createSaneRepoAgentsOverlay(
         {
           caveman: false,
-          cavemem: false,
           rtk: true,
           frontendCraft: false
         },
@@ -205,7 +202,7 @@ describe("codex-native skills and agents", () => {
     const projectPaths = createProjectPaths(projectRoot);
     const codexPaths = createCodexPaths(homeDir);
     const config = createDefaultLocalConfig();
-    config.packs.cavemem = true;
+    config.packs.caveman = true;
     writeLocalConfig(projectPaths.configPath, config);
 
     exportUserSkills(projectPaths, codexPaths);

@@ -18,6 +18,5 @@ telemetry = "product-improvement"
 [packs]
 core = true
 caveman = true
-cavemem = true
 rtk = true
 frontend-craft = true

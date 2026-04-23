@@ -118,12 +118,11 @@ Built-in packs currently exposed in `Sane`:
 
 - `core`
 - `caveman`
-- `cavemem`
 - `rtk`
 - `frontend-craft`
 
 These packs change guidance and behavior. They are not meant to turn the product into a command ritual.
-Some packs export concrete skills (`caveman`, `frontend-craft` today). Others are capability-only and currently change routing/overlay behavior without exporting a dedicated skill (`cavemem`, `rtk` today).
+Some packs export concrete skills (`caveman`, `frontend-craft` today). Others are capability-only and currently change routing/overlay behavior without exporting a dedicated skill (`rtk` today).
 
 ### Codex-native installs
 

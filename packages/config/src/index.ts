@@ -85,7 +85,6 @@ export interface PrivacyConfig {
 export interface PackConfig {
   core: boolean;
   caveman: boolean;
-  cavemem: boolean;
   rtk: boolean;
   frontendCraft: boolean;
 }
@@ -184,7 +183,6 @@ const packConfigSchema = z
   .object({
     core: z.boolean(),
     caveman: z.boolean().default(false),
-    cavemem: z.boolean().default(false),
     rtk: z.boolean().default(false),
     frontendCraft: z.boolean().default(false),
   })
@@ -249,7 +247,6 @@ export function createDefaultPackConfig(): PackConfig {
   return {
     core: true,
     caveman: false,
-    cavemem: false,
     rtk: false,
     frontendCraft: false,
   };
@@ -485,7 +482,6 @@ export function stringifyLocalConfig(config: LocalConfig): string {
     '[packs]',
     `core = ${normalized.packs.core}`,
     `caveman = ${normalized.packs.caveman}`,
-    `cavemem = ${normalized.packs.cavemem}`,
     `rtk = ${normalized.packs.rtk}`,
     `"frontend-craft" = ${normalized.packs.frontendCraft}`,
     '',
@@ -499,9 +495,6 @@ export function enabledPackNames(config: PackConfig): string[] {
   }
   if (config.caveman) {
     enabled.push('caveman');
-  }
-  if (config.cavemem) {
-    enabled.push('cavemem');
   }
   if (config.rtk) {
     enabled.push('rtk');
@@ -543,7 +536,6 @@ function normalizeLocalConfigInput(value: unknown): unknown {
     ? {
         core: value.packs.core,
         caveman: value.packs.caveman,
-        cavemem: value.packs.cavemem,
         rtk: value.packs.rtk,
         frontendCraft: value.packs['frontend-craft'] ?? value.packs.frontendCraft,
       }

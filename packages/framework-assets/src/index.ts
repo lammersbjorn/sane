@@ -15,11 +15,10 @@ export const SANE_GLOBAL_AGENTS_BEGIN = "<!-- sane:global-agents:start -->";
 export const SANE_GLOBAL_AGENTS_END = "<!-- sane:global-agents:end -->";
 export const SANE_REPO_AGENTS_BEGIN = "<!-- sane:repo-agents:start -->";
 export const SANE_REPO_AGENTS_END = "<!-- sane:repo-agents:end -->";
-export const OPTIONAL_PACK_NAMES = ["caveman", "cavemem", "rtk", "frontend-craft"] as const;
+export const OPTIONAL_PACK_NAMES = ["caveman", "rtk", "frontend-craft"] as const;
 export type OptionalPackName = typeof OPTIONAL_PACK_NAMES[number];
 export const OPTIONAL_PACK_METADATA = [
   { name: "caveman", configKey: "caveman" },
-  { name: "cavemem", configKey: "cavemem" },
   { name: "rtk", configKey: "rtk" },
   { name: "frontend-craft", configKey: "frontendCraft" }
 ] as const satisfies ReadonlyArray<{
@@ -32,7 +31,6 @@ const OPTIONAL_PACK_METADATA_BY_NAME = Object.fromEntries(
 
 export interface GuidancePacks {
   caveman: boolean;
-  cavemem: boolean;
   rtk: boolean;
   frontendCraft: boolean;
 }
@@ -148,7 +146,6 @@ const CORE_PACK_MANIFEST = readCorePackManifest();
 export function createDefaultGuidancePacks(): GuidancePacks {
   return {
     caveman: false,
-    cavemem: false,
     rtk: false,
     frontendCraft: false
   };

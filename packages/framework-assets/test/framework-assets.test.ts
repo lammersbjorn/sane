@@ -162,9 +162,8 @@ describe("framework asset parity", () => {
   });
 
   it("exposes one shared optional-pack roster and config-key mapping", () => {
-    expect(optionalPackNames()).toEqual(["caveman", "cavemem", "rtk", "frontend-craft"]);
+    expect(optionalPackNames()).toEqual(["caveman", "rtk", "frontend-craft"]);
     expect(optionalPackConfigKey("caveman")).toBe("caveman");
-    expect(optionalPackConfigKey("cavemem")).toBe("cavemem");
     expect(optionalPackConfigKey("rtk")).toBe("rtk");
     expect(optionalPackConfigKey("frontend-craft")).toBe("frontendCraft");
   });
@@ -173,7 +172,6 @@ describe("framework asset parity", () => {
     const roles = roleGuidance();
     const packs: GuidancePacks = {
       caveman: true,
-      cavemem: false,
       rtk: true,
       frontendCraft: false
     };
@@ -230,7 +228,6 @@ describe("framework asset parity", () => {
     const roles = roleGuidance();
     const packs: GuidancePacks = {
       caveman: false,
-      cavemem: true,
       rtk: false,
       frontendCraft: true
     };
@@ -249,7 +246,6 @@ describe("framework asset parity", () => {
       REALTIME_MODEL: roles.realtimeModel,
       REALTIME_REASONING: roles.realtimeReasoning,
       ENABLED_PACK_OVERLAY_NOTES: [
-        "- cavemem pack active: always keep durable summaries, plans, handoffs, and memory updates compact, sparse, and high-signal",
         "- frontend-craft pack active: for frontend work, pick the real task-specific frontend skills (`design-taste-frontend`, `impeccable`) instead of vague pack wrappers"
       ].join("\n"),
       ENABLED_PACK_SKILL_SELECTIONS: [
@@ -259,7 +255,6 @@ describe("framework asset parity", () => {
     });
 
     expect(body).toBe(expected);
-    expect(body).toContain("cavemem pack active");
     expect(body).toContain("frontend-craft pack active");
     expect(body).not.toContain("caveman pack active");
     expect(body).not.toContain("rtk pack active");
@@ -270,7 +265,6 @@ describe("framework asset parity", () => {
     const roles = roleGuidance();
     const packs: GuidancePacks = {
       caveman: false,
-      cavemem: true,
       rtk: true,
       frontendCraft: false
     };
@@ -289,7 +283,6 @@ describe("framework asset parity", () => {
       REALTIME_MODEL: roles.realtimeModel,
       REALTIME_REASONING: roles.realtimeReasoning,
       ENABLED_PACK_OVERLAY_NOTES: [
-        "- cavemem pack active: always keep durable summaries, plans, handoffs, and memory updates compact, sparse, and high-signal",
         "- rtk pack active: always route shell work through RTK instead of raw shell"
       ].join("\n"),
       ENABLED_PACK_SKILL_SELECTIONS: ""
@@ -423,21 +416,6 @@ describe("framework asset parity", () => {
         }
       ]
     });
-    expect(optionalPackProvenance("cavemem")).toEqual({
-      kind: "derived",
-      note: "Capability-only pack derived from Cavemem's local-first memory model and README guidance. No dedicated skill export until there is an upstream skill worth mirroring.",
-      updateStrategy: "manual-curated",
-      upstreams: [
-        {
-          name: "cavemem",
-          role: "primary",
-          url: "https://github.com/JuliusBrussee/cavemem",
-          ref: "v0.1.3",
-          path: "README.md",
-          license: "MIT"
-        }
-      ]
-    });
     expect(optionalPackProvenance("rtk")).toEqual({
       kind: "internal",
       note: "Capability-only workflow pack for RTK-aware shell routing. No dedicated skill export until there is a concrete upstream skill worth mirroring.",
@@ -524,11 +502,10 @@ describe("framework asset parity", () => {
     expect(explorer).not.toContain("{{");
   });
 
-  it("custom agent templates enforce enabled caveman and cavemem pack rules", () => {
+  it("custom agent templates enforce enabled caveman pack rules", () => {
     const roles = roleGuidance();
     const packs: GuidancePacks = {
       caveman: true,
-      cavemem: true,
       rtk: false,
       frontendCraft: false
     };
@@ -540,9 +517,6 @@ describe("framework asset parity", () => {
     for (const body of [agent, reviewer, explorer]) {
       expect(body).toContain(
         "always use terse, token-efficient prose for normal narrative output"
-      );
-      expect(body).toContain(
-        "always keep durable summaries, plans, handoffs, and memory updates compact, sparse, and high-signal"
       );
       expect(body).not.toContain("{{ENABLED_PACK_AGENT_NOTES}}");
     }
@@ -581,11 +555,10 @@ describe("framework asset parity", () => {
     expect(explorer).not.toContain("{{");
   });
 
-  it("opencode agent templates enforce enabled caveman and cavemem pack rules", () => {
+  it("opencode agent templates enforce enabled caveman pack rules", () => {
     const roles = roleGuidance();
     const packs: GuidancePacks = {
       caveman: true,
-      cavemem: true,
       rtk: false,
       frontendCraft: false
     };
@@ -597,9 +570,6 @@ describe("framework asset parity", () => {
     for (const body of [agent, reviewer, explorer]) {
       expect(body).toContain(
         "always use terse, token-efficient prose for normal narrative output"
-      );
-      expect(body).toContain(
-        "always keep durable summaries, plans, handoffs, and memory updates compact, sparse, and high-signal"
       );
       expect(body).not.toContain("{{ENABLED_PACK_AGENT_NOTES}}");
     }

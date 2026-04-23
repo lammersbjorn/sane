@@ -75,10 +75,10 @@ Routing note:
 Today, `Sane` can manage:
 
 - the core skills `sane-router` and `continue`
-- a fixed built-in pack set today: always-on `core` plus optional `caveman`, `cavemem`, `rtk`, and `frontend-craft`
+- a fixed built-in pack set today: always-on `core` plus optional `caveman`, `rtk`, and `frontend-craft`
 - concrete optional skill exports where applicable: `sane-caveman` from `caveman`, plus `design-taste-frontend` and `impeccable` from `frontend-craft`
-- capability-only optional packs where applicable: `cavemem` and `rtk` do not export dedicated skill directories, but they still change and can be enforced through Sane's exported always-on guidance
-- installed `caveman` and `cavemem` packs are enforced in Sane's exported always-on guidance, not left as optional soft notes
+- capability-only optional packs where applicable: `rtk` does not export a dedicated skill directory, but it still changes and can be enforced through Sane's exported always-on guidance
+- installed `caveman` pack guidance is enforced in Sane's exported always-on guidance, not left as an optional soft note
 - the separate recommended integrations profile for Codex tools like `Context7`, `Playwright`, and `grep.app`
 - structured integrations audit output in install/apply/inspect flows so recommended adds are reviewable before write without summary-string guessing
 - bounded latest current-run-derived policy-preview snapshot visibility in read-only Inspect/runtime surfaces so routing state stays inspectable without becoming a user-facing orchestration mode
@@ -117,7 +117,7 @@ It exists so `Sane` can answer practical questions like:
 | Better starting defaults | Task-shaped routing classes (`explorer` / `implementation` / `verifier` / `realtime`) with documented-vs-runtime support kept separate. |
 | Safer changes | Preview, backup, apply, restore, uninstall, and local telemetry reset. |
 | Runtime handoff truth | Read-only Inspect view for `current-run`, `summary`, and `brief` state, plus latest current-run-derived policy-preview snapshot visibility. |
-| Optional guidance packs | Fixed built-in set today: `core` + optional `caveman`, `cavemem`, `rtk`, `frontend-craft`. `frontend-craft` exports `design-taste-frontend` + `impeccable`; `cavemem` and `rtk` are capability-only. |
+| Optional guidance packs | Fixed built-in set today: `core` + optional `caveman`, `rtk`, `frontend-craft`. `frontend-craft` exports `design-taste-frontend` + `impeccable`; `rtk` is capability-only. |
 | Useful integrations | Separate recommended integrations profile for `Context7`, `Playwright`, and `grep.app`, with structured audit details shown before apply. |
 | Provider-specific add-ons | Separate opt-in Cloudflare profile plus separate opt-in Opencode compatibility profile. |
 | Shared or personal installs | Mostly user-level exports, plus explicit repo-local installs when needed, plus optional OpenCode-agent compatibility exports outside the default bundle. |

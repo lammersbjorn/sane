@@ -55,19 +55,6 @@ describe("inspect screen model", () => {
             }
           },
           {
-            name: "cavemem",
-            inventoryName: "pack-cavemem",
-            status: "disabled",
-            skillName: null,
-            skillNames: [],
-            provenance: {
-              kind: "derived",
-              note: "cavemem-derived capability-only pack",
-              updateStrategy: "manual-curated",
-              upstreams: [{ name: "cavemem", url: "https://github.com/JuliusBrussee/cavemem", ref: "v0.1.3" }]
-            }
-          },
-          {
             name: "rtk",
             inventoryName: "pack-rtk",
             status: "disabled",
@@ -152,7 +139,7 @@ describe("inspect screen model", () => {
       "hooks: invalid (Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows.)"
     );
     expect(lines).toContain(
-      "optional pack provenance: caveman configured (sane-caveman; derived from caveman); cavemem disabled (no skills; derived from cavemem); rtk disabled (no skills; internal); frontend-craft disabled (design-taste-frontend + impeccable; derived from taste-skill + impeccable)"
+      "optional pack provenance: caveman configured (sane-caveman; derived from caveman); rtk disabled (no skills; internal); frontend-craft disabled (design-taste-frontend + impeccable; derived from taste-skill + impeccable)"
     );
     expect(lines).toEqual(formatSharedInspectOverviewLines(snapshot));
   });
@@ -224,14 +211,6 @@ describe("inspect screen model", () => {
         })
       }),
       expect.objectContaining({
-        name: "cavemem",
-        status: "disabled",
-        skillNames: [],
-        provenance: expect.objectContaining({
-          kind: "derived"
-        })
-      }),
-      expect.objectContaining({
         name: "rtk",
         status: "disabled",
         skillNames: [],
@@ -276,7 +255,7 @@ describe("inspect screen model", () => {
       "current policy preview: policy preview: rendered adaptive obligation scenarios;"
     );
     expect(screen.overviewLines.join("\n")).toContain(
-      "optional pack provenance: caveman configured (sane-caveman; derived from caveman); cavemem disabled (no skills; derived from cavemem); rtk disabled (no skills; internal); frontend-craft disabled (design-taste-frontend + impeccable; derived from taste-skill + impeccable)"
+      "optional pack provenance: caveman configured (sane-caveman; derived from caveman); rtk disabled (no skills; internal); frontend-craft disabled (design-taste-frontend + impeccable; derived from taste-skill + impeccable)"
     );
   });
 

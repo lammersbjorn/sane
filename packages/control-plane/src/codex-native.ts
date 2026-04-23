@@ -514,7 +514,6 @@ function activeGuidance(paths: ProjectPaths, codexPaths: CodexPaths): {
   return {
     packs: {
       caveman: config.packs.caveman,
-      cavemem: config.packs.cavemem,
       rtk: config.packs.rtk,
       frontendCraft: config.packs.frontendCraft
     },

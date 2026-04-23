@@ -91,7 +91,7 @@ describe("inspect snapshot", () => {
     expect(overview).toContain("status counts:");
     expect(overview).toContain("primary surfaces:");
     expect(overview).toContain(
-      "optional pack provenance: caveman configured (sane-caveman; derived from caveman); cavemem disabled (no skills; derived from cavemem); rtk disabled (no skills; internal); frontend-craft disabled (design-taste-frontend + impeccable; derived from taste-skill + impeccable)"
+      "optional pack provenance: caveman configured (sane-caveman; derived from caveman); rtk disabled (no skills; internal); frontend-craft disabled (design-taste-frontend + impeccable; derived from taste-skill + impeccable)"
     );
   });
 

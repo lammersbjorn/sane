@@ -55,7 +55,6 @@ describe("hooks and custom agents", () => {
     config.models.coordinator.model = "gpt-5.3-codex";
     config.models.verifier.reasoningEffort = "high";
     config.packs.caveman = true;
-    config.packs.cavemem = true;
     writeLocalConfig(projectPaths.configPath, config);
 
     const result = exportCustomAgents(projectPaths, codexPaths);
@@ -77,7 +76,6 @@ describe("hooks and custom agents", () => {
         verifierReasoning: config.models.verifier.reasoningEffort
       }, {
         caveman: true,
-        cavemem: true,
         rtk: false,
         frontendCraft: false
       })
@@ -92,7 +90,6 @@ describe("hooks and custom agents", () => {
         verifierReasoning: config.models.verifier.reasoningEffort
       }, {
         caveman: true,
-        cavemem: true,
         rtk: false,
         frontendCraft: false
       })
@@ -107,7 +104,6 @@ describe("hooks and custom agents", () => {
         verifierReasoning: config.models.verifier.reasoningEffort
       }, {
         caveman: true,
-        cavemem: true,
         rtk: false,
         frontendCraft: false
       })
@@ -123,9 +119,6 @@ describe("hooks and custom agents", () => {
     );
     expect(readFileSync(agentPath, "utf8")).toContain(
       "always use terse, token-efficient prose for normal narrative output"
-    );
-    expect(readFileSync(agentPath, "utf8")).toContain(
-      "always keep durable summaries, plans, handoffs, and memory updates compact, sparse, and high-signal"
     );
   });
 

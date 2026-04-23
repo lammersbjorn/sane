@@ -45,25 +45,6 @@
         ]
       }
     },
-    "cavemem": {
-      "routerNote": "- cavemem pack active: always keep durable summaries, plans, handoffs, and memory updates compact, sparse, and high-signal",
-      "overlayNote": "- cavemem pack active: always keep durable summaries, plans, handoffs, and memory updates compact, sparse, and high-signal",
-      "provenance": {
-        "kind": "derived",
-        "note": "Capability-only pack derived from Cavemem's local-first memory model and README guidance. No dedicated skill export until there is an upstream skill worth mirroring.",
-        "updateStrategy": "manual-curated",
-        "upstreams": [
-          {
-            "name": "cavemem",
-            "role": "primary",
-            "url": "https://github.com/JuliusBrussee/cavemem",
-            "ref": "v0.1.3",
-            "path": "README.md",
-            "license": "MIT"
-          }
-        ]
-      }
-    },
     "rtk": {
       "routerNote": "- rtk pack active: always route shell work through RTK instead of raw shell",
       "overlayNote": "- rtk pack active: always route shell work through RTK instead of raw shell",

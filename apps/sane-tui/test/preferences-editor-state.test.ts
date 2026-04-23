@@ -110,7 +110,7 @@ describe("preferences editor state", () => {
   it("toggles optional packs with core locked on and resets to defaults", () => {
     const editor = createPackEditorState(createDefaultLocalConfig());
 
-    expect(editor.fields).toEqual(["caveman", "cavemem", "rtk", "frontend_craft"]);
+    expect(editor.fields).toEqual(["caveman", "rtk", "frontend_craft"]);
 
     const toggled = toggleSelectedPack(editor);
     expect(toggled.config.packs.caveman).toBe(true);

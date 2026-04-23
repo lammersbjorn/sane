@@ -15,7 +15,7 @@ export type ConfigFieldId =
   | "verifier_model"
   | "verifier_reasoning";
 
-export type PackFieldId = "caveman" | "cavemem" | "rtk" | "frontend_craft";
+export type PackFieldId = "caveman" | "rtk" | "frontend_craft";
 
 export interface ConfigEditorState {
   kind: "config";
@@ -131,21 +131,18 @@ const CONFIG_FIELDS: ConfigFieldId[] = Object.keys(CONFIG_FIELD_METADATA) as Con
 
 const PACK_FIELD_ID_BY_NAME: Record<OptionalPackName, PackFieldId> = {
   caveman: "caveman",
-  cavemem: "cavemem",
   rtk: "rtk",
   "frontend-craft": "frontend_craft"
 };
 
 const PACK_NAME_BY_FIELD: Record<PackFieldId, OptionalPackName> = {
   caveman: "caveman",
-  cavemem: "cavemem",
   rtk: "rtk",
   frontend_craft: "frontend-craft"
 };
 
 const PACK_CONFIG_KEY_BY_FIELD: Record<PackFieldId, keyof LocalConfig["packs"]> = {
   caveman: "caveman",
-  cavemem: "cavemem",
   rtk: "rtk",
   frontend_craft: "frontendCraft"
 };
