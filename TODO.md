@@ -99,6 +99,7 @@ Implemented:
 - internal backend policy preview now shows task-shaped routing classes per scenario and keeps role-default compatibility where still required
 - policy explanations now include typed orchestration guidance and stable rule traces for canonical scenarios
 - policy explanations now also include typed continuation guidance (`answer_directly`, `continue_until_verified`, `continue_until_blocked`, `self_repair_until_unblocked`, `close_when_verified`) with explicit stop conditions, still internal/inspect-only
+- `@sane/policy` now has a pure internal eval harness for fixture-based routing/orchestration/continuation checks; this is a foundation only, not a shipped self-improvement runner
 - internal backend policy preview now carries typed scenario/orchestration/trace payloads in `OperationResult` and persists them into decision history without changing TUI copy
 - policy preview history now has typed shared context helpers, tail-first latest-preview lookup, and runtime-summary plumbing for the latest valid snapshot
 - inspect/app-view now surface the latest persisted current-run-derived policy-preview snapshot through a bounded typed read path instead of re-parsing runtime-summary copy, and this remains a read-only Inspect surface
@@ -119,6 +120,7 @@ Implemented:
 - typed family snapshot helper now exists for Codex profile surfaces, and Preferences uses it for provider-profile state instead of separate provider snapshot reads
 - Codex profile family reads now derive from one shared parsed config context in `codex-config.ts`, so family/profile audit/apply/preview helpers stop reparsing the same file repeatedly
 - invalid Codex/integrations/cloudflare/opencode previews now say `blocked by invalid config` instead of pretending there are `0 recommended change(s)`
+- Status/Inspect now surface warning-only Codex config conflict detection for invalid config and unmanaged `mcp_servers.*` entries; this is detect-and-warn only and does not add auto-fix behavior
 - Start Here onboarding can now derive from a preloaded typed status bundle, and app-view threads shell status bundle through that path instead of forcing a fresh onboarding status-bundle rebuild
 - Install can now derive from a preloaded typed status bundle too, and app-view threads shell status bundle through that path instead of forcing a second install status-bundle rebuild
 - Repair can now derive from a preloaded typed status bundle too, and app-view threads shell status bundle through that path when the repair section is opened instead of forcing another repair status-bundle rebuild
@@ -227,7 +229,7 @@ pnpm check
 ## Later
 
 - [ ] Self-hosting shadow mode
-- [ ] Eval harness for routing, compaction, and self-improvement
+- [ ] Broaden eval harness coverage for routing, compaction, and self-improvement
 - [ ] Later end-to-end outcome runner:
   - future only, not part of the current user-facing product surface
   - a user-facing one-shot command for idea-to-finished-result work

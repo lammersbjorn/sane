@@ -348,6 +348,7 @@ First allowed work:
 - typed obligation outputs
 - pure evaluation rules
 - tests for the locked philosophy
+- pure fixture-based eval harness for policy expectations
 - backend/internal inspection only
 - typed history/state plumbing for policy previews
 - bounded read paths for latest policy snapshots
@@ -372,12 +373,12 @@ Rules:
 Prerequisites:
 - `B7` adaptive policy stable enough
 - compaction/handoff state proven
-- verification/eval harness in place
+- initial verification/eval harness in place, then broadened before any runner ships
 - bounded self-repair and issue-relay policy in place
 
 Later phase follow-on:
-- add a conflict checker for pre-existing user setup that could interfere with Sane-managed behavior
-- cover MCPs, plugins, config drift, and related Codex-adjacent setup before making assumptions about a clean environment
+- broaden the detect-and-warn conflict checker for pre-existing user setup that could interfere with Sane-managed behavior
+- current conflict warnings cover invalid Codex config and unmanaged `mcp_servers.*`; later work should extend to plugins, config drift, and related Codex-adjacent setup before making assumptions about a clean environment
 - treat this as detect-and-warn first, not auto-fix
 
 ## Current Known Repo Mismatch
