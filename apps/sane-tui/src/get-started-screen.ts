@@ -68,7 +68,7 @@ export function loadGetStartedScreenFromStatusBundle(
       `runtime ${onboarding.primaryStatuses.runtime}`,
       `codex-config ${onboarding.primaryStatuses.codexConfig}`,
       `user-skills ${onboarding.primaryStatuses.userSkills}`,
-      `hooks ${onboarding.primaryStatuses.hooks}`,
+      `hooks ${hookStatusLabel(statusBundle)}`,
       `install bundle ${onboarding.primaryStatuses.installBundle}`
     ].join(" | "),
     codexProfileAudit: codexProfile.audit,
@@ -113,4 +113,11 @@ function exportAllFilesTouched(
         "~/.codex/hooks.json",
         "~/.codex/agents/"
       ];
+}
+
+function hookStatusLabel(statusBundle: ReturnType<typeof inspectStatusBundle>): string {
+  const hooks = statusBundle.primary.hooks;
+  return hooks?.status.asString() === "invalid" && hooks.repairHint?.includes("native Windows")
+    ? "unsupported"
+    : statusBundle.primary.status.hooks;
 }

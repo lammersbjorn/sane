@@ -164,6 +164,7 @@ describe("get started screen model", () => {
 
     expect(screen.recommendedActionId).toBeNull();
     expect(screen.attentionItems).not.toContain("hooks: invalid");
+    expect(screen.statusLine).toContain("hooks unsupported");
     expect(screen.steps[5]?.filesTouched).toEqual([
       "~/.agents/skills/sane-router",
       "~/.agents/skills/continue",

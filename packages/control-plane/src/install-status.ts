@@ -95,7 +95,16 @@ function inventoryStatus(
   inventory: ReturnType<typeof inspectStatusBundle>["codexNative"],
   name: string
 ): InstallActionStatus {
-  return fromInventoryStatus(inventory.find((item) => item.name === name)?.status);
+  const item = inventory.find((entry) => entry.name === name);
+  if (
+    name === "hooks"
+    && item?.status === InventoryStatus.Invalid
+    && item.repairHint?.includes("native Windows")
+  ) {
+    return { kind: "disabled", label: "unsupported (use WSL)" };
+  }
+
+  return fromInventoryStatus(item?.status);
 }
 
 function missingBundleTargets(

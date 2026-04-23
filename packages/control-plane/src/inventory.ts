@@ -292,8 +292,10 @@ export function inspectStatusBundle(
   const driftItems = inventory.filter(
     (item) =>
       item.status === InventoryStatus.Invalid
+      && !isUnsupportedNativeWindowsHooks(item)
       || item.status === InventoryStatus.PresentWithoutSaneBlock
   );
+  const countedInventory = inventory.filter((item) => !isUnsupportedNativeWindowsHooks(item));
 
   return {
     inventory,
@@ -303,7 +305,7 @@ export function inspectStatusBundle(
     runtimeState,
     optionalPacks: inspectOptionalPackSnapshots(inventory),
     driftItems,
-    counts: countStatuses(inventory),
+    counts: countStatuses(countedInventory),
     primary: {
       runtime: findInventoryOrNull(inventory, "runtime"),
       codexConfig: findInventoryOrNull(inventory, "codex-config"),

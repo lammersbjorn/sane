@@ -195,8 +195,8 @@ describe("install screen model", () => {
       "custom-agents"
     ]);
     expect(screen.actions.find((action) => action.id === "export_hooks")?.status).toEqual({
-      kind: "invalid",
-      label: "invalid"
+      kind: "disabled",
+      label: "unsupported (use WSL)"
     });
   });
 });

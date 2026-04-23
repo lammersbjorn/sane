@@ -145,6 +145,6 @@ describe("install status snapshot", () => {
     expect(status.bundleStatus).toBe("installed");
     expect(status.missingTargets).toEqual([]);
     expect(status.actionStatus.export_all).toEqual({ kind: "installed", label: "installed" });
-    expect(status.actionStatus.export_hooks).toEqual({ kind: "invalid", label: "invalid" });
+    expect(status.actionStatus.export_hooks).toEqual({ kind: "disabled", label: "unsupported (use WSL)" });
   });
 });
