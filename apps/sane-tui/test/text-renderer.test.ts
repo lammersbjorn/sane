@@ -6,7 +6,7 @@ import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { loadAppView } from "@sane/sane-tui/app-view.js";
-import { createTuiShell } from "@sane/sane-tui/shell.js";
+import { createTuiShell, runSelectedAction } from "@sane/sane-tui/shell.js";
 import { renderTextAppView } from "@sane/sane-tui/text-renderer.js";
 
 const tempDirs: string[] = [];
@@ -54,10 +54,9 @@ describe("text renderer", () => {
 
     const output = renderTextAppView(loadAppView(shell));
 
-    expect(output).toContain("[Overlay]");
+    expect(output).toContain("[Overlay: Saved]");
     expect(output).toContain("kind: notice");
-    expect(output).toContain("title: Saved");
-    expect(output).toContain("saved body");
+    expect(output).toContain("| saved body");
     expect(output).toContain("Enter, Space, or Esc closes this message.");
   });
 
@@ -97,5 +96,16 @@ describe("text renderer", () => {
     expect(output).toContain("\u001b[33mRuntime: missing\u001b[0m");
     expect(output).toContain("\u001b[7m> 1. Create Sane's local project files (recommended)\u001b[0m");
     expect(output).toContain("\u001b[1;36m[Actions]\u001b[0m");
+  });
+
+  it("renders editor overlays as distinct framed sections", () => {
+    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()), "settings");
+    runSelectedAction(shell);
+
+    const output = renderTextAppView(loadAppView(shell));
+
+    expect(output).toContain("[Overlay: Model Defaults]");
+    expect(output).toContain("[Last Result]");
+    expect(output).toContain("[Field Help]");
   });
 });

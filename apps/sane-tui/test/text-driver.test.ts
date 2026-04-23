@@ -64,9 +64,9 @@ describe("text driver", () => {
     runtime.handleInput("enter");
     const frame = runtime.render();
 
-    expect(frame).toContain("[Overlay]");
+    expect(frame).toContain("[Overlay: Model Defaults]");
     expect(frame).toContain("kind: config");
-    expect(frame).toContain("title: Model Defaults");
+    expect(frame).toContain("[Field Help]");
   });
 
   it("can bootstrap from discovery", () => {

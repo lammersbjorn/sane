@@ -36,13 +36,10 @@ export function renderTextAppView(view: SaneTuiAppView, viewport: TextViewport =
   const lines = !view.overlay
     ? sections
     : [
-    ...sections,
-    "",
-    "[Overlay]",
-    `kind: ${view.overlay.kind}`,
-    `title: ${view.overlay.title}`,
-    ...overlayLines(view.overlay)
-  ];
+        ...sections,
+        "",
+        ...formatOverlay(view.overlay)
+      ];
 
   return decorateAnsi(fitViewport(lines, viewport), view, viewport).join("\n");
 }
@@ -77,6 +74,18 @@ function formatStatusChips(view: SaneTuiAppView): string[] {
   return lines;
 }
 
+function formatOverlay(view: SaneTuiAppView["overlay"]): string[] {
+  if (!view) {
+    return [];
+  }
+
+  return [
+    `[Overlay: ${view.title}]`,
+    `kind: ${view.kind}`,
+    ...overlayLines(view)
+  ];
+}
+
 function overlayLines(view: SaneTuiAppView["overlay"]): string[] {
   if (!view) {
     return [];
@@ -84,14 +93,36 @@ function overlayLines(view: SaneTuiAppView["overlay"]): string[] {
 
   switch (view.kind) {
     case "confirm":
-      return [view.header, ...view.bodyLines, ...view.statusLines, view.footer];
+      return [
+        "",
+        view.header,
+        ...prefixLines(view.bodyLines),
+        "",
+        "[Current Status]",
+        ...prefixLines(view.statusLines),
+        "",
+        view.footer
+      ];
     case "notice":
-      return [...view.bodyLines, view.footer];
+      return ["", ...prefixLines(view.bodyLines), "", view.footer];
     case "config":
     case "packs":
     case "privacy":
-      return [...view.headerLines, ...view.outputLines, view.detailsTitle, ...view.detailsLines];
+      return [
+        "",
+        ...view.headerLines,
+        "",
+        "[Last Result]",
+        ...prefixLines(view.outputLines),
+        "",
+        `[${view.detailsTitle}]`,
+        ...prefixLines(view.detailsLines)
+      ];
   }
+}
+
+function prefixLines(lines: string[]): string[] {
+  return lines.map((line) => (line.length === 0 ? "|" : `| ${line}`));
 }
 
 function fitViewport(lines: string[], viewport: TextViewport): string[] {
@@ -121,6 +152,10 @@ function styleLine(line: string, index: number, lineCount: number, view: SaneTui
 
   if (line.startsWith("[") && line.endsWith("]")) {
     return ansi("1;36", line);
+  }
+
+  if (line.startsWith("| ")) {
+    return ansi("2", line);
   }
 
   if (line.includes("Runtime: ") || line.includes("Codex config: ")) {
