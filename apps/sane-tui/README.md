@@ -11,6 +11,7 @@ Current role:
 - owns internal non-interactive TS CLI parsing/execution for backend verbs and hook output
 - owns render-ready dashboard / overlay / app view models
 - owns internal text-frame rendering scaffolding for the future TS terminal driver
+- owns internal text-driver glue that wires discovery, shell, input, and text rendering together
 - does not yet render a real terminal UI by itself
 
 Important files:
@@ -35,6 +36,8 @@ Important files:
   - internal TS CLI parser/executor for backend commands and `hook session-start`
 - `src/text-renderer.ts`
   - internal text-frame renderer for the TS app view
+- `src/text-driver.ts`
+  - internal runtime glue for discovery + shell + input driver + text rendering
 
 Boundary rules:
 
