@@ -12,6 +12,7 @@ import {
   discoverProjectPaths,
   ensureRuntimeDirs,
   rawStateHistoryFiles,
+  resolveHomeDir,
 } from '../src/index.js';
 
 const tempDirs: string[] = [];
@@ -187,9 +188,14 @@ describe('codex path parity', () => {
     ).toBe('C:\\Users\\sane');
   });
 
-  it('throws when no supported home environment variables are set', () => {
-    expect(() => discoverCodexPaths({})).toThrow(
-      'could not resolve HOME, USERPROFILE, or HOMEDRIVE/HOMEPATH'
+  it('falls back to os.homedir-compatible values when env vars are missing', () => {
+    expect(discoverCodexPaths({}, '/fallback/home').homeDir).toBe('/fallback/home');
+    expect(resolveHomeDir({}, '/fallback/home')).toBe('/fallback/home');
+  });
+
+  it('throws when no supported home source exists', () => {
+    expect(() => discoverCodexPaths({}, '')).toThrow(
+      'could not resolve HOME, USERPROFILE, HOMEDRIVE/HOMEPATH, or os.homedir()'
     );
   });
 });

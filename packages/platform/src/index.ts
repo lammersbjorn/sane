@@ -1,4 +1,5 @@
 import { existsSync, mkdirSync, statSync } from 'node:fs';
+import { homedir as osHomedir } from 'node:os';
 import { dirname, join, parse } from 'node:path';
 
 export type StateFile =
@@ -198,16 +199,22 @@ export function detectPlatform(nodePlatform: NodeJS.Platform = process.platform)
   }
 }
 
-export function discoverCodexPaths(env: HomeDirEnv = process.env): CodexPaths {
-  const homeDir = resolveHomeDir(env);
+export function discoverCodexPaths(
+  env: HomeDirEnv = process.env,
+  fallbackHomeDir: string | undefined = safeHomeDir()
+): CodexPaths {
+  const homeDir = resolveHomeDir(env, fallbackHomeDir);
   if (!homeDir) {
-    throw new Error('could not resolve HOME, USERPROFILE, or HOMEDRIVE/HOMEPATH');
+    throw new Error('could not resolve HOME, USERPROFILE, HOMEDRIVE/HOMEPATH, or os.homedir()');
   }
 
   return createCodexPaths(homeDir);
 }
 
-export function resolveHomeDir(env: HomeDirEnv): string | undefined {
+export function resolveHomeDir(
+  env: HomeDirEnv,
+  fallbackHomeDir: string | undefined = safeHomeDir()
+): string | undefined {
   const home = nonEmpty(env.HOME) ?? nonEmpty(env.USERPROFILE);
   if (home) {
     return home;
@@ -219,7 +226,7 @@ export function resolveHomeDir(env: HomeDirEnv): string | undefined {
     return `${drive}${path}`;
   }
 
-  return undefined;
+  return nonEmpty(fallbackHomeDir);
 }
 
 export function isProjectRoot(candidate: string): boolean {
@@ -286,4 +293,12 @@ function nonEmpty(value: string | undefined): string | undefined {
     return value;
   }
   return undefined;
+}
+
+function safeHomeDir(): string | undefined {
+  try {
+    return nonEmpty(osHomedir());
+  } catch {
+    return undefined;
+  }
 }
