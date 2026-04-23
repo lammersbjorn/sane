@@ -118,7 +118,7 @@ export function showConfig(paths: ProjectPaths, codexPaths?: CodexPaths): Operat
 
 export function saveConfig(paths: ProjectPaths, config: LocalConfig): OperationResult {
   ensureRuntimeDirs(paths);
-  ensureTelemetryFiles(paths, config.privacy.telemetry);
+  const telemetryPathsTouched = ensureTelemetryFiles(paths, config.privacy.telemetry);
 
   const rewrite = operationRewriteMetadata(
     writeCanonicalWithBackupResult(paths.configPath, config, {
@@ -129,13 +129,14 @@ export function saveConfig(paths: ProjectPaths, config: LocalConfig): OperationR
 
   const details: string[] = [];
   appendRewriteDetails(details, rewrite);
+  appendTelemetryDetails(details, telemetryPathsTouched);
 
   return new OperationResult({
     kind: OperationKind.ShowConfig,
     summary: `config: saved at ${paths.configPath}`,
     rewrite,
     details,
-    pathsTouched: unique([rewrite.rewrittenPath, rewrite.backupPath]),
+    pathsTouched: unique([rewrite.rewrittenPath, rewrite.backupPath, ...telemetryPathsTouched]),
     inventory: [
       {
         name: "config",
@@ -316,10 +317,10 @@ function presentFlag(value: boolean): string {
   return value ? "present" : "missing";
 }
 
-function ensureTelemetryFiles(paths: ProjectPaths, level: TelemetryLevel): void {
+function ensureTelemetryFiles(paths: ProjectPaths, level: TelemetryLevel): string[] {
   if (level === "off") {
     rmSync(paths.telemetryDir, { recursive: true, force: true });
-    return;
+    return [paths.telemetryDir];
   }
 
   mkdirSync(paths.telemetryDir, { recursive: true });
@@ -328,10 +329,11 @@ function ensureTelemetryFiles(paths: ProjectPaths, level: TelemetryLevel): void 
 
   if (level === "product-improvement") {
     ensureFileWithDefault(paths.telemetryQueuePath, "");
-    return;
+    return [paths.telemetrySummaryPath, paths.telemetryEventsPath, paths.telemetryQueuePath];
   }
 
   rmSync(paths.telemetryQueuePath, { force: true });
+  return [paths.telemetrySummaryPath, paths.telemetryEventsPath, paths.telemetryQueuePath];
 }
 
 function ensureFileWithDefault(path: string, body: string): void {
@@ -358,6 +360,12 @@ function appendRewriteDetails(details: string[], rewrite: OperationRewriteMetada
     details.push(`backup path: ${rewrite.backupPath}`);
   }
   details.push(`write mode: ${rewrite.firstWrite ? "first write" : "rewrite"}`);
+}
+
+function appendTelemetryDetails(details: string[], pathsTouched: readonly string[]): void {
+  for (const path of pathsTouched) {
+    details.push(`telemetry path: ${path}`);
+  }
 }
 
 function unique(values: Array<string | null>): string[] {

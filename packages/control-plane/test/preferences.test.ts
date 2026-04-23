@@ -103,9 +103,18 @@ describe("preferences control plane", () => {
     expect(result.rewrite?.firstWrite).toBe(true);
     expect(result.details).toContain(`rewritten path: ${paths.configPath}`);
     expect(result.details).toContain("write mode: first write");
+    expect(result.details).toContain(`telemetry path: ${paths.telemetrySummaryPath}`);
+    expect(result.details).toContain(`telemetry path: ${paths.telemetryEventsPath}`);
     expect(existsSync(paths.telemetrySummaryPath)).toBe(true);
     expect(existsSync(paths.telemetryEventsPath)).toBe(true);
     expect(existsSync(paths.telemetryQueuePath)).toBe(false);
+    expect(result.pathsTouched).toEqual(
+      expect.arrayContaining([
+        paths.configPath,
+        paths.telemetrySummaryPath,
+        paths.telemetryEventsPath
+      ])
+    );
     expect(readLocalConfig(paths.configPath)).toEqual(config);
   });
 
@@ -142,24 +151,35 @@ describe("preferences control plane", () => {
     const off = createDefaultLocalConfig();
     off.privacy.telemetry = "off";
 
-    saveConfig(paths, productImprovement);
+    const enabled = saveConfig(paths, productImprovement);
     expect(existsSync(paths.telemetryQueuePath)).toBe(true);
+    expect(enabled.pathsTouched).toEqual(
+      expect.arrayContaining([
+        paths.telemetrySummaryPath,
+        paths.telemetryEventsPath,
+        paths.telemetryQueuePath
+      ])
+    );
 
-    saveConfig(paths, localOnly);
+    const reduced = saveConfig(paths, localOnly);
     expect(inspectTelemetrySnapshot(paths)).toEqual({
       dirPresent: true,
       summaryPresent: true,
       eventsPresent: true,
       queuePresent: false
     });
+    expect(reduced.details).toContain(`telemetry path: ${paths.telemetryQueuePath}`);
+    expect(reduced.pathsTouched).toContain(paths.telemetryQueuePath);
 
-    saveConfig(paths, off);
+    const disabled = saveConfig(paths, off);
     expect(inspectTelemetrySnapshot(paths)).toEqual({
       dirPresent: false,
       summaryPresent: false,
       eventsPresent: false,
       queuePresent: false
     });
+    expect(disabled.details).toContain(`telemetry path: ${paths.telemetryDir}`);
+    expect(disabled.pathsTouched).toContain(paths.telemetryDir);
   });
 
   it("builds a local-or-recommended preferences snapshot for TUI consumers", () => {
