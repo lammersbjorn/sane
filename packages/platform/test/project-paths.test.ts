@@ -165,6 +165,18 @@ describe('project path parity', () => {
     expect(existsSync(paths.telemetryDir)).toBe(true);
   });
 
+  it('preserves existing runtime files while ensuring directories', () => {
+    const dir = makeTempDir();
+    const paths = createProjectPaths(dir);
+
+    ensureRuntimeDirs(paths);
+    writeFileSync(join(paths.logsDir, 'sentinel.log'), 'keep me\n');
+
+    ensureRuntimeDirs(paths);
+
+    expect(existsSync(join(paths.logsDir, 'sentinel.log'))).toBe(true);
+  });
+
   it('matches the canonical state load order', () => {
     const dir = makeTempDir();
     const paths = createProjectPaths(dir);
