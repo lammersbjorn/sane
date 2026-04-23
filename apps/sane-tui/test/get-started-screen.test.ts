@@ -11,7 +11,7 @@ import * as inventory from "@sane/control-plane/inventory.js";
 import { exportAll } from "@sane/control-plane";
 import { installRuntime } from "@sane/control-plane";
 import { saveConfig } from "@sane/control-plane/preferences.js";
-import { loadGetStartedScreen, loadGetStartedScreenFromStatusBundle } from "@/get-started-screen.js";
+import { loadGetStartedScreen, loadGetStartedScreenFromStatusBundle } from "@sane/sane-tui/get-started-screen.js";
 
 const tempDirs: string[] = [];
 

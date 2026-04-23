@@ -5,8 +5,8 @@ import { join } from "node:path";
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { handleTuiInput } from "@/input-driver.js";
-import { createTuiShell, currentAction } from "@/shell.js";
+import { handleTuiInput } from "@sane/sane-tui/input-driver.js";
+import { createTuiShell, currentAction } from "@sane/sane-tui/shell.js";
 
 const tempDirs: string[] = [];
 

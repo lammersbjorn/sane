@@ -7,10 +7,10 @@ import {
   type ProjectPaths
 } from "@sane/platform";
 
-import { loadAppView } from "@/app-view.js";
-import { type TuiInputKey, handleTuiInput } from "@/input-driver.js";
-import { createSaneTuiApp, type SaneTuiApp } from "@/main.js";
-import { renderTextAppView } from "@/text-renderer.js";
+import { loadAppView } from "@sane/sane-tui/app-view.js";
+import { type TuiInputKey, handleTuiInput } from "@sane/sane-tui/input-driver.js";
+import { createSaneTuiApp, type SaneTuiApp } from "@sane/sane-tui/main.js";
+import { renderTextAppView } from "@sane/sane-tui/text-renderer.js";
 
 export interface TextTuiRuntime {
   app: SaneTuiApp;

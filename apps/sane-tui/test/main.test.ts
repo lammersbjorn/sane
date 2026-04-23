@@ -6,8 +6,8 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { writeFileSync } from "node:fs";
 
-import { createSaneTuiAppFromDiscovery, createSaneTuiAppFromRoots, refreshSaneTuiApp } from "@/main.js";
-import { moveSelection } from "@/shell.js";
+import { createSaneTuiAppFromDiscovery, createSaneTuiAppFromRoots, refreshSaneTuiApp } from "@sane/sane-tui/main.js";
+import { moveSelection } from "@sane/sane-tui/shell.js";
 
 const tempDirs: string[] = [];
 

@@ -61,7 +61,7 @@ import {
   type SectionActionMetadata,
   type TuiSectionId,
   type UiCommandId
-} from "@/command-registry.js";
+} from "@sane/sane-tui/command-registry.js";
 import {
   createConfigEditorState,
   createPackEditorState,
@@ -77,8 +77,8 @@ import {
   type ConfigEditorState,
   type PackEditorState,
   type PrivacyEditorState
-} from "@/preferences-editor-state.js";
-import { buildLastResultView, buildNotice, type LastResultView, type NoticeView } from "@/result-panel.js";
+} from "@sane/sane-tui/preferences-editor-state.js";
+import { buildLastResultView, buildNotice, type LastResultView, type NoticeView } from "@sane/sane-tui/result-panel.js";
 
 export interface PendingConfirmation {
   title: "Confirm";

@@ -140,7 +140,7 @@ Implemented:
 - `sane settings` is the direct shortcut into configure mode
 - TypeScript TUI now has explicit shell, view, editor, and overlay model layers
 - TypeScript TUI now also owns pure input/key handling plus internal non-interactive CLI parsing/execution for backend verbs and `hook session-start`, while the public shipped entrypoint still remains Rust-owned for now
-- the current hard blocker for a TS public entrypoint is runtime resolution for workspace `@sane/*` imports plus app-local `@/` imports outside Vitest/tsconfig tooling; do not flip public startup until that runtime path is deliberate
+- TS runtime resolution now works for an internal text preview path via workspace package `exports`, self-package app imports, and `tsx`; the remaining blockers are real terminal parity plus a deliberate packaged public entrypoint
 - app-local TUI imports now use `@/*`, and workspace package imports now use `@sane/*`
 - optional repo-local skill export now exists as an explicit separate target and is not part of `export all`
 - optional repo-local AGENTS export now exists as an explicit separate target and is not part of `export all`

@@ -2,6 +2,10 @@
   "name": "@sane/core",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*.js": "./src/*.ts"
+  },
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { OperationKind, OperationResult } from "@sane/core";
 
-import { buildLastResultView, buildNotice } from "@/result-panel.js";
+import { buildLastResultView, buildNotice } from "@sane/sane-tui/result-panel.js";
 
 describe("result panel helpers", () => {
   it("renders fallback latest-status lines", () => {

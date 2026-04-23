@@ -3,7 +3,7 @@ import {
   inspectCodexProfileFamilySnapshot
 } from "@sane/control-plane/codex-config.js";
 import { inspectPreferencesFamilySnapshot } from "@sane/control-plane/preferences.js";
-import { listSectionActions, type UiCommandId } from "@/command-registry.js";
+import { listSectionActions, type UiCommandId } from "@sane/sane-tui/command-registry.js";
 
 type PreferencesSnapshotModel = ReturnType<typeof inspectPreferencesFamilySnapshot>["preferences"];
 

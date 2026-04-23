@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import * as codexConfig from "@sane/control-plane/codex-config.js";
 import * as preferencesControlPlane from "@sane/control-plane/preferences.js";
-import { loadPreferencesScreen } from "@/preferences-screen.js";
+import { loadPreferencesScreen } from "@sane/sane-tui/preferences-screen.js";
 
 const tempDirs: string[] = [];
 

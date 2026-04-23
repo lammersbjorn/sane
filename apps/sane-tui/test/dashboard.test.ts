@@ -7,9 +7,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import * as inventory from "@sane/control-plane/inventory.js";
 
 import { installRuntime } from "@sane/control-plane";
-import { loadDashboardView } from "@/dashboard.js";
-import * as getStarted from "@/get-started-screen.js";
-import { createTuiShell } from "@/shell.js";
+import { loadDashboardView } from "@sane/sane-tui/dashboard.js";
+import * as getStarted from "@sane/sane-tui/get-started-screen.js";
+import { createTuiShell } from "@sane/sane-tui/shell.js";
 
 const tempDirs: string[] = [];
 

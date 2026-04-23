@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import type { SectionActionMetadata } from "@/command-registry.js";
+import type { SectionActionMetadata } from "@sane/sane-tui/command-registry.js";
 import {
   buildInstallActionRows,
   buildRepairActionRows
-} from "@/section-action-rows.js";
+} from "@sane/sane-tui/section-action-rows.js";
 
 function sectionAction(overrides: Partial<SectionActionMetadata>): SectionActionMetadata {
   return {

@@ -2,9 +2,9 @@ import { type HomeDirEnv, discoverCodexPaths, discoverProjectPaths } from "@sane
 
 import { renderSessionStartHookOutput } from "@sane/control-plane/session-start-hook.js";
 
-import { type BackendCommandId } from "@/command-registry.js";
-import { executeUiCommand } from "@/shell.js";
-import { createTextTuiRuntimeFromDiscovery } from "@/text-driver.js";
+import { type BackendCommandId } from "@sane/sane-tui/command-registry.js";
+import { executeUiCommand } from "@sane/sane-tui/shell.js";
+import { createTextTuiRuntimeFromDiscovery } from "@sane/sane-tui/text-driver.js";
 
 export type ParsedCliCommand =
   | {

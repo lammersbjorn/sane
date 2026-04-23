@@ -1,7 +1,7 @@
 import { type OperationResult } from "@sane/core";
 
-import { buildNotice } from "@/result-panel.js";
-import { type UiCommandId } from "@/command-registry.js";
+import { buildNotice } from "@sane/sane-tui/result-panel.js";
+import { type UiCommandId } from "@sane/sane-tui/command-registry.js";
 
 export interface ResultNotice {
   title: string;

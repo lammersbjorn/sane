@@ -8,8 +8,8 @@ import {
   type ProjectPaths
 } from "@sane/platform";
 
-import { loadDashboardView, type DashboardView } from "@/dashboard.js";
-import { createTuiShell, type TuiShell } from "@/shell.js";
+import { loadDashboardView, type DashboardView } from "@sane/sane-tui/dashboard.js";
+import { createTuiShell, type TuiShell } from "@sane/sane-tui/shell.js";
 
 export interface SaneTuiApp {
   paths: ProjectPaths;

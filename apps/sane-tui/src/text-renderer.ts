@@ -1,4 +1,4 @@
-import { type SaneTuiAppView } from "@/app-view.js";
+import { type SaneTuiAppView } from "@sane/sane-tui/app-view.js";
 
 export function renderTextAppView(view: SaneTuiAppView): string {
   const sections = [

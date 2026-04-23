@@ -5,9 +5,9 @@ import { join } from "node:path";
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { loadAppView } from "@/app-view.js";
-import { createTuiShell } from "@/shell.js";
-import { renderTextAppView } from "@/text-renderer.js";
+import { loadAppView } from "@sane/sane-tui/app-view.js";
+import { createTuiShell } from "@sane/sane-tui/shell.js";
+import { renderTextAppView } from "@sane/sane-tui/text-renderer.js";
 
 const tempDirs: string[] = [];
 

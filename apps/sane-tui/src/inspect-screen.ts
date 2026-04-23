@@ -9,7 +9,7 @@ import {
   inspectSnapshot
 } from "@sane/control-plane";
 import { inspectStatusBundle } from "@sane/control-plane/inventory.js";
-import { listSectionActions, type UiCommandId } from "@/command-registry.js";
+import { listSectionActions, type UiCommandId } from "@sane/sane-tui/command-registry.js";
 
 export interface InspectScreenAction {
   id: Extract<

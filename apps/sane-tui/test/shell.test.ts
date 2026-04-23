@@ -22,7 +22,7 @@ import {
   resetLocalTelemetry,
   runSelectedAction,
   saveActiveEditor
-} from "@/shell.js";
+} from "@sane/sane-tui/shell.js";
 
 const tempDirs: string[] = [];
 

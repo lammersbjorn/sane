@@ -6,7 +6,7 @@ import {
   getCommandSpec,
   listSectionActions,
   listSections
-} from "@/index.js";
+} from "@sane/sane-tui/index.js";
 
 describe("command metadata registry", () => {
   it("exports normalized command specs, placements, and shortcuts", () => {

@@ -21,8 +21,8 @@ import {
 } from "@sane/control-plane/install-status.js";
 import { inspectStatusBundle } from "@sane/control-plane/inventory.js";
 import { exportOpencodeAgents } from "@sane/control-plane/opencode-native.js";
-import { listSectionActions } from "@/command-registry.js";
-import { buildInstallActionRows } from "@/section-action-rows.js";
+import { listSectionActions } from "@sane/sane-tui/command-registry.js";
+import { buildInstallActionRows } from "@sane/sane-tui/section-action-rows.js";
 
 export interface InstallScreenModel {
   summary: "Install";

@@ -9,8 +9,8 @@ import {
   moveSelection,
   runSelectedAction as runShellSelectedAction,
   type TuiShell
-} from "@/shell.js";
-import { type TuiSectionId, type UiCommandId } from "@/command-registry.js";
+} from "@sane/sane-tui/shell.js";
+import { type TuiSectionId, type UiCommandId } from "@sane/sane-tui/command-registry.js";
 
 export interface ShellLayerState {
   sectionId: TuiSectionId;

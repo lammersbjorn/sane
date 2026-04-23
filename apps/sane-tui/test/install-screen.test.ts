@@ -9,7 +9,7 @@ import { applyIntegrationsProfile } from "@sane/control-plane/codex-config.js";
 import { exportAll } from "@sane/control-plane";
 import * as inventory from "@sane/control-plane/inventory.js";
 import * as installStatus from "@sane/control-plane/install-status.js";
-import { loadInstallScreen, loadInstallScreenFromStatusBundle } from "@/install-screen.js";
+import { loadInstallScreen, loadInstallScreenFromStatusBundle } from "@sane/sane-tui/install-screen.js";
 
 const tempDirs: string[] = [];
 

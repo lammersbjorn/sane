@@ -9,8 +9,8 @@ import {
   type PackFieldId,
   packFieldPackName,
   type PrivacyEditorState
-} from "@/preferences-editor-state.js";
-import { type TuiShell } from "@/shell.js";
+} from "@sane/sane-tui/preferences-editor-state.js";
+import { type TuiShell } from "@sane/sane-tui/shell.js";
 
 export interface EditorOverlayModel {
   kind: "config" | "packs" | "privacy";

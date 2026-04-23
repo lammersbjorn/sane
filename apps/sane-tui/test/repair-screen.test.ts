@@ -12,7 +12,7 @@ import { installRuntime } from "@sane/control-plane";
 import * as inventory from "@sane/control-plane/inventory.js";
 import { saveConfig } from "@sane/control-plane/preferences.js";
 import * as repairStatus from "@sane/control-plane/repair-status.js";
-import { loadRepairScreen, loadRepairScreenFromStatusBundle } from "@/repair-screen.js";
+import { loadRepairScreen, loadRepairScreenFromStatusBundle } from "@sane/sane-tui/repair-screen.js";
 
 const tempDirs: string[] = [];
 

@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { parseCliArgs, runCliCommandFromDiscovery } from "@/cli.js";
+import { parseCliArgs, runCliCommandFromDiscovery } from "@sane/sane-tui/cli.js";
 
 const tempDirs: string[] = [];
 

@@ -1,16 +1,16 @@
-import { type TuiShell, currentAction } from "@/shell.js";
-import { loadDashboardView } from "@/dashboard.js";
-import { loadGetStartedScreenFromStatusBundle } from "@/get-started-screen.js";
-import { loadInstallScreenFromStatusBundle } from "@/install-screen.js";
+import { type TuiShell, currentAction } from "@sane/sane-tui/shell.js";
+import { loadDashboardView } from "@sane/sane-tui/dashboard.js";
+import { loadGetStartedScreenFromStatusBundle } from "@sane/sane-tui/get-started-screen.js";
+import { loadInstallScreenFromStatusBundle } from "@sane/sane-tui/install-screen.js";
 import {
   formatInspectPolicyPreviewLines,
   inspectOverviewLines,
   loadInspectScreenFromStatusBundle
-} from "@/inspect-screen.js";
-import { loadOverlayModel, type OverlayModel } from "@/overlay-models.js";
-import { loadPreferencesScreen } from "@/preferences-screen.js";
-import { loadRepairScreenFromStatusBundle } from "@/repair-screen.js";
-import { type UiCommandId } from "@/command-registry.js";
+} from "@sane/sane-tui/inspect-screen.js";
+import { loadOverlayModel, type OverlayModel } from "@sane/sane-tui/overlay-models.js";
+import { loadPreferencesScreen } from "@sane/sane-tui/preferences-screen.js";
+import { loadRepairScreenFromStatusBundle } from "@sane/sane-tui/repair-screen.js";
+import { type UiCommandId } from "@sane/sane-tui/command-registry.js";
 
 export interface SaneTuiAppView {
   title: "Sane";

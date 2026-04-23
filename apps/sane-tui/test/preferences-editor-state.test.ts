@@ -15,7 +15,7 @@ import {
   resetPackEditor,
   resetPrivacyEditor,
   toggleSelectedPack
-} from "@/preferences-editor-state.js";
+} from "@sane/sane-tui/preferences-editor-state.js";
 
 function expectSaveResetAffordances(
   value: unknown,

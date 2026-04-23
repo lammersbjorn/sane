@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseTerminalKey } from "@/terminal-keys.js";
+import { parseTerminalKey } from "@sane/sane-tui/terminal-keys.js";
 
 describe("terminal keys", () => {
   it("maps escape sequences and control keys onto TUI input keys", () => {

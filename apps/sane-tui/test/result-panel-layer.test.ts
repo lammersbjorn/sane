@@ -1,7 +1,7 @@
 import { OperationKind, OperationResult } from "@sane/core";
 import { describe, expect, it } from "vitest";
 
-import type { UiCommandId } from "@/command-registry.js";
+import type { UiCommandId } from "@sane/sane-tui/command-registry.js";
 
 interface ResultNotice {
   title: string;

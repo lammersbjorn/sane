@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { listSectionActions, type TuiSectionId, type UiCommandId } from "@/index.js";
+import { listSectionActions, type TuiSectionId, type UiCommandId } from "@sane/sane-tui/index.js";
 
 interface ShellState {
   sectionId: TuiSectionId;

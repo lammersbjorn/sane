@@ -1,6 +1,6 @@
 import { presentManagedStatus, type ManagedStatusKind } from "@sane/control-plane/status-presenter.js";
-import * as getStartedScreen from "@/get-started-screen.js";
-import { currentAction, currentActions, currentSection, projectLabel, type TuiShell } from "@/shell.js";
+import * as getStartedScreen from "@sane/sane-tui/get-started-screen.js";
+import { currentAction, currentActions, currentSection, projectLabel, type TuiShell } from "@sane/sane-tui/shell.js";
 
 export interface DashboardChip {
   id: string;

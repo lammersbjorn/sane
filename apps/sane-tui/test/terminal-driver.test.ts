@@ -5,8 +5,8 @@ import { join } from "node:path";
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { stepTerminalDriver } from "@/terminal-driver.js";
-import { createTextTuiRuntime } from "@/text-driver.js";
+import { stepTerminalDriver } from "@sane/sane-tui/terminal-driver.js";
+import { createTextTuiRuntime } from "@sane/sane-tui/text-driver.js";
 
 const tempDirs: string[] = [];
 

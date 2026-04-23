@@ -10,7 +10,7 @@ import {
   type OnboardingAttentionItem,
   type OnboardingReasonId
 } from "@sane/control-plane/inventory.js";
-import { listSectionActions } from "@/command-registry.js";
+import { listSectionActions } from "@sane/sane-tui/command-registry.js";
 
 export interface GetStartedStep {
   id:

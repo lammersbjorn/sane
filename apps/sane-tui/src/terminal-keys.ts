@@ -1,4 +1,4 @@
-import { type TuiInputKey } from "@/input-driver.js";
+import { type TuiInputKey } from "@sane/sane-tui/input-driver.js";
 
 const TERMINAL_KEY_MAP: Record<string, TuiInputKey> = {
   "\u001b[A": "up",

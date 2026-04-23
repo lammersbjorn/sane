@@ -1,6 +1,6 @@
 import { type OperationResult } from "@sane/core";
 
-import { getCommandSpec, type UiCommandId } from "@/command-registry.js";
+import { getCommandSpec, type UiCommandId } from "@sane/sane-tui/command-registry.js";
 
 export interface LastResultView {
   title: "Latest Status";

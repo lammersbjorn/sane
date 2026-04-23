@@ -13,7 +13,7 @@ import {
   runSelectedAction,
   saveActiveEditor,
   type TuiShell
-} from "@/shell.js";
+} from "@sane/sane-tui/shell.js";
 
 export type TuiInputKey =
   | "left"

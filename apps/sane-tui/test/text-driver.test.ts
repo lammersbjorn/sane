@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { createTextTuiRuntime, createTextTuiRuntimeFromDiscovery } from "@/text-driver.js";
+import { createTextTuiRuntime, createTextTuiRuntimeFromDiscovery } from "@sane/sane-tui/text-driver.js";
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
 
 const tempDirs: string[] = [];

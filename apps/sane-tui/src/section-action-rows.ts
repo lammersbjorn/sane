@@ -9,7 +9,7 @@ import type {
   RepairActionStatusMap
 } from "@sane/control-plane/repair-status.js";
 
-import type { SectionActionMetadata } from "@/command-registry.js";
+import type { SectionActionMetadata } from "@sane/sane-tui/command-registry.js";
 
 export interface InstallActionRow {
   id: InstallActionStatusId;

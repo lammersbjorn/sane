@@ -2,7 +2,12 @@
   "name": "@sane/sane-tui",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*.js": "./src/*.ts"
+  },
   "scripts": {
+    "preview:text": "tsx ./bin/sane-text-preview.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --project tsconfig.json"
@@ -11,11 +16,13 @@
     "@sane/config": "workspace:*",
     "@sane/control-plane": "workspace:*",
     "@sane/core": "workspace:*",
+    "@sane/framework-assets": "workspace:*",
     "@sane/platform": "workspace:*",
     "@sane/state": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.9.3",
+    "tsx": "^4.21.0",
     "vitest": "catalog:"
   }
 }

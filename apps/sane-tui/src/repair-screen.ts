@@ -19,8 +19,8 @@ import { inspectStatusBundle } from "@sane/control-plane/inventory.js";
 import { uninstallRepoAgents, uninstallRepoSkills } from "@sane/control-plane";
 import { installRuntime } from "@sane/control-plane";
 import { resetTelemetryData } from "@sane/control-plane/preferences.js";
-import { listSectionActions } from "@/command-registry.js";
-import { buildRepairActionRows } from "@/section-action-rows.js";
+import { listSectionActions } from "@sane/sane-tui/command-registry.js";
+import { buildRepairActionRows } from "@sane/sane-tui/section-action-rows.js";
 
 export interface RepairScreenAction {
   id: RepairActionStatusId;

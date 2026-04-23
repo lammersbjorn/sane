@@ -5,8 +5,8 @@ import { join } from "node:path";
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { loadOverlayModel } from "@/overlay-models.js";
-import { createTuiShell, editActiveValue, moveSelection, runSelectedAction } from "@/shell.js";
+import { loadOverlayModel } from "@sane/sane-tui/overlay-models.js";
+import { createTuiShell, editActiveValue, moveSelection, runSelectedAction } from "@sane/sane-tui/shell.js";
 
 const tempDirs: string[] = [];
 

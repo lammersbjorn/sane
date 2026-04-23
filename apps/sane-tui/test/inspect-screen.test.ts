@@ -13,7 +13,7 @@ import * as controlPlane from "@sane/control-plane";
 import * as inventory from "@sane/control-plane/inventory.js";
 import { formatInspectOverviewLines as formatSharedInspectOverviewLines, installRuntime } from "@sane/control-plane";
 import { saveConfig } from "@sane/control-plane/preferences.js";
-import { inspectOverviewLines, loadInspectScreen, loadInspectScreenFromStatusBundle } from "@/inspect-screen.js";
+import { inspectOverviewLines, loadInspectScreen, loadInspectScreenFromStatusBundle } from "@sane/sane-tui/inspect-screen.js";
 
 const tempDirs: string[] = [];
 

@@ -9,8 +9,8 @@ import { applyCodexProfile, installRuntime } from "@sane/control-plane";
 import { createDefaultLocalConfig } from "@sane/config";
 import { saveConfig } from "@sane/control-plane/preferences.js";
 
-import { loadAppView } from "@/app-view.js";
-import { createTuiShell, moveSelection, runSelectedAction, selectSection } from "@/shell.js";
+import { loadAppView } from "@sane/sane-tui/app-view.js";
+import { createTuiShell, moveSelection, runSelectedAction, selectSection } from "@sane/sane-tui/shell.js";
 
 const tempDirs: string[] = [];
 
@@ -51,24 +51,24 @@ describe("app view", () => {
 
   it("loads Get Started once even when dashboard and section overview both need it", async () => {
     vi.resetModules();
-    vi.doMock("@/get-started-screen.js", async () => {
-      const actual = await vi.importActual<typeof import("@/get-started-screen.js")>("@/get-started-screen.js");
+    vi.doMock("@sane/sane-tui/get-started-screen.js", async () => {
+      const actual = await vi.importActual<typeof import("@sane/sane-tui/get-started-screen.js")>("@sane/sane-tui/get-started-screen.js");
       return {
         ...actual,
         loadGetStartedScreenFromStatusBundle: vi.fn(actual.loadGetStartedScreenFromStatusBundle)
       };
     });
-    vi.doMock("@/install-screen.js", async () => {
-      const actual = await vi.importActual<typeof import("@/install-screen.js")>("@/install-screen.js");
+    vi.doMock("@sane/sane-tui/install-screen.js", async () => {
+      const actual = await vi.importActual<typeof import("@sane/sane-tui/install-screen.js")>("@sane/sane-tui/install-screen.js");
       return {
         ...actual,
         loadInstallScreenFromStatusBundle: vi.fn(actual.loadInstallScreenFromStatusBundle)
       };
     });
 
-    const { loadAppView: loadAppViewWithSpy } = await import("@/app-view.js");
-    const getStartedScreen = await import("@/get-started-screen.js");
-    const installScreen = await import("@/install-screen.js");
+    const { loadAppView: loadAppViewWithSpy } = await import("@sane/sane-tui/app-view.js");
+    const getStartedScreen = await import("@sane/sane-tui/get-started-screen.js");
+    const installScreen = await import("@sane/sane-tui/install-screen.js");
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
 
     loadAppViewWithSpy(shell);
@@ -81,8 +81,8 @@ describe("app view", () => {
     expect(vi.mocked(installScreen.loadInstallScreenFromStatusBundle).mock.calls[0]?.[2]).toBe(
       shell.statusSnapshot.statusBundle
     );
-    vi.doUnmock("@/get-started-screen.js");
-    vi.doUnmock("@/install-screen.js");
+    vi.doUnmock("@sane/sane-tui/get-started-screen.js");
+    vi.doUnmock("@sane/sane-tui/install-screen.js");
     vi.resetModules();
   });
 
@@ -138,7 +138,7 @@ describe("app view", () => {
 
   it("uses inspect overview selector instead of unpacking inspect status bundle in app-view", async () => {
     vi.resetModules();
-    vi.doMock("@/inspect-screen.js", () => {
+    vi.doMock("@sane/sane-tui/inspect-screen.js", () => {
       const inspectModel: Record<string, unknown> = {
         summary: "Inspect",
         actions: [],
@@ -157,8 +157,8 @@ describe("app view", () => {
       };
     });
 
-    const { loadAppView: loadAppViewWithMock } = await import("@/app-view.js");
-    const inspectScreen = await import("@/inspect-screen.js");
+    const { loadAppView: loadAppViewWithMock } = await import("@sane/sane-tui/app-view.js");
+    const inspectScreen = await import("@sane/sane-tui/inspect-screen.js");
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
     selectSection(shell, "inspect");
 
@@ -166,22 +166,22 @@ describe("app view", () => {
 
     expect(view.sectionOverviewLines).toEqual(["from-inspect-overview-selector"]);
     expect(vi.mocked(inspectScreen.inspectOverviewLines)).toHaveBeenCalledTimes(1);
-    vi.doUnmock("@/inspect-screen.js");
+    vi.doUnmock("@sane/sane-tui/inspect-screen.js");
     vi.resetModules();
   });
 
   it("threads shell status bundle into inspect when the inspect section is opened", async () => {
     vi.resetModules();
-    vi.doMock("@/inspect-screen.js", async () => {
-      const actual = await vi.importActual<typeof import("@/inspect-screen.js")>("@/inspect-screen.js");
+    vi.doMock("@sane/sane-tui/inspect-screen.js", async () => {
+      const actual = await vi.importActual<typeof import("@sane/sane-tui/inspect-screen.js")>("@sane/sane-tui/inspect-screen.js");
       return {
         ...actual,
         loadInspectScreenFromStatusBundle: vi.fn(actual.loadInspectScreenFromStatusBundle)
       };
     });
 
-    const { loadAppView: loadAppViewWithSpy } = await import("@/app-view.js");
-    const inspectScreen = await import("@/inspect-screen.js");
+    const { loadAppView: loadAppViewWithSpy } = await import("@sane/sane-tui/app-view.js");
+    const inspectScreen = await import("@sane/sane-tui/inspect-screen.js");
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
     selectSection(shell, "inspect");
 
@@ -191,22 +191,22 @@ describe("app view", () => {
     expect(vi.mocked(inspectScreen.loadInspectScreenFromStatusBundle).mock.calls[0]?.[2]).toBe(
       shell.statusSnapshot.statusBundle
     );
-    vi.doUnmock("@/inspect-screen.js");
+    vi.doUnmock("@sane/sane-tui/inspect-screen.js");
     vi.resetModules();
   });
 
   it("threads shell status bundle into repair when the repair section is opened", async () => {
     vi.resetModules();
-    vi.doMock("@/repair-screen.js", async () => {
-      const actual = await vi.importActual<typeof import("@/repair-screen.js")>("@/repair-screen.js");
+    vi.doMock("@sane/sane-tui/repair-screen.js", async () => {
+      const actual = await vi.importActual<typeof import("@sane/sane-tui/repair-screen.js")>("@sane/sane-tui/repair-screen.js");
       return {
         ...actual,
         loadRepairScreenFromStatusBundle: vi.fn(actual.loadRepairScreenFromStatusBundle)
       };
     });
 
-    const { loadAppView: loadAppViewWithSpy } = await import("@/app-view.js");
-    const repairScreen = await import("@/repair-screen.js");
+    const { loadAppView: loadAppViewWithSpy } = await import("@sane/sane-tui/app-view.js");
+    const repairScreen = await import("@sane/sane-tui/repair-screen.js");
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
     selectSection(shell, "repair");
 
@@ -216,7 +216,7 @@ describe("app view", () => {
     expect(vi.mocked(repairScreen.loadRepairScreenFromStatusBundle).mock.calls[0]?.[2]).toBe(
       shell.statusSnapshot.statusBundle
     );
-    vi.doUnmock("@/repair-screen.js");
+    vi.doUnmock("@sane/sane-tui/repair-screen.js");
     vi.resetModules();
   });
 
@@ -423,7 +423,7 @@ describe("app view", () => {
 
   it("uses inspect policy presenter selector instead of manual policy line stitching", async () => {
     vi.resetModules();
-    vi.doMock("@/inspect-screen.js", () => {
+    vi.doMock("@sane/sane-tui/inspect-screen.js", () => {
       const inspectModel = {
         summary: "Inspect",
         actions: [],
@@ -445,8 +445,8 @@ describe("app view", () => {
       };
     });
 
-    const { loadAppView: loadAppViewWithMock } = await import("@/app-view.js");
-    const inspectScreen = await import("@/inspect-screen.js");
+    const { loadAppView: loadAppViewWithMock } = await import("@sane/sane-tui/app-view.js");
+    const inspectScreen = await import("@sane/sane-tui/inspect-screen.js");
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
     selectSection(shell, "inspect");
     for (let index = 0; index < 7; index += 1) {
@@ -459,7 +459,7 @@ describe("app view", () => {
     expect(view.selectedHelpLines).toContain("from-policy-presenter");
     expect(view.selectedHelpLines).not.toContain("should-not-appear");
     expect(vi.mocked(inspectScreen.formatInspectPolicyPreviewLines)).toHaveBeenCalledTimes(1);
-    vi.doUnmock("@/inspect-screen.js");
+    vi.doUnmock("@sane/sane-tui/inspect-screen.js");
     vi.resetModules();
   });
 
@@ -538,16 +538,16 @@ describe("app view", () => {
 
   it("loads inspect snapshot once when install overview and selected help both need it", async () => {
     vi.resetModules();
-    vi.doMock("@/inspect-screen.js", async () => {
-      const actual = await vi.importActual<typeof import("@/inspect-screen.js")>("@/inspect-screen.js");
+    vi.doMock("@sane/sane-tui/inspect-screen.js", async () => {
+      const actual = await vi.importActual<typeof import("@sane/sane-tui/inspect-screen.js")>("@sane/sane-tui/inspect-screen.js");
       return {
         ...actual,
         loadInspectScreenFromStatusBundle: vi.fn(actual.loadInspectScreenFromStatusBundle)
       };
     });
 
-    const { loadAppView: loadAppViewWithSpy } = await import("@/app-view.js");
-    const inspectScreen = await import("@/inspect-screen.js");
+    const { loadAppView: loadAppViewWithSpy } = await import("@sane/sane-tui/app-view.js");
+    const inspectScreen = await import("@sane/sane-tui/inspect-screen.js");
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
     selectSection(shell, "install");
     for (let index = 0; index < 4; index += 1) {
@@ -557,7 +557,7 @@ describe("app view", () => {
     loadAppViewWithSpy(shell);
 
     expect(vi.mocked(inspectScreen.loadInspectScreenFromStatusBundle)).toHaveBeenCalledTimes(1);
-    vi.doUnmock("@/inspect-screen.js");
+    vi.doUnmock("@sane/sane-tui/inspect-screen.js");
     vi.resetModules();
   });
 
