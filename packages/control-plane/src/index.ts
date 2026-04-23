@@ -72,18 +72,6 @@ export interface RuntimeProgressSnapshot {
   verificationStatus: string;
 }
 
-interface RuntimeStateSnapshot {
-  current: CurrentRunState | null;
-  summary: RunSummary | null;
-  brief: string | null;
-  historyCounts: LayeredStateHistoryCounts;
-  historyPreview: LayeredStateHistoryPreview;
-  latestPolicyPreview: LatestPolicyPreviewSnapshot;
-  currentRunStatus: InventoryStatus;
-  summaryStatus: InventoryStatus;
-  briefStatus: InventoryStatus;
-}
-
 export interface InspectSnapshot {
   status: {
     summary: string;
@@ -184,11 +172,11 @@ export function doctorRuntime(paths: ProjectPaths): OperationResult {
 }
 
 export function showRuntimeHistory(paths: ProjectPaths): LayeredStateHistoryCounts {
-  return inspectRuntimeStateSnapshot(paths).historyCounts;
+  return inspectRuntimeState(paths).historyCounts;
 }
 
 export function showRuntimeProgress(paths: ProjectPaths): RuntimeProgressSnapshot | null {
-  const current = inspectRuntimeStateSnapshot(paths).current;
+  const current = inspectRuntimeState(paths).current;
 
   if (!current) {
     return null;
@@ -209,7 +197,7 @@ export function inspectSnapshotFromStatusBundle(
   codexPaths: CodexPaths,
   statusBundle: ReturnType<typeof inspectStatusBundle>
 ): InspectSnapshot {
-  const runtimeState = inspectRuntimeStateSnapshot(paths);
+  const runtimeState = inspectRuntimeState(paths);
   const doctorResult = doctorForStatusBundle(paths, codexPaths, statusBundle);
   const doctorSnapshot = inspectDoctorSnapshot(paths, codexPaths, statusBundle);
   const integrationsProfile = inspectIntegrationsProfileSnapshot(codexPaths);
@@ -243,21 +231,24 @@ export function inspectSnapshotFromStatusBundle(
 }
 
 export function showRuntimeSummary(paths: ProjectPaths): OperationResult {
-  return buildRuntimeSummary(paths, inspectRuntimeStateSnapshot(paths));
+  return buildRuntimeSummary(paths, inspectRuntimeState(paths));
 }
 
-function buildRuntimeSummary(paths: ProjectPaths, runtimeState: RuntimeStateSnapshot): OperationResult {
+function buildRuntimeSummary(
+  paths: ProjectPaths,
+  runtimeState: ReturnType<typeof inspectRuntimeState>
+): OperationResult {
   const {
     current,
     summary,
     brief,
     latestPolicyPreview,
     historyCounts,
-    historyPreview,
-    currentRunStatus,
-    summaryStatus,
-    briefStatus
+    historyPreview
   } = runtimeState;
+  const currentRunStatus = inventoryStatusFromRuntimeLayer(runtimeState.layerStatus.currentRun);
+  const summaryStatus = inventoryStatusFromRuntimeLayer(runtimeState.layerStatus.summary);
+  const briefStatus = inventoryStatusFromRuntimeLayer(runtimeState.layerStatus.brief);
   const details = [
     `current-run: ${runtimeLayerLabelFromInventory(currentRunStatus)} at ${paths.currentRunPath}`,
     `summary: ${runtimeLayerLabelFromInventory(summaryStatus)} at ${paths.summaryPath}`,
@@ -310,7 +301,7 @@ function buildRuntimeSummary(paths: ProjectPaths, runtimeState: RuntimeStateSnap
 }
 
 export function inspectLatestPolicyPreview(paths: ProjectPaths): LatestPolicyPreviewSnapshot {
-  return inspectRuntimeStateSnapshot(paths).latestPolicyPreview;
+  return inspectRuntimeState(paths).latestPolicyPreview;
 }
 
 export * from "./codex-config.js";
@@ -323,22 +314,6 @@ export * from "./policy-preview.js";
 export * from "./policy-preview-presenter.js";
 export * from "./preferences.js";
 export * from "./runtime-history-presenter.js";
-
-function inspectRuntimeStateSnapshot(paths: ProjectPaths): RuntimeStateSnapshot {
-  const runtimeState = inspectRuntimeState(paths);
-
-  return {
-    current: runtimeState.current,
-    summary: runtimeState.summary,
-    brief: runtimeState.brief,
-    historyCounts: runtimeState.historyCounts,
-    historyPreview: runtimeState.historyPreview,
-    latestPolicyPreview: runtimeState.latestPolicyPreview,
-    currentRunStatus: inventoryStatusFromRuntimeLayer(runtimeState.layerStatus.currentRun),
-    summaryStatus: inventoryStatusFromRuntimeLayer(runtimeState.layerStatus.summary),
-    briefStatus: inventoryStatusFromRuntimeLayer(runtimeState.layerStatus.brief)
-  };
-}
 
 function ensureInstallRuntimeBaseline(
   paths: ProjectPaths,
@@ -396,7 +371,10 @@ function recommendedLocalConfig(codexPaths: CodexPaths): LocalConfig {
 }
 
 function inspectRuntimeInventory(paths: ProjectPaths) {
-  const runtimeState = inspectRuntimeStateSnapshot(paths);
+  const runtimeState = inspectRuntimeState(paths);
+  const currentRunStatus = inventoryStatusFromRuntimeLayer(runtimeState.layerStatus.currentRun);
+  const summaryStatus = inventoryStatusFromRuntimeLayer(runtimeState.layerStatus.summary);
+  const briefStatus = inventoryStatusFromRuntimeLayer(runtimeState.layerStatus.brief);
 
   return [
     {
@@ -416,21 +394,21 @@ function inspectRuntimeInventory(paths: ProjectPaths) {
     {
       name: "current-run",
       scope: InventoryScope.LocalRuntime,
-      status: runtimeState.currentRunStatus,
+      status: currentRunStatus,
       path: paths.currentRunPath,
       repairHint: repairHintForPath(paths.currentRunPath)
     },
     {
       name: "summary",
       scope: InventoryScope.LocalRuntime,
-      status: runtimeState.summaryStatus,
+      status: summaryStatus,
       path: paths.summaryPath,
       repairHint: repairHintForPath(paths.summaryPath)
     },
     {
       name: "brief",
       scope: InventoryScope.LocalRuntime,
-      status: runtimeState.briefStatus,
+      status: briefStatus,
       path: paths.briefPath,
       repairHint: repairHintForPath(paths.briefPath)
     }
