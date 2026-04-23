@@ -63,7 +63,8 @@ Do not mix them.
 Keep this explicit and ordered by migration value:
 
 1. Public startup / packaging cutover
-   - the public shipped entrypoint is still Rust-owned today via `cargo run -p sane --`.
+   - the public repo-root entrypoint now routes through the built TS path via `pnpm start` / `pnpm run start:settings`.
+   - explicit Rust fallback still exists via `pnpm run start:rust`.
    - internal TS launch now works through the `apps/sane-tui/bin/sane.mjs` shim, smart `tsx` preview routing, workspace package `exports`, and self-package app imports.
    - do not flip the public path until terminal parity and packaging are deliberate.
    - explicit cutover checklist:
@@ -75,9 +76,9 @@ Keep this explicit and ordered by migration value:
      - [x] TS terminal path respects viewport width/height and redraws on resize
      - [x] local TS bin shim exists at `apps/sane-tui/bin/sane.mjs`
      - [x] internal TS build can emit a bundled `dist/bin/sane.cjs` that runs without `tsx`
-     - [ ] public root `start` / `start:settings` switched from Rust to TS
-     - [ ] public README/setup docs switched from Cargo-first to TS-first
-     - [x] packaged/public CLI story declared for `@sane/sane-tui`: Rust still owns the public root entrypoint; source preview stays on `bin/sane.mjs`; built preview stays on `dist/bin/sane.cjs`; eventual package/public CLI points at built output only after parity
+     - [x] public root `start` / `start:settings` switched from Rust to TS
+     - [x] public README/setup docs switched from Cargo-first to TS-first
+     - [x] packaged/public CLI story declared for `@sane/sane-tui`: source preview stays on `bin/sane.mjs`; built preview stays on `dist/bin/sane.cjs`; root public start uses the built path; explicit Rust fallback remains until parity is fully accepted; eventual package/public CLI points at built output only after parity
      - [ ] Rust `main.rs` launch/command glue removed after TS path is the documented public entrypoint
 2. Policy-preview legacy cleanup
    - `packages/control-plane/src/policy-preview.ts` is the current source of truth.

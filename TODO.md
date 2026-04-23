@@ -265,10 +265,10 @@ pnpm check
 - [x] internal TS preview is smart-routed across non-TTY text vs TTY live terminal
 - [x] TS terminal preview has visible nav chrome, key parity, viewport fitting, resize redraw, and a local bin shim
 - [x] internal TS build can emit a bundled `dist/bin/sane.cjs` and smoke-run it without `tsx`
-- [ ] switch public root `start` / `start:settings` away from Rust
-  - [ ] switch public README/setup docs away from Cargo-first instructions
+- [x] switch public root `start` / `start:settings` away from Rust
+  - [x] switch public README/setup docs away from Cargo-first instructions
   - [x] declare the packaged/public CLI story for `@sane/sane-tui`
-    current story: root public start stays Rust; internal source preview uses `apps/sane-tui/bin/sane.mjs`; internal built preview uses `dist/bin/sane.cjs`; eventual package/public CLI should point at built output after parity
+    current story: root public start uses the built TS path; internal source preview uses `apps/sane-tui/bin/sane.mjs`; internal built preview uses `dist/bin/sane.cjs`; explicit Rust fallback stays on `start:rust`; eventual package/public CLI should point at built output after parity
   - [ ] remove Rust launch/compat glue only after the TS path is the documented public entrypoint
 - [ ] Exact post-`v1` packaging automation sequence
 - [ ] Exact default attribution surface if onboarding opt-in ships:

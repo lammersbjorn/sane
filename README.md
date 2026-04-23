@@ -170,12 +170,13 @@ This split matters because it keeps `Sane` useful without making it a wrapper yo
 
 ## Quick Start
 
-Right now, `Sane` runs from source. Packaged installs come later.
+Right now, `Sane` still runs from source, but the default repo launcher now goes through the built TypeScript TUI path. Packaged installs come later.
 
 ```bash
 git clone https://github.com/lammersbjorn/sane.git
 cd sane
-cargo run -p sane
+pnpm install
+pnpm start
 ```
 
 That opens the onboarding TUI.
@@ -183,7 +184,21 @@ That opens the onboarding TUI.
 If you already know you want the settings/configure area, run:
 
 ```bash
-cargo run -p sane -- settings
+pnpm run start:settings
+```
+
+Read-only shortcuts also exist:
+
+```bash
+pnpm run start:inspect
+pnpm run start:repair
+```
+
+Rust fallback still exists while the migration finishes:
+
+```bash
+pnpm run start:rust
+pnpm run start:rust:settings
 ```
 
 If you want the longer user-story version, read [docs/what-sane-does.md](./docs/what-sane-does.md).

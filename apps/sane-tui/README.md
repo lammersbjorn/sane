@@ -59,11 +59,11 @@ Boundary rules:
 
 Current package story:
 
-- public repo entrypoint still stays Rust-owned through the root `cargo run -p sane --` scripts
+- public repo entrypoint now goes through the built root `pnpm start` / `pnpm run start:settings` scripts
 - internal source preview path is `apps/sane-tui/bin/sane.mjs`, which shells through `tsx`
 - internal built preview path is `apps/sane-tui/dist/bin/sane.cjs`, emitted by `pnpm --filter @sane/sane-tui run build`
 - eventual package/public CLI should point at the built output, not the source `tsx` shim
-- do not flip the public root scripts until TS parity is deliberate
+- Rust fallback remains explicit through `pnpm run start:rust` while migration finishes
 
 Verification:
 

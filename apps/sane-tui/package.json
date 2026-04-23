@@ -13,6 +13,7 @@
     "build": "tsup --config tsup.config.ts",
     "build:smoke": "pnpm run build && node ./dist/bin/sane.cjs inspect",
     "preview": "tsx ./bin/sane-preview.ts",
+    "preview:built": "node ./dist/bin/sane.cjs",
     "preview:terminal": "tsx ./bin/sane-terminal-preview.ts",
     "preview:text": "tsx ./bin/sane-text-preview.ts",
     "test": "vitest run",

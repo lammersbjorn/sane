@@ -67,20 +67,22 @@ const BACKEND_COMMAND_ALIASES: ReadonlyArray<{
 ] as const;
 
 export function parseCliArgs(args: readonly string[]): ParsedCliCommand {
-  if (args.length === 0) {
+  const normalizedArgs = normalizeCliArgs(args);
+
+  if (normalizedArgs.length === 0) {
     return { kind: "launch", launchShortcut: "default" };
   }
 
-  const launchShortcut = parseLaunchShortcut(args);
+  const launchShortcut = parseLaunchShortcut(normalizedArgs);
   if (launchShortcut) {
     return { kind: "launch", launchShortcut };
   }
 
-  if (matchesArgs(args, ["hook", "session-start"])) {
+  if (matchesArgs(normalizedArgs, ["hook", "session-start"])) {
     return { kind: "hook", event: "session-start" };
   }
 
-  const backend = BACKEND_COMMAND_ALIASES.find((entry) => matchesArgs(args, entry.args));
+  const backend = BACKEND_COMMAND_ALIASES.find((entry) => matchesArgs(normalizedArgs, entry.args));
   if (backend) {
     return {
       kind: "backend",
@@ -88,7 +90,7 @@ export function parseCliArgs(args: readonly string[]): ParsedCliCommand {
     };
   }
 
-  throw new Error(`unsupported command: ${args.join(" ") || "<none>"}`);
+  throw new Error(`unsupported command: ${normalizedArgs.join(" ") || "<none>"}`);
 }
 
 export function runCliCommandFromDiscovery(
@@ -125,6 +127,10 @@ export function runCliCommandFromDiscovery(
 
 function matchesArgs(actual: readonly string[], expected: readonly string[]): boolean {
   return actual.length === expected.length && expected.every((part, index) => actual[index] === part);
+}
+
+function normalizeCliArgs(args: readonly string[]): readonly string[] {
+  return args[0] === "--" ? args.slice(1) : args;
 }
 
 function parseLaunchShortcut(args: readonly string[]): LaunchShortcut | null {

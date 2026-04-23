@@ -34,6 +34,10 @@ describe("ts cli command parsing", () => {
       kind: "launch",
       launchShortcut: "inspect"
     });
+    expect(parseCliArgs(["--", "inspect"])).toEqual({
+      kind: "launch",
+      launchShortcut: "inspect"
+    });
     expect(parseCliArgs(["repair"])).toEqual({
       kind: "launch",
       launchShortcut: "repair"
