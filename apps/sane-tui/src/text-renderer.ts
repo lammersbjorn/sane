@@ -26,7 +26,7 @@ function renderBaseLayout(
   width: number,
   viewport: TextViewport
 ): string[] {
-  const header = renderHeader(view, width);
+  const header = renderHeader(view, width, isCompactViewport(viewport.height));
   const footer = wrapLines(view.footerLines[0] ?? view.footer.navHint, width);
   const availableBodyHeight = bodyHeightForViewport(viewport.height, header.length, footer.length);
 
@@ -54,7 +54,7 @@ function renderOverlayLayout(
   width: number,
   viewport: TextViewport
 ): string[] {
-  const header = renderHeader(view, width);
+  const header = renderHeader(view, width, isCompactViewport(viewport.height));
   const footer = wrapLines(view.footer.navHint, width);
   const modalWidth = Math.max(52, Math.min(width, width - 6));
   const overlay = view.overlay;
@@ -96,7 +96,15 @@ function renderOverlayLayout(
   return [...header, "", ...centerLines(box, width), "", ...footer];
 }
 
-function renderHeader(view: SaneTuiAppView, width: number): string[] {
+function renderHeader(view: SaneTuiAppView, width: number, compact = false): string[] {
+  if (compact) {
+    return [
+      ...wrapLines(`${view.title} | ${view.subtitle}`, width),
+      ...wrapLines(`Section: ${view.tabs.selected} | Mode: ${view.mode.label}`, width),
+      ...wrapLines(statusline(view), width)
+    ];
+  }
+
   return [
     ...wrapLines(`${view.title} | ${view.subtitle}`, width),
     ...wrapLines(
@@ -135,6 +143,14 @@ function renderStackedBody(
   width: number,
   availableHeight?: number
 ): string[] {
+  if (availableHeight !== undefined && availableHeight <= 12) {
+    return resizeBox(
+      renderBox(`${view.activeSection.docLabel} Focus`, compactFocusLines(view), width),
+      width,
+      availableHeight
+    );
+  }
+
   const actions = renderBox("Actions", actionRailLines(view), width);
   const detail = renderBox(detailPaneTitle(view), detailPaneLines(view), width);
 
@@ -203,6 +219,35 @@ function detailPaneLines(view: SaneTuiAppView): string[] {
 
 function selectedActionLabel(view: SaneTuiAppView): string {
   return view.actions.find((action) => action.id === view.recommendedActionId)?.label ?? view.selectedAction.label;
+}
+
+function compactFocusLines(view: SaneTuiAppView): string[] {
+  const selectedIndex = view.actions.findIndex((action) => action.id === view.selectedAction.id);
+  const nextAction = view.actions[selectedIndex + 1] ?? null;
+
+  return [
+    `Selected: ${compactActionLabel(view.selectedAction.label)}`,
+    nextAction ? `Next: ${compactActionLabel(nextAction.label)}` : `Next: none`,
+    `Status: ${view.latestStatusLines[0] ?? "ready"}`,
+    "Use a wider terminal for the full rail and detail view."
+  ];
+}
+
+function compactActionLabel(label: string): string {
+  return label
+    .replace("View your current ", "View ")
+    .replace("Preview optional ", "Preview ")
+    .replace("Apply optional ", "Apply ")
+    .replace("Enable or disable built-in guidance packs", "Toggle built-in packs")
+    .replace("Edit default model and reasoning settings", "Edit model defaults")
+    .replace("Choose your telemetry and privacy level", "Set telemetry and privacy")
+    .replace("Show everything Sane currently manages", "Show managed surfaces")
+    .replace("Run Sane doctor checks for problems", "Run doctor checks")
+    .replace("View current Sane runtime handoff state", "View runtime handoff")
+    .replace("Explain Sane's routing policy", "Explain routing policy")
+    .replace("Codex settings", "Codex")
+    .replace("compatibility settings", "compatibility")
+    .replace("statusline settings", "statusline");
 }
 
 function statusline(view: SaneTuiAppView): string {
@@ -448,6 +493,10 @@ function availableOverlayBodyLines(
   }
 
   return Math.max(8, height - headerLines - footerLines - 8);
+}
+
+function isCompactViewport(height: number | undefined): boolean {
+  return Boolean(height && height <= 18);
 }
 
 function padRight(text: string, width: number): string {

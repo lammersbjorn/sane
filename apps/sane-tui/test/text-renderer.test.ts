@@ -86,14 +86,14 @@ describe("text renderer", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()), "settings");
 
     const output = renderTextAppView(loadAppView(shell), {
-      width: 32,
-      height: 8
+      width: 48,
+      height: 16
     });
 
     const lines = output.split("\n");
-    expect(lines).toHaveLength(8);
-    expect(lines.every((line) => line.length <= 32)).toBe(true);
-    expect(output).toContain("...");
+    expect(lines).toHaveLength(16);
+    expect(lines.every((line) => line.length <= 48)).toBe(true);
+    expect(output).toContain("Selected:");
     expect(output).toContain("Sane | Codex-native onboarding");
   });
 
