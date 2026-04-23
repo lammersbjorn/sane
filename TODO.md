@@ -250,16 +250,16 @@ pnpm check
 
 - [ ] Exact post-`v1` built-in pack expansion/contraction policy (current built-in set is fixed today)
 - [ ] Exact long-term `Opencode` compatibility scope beyond the current optional `opensrc` profile plus optional OpenCode-agent export
-- [ ] Exact scope for any future Sane helper over native Codex statusline/title config:
-  - whether the current optional profile preset is the right default recommendation
-  - what alternate preset, if any, is broadly useful
-  - how inspect/remove should work without turning `Sane` into a wrapper-first flow
-- [ ] Exact explicit preset coverage for `Kimi K2.6` and other newly popular models vs generic fallback-by-capability handling:
-  - source quality acceptable
-  - runtime/auth support on the actual Sane surface
-  - benchmark evidence status recorded
-  - default-tier vs candidate-only decision recorded
-- [ ] Exact bonus-lane policy for models such as `Codex-Spark` when a user's plan/runtime exposes separate quota:
+- [x] Exact scope for native Codex statusline/title config helper:
+  - keep only the current optional native config profile over `tui.status_line`, `tui.terminal_title`, and `tui.notification_condition`
+  - do not build a Sane-owned custom statusline/status-bar system in `v1`
+  - keep inspect/apply explicit and reversible through native Codex config only
+- [x] Exact explicit preset coverage for `Kimi K2.6` and other newly popular models vs generic fallback-by-capability handling:
+  - source quality is acceptable for a documented external candidate
+  - runtime/auth support is not present in the Codex picker/runtime surface Sane targets today
+  - benchmark/status evidence stays caveated as provider-positioned and not a neutral cross-provider Codex routing table
+  - default-tier decision: candidate-only, no active preset
+- [x] Exact bonus-lane policy for models such as `Codex-Spark` when a user's plan/runtime exposes separate quota:
   - capability-gated only, never assumed
   - prefer only for latency-first `realtime` work where it actually fits
   - preserve normal fallback for `implementation` / `verifier` / unavailable-plan cases
@@ -309,6 +309,6 @@ Current allowed next slice:
 4. keep TUI first, backend verbs escape hatch only
 5. keep merge/preserve/remove behavior additive and reversible
 6. keep Codex config writes narrow, explicit opt-in, and backup/restore guarded
-7. refresh the model preset matrix for `Kimi K2.6` and other newly popular models without regressing the capability-class fallback approach or the non-benchmark caveat language
+7. keep newly popular external models such as `Kimi K2.6` candidate-only until they are runtime/auth-proven inside Sane's Codex-first surface
 8. keep `B7` on typed policy/state plumbing, traces, and inspectable guidance; do not present it as shipped end-user orchestration
 9. keep the later end-to-end outcome runner plain-language first, not command-ritual-first
