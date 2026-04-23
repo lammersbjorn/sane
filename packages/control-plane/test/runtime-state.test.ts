@@ -8,7 +8,7 @@ import {
   createDecisionRecord,
   stringifyDecisionRecord
 } from "@sane/state";
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { installRuntime } from "../src/index.js";
 import { inspectRuntimeState } from "../src/runtime-state.js";

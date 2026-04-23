@@ -3,13 +3,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "vp test run",
-    "test:watch": "vp test",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "typecheck": "tsc --project tsconfig.json"
   },
   "devDependencies": {
     "typescript": "^5.9.3",
-    "vite-plus": "catalog:",
     "vitest": "catalog:"
   }
 }

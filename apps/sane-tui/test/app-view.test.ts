@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { appendJsonlRecord, createDecisionRecord, stringifyDecisionRecord } from "@sane/state";
-import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { applyCodexProfile, installRuntime } from "@sane/control-plane";
 import { createDefaultLocalConfig } from "@sane/config";
 import { saveConfig } from "@sane/control-plane/preferences.js";

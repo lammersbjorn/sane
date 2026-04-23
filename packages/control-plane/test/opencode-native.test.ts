@@ -9,7 +9,7 @@ import {
   createSaneOpencodeReviewerAgentTemplate
 } from "@sane/framework-assets";
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it } from "vitest";
 
 import {
   exportOpencodeAgents,

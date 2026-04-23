@@ -1,5 +1,5 @@
 import { OperationKind, OperationResult } from "@sane/core";
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, it } from "vitest";
 
 import type { UiCommandId } from "@/command-registry.js";
 

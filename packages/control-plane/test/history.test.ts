@@ -11,7 +11,7 @@ import {
   readJsonlRecords,
   readRunSummary
 } from "@sane/state";
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { exportAll } from "../src/bundles.js";
 import {

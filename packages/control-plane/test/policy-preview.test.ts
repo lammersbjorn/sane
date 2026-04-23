@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { createDefaultLocalConfig } from "@sane/config";
 import { createProjectPaths } from "@sane/platform";
 import { writeCurrentRunState } from "@sane/state";
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { buildCurrentRunInspectPreview, previewPolicy } from "../src/policy-preview.js";
 import { formatInspectPolicyPreviewLines } from "../src/policy-preview-presenter.js";

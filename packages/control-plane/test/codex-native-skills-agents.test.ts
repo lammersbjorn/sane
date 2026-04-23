@@ -15,7 +15,7 @@ import {
   createSaneRouterSkill
 } from "@sane/framework-assets";
 import { createProjectPaths, createCodexPaths } from "@sane/platform";
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it } from "vitest";
 
 import {
   exportGlobalAgents,

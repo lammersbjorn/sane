@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { createDefaultLocalConfig, readLocalConfig } from "@sane/config";
 import { InventoryStatus } from "@sane/core";
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it } from "vitest";
 
 import {
   inspectEditablePreferencesConfig,

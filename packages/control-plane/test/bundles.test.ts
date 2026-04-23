@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { createDefaultLocalConfig } from "@sane/config";
 import { InventoryStatus, OperationKind } from "@sane/core";
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { exportAll, uninstallAll } from "../src/bundles.js";
 import { CORE_INSTALL_BUNDLE_TARGETS } from "../src/core-install-bundle-targets.js";

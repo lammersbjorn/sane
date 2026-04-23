@@ -12,7 +12,7 @@ import {
   stringifyDecisionRecord,
   stringifyEventRecord
 } from "@sane/state";
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it } from "vitest";
 
 import {
   inspectLatestPolicyPreview,
