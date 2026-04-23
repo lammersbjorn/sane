@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -80,6 +80,41 @@ describe("inspectRuntimeState", () => {
         decisions: 0,
         artifacts: 0
       }
+    });
+  });
+
+  it("keeps .sane handoff independent from native Codex memories", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+    writeFileSync(
+      codexPaths.configToml,
+      [
+        "[features]",
+        "memories = true"
+      ].join("\n"),
+      "utf8"
+    );
+
+    installRuntime(paths, codexPaths);
+
+    expect(inspectRuntimeState(paths)).toMatchObject({
+      current: {
+        objective: "initialize sane runtime",
+        phase: "setup"
+      },
+      summary: {
+        version: 2
+      },
+      layerStatus: {
+        currentRun: "present",
+        summary: "present",
+        brief: "present"
+      },
+      latestPolicyPreview: createMissingLatestPolicyPreviewSnapshot()
     });
   });
 

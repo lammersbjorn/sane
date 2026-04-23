@@ -271,7 +271,7 @@ pnpm check
 - [ ] Exact self-hosting milestone checklist:
   - [x] prove exported `continue` skill installs through Sane, not only local `.agents` (`packs/core/manifest.json`, `@sane/framework-assets`, and `export user-skills` tests cover it)
   - [x] prove exported router/custom-agent guidance uses current model routing and enabled packs (`@sane/framework-assets`, `export user-skills`, `export custom-agents`, and OpenCode-agent tests cover it)
-  - prove `.sane` runtime state is enough for handoff without Codex native memories
+  - [x] prove `.sane` runtime state is enough for handoff without Codex native memories (`inspectRuntimeState` ignores native `features.memories` while Codex config remains read-only)
   - add shadow-mode inspection before any self-improvement/self-heal runner
   - keep all self-hosting surfaces reversible and optional outside this repo
 - [ ] Exact TypeScript package split and TS-only packaging checklist
