@@ -52,7 +52,6 @@ import {
   uninstallRepoAgents,
   uninstallRepoSkills
 } from "@sane/control-plane";
-import { inspectRuntimeState } from "@sane/control-plane/runtime-state.js";
 
 import {
   COMMAND_METADATA_REGISTRY,
@@ -106,7 +105,7 @@ export interface TuiShell {
 
 export interface ShellStatusSnapshot {
   statusBundle: ReturnType<typeof inspectStatusBundle>;
-  runtimeState: ReturnType<typeof inspectRuntimeState>;
+  runtimeState: ReturnType<typeof inspectStatusBundle>["runtimeState"];
 }
 
 export function createTuiShell(
@@ -430,9 +429,10 @@ export function executeUiCommand(
 }
 
 function buildStatusSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): ShellStatusSnapshot {
+  const statusBundle = inspectStatusBundle(paths, codexPaths);
   return {
-    statusBundle: inspectStatusBundle(paths, codexPaths),
-    runtimeState: inspectRuntimeState(paths)
+    runtimeState: statusBundle.runtimeState,
+    statusBundle
   };
 }
 

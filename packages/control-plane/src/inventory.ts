@@ -23,6 +23,7 @@ import { inspectSavedLocalConfig } from "./local-config.js";
 import { managedStatusKindFromInventory, presentManagedStatus } from "./status-presenter.js";
 import { inspectOpencodeAgentsInventory } from "./opencode-native.js";
 import { inspectRuntimeInventory } from "./runtime-inventory.js";
+import { inspectRuntimeState } from "./runtime-state.js";
 
 type InventoryItem = OperationResult["inventory"][number];
 type InventoryStatusName =
@@ -79,6 +80,7 @@ export interface StatusBundle {
   localRuntime: InventoryItem[];
   codexNative: InventoryItem[];
   compatibility: InventoryItem[];
+  runtimeState: ReturnType<typeof inspectRuntimeState>;
   optionalPacks: OptionalPackSnapshot[];
   driftItems: InventoryItem[];
   counts: Record<InventoryStatusName, number>;
@@ -269,8 +271,9 @@ export function inspectDoctorSnapshot(
 }
 
 export function inspectStatusBundle(paths: ProjectPaths, codexPaths: CodexPaths): StatusBundle {
+  const runtimeState = inspectRuntimeState(paths);
   const inventory = [
-    ...inspectRuntimeInventory(paths),
+    ...inspectRuntimeInventory(paths, runtimeState),
     ...inspectPackInventory(paths, codexPaths),
     inspectCodexConfigInventory(codexPaths),
     ...inspectCodexSkillsAndAgents(paths, codexPaths),
@@ -293,6 +296,7 @@ export function inspectStatusBundle(paths: ProjectPaths, codexPaths: CodexPaths)
     localRuntime,
     codexNative,
     compatibility,
+    runtimeState,
     optionalPacks: inspectOptionalPackSnapshots(inventory),
     driftItems,
     counts: countStatuses(inventory),

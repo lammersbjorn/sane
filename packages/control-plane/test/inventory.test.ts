@@ -107,6 +107,11 @@ describe("full inventory and doctor", () => {
       })
     ]);
     expect(bundle.primary.runtime?.status).toBe(InventoryStatus.Installed);
+    expect(bundle.runtimeState.current).toEqual(
+      expect.objectContaining({
+        phase: "setup"
+      })
+    );
     expect(bundle.primary.codexConfig?.status).toBe(InventoryStatus.Missing);
     expect(bundle.primary.userSkills?.status).toBe(InventoryStatus.Missing);
     expect(bundle.primary.hooks?.status).toBe(InventoryStatus.Missing);

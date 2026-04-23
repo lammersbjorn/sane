@@ -65,6 +65,7 @@ describe("tui shell", () => {
     const shell = createTuiShell(paths, codexPaths);
 
     expect(shell.statusSnapshot.statusBundle.primary.status.runtime).toBe("missing");
+    expect(shell.statusSnapshot.runtimeState).toBe(shell.statusSnapshot.statusBundle.runtimeState);
     expect(shell.statusSnapshot.runtimeState.current).toBeNull();
 
     statusBundleSpy.mockClear();
@@ -74,6 +75,7 @@ describe("tui shell", () => {
     expect(statusBundleSpy).toHaveBeenCalledWith(paths, codexPaths);
     expect(runtimeStateSpy).toHaveBeenCalledWith(paths);
     expect(shell.statusSnapshot.statusBundle.primary.status.runtime).toBe("installed");
+    expect(shell.statusSnapshot.runtimeState).toBe(shell.statusSnapshot.statusBundle.runtimeState);
     expect(shell.statusSnapshot.runtimeState.current?.phase).toBe("setup");
   });
 

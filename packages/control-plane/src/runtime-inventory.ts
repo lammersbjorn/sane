@@ -9,8 +9,10 @@ import { inventoryStatusFromRuntimeLayer } from "./status-presenter.js";
 
 type InventoryItem = OperationResult["inventory"][number];
 
-export function inspectRuntimeInventory(paths: ProjectPaths): InventoryItem[] {
-  const runtimeState = inspectRuntimeState(paths);
+export function inspectRuntimeInventory(
+  paths: ProjectPaths,
+  runtimeState = inspectRuntimeState(paths)
+): InventoryItem[] {
   const currentRunStatus = inventoryStatusFromRuntimeLayer(runtimeState.layerStatus.currentRun);
   const summaryStatus = inventoryStatusFromRuntimeLayer(runtimeState.layerStatus.summary);
   const briefStatus = inventoryStatusFromRuntimeLayer(runtimeState.layerStatus.brief);

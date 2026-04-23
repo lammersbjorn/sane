@@ -124,6 +124,7 @@ Implemented:
 - Repair can now derive from a preloaded typed status bundle too, and app-view threads shell status bundle through that path when the repair section is opened instead of forcing another repair status-bundle rebuild
 - Inspect can now derive from a preloaded typed status bundle too, and app-view threads shell status bundle through that path when the inspect section is opened instead of forcing another inspect status-bundle rebuild
 - shell status refresh now reads one canonical status bundle and derives `show status` from it instead of rebuilding the same status inventory twice on every refresh
+- canonical status bundles now also carry the typed runtime snapshot they already depend on, so shell/inspect can reuse one runtime read instead of reopening `.sane` state separately
 - runtime inspect/summary fields now derive from one `runtime-state.ts` helper that owns layered-state fallback, history preview, latest policy preview, and per-layer presence/invalid/missing truth
 - policy preview current-run reads and operation-history summary promotion now also go through that same canonical runtime-state boundary instead of reopening handoff files directly
 - operation-history writes now seed or repair the canonical `.sane` handoff baseline before persisting new events/decisions/artifacts, so non-install operations no longer leave `current-run` missing
