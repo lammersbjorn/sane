@@ -7,7 +7,7 @@ import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import * as codexConfig from "@sane/control-plane/codex-config.js";
-import { saveConfig } from "@sane/control-plane/preferences.js";
+import * as preferencesControlPlane from "@sane/control-plane/preferences.js";
 import { loadPreferencesScreen } from "@/preferences-screen.js";
 
 const tempDirs: string[] = [];
@@ -77,7 +77,7 @@ describe("preferences screen model", () => {
     config.packs.caveman = true;
     config.privacy.telemetry = "product-improvement";
 
-    saveConfig(paths, config);
+    preferencesControlPlane.saveConfig(paths, config);
     const screen = loadPreferencesScreen(paths, codexPaths);
 
     expect(screen.source).toBe("local");
@@ -96,15 +96,21 @@ describe("preferences screen model", () => {
     expect(screen.opencodePreview.summary).toBe("opencode-profile preview: 1 recommended change(s)");
   });
 
-  it("reads provider profile data through the family snapshot helper", () => {
+  it("reads preferences and provider profile data through family snapshot helpers", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const paths = createProjectPaths(projectRoot);
     const codexPaths = createCodexPaths(homeDir);
+    const preferencesFamilySpy = vi.spyOn(
+      preferencesControlPlane,
+      "inspectPreferencesFamilySnapshot"
+    );
     const familySpy = vi.spyOn(codexConfig, "inspectCodexProfileFamilySnapshot");
 
     const screen = loadPreferencesScreen(paths, codexPaths);
 
+    expect(preferencesFamilySpy).toHaveBeenCalledTimes(1);
+    expect(preferencesFamilySpy).toHaveBeenCalledWith(paths, codexPaths);
     expect(familySpy).toHaveBeenCalledTimes(1);
     expect(familySpy).toHaveBeenCalledWith(codexPaths);
     expect(screen.cloudflareAudit.status).toBe("missing");

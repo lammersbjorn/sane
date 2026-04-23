@@ -23,7 +23,7 @@ import {
 import { ensureRuntimeDirs, type CodexPaths, type ProjectPaths } from "@sane/platform";
 import { writeCanonicalWithBackupResult } from "@sane/state";
 
-import { inspectSavedLocalConfig, loadOrRecommendedLocalConfig } from "./local-config.js";
+import { inspectSavedLocalConfig, type SavedLocalConfigState } from "./local-config.js";
 
 export interface PreferencesSnapshot {
   source: "local" | "recommended";
@@ -46,6 +46,12 @@ export interface TelemetrySnapshot {
   summaryPresent: boolean;
   eventsPresent: boolean;
   queuePresent: boolean;
+}
+
+export interface PreferencesFamilySnapshot {
+  editable: EditablePreferencesConfigSnapshot;
+  preferences: PreferencesSnapshot;
+  telemetry: TelemetrySnapshot;
 }
 
 export interface PrivacyTransparencySnapshot {
@@ -82,13 +88,16 @@ export function showConfig(paths: ProjectPaths, codexPaths?: CodexPaths): Operat
   }
 
   const config = configState.config;
+  const preferences = codexPaths
+    ? inspectPreferencesFamilySnapshotFromContext(
+        paths,
+        createPreferencesContext(paths, codexPaths, configState)
+      ).preferences
+    : null;
   return new OperationResult({
     kind: OperationKind.ShowConfig,
     summary: `config: ok at ${paths.configPath}`,
-    details: configDetails(
-      config,
-      codexPaths ? inspectPreferencesSnapshot(paths, codexPaths) : null
-    ),
+    details: configDetails(config, preferences),
     pathsTouched: [paths.configPath],
     inventory: [
       {
@@ -159,42 +168,21 @@ export function inspectPreferencesSnapshot(
   paths: ProjectPaths,
   codexPaths: CodexPaths
 ): PreferencesSnapshot {
-  const snapshot = inspectEditablePreferencesConfig(paths, codexPaths);
-  const environment = detectCodexEnvironment(codexPaths.modelsCacheJson, codexPaths.authJson);
-  const routing = createRecommendedModelRoutingPresets(environment);
-  const subagents = createRecommendedSubagentRoutingPresets(environment);
-  return {
-    source: snapshot.source,
-    models: snapshot.current.models,
-    derivedRouting: {
-      execution: routing.execution,
-      realtime: routing.realtime
-    },
-    subagents: {
-      explorer: subagents.explorer,
-      implementation: subagents.implementation,
-      realtime: subagents.realtime
-    },
-    telemetry: snapshot.current.privacy.telemetry,
-    telemetryFiles: inspectTelemetrySnapshot(paths),
-    enabledPacks: enabledPackNames(snapshot.current.packs)
-  };
+  return inspectPreferencesFamilySnapshot(paths, codexPaths).preferences;
 }
 
 export function inspectEditablePreferencesConfig(
   paths: ProjectPaths,
   codexPaths: CodexPaths
 ): EditablePreferencesConfigSnapshot {
-  const recommended = createRecommendedLocalConfig(
-    detectCodexEnvironment(codexPaths.modelsCacheJson, codexPaths.authJson)
-  );
-  const current = loadOrRecommendedLocalConfig(paths, recommended);
+  return inspectPreferencesFamilySnapshot(paths, codexPaths).editable;
+}
 
-  return {
-    source: inspectSavedLocalConfig(paths).kind === "loaded" ? "local" : "recommended",
-    current,
-    recommended
-  };
+export function inspectPreferencesFamilySnapshot(
+  paths: ProjectPaths,
+  codexPaths: CodexPaths
+): PreferencesFamilySnapshot {
+  return inspectPreferencesFamilySnapshotFromContext(paths, createPreferencesContext(paths, codexPaths));
 }
 
 export function inspectTelemetrySnapshot(paths: ProjectPaths): TelemetrySnapshot {
@@ -217,6 +205,63 @@ export function inspectPrivacyTransparencySnapshot(
     summaryPath: paths.telemetrySummaryPath,
     eventsPath: paths.telemetryEventsPath,
     queuePath: paths.telemetryQueuePath
+  };
+}
+
+interface PreferencesContext {
+  source: "local" | "recommended";
+  current: LocalConfig;
+  recommended: LocalConfig;
+  derivedRouting: ReturnType<typeof createRecommendedModelRoutingPresets>;
+  subagents: ReturnType<typeof createRecommendedSubagentRoutingPresets>;
+}
+
+function createPreferencesContext(
+  paths: ProjectPaths,
+  codexPaths: CodexPaths,
+  savedConfigState: SavedLocalConfigState = inspectSavedLocalConfig(paths)
+): PreferencesContext {
+  const environment = detectCodexEnvironment(codexPaths.modelsCacheJson, codexPaths.authJson);
+  const recommended = createRecommendedLocalConfig(environment);
+  const current = savedConfigState.kind === "loaded" ? savedConfigState.config : recommended;
+
+  return {
+    source: savedConfigState.kind === "loaded" ? "local" : "recommended",
+    current,
+    recommended,
+    derivedRouting: createRecommendedModelRoutingPresets(environment),
+    subagents: createRecommendedSubagentRoutingPresets(environment)
+  };
+}
+
+function inspectPreferencesFamilySnapshotFromContext(
+  paths: ProjectPaths,
+  context: PreferencesContext
+): PreferencesFamilySnapshot {
+  const telemetry = inspectTelemetrySnapshot(paths);
+  return {
+    editable: {
+      source: context.source,
+      current: context.current,
+      recommended: context.recommended
+    },
+    preferences: {
+      source: context.source,
+      models: context.current.models,
+      derivedRouting: {
+        execution: context.derivedRouting.execution,
+        realtime: context.derivedRouting.realtime
+      },
+      subagents: {
+        explorer: context.subagents.explorer,
+        implementation: context.subagents.implementation,
+        realtime: context.subagents.realtime
+      },
+      telemetry: context.current.privacy.telemetry,
+      telemetryFiles: telemetry,
+      enabledPacks: enabledPackNames(context.current.packs)
+    },
+    telemetry
   };
 }
 

@@ -5,10 +5,12 @@ import { join } from "node:path";
 import { createDefaultLocalConfig } from "@sane/config";
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { appendJsonlRecord, createDecisionRecord, stringifyDecisionRecord } from "@sane/state";
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { applyCodexProfile } from "@sane/control-plane/codex-config.js";
 import { exportHooks } from "@sane/control-plane/hooks-custom-agents.js";
+import * as controlPlane from "@sane/control-plane";
+import * as inventory from "@sane/control-plane/inventory.js";
 import { formatInspectOverviewLines as formatSharedInspectOverviewLines, installRuntime } from "@sane/control-plane";
 import { saveConfig } from "@sane/control-plane/preferences.js";
 import { inspectOverviewLines, loadInspectScreen } from "@/inspect-screen.js";
@@ -422,5 +424,22 @@ describe("inspect screen model", () => {
     expect(screen.overviewLines.join("\n")).toContain(
       "latest policy orchestration simple-question: subagents none, readiness not_needed, review inline_only, verifier inline"
     );
+  });
+
+  it("uses the preloaded status bundle path when provided", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const bundle = inventory.inspectStatusBundle(paths, codexPaths);
+    const fromBundleSpy = vi.spyOn(controlPlane, "inspectSnapshotFromStatusBundle");
+    const wrapperSpy = vi.spyOn(controlPlane, "inspectSnapshot");
+
+    const screen = loadInspectScreen(paths, codexPaths, bundle);
+
+    expect(fromBundleSpy).toHaveBeenCalledTimes(1);
+    expect(fromBundleSpy).toHaveBeenCalledWith(paths, codexPaths, bundle);
+    expect(wrapperSpy).not.toHaveBeenCalled();
+    expect(screen.summary).toBe("Inspect");
   });
 });

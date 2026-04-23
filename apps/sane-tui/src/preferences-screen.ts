@@ -2,8 +2,10 @@ import { type CodexPaths, type ProjectPaths } from "@sane/platform";
 import {
   inspectCodexProfileFamilySnapshot
 } from "@sane/control-plane/codex-config.js";
-import { inspectPreferencesSnapshot } from "@sane/control-plane/preferences.js";
+import { inspectPreferencesFamilySnapshot } from "@sane/control-plane/preferences.js";
 import { listSectionActions, type UiCommandId } from "@/command-registry.js";
+
+type PreferencesSnapshotModel = ReturnType<typeof inspectPreferencesFamilySnapshot>["preferences"];
 
 export interface PreferencesScreenAction {
   id: Extract<
@@ -24,12 +26,12 @@ export interface PreferencesScreenAction {
 
 export interface PreferencesScreenModel {
   summary: "Preferences";
-  source: ReturnType<typeof inspectPreferencesSnapshot>["source"];
-  models: ReturnType<typeof inspectPreferencesSnapshot>["models"];
-  derivedRouting: ReturnType<typeof inspectPreferencesSnapshot>["derivedRouting"];
-  subagents: ReturnType<typeof inspectPreferencesSnapshot>["subagents"];
-  telemetry: ReturnType<typeof inspectPreferencesSnapshot>["telemetry"];
-  telemetryFiles: ReturnType<typeof inspectPreferencesSnapshot>["telemetryFiles"];
+  source: PreferencesSnapshotModel["source"];
+  models: PreferencesSnapshotModel["models"];
+  derivedRouting: PreferencesSnapshotModel["derivedRouting"];
+  subagents: PreferencesSnapshotModel["subagents"];
+  telemetry: PreferencesSnapshotModel["telemetry"];
+  telemetryFiles: PreferencesSnapshotModel["telemetryFiles"];
   enabledPacks: string[];
   cloudflareAudit: ReturnType<typeof inspectCodexProfileFamilySnapshot>["cloudflare"]["audit"];
   cloudflareApply: ReturnType<typeof inspectCodexProfileFamilySnapshot>["cloudflare"]["apply"];
@@ -56,7 +58,7 @@ export function loadPreferencesScreen(
             ? "config-editor"
             : "backend"
   }));
-  const snapshot = inspectPreferencesSnapshot(paths, codexPaths);
+  const snapshot = inspectPreferencesFamilySnapshot(paths, codexPaths).preferences;
   const profiles = inspectCodexProfileFamilySnapshot(codexPaths);
   return {
     summary: "Preferences",

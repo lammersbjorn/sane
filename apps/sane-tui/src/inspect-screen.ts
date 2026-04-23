@@ -5,8 +5,10 @@ import {
   formatInspectPolicyPreviewLines as formatSharedInspectPolicyPreviewLines,
   formatLatestPolicyPreviewInputLines as formatSharedLatestPolicyPreviewInputLines,
   formatLatestPolicyPreviewLines as formatSharedLatestPolicyPreviewLines,
+  inspectSnapshotFromStatusBundle,
   inspectSnapshot
 } from "@sane/control-plane";
+import { inspectStatusBundle } from "@sane/control-plane/inventory.js";
 import { listSectionActions, type UiCommandId } from "@/command-registry.js";
 
 export interface InspectScreenAction {
@@ -31,8 +33,14 @@ export interface InspectScreenModel extends InspectScreenSnapshot {
   overviewLines: string[];
 }
 
-export function loadInspectScreen(paths: ProjectPaths, codexPaths: CodexPaths): InspectScreenModel {
-  const snapshot = inspectSnapshot(paths, codexPaths);
+export function loadInspectScreen(
+  paths: ProjectPaths,
+  codexPaths: CodexPaths,
+  statusBundle?: ReturnType<typeof inspectStatusBundle>
+): InspectScreenModel {
+  const snapshot = statusBundle
+    ? inspectSnapshotFromStatusBundle(paths, codexPaths, statusBundle)
+    : inspectSnapshot(paths, codexPaths);
 
   return {
     summary: "Inspect",

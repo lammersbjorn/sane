@@ -10,6 +10,7 @@ import { afterEach, describe, expect, it } from "vite-plus/test";
 import {
   inspectEditablePreferencesConfig,
   inspectTelemetrySnapshot,
+  inspectPreferencesFamilySnapshot,
   inspectPreferencesSnapshot,
   inspectPrivacyTransparencySnapshot,
   resetTelemetryData,
@@ -260,6 +261,28 @@ describe("preferences control plane", () => {
         }
       }
     });
+  });
+
+  it("keeps family snapshot members aligned with existing preferences selectors", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    const recommendedFamily = inspectPreferencesFamilySnapshot(paths, codexPaths);
+    expect(recommendedFamily.preferences).toEqual(inspectPreferencesSnapshot(paths, codexPaths));
+    expect(recommendedFamily.editable).toEqual(inspectEditablePreferencesConfig(paths, codexPaths));
+    expect(recommendedFamily.telemetry).toEqual(inspectTelemetrySnapshot(paths));
+
+    const config = createDefaultLocalConfig();
+    config.models.coordinator.model = "gpt-5.2-codex";
+    config.privacy.telemetry = "product-improvement";
+    saveConfig(paths, config);
+
+    const localFamily = inspectPreferencesFamilySnapshot(paths, codexPaths);
+    expect(localFamily.preferences).toEqual(inspectPreferencesSnapshot(paths, codexPaths));
+    expect(localFamily.editable).toEqual(inspectEditablePreferencesConfig(paths, codexPaths));
+    expect(localFamily.telemetry).toEqual(inspectTelemetrySnapshot(paths));
   });
 
   it("reports bounded telemetry file presence for UI consumers", () => {

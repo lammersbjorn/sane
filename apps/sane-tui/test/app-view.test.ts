@@ -169,6 +169,31 @@ describe("app view", () => {
     vi.resetModules();
   });
 
+  it("threads shell status bundle into inspect when the inspect section is opened", async () => {
+    vi.resetModules();
+    vi.doMock("@/inspect-screen.js", async () => {
+      const actual = await vi.importActual<typeof import("@/inspect-screen.js")>("@/inspect-screen.js");
+      return {
+        ...actual,
+        loadInspectScreen: vi.fn(actual.loadInspectScreen)
+      };
+    });
+
+    const { loadAppView: loadAppViewWithSpy } = await import("@/app-view.js");
+    const inspectScreen = await import("@/inspect-screen.js");
+    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
+    selectSection(shell, "inspect");
+
+    loadAppViewWithSpy(shell);
+
+    expect(vi.mocked(inspectScreen.loadInspectScreen)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(inspectScreen.loadInspectScreen).mock.calls[0]?.[2]).toBe(
+      shell.statusSnapshot.statusBundle
+    );
+    vi.doUnmock("@/inspect-screen.js");
+    vi.resetModules();
+  });
+
   it("threads shell status bundle into repair when the repair section is opened", async () => {
     vi.resetModules();
     vi.doMock("@/repair-screen.js", async () => {
