@@ -35,12 +35,17 @@ export interface InspectScreenModel extends InspectScreenSnapshot {
 
 export function loadInspectScreen(
   paths: ProjectPaths,
-  codexPaths: CodexPaths,
-  statusBundle?: ReturnType<typeof inspectStatusBundle>
+  codexPaths: CodexPaths
 ): InspectScreenModel {
-  const snapshot = statusBundle
-    ? inspectSnapshotFromStatusBundle(paths, codexPaths, statusBundle)
-    : inspectSnapshot(paths, codexPaths);
+  return loadInspectScreenFromStatusBundle(paths, codexPaths, inspectStatusBundle(paths, codexPaths));
+}
+
+export function loadInspectScreenFromStatusBundle(
+  paths: ProjectPaths,
+  codexPaths: CodexPaths,
+  statusBundle: ReturnType<typeof inspectStatusBundle>
+): InspectScreenModel {
+  const snapshot = inspectSnapshotFromStatusBundle(paths, codexPaths, statusBundle);
 
   return {
     summary: "Inspect",

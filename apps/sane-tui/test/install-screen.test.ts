@@ -9,7 +9,7 @@ import { applyIntegrationsProfile } from "@sane/control-plane/codex-config.js";
 import { exportAll } from "@sane/control-plane";
 import * as inventory from "@sane/control-plane/inventory.js";
 import * as installStatus from "@sane/control-plane/install-status.js";
-import { loadInstallScreen } from "@/install-screen.js";
+import { loadInstallScreen, loadInstallScreenFromStatusBundle } from "@/install-screen.js";
 
 const tempDirs: string[] = [];
 
@@ -163,20 +163,17 @@ describe("install screen model", () => {
     });
   });
 
-  it("uses the preloaded status bundle path when provided", () => {
+  it("builds from a preloaded status bundle when requested", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const paths = createProjectPaths(projectRoot);
     const codexPaths = createCodexPaths(homeDir);
     const bundle = inventory.inspectStatusBundle(paths, codexPaths);
     const fromBundleSpy = vi.spyOn(installStatus, "inspectInstallStatusFromStatusBundle");
-    const wrapperSpy = vi.spyOn(installStatus, "inspectInstallStatus");
-
-    const screen = loadInstallScreen(paths, codexPaths, bundle);
+    const screen = loadInstallScreenFromStatusBundle(paths, codexPaths, bundle);
 
     expect(fromBundleSpy).toHaveBeenCalledTimes(1);
     expect(fromBundleSpy).toHaveBeenCalledWith(paths, codexPaths, bundle);
-    expect(wrapperSpy).not.toHaveBeenCalled();
     expect(screen.recommendedActionId).toBe("export_all");
   });
 });

@@ -11,7 +11,7 @@ import * as inventory from "@sane/control-plane/inventory.js";
 import { exportAll } from "@sane/control-plane";
 import { installRuntime } from "@sane/control-plane";
 import { saveConfig } from "@sane/control-plane/preferences.js";
-import { loadGetStartedScreen } from "@/get-started-screen.js";
+import { loadGetStartedScreen, loadGetStartedScreenFromStatusBundle } from "@/get-started-screen.js";
 
 const tempDirs: string[] = [];
 
@@ -135,20 +135,17 @@ describe("get started screen model", () => {
     );
   });
 
-  it("uses the preloaded status bundle path when provided", () => {
+  it("builds from a preloaded status bundle when requested", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const paths = createProjectPaths(projectRoot);
     const codexPaths = createCodexPaths(homeDir);
     const bundle = inventory.inspectStatusBundle(paths, codexPaths);
     const fromBundleSpy = vi.spyOn(inventory, "inspectOnboardingSnapshotFromStatusBundle");
-    const wrapperSpy = vi.spyOn(inventory, "inspectOnboardingSnapshot");
-
-    const screen = loadGetStartedScreen(paths, codexPaths, bundle);
+    const screen = loadGetStartedScreenFromStatusBundle(paths, codexPaths, bundle);
 
     expect(fromBundleSpy).toHaveBeenCalledTimes(1);
     expect(fromBundleSpy).toHaveBeenCalledWith(paths, bundle);
-    expect(wrapperSpy).not.toHaveBeenCalled();
     expect(screen.recommendedActionId).toBe("install_runtime");
   });
 });

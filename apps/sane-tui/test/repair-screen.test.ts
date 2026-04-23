@@ -12,7 +12,7 @@ import { installRuntime } from "@sane/control-plane";
 import * as inventory from "@sane/control-plane/inventory.js";
 import { saveConfig } from "@sane/control-plane/preferences.js";
 import * as repairStatus from "@sane/control-plane/repair-status.js";
-import { loadRepairScreen } from "@/repair-screen.js";
+import { loadRepairScreen, loadRepairScreenFromStatusBundle } from "@/repair-screen.js";
 
 const tempDirs: string[] = [];
 
@@ -157,20 +157,17 @@ describe("repair screen model", () => {
     });
   });
 
-  it("uses the preloaded status bundle path when provided", () => {
+  it("builds from a preloaded status bundle when requested", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const paths = createProjectPaths(projectRoot);
     const codexPaths = createCodexPaths(homeDir);
     const bundle = inventory.inspectStatusBundle(paths, codexPaths);
     const fromBundleSpy = vi.spyOn(repairStatus, "inspectRepairStatusFromStatusBundle");
-    const wrapperSpy = vi.spyOn(repairStatus, "inspectRepairStatus");
-
-    const screen = loadRepairScreen(paths, codexPaths, bundle);
+    const screen = loadRepairScreenFromStatusBundle(paths, codexPaths, bundle);
 
     expect(fromBundleSpy).toHaveBeenCalledTimes(1);
     expect(fromBundleSpy).toHaveBeenCalledWith(paths, codexPaths, bundle);
-    expect(wrapperSpy).not.toHaveBeenCalled();
     expect(screen.installBundle).toBe("missing");
   });
 });

@@ -55,12 +55,17 @@ export interface RepairScreenModel {
 
 export function loadRepairScreen(
   paths: ProjectPaths,
-  codexPaths: CodexPaths,
-  statusBundle?: ReturnType<typeof inspectStatusBundle>
+  codexPaths: CodexPaths
 ): RepairScreenModel {
-  const status = statusBundle
-    ? inspectRepairStatusFromStatusBundle(paths, codexPaths, statusBundle)
-    : inspectRepairStatus(paths, codexPaths);
+  return loadRepairScreenFromStatusBundle(paths, codexPaths, inspectStatusBundle(paths, codexPaths));
+}
+
+export function loadRepairScreenFromStatusBundle(
+  paths: ProjectPaths,
+  codexPaths: CodexPaths,
+  statusBundle: ReturnType<typeof inspectStatusBundle>
+): RepairScreenModel {
+  const status = inspectRepairStatusFromStatusBundle(paths, codexPaths, statusBundle);
   const actions = buildRepairActionRows(listSectionActions("repair"), status.actionStatus);
 
   return {

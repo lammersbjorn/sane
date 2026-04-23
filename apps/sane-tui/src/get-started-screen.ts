@@ -38,12 +38,17 @@ export interface GetStartedScreenModel {
 
 export function loadGetStartedScreen(
   paths: ProjectPaths,
-  codexPaths: CodexPaths,
-  statusBundle: ReturnType<typeof inspectStatusBundle> | null = null
+  codexPaths: CodexPaths
 ): GetStartedScreenModel {
-  const onboarding = statusBundle
-    ? inspectOnboardingSnapshotFromStatusBundle(paths, statusBundle)
-    : inspectOnboardingSnapshot(paths, codexPaths);
+  return loadGetStartedScreenFromStatusBundle(paths, codexPaths, inspectStatusBundle(paths, codexPaths));
+}
+
+export function loadGetStartedScreenFromStatusBundle(
+  paths: ProjectPaths,
+  codexPaths: CodexPaths,
+  statusBundle: ReturnType<typeof inspectStatusBundle>
+): GetStartedScreenModel {
+  const onboarding = inspectOnboardingSnapshotFromStatusBundle(paths, statusBundle);
   const codexProfile = inspectCodexProfileSnapshot(codexPaths);
   const steps = listSectionActions("get_started").map((action) => ({
     id: action.id as GetStartedStep["id"],

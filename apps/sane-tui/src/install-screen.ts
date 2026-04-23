@@ -56,12 +56,17 @@ export interface InstallAction {
 
 export function loadInstallScreen(
   paths: ProjectPaths,
-  codexPaths: CodexPaths,
-  statusBundle?: ReturnType<typeof inspectStatusBundle>
+  codexPaths: CodexPaths
 ): InstallScreenModel {
-  const status = statusBundle
-    ? inspectInstallStatusFromStatusBundle(paths, codexPaths, statusBundle)
-    : inspectInstallStatus(paths, codexPaths);
+  return loadInstallScreenFromStatusBundle(paths, codexPaths, inspectStatusBundle(paths, codexPaths));
+}
+
+export function loadInstallScreenFromStatusBundle(
+  paths: ProjectPaths,
+  codexPaths: CodexPaths,
+  statusBundle: ReturnType<typeof inspectStatusBundle>
+): InstallScreenModel {
+  const status = inspectInstallStatusFromStatusBundle(paths, codexPaths, statusBundle);
   const inventory = status.inventory;
   const actions = buildInstallActionRows(listSectionActions("install"), status.actionStatus);
 

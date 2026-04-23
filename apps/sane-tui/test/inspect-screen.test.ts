@@ -13,7 +13,7 @@ import * as controlPlane from "@sane/control-plane";
 import * as inventory from "@sane/control-plane/inventory.js";
 import { formatInspectOverviewLines as formatSharedInspectOverviewLines, installRuntime } from "@sane/control-plane";
 import { saveConfig } from "@sane/control-plane/preferences.js";
-import { inspectOverviewLines, loadInspectScreen } from "@/inspect-screen.js";
+import { inspectOverviewLines, loadInspectScreen, loadInspectScreenFromStatusBundle } from "@/inspect-screen.js";
 
 const tempDirs: string[] = [];
 
@@ -405,20 +405,17 @@ describe("inspect screen model", () => {
     );
   });
 
-  it("uses the preloaded status bundle path when provided", () => {
+  it("builds from a preloaded status bundle when requested", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const paths = createProjectPaths(projectRoot);
     const codexPaths = createCodexPaths(homeDir);
     const bundle = inventory.inspectStatusBundle(paths, codexPaths);
     const fromBundleSpy = vi.spyOn(controlPlane, "inspectSnapshotFromStatusBundle");
-    const wrapperSpy = vi.spyOn(controlPlane, "inspectSnapshot");
-
-    const screen = loadInspectScreen(paths, codexPaths, bundle);
+    const screen = loadInspectScreenFromStatusBundle(paths, codexPaths, bundle);
 
     expect(fromBundleSpy).toHaveBeenCalledTimes(1);
     expect(fromBundleSpy).toHaveBeenCalledWith(paths, codexPaths, bundle);
-    expect(wrapperSpy).not.toHaveBeenCalled();
     expect(screen.summary).toBe("Inspect");
   });
 });

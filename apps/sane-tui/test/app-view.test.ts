@@ -55,14 +55,14 @@ describe("app view", () => {
       const actual = await vi.importActual<typeof import("@/get-started-screen.js")>("@/get-started-screen.js");
       return {
         ...actual,
-        loadGetStartedScreen: vi.fn(actual.loadGetStartedScreen)
+        loadGetStartedScreenFromStatusBundle: vi.fn(actual.loadGetStartedScreenFromStatusBundle)
       };
     });
     vi.doMock("@/install-screen.js", async () => {
       const actual = await vi.importActual<typeof import("@/install-screen.js")>("@/install-screen.js");
       return {
         ...actual,
-        loadInstallScreen: vi.fn(actual.loadInstallScreen)
+        loadInstallScreenFromStatusBundle: vi.fn(actual.loadInstallScreenFromStatusBundle)
       };
     });
 
@@ -73,12 +73,12 @@ describe("app view", () => {
 
     loadAppViewWithSpy(shell);
 
-    expect(vi.mocked(getStartedScreen.loadGetStartedScreen)).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(getStartedScreen.loadGetStartedScreen).mock.calls[0]?.[2]).toBe(
+    expect(vi.mocked(getStartedScreen.loadGetStartedScreenFromStatusBundle)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(getStartedScreen.loadGetStartedScreenFromStatusBundle).mock.calls[0]?.[2]).toBe(
       shell.statusSnapshot.statusBundle
     );
-    expect(vi.mocked(installScreen.loadInstallScreen)).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(installScreen.loadInstallScreen).mock.calls[0]?.[2]).toBe(
+    expect(vi.mocked(installScreen.loadInstallScreenFromStatusBundle)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(installScreen.loadInstallScreenFromStatusBundle).mock.calls[0]?.[2]).toBe(
       shell.statusSnapshot.statusBundle
     );
     vi.doUnmock("@/get-started-screen.js");
@@ -151,7 +151,7 @@ describe("app view", () => {
       });
 
       return {
-        loadInspectScreen: vi.fn(() => inspectModel),
+        loadInspectScreenFromStatusBundle: vi.fn(() => inspectModel),
         inspectOverviewLines: vi.fn(() => ["from-inspect-overview-selector"]),
         formatInspectPolicyPreviewLines: vi.fn(() => ["from-inspect-policy-preview-selector"])
       };
@@ -176,7 +176,7 @@ describe("app view", () => {
       const actual = await vi.importActual<typeof import("@/inspect-screen.js")>("@/inspect-screen.js");
       return {
         ...actual,
-        loadInspectScreen: vi.fn(actual.loadInspectScreen)
+        loadInspectScreenFromStatusBundle: vi.fn(actual.loadInspectScreenFromStatusBundle)
       };
     });
 
@@ -187,8 +187,8 @@ describe("app view", () => {
 
     loadAppViewWithSpy(shell);
 
-    expect(vi.mocked(inspectScreen.loadInspectScreen)).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(inspectScreen.loadInspectScreen).mock.calls[0]?.[2]).toBe(
+    expect(vi.mocked(inspectScreen.loadInspectScreenFromStatusBundle)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(inspectScreen.loadInspectScreenFromStatusBundle).mock.calls[0]?.[2]).toBe(
       shell.statusSnapshot.statusBundle
     );
     vi.doUnmock("@/inspect-screen.js");
@@ -201,7 +201,7 @@ describe("app view", () => {
       const actual = await vi.importActual<typeof import("@/repair-screen.js")>("@/repair-screen.js");
       return {
         ...actual,
-        loadRepairScreen: vi.fn(actual.loadRepairScreen)
+        loadRepairScreenFromStatusBundle: vi.fn(actual.loadRepairScreenFromStatusBundle)
       };
     });
 
@@ -212,8 +212,8 @@ describe("app view", () => {
 
     loadAppViewWithSpy(shell);
 
-    expect(vi.mocked(repairScreen.loadRepairScreen)).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(repairScreen.loadRepairScreen).mock.calls[0]?.[2]).toBe(
+    expect(vi.mocked(repairScreen.loadRepairScreenFromStatusBundle)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(repairScreen.loadRepairScreenFromStatusBundle).mock.calls[0]?.[2]).toBe(
       shell.statusSnapshot.statusBundle
     );
     vi.doUnmock("@/repair-screen.js");
@@ -437,7 +437,7 @@ describe("app view", () => {
       };
 
       return {
-        loadInspectScreen: vi.fn(() => inspectModel),
+        loadInspectScreenFromStatusBundle: vi.fn(() => inspectModel),
         inspectOverviewLines: vi.fn(() => ["inspect-overview"]),
         formatInspectPolicyPreviewLines: vi.fn(() => ["from-policy-presenter"])
       };
@@ -540,7 +540,7 @@ describe("app view", () => {
       const actual = await vi.importActual<typeof import("@/inspect-screen.js")>("@/inspect-screen.js");
       return {
         ...actual,
-        loadInspectScreen: vi.fn(actual.loadInspectScreen)
+        loadInspectScreenFromStatusBundle: vi.fn(actual.loadInspectScreenFromStatusBundle)
       };
     });
 
@@ -554,7 +554,7 @@ describe("app view", () => {
 
     loadAppViewWithSpy(shell);
 
-    expect(vi.mocked(inspectScreen.loadInspectScreen)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(inspectScreen.loadInspectScreenFromStatusBundle)).toHaveBeenCalledTimes(1);
     vi.doUnmock("@/inspect-screen.js");
     vi.resetModules();
   });

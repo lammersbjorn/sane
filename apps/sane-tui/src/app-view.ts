@@ -1,15 +1,15 @@
 import { type TuiShell, currentAction } from "@/shell.js";
 import { loadDashboardView } from "@/dashboard.js";
-import { loadGetStartedScreen } from "@/get-started-screen.js";
-import { loadInstallScreen } from "@/install-screen.js";
+import { loadGetStartedScreenFromStatusBundle } from "@/get-started-screen.js";
+import { loadInstallScreenFromStatusBundle } from "@/install-screen.js";
 import {
   formatInspectPolicyPreviewLines,
   inspectOverviewLines,
-  loadInspectScreen
+  loadInspectScreenFromStatusBundle
 } from "@/inspect-screen.js";
 import { loadOverlayModel, type OverlayModel } from "@/overlay-models.js";
 import { loadPreferencesScreen } from "@/preferences-screen.js";
-import { loadRepairScreen } from "@/repair-screen.js";
+import { loadRepairScreenFromStatusBundle } from "@/repair-screen.js";
 import { type UiCommandId } from "@/command-registry.js";
 
 export interface SaneTuiAppView {
@@ -50,19 +50,19 @@ const FOOTER_STATUS_SPECS = [
 ] as const;
 
 export function loadAppView(shell: TuiShell): SaneTuiAppView {
-  const getStarted = loadGetStartedScreen(
+  const getStarted = loadGetStartedScreenFromStatusBundle(
     shell.paths,
     shell.codexPaths,
     shell.statusSnapshot.statusBundle
   );
   const dashboard = loadDashboardView(shell, getStarted);
-  const install = loadInstallScreen(shell.paths, shell.codexPaths, shell.statusSnapshot.statusBundle);
+  const install = loadInstallScreenFromStatusBundle(shell.paths, shell.codexPaths, shell.statusSnapshot.statusBundle);
   const inspect = lazy(() =>
-    loadInspectScreen(shell.paths, shell.codexPaths, shell.statusSnapshot.statusBundle)
+    loadInspectScreenFromStatusBundle(shell.paths, shell.codexPaths, shell.statusSnapshot.statusBundle)
   );
   const preferences = lazy(() => loadPreferencesScreen(shell.paths, shell.codexPaths));
   const repair = lazy(() =>
-    loadRepairScreen(shell.paths, shell.codexPaths, shell.statusSnapshot.statusBundle)
+    loadRepairScreenFromStatusBundle(shell.paths, shell.codexPaths, shell.statusSnapshot.statusBundle)
   );
 
   return {
@@ -100,11 +100,11 @@ export function loadAppView(shell: TuiShell): SaneTuiAppView {
 function sectionOverviewLines(
   dashboard: ReturnType<typeof loadDashboardView>,
   models: {
-    getStarted: ReturnType<typeof loadGetStartedScreen>;
-    install: ReturnType<typeof loadInstallScreen>;
-    inspect: () => ReturnType<typeof loadInspectScreen>;
+    getStarted: ReturnType<typeof loadGetStartedScreenFromStatusBundle>;
+    install: ReturnType<typeof loadInstallScreenFromStatusBundle>;
+    inspect: () => ReturnType<typeof loadInspectScreenFromStatusBundle>;
     preferences: () => ReturnType<typeof loadPreferencesScreen>;
-    repair: () => ReturnType<typeof loadRepairScreen>;
+    repair: () => ReturnType<typeof loadRepairScreenFromStatusBundle>;
   }
 ): string[] {
 
@@ -188,8 +188,8 @@ function sectionOverviewLines(
 
 function selectedActionHelpLines(
   shell: TuiShell,
-  getStarted: ReturnType<typeof loadGetStartedScreen>,
-  inspect: () => ReturnType<typeof loadInspectScreen>,
+  getStarted: ReturnType<typeof loadGetStartedScreenFromStatusBundle>,
+  inspect: () => ReturnType<typeof loadInspectScreenFromStatusBundle>,
   preferences: () => ReturnType<typeof loadPreferencesScreen>
 ): string[] {
   const action = currentAction(shell);
@@ -224,8 +224,8 @@ type SelectedActionHelpBuilder = (action: SelectedAction) => string[];
 type ProfileActionHelpModel = Parameters<typeof formatProfileActionHelp>[1];
 
 function selectedActionHelpBuilders(
-  getStarted: ReturnType<typeof loadGetStartedScreen>,
-  inspect: () => ReturnType<typeof loadInspectScreen>,
+  getStarted: ReturnType<typeof loadGetStartedScreenFromStatusBundle>,
+  inspect: () => ReturnType<typeof loadInspectScreenFromStatusBundle>,
   preferences: () => ReturnType<typeof loadPreferencesScreen>
 ): Partial<Record<UiCommandId, SelectedActionHelpBuilder>> {
   return {
