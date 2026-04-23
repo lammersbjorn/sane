@@ -184,7 +184,7 @@ describe("dashboard view", () => {
     shell.statusSnapshot = {
       ...shell.statusSnapshot,
       statusBundle: {
-        ...bundle,
+        ...shell.statusSnapshot.statusBundle,
         driftItems: [],
         primary: {
           ...bundle.primary,
@@ -198,22 +198,22 @@ describe("dashboard view", () => {
             customAgents: "installed",
             installBundle: "installed"
           }
-        }
-      },
-      runtimeState: {
-        ...shell.statusSnapshot.runtimeState,
-        current: {
-          version: 2,
-          objective: "initialize sane runtime",
-          phase: "setup",
-          activeTasks: ["install sane runtime"],
-          blockingQuestions: [],
-          verification: {
-            status: "pending",
-            summary: "runtime scaffolding created"
-          },
-          lastCompactionTsUnix: null,
-          extra: {}
+        },
+        runtimeState: {
+          ...shell.statusSnapshot.statusBundle.runtimeState,
+          current: {
+            version: 2,
+            objective: "initialize sane runtime",
+            phase: "setup",
+            activeTasks: ["install sane runtime"],
+            blockingQuestions: [],
+            verification: {
+              status: "pending",
+              summary: "runtime scaffolding created"
+            },
+            lastCompactionTsUnix: null,
+            extra: {}
+          }
         }
       }
     };

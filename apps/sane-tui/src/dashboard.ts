@@ -82,7 +82,8 @@ export function loadDashboardView(
 }
 
 function buildStatusChips(statusSnapshot: TuiShell["statusSnapshot"]): DashboardChip[] {
-  const { statusBundle, runtimeState } = statusSnapshot;
+  const { statusBundle } = statusSnapshot;
+  const runtimeState = statusBundle.runtimeState;
   const chips: DashboardChip[] = PRIMARY_STATUS_CHIP_SPECS.map((chip) => {
     const presentation = presentManagedStatus(
       chip.pick(statusBundle.primary.status) as ManagedStatusKind

@@ -105,7 +105,6 @@ export interface TuiShell {
 
 export interface ShellStatusSnapshot {
   statusBundle: ReturnType<typeof inspectStatusBundle>;
-  runtimeState: ReturnType<typeof inspectStatusBundle>["runtimeState"];
 }
 
 export function createTuiShell(
@@ -115,7 +114,7 @@ export function createTuiShell(
 ): TuiShell {
   const sectionId = COMMAND_METADATA_REGISTRY.shortcuts[launchShortcut];
   const statusSnapshot = buildStatusSnapshot(paths, codexPaths);
-  const lastSummary = statusSnapshot.runtimeState.historyPreview.latestEvent?.summary ?? null;
+  const lastSummary = statusSnapshot.statusBundle.runtimeState.historyPreview.latestEvent?.summary ?? null;
   return {
     paths,
     codexPaths,
@@ -429,10 +428,8 @@ export function executeUiCommand(
 }
 
 function buildStatusSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): ShellStatusSnapshot {
-  const statusBundle = inspectStatusBundle(paths, codexPaths);
   return {
-    runtimeState: statusBundle.runtimeState,
-    statusBundle
+    statusBundle: inspectStatusBundle(paths, codexPaths)
   };
 }
 
