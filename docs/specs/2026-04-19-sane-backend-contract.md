@@ -140,10 +140,26 @@ These are the backend actions the TUI is allowed to call in the current phase.
     - `opensrc`
   - keep it separate from the broad recommended integrations profile
 
+- `preview_statusline_profile`
+  - compute read-only optional native Codex TUI changes
+  - current target keys:
+    - `tui.notification_condition`
+    - `tui.status_line`
+    - `tui.terminal_title`
+  - keep this additive and native-config-only; no Sane-owned custom statusline product surface
+
 - `apply_opencode_profile`
   - backup current `~/.codex/config.toml` first when it exists
   - write only:
     - `mcp_servers.opensrc`
+  - preserve all unrelated user config
+
+- `apply_statusline_profile`
+  - backup current `~/.codex/config.toml` first when it exists
+  - write only:
+    - `tui.notification_condition`
+    - `tui.status_line`
+    - `tui.terminal_title`
   - preserve all unrelated user config
 
 - `apply_codex_profile`

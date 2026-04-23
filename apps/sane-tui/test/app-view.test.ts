@@ -268,6 +268,7 @@ describe("app view", () => {
     const view = loadAppView(shell);
 
     expect(view.selectedAction.id).toBe("preview_cloudflare_profile");
+    expect(view.sectionOverviewLines.join("\n")).toContain("statusline profile: missing");
     expect(view.sectionOverviewLines.join("\n")).toContain("cloudflare profile: missing");
     expect(view.sectionOverviewLines.join("\n")).toContain("explorer: gpt-5.4-mini/low");
     expect(view.sectionOverviewLines.join("\n")).toContain("execution: gpt-5.3-codex/medium");
@@ -289,6 +290,7 @@ describe("app view", () => {
     const view = loadAppView(shell);
 
     expect(view.selectedAction.id).toBe("apply_opencode_profile");
+    expect(view.sectionOverviewLines.join("\n")).toContain("statusline profile: missing");
     expect(view.sectionOverviewLines.join("\n")).toContain("opencode profile: missing");
     expect(view.sectionOverviewLines.join("\n")).toContain("explorer: gpt-5.4-mini/low");
     expect(view.sectionOverviewLines.join("\n")).toContain("execution: gpt-5.3-codex/medium");

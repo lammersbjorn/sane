@@ -162,6 +162,7 @@ function sectionOverviewLines(
         `local telemetry data: ${presentFlag(preferences.telemetryFiles.dirPresent)}`,
         `telemetry files: summary ${presentFlag(preferences.telemetryFiles.summaryPresent)}, events ${presentFlag(preferences.telemetryFiles.eventsPresent)}, queue ${presentFlag(preferences.telemetryFiles.queuePresent)}`,
         `enabled packs: ${preferences.enabledPacks.join(", ")}`,
+        `statusline profile: ${preferences.statuslineAudit.status} (${preferences.statuslineAudit.recommendedChangeCount} recommended changes; apply ${preferences.statuslineApply.status})`,
         `cloudflare profile: ${preferences.cloudflareAudit.status} (${preferences.cloudflareAudit.recommendedChangeCount} recommended changes; apply ${preferences.cloudflareApply.status})`,
         `opencode profile: ${preferences.opencodeAudit.status} (${preferences.opencodeAudit.recommendedChangeCount} recommended changes; apply ${preferences.opencodeApply.status})`
       ];

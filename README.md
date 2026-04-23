@@ -112,6 +112,8 @@ There is also a separate opt-in Cloudflare profile.
 
 And a separate opt-in Opencode compatibility profile.
 
+And a separate opt-in native Codex statusline/title profile.
+
 ### Optional guidance packs
 
 Built-in packs currently exposed in `Sane`:
