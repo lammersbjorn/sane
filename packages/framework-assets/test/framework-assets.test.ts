@@ -20,6 +20,7 @@ import {
   createSaneAgentTemplate,
   createSaneExplorerAgentTemplate,
   createSaneGlobalAgentsOverlay,
+  createSaneRepoAgentsOverlay,
   createSaneReviewerAgentTemplate,
   createSaneRouterSkill,
   corePackAssetSourceProvenance,
@@ -181,7 +182,7 @@ describe("framework asset parity", () => {
       REALTIME_REASONING: roles.realtimeReasoning,
       ENABLED_PACK_ROUTER_NOTES: [
         "- caveman pack active: prefer terse, token-efficient prose when normal clarity still holds",
-        "- rtk pack active: if RTK policy is present, route shell work through RTK instead of raw shell"
+        "- rtk pack active: route shell work through RTK instead of raw shell"
       ].join("\n"),
       ENABLED_PACK_SKILL_SELECTIONS: [
         "- caveman task picks: communication, brevity, token-efficiency -> sane-caveman"
@@ -231,6 +232,42 @@ describe("framework asset parity", () => {
     expect(body).toContain("frontend-craft pack active");
     expect(body).not.toContain("caveman pack active");
     expect(body).not.toContain("rtk pack active");
+    expect(body).not.toContain("{{");
+  });
+
+  it("repo overlay renders from the checked-in repo template and stays distinct from the global overlay", () => {
+    const roles = roleGuidance();
+    const packs: GuidancePacks = {
+      caveman: false,
+      cavemem: true,
+      rtk: true,
+      frontendCraft: false
+    };
+    const manifest = readCoreManifest();
+    const template = readCoreAsset(manifest.assets.repoOverlay);
+    const body = createSaneRepoAgentsOverlay(packs, roles);
+    const expected = renderTemplate(template, {
+      COORDINATOR_MODEL: roles.coordinatorModel,
+      COORDINATOR_REASONING: roles.coordinatorReasoning,
+      EXECUTION_MODEL: roles.executionModel,
+      EXECUTION_REASONING: roles.executionReasoning,
+      SIDECAR_MODEL: roles.sidecarModel,
+      SIDECAR_REASONING: roles.sidecarReasoning,
+      VERIFIER_MODEL: roles.verifierModel,
+      VERIFIER_REASONING: roles.verifierReasoning,
+      REALTIME_MODEL: roles.realtimeModel,
+      REALTIME_REASONING: roles.realtimeReasoning,
+      ENABLED_PACK_OVERLAY_NOTES: [
+        "- cavemem pack active: prefer compact durable memory and handoff summaries",
+        "- rtk pack active: prefer RTK-routed shell execution"
+      ].join("\n"),
+      ENABLED_PACK_SKILL_SELECTIONS: ""
+    });
+
+    expect(body).toBe(expected);
+    expect(body).toContain("Start from repo `AGENTS.md`");
+    expect(body).toContain("Use the repo's own verify commands");
+    expect(body).not.toBe(createSaneGlobalAgentsOverlay(packs, roles));
     expect(body).not.toContain("{{");
   });
 
@@ -438,13 +475,12 @@ describe("framework asset parity", () => {
     expect(agent).toContain(`name = "${SANE_AGENT_NAME.replace("-", "_")}"`);
     expect(agent).toContain(`model = "${roles.coordinatorModel}"`);
     expect(agent).toContain("pick the most task-specific one");
-    expect(agent).toContain("design-taste-frontend");
-    expect(agent).toContain("impeccable");
+    expect(agent).toContain("brief milestone updates only");
     expect(reviewer).toBe(expectedReviewer);
     expect(reviewer).toContain(`name = "${SANE_REVIEWER_AGENT_NAME.replace("-", "_")}"`);
     expect(reviewer).toContain(`model = "${roles.verifierModel}"`);
     expect(reviewer).toContain("dedicated review skills");
-    expect(reviewer).toContain("impeccable");
+    expect(reviewer).toContain("missing validation");
     expect(explorer).toBe(expectedExplorer);
     expect(explorer).toContain(`name = "${SANE_EXPLORER_AGENT_NAME.replace("-", "_")}"`);
     expect(explorer).toContain(`model = "${roles.sidecarModel}"`);

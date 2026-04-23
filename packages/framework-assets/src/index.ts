@@ -213,6 +213,28 @@ export function createSaneGlobalAgentsOverlay(
   });
 }
 
+export function createSaneRepoAgentsOverlay(
+  packs: GuidancePacks,
+  roles: ModelRoutingGuidance
+): string {
+  return renderCoreAsset(CORE_PACK_MANIFEST.assets.repoOverlay, {
+    COORDINATOR_MODEL: roles.coordinatorModel,
+    COORDINATOR_REASONING: roles.coordinatorReasoning,
+    EXECUTION_MODEL: roles.executionModel,
+    EXECUTION_REASONING: roles.executionReasoning,
+    SIDECAR_MODEL: roles.sidecarModel,
+    SIDECAR_REASONING: roles.sidecarReasoning,
+    VERIFIER_MODEL: roles.verifierModel,
+    VERIFIER_REASONING: roles.verifierReasoning,
+    REALTIME_MODEL: roles.realtimeModel,
+    REALTIME_REASONING: roles.realtimeReasoning,
+    ENABLED_PACK_OVERLAY_NOTES: enabledPackEntries(packs)
+      .map(([, entry]) => entry.overlayNote)
+      .join("\n"),
+    ENABLED_PACK_SKILL_SELECTIONS: enabledPackSkillSelections(packs)
+  });
+}
+
 export function optionalPackSkillName(pack: string): string | undefined {
   return optionalPackSkills(pack)[0]?.name;
 }

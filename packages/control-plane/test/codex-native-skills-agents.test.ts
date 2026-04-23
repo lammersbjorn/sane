@@ -12,6 +12,7 @@ import {
   createOptionalPackSkill,
   createOptionalPackSkills,
   createSaneGlobalAgentsOverlay,
+  createSaneRepoAgentsOverlay,
   createSaneRouterSkill
 } from "@sane/framework-assets";
 import { createProjectPaths, createCodexPaths } from "@sane/platform";
@@ -136,14 +137,54 @@ describe("codex-native skills and agents", () => {
 
     const globalBody = readFileSync(codexPaths.globalAgentsMd, "utf8");
     const repoBody = readFileSync(projectPaths.repoAgentsMd, "utf8");
+    const roles = {
+      coordinatorModel: config.models.coordinator.model,
+      coordinatorReasoning: config.models.coordinator.reasoningEffort,
+      executionModel: "gpt-5.3-codex",
+      executionReasoning: "medium",
+      sidecarModel: config.models.sidecar.model,
+      sidecarReasoning: config.models.sidecar.reasoningEffort,
+      verifierModel: config.models.verifier.model,
+      verifierReasoning: config.models.verifier.reasoningEffort,
+      realtimeModel: "gpt-5.3-codex-spark",
+      realtimeReasoning: "low"
+    };
 
     expect(globalBody).toContain("# User notes");
     expect(globalBody).toContain(SANE_GLOBAL_AGENTS_BEGIN);
     expect(globalBody).toContain(SANE_GLOBAL_AGENTS_END);
-    expect(globalBody).toContain("rtk pack active");
+    expect(globalBody).toContain(
+      createSaneGlobalAgentsOverlay(
+        {
+          caveman: false,
+          cavemem: false,
+          rtk: true,
+          frontendCraft: false
+        },
+        roles
+      )
+    );
     expect(repoBody).toContain("# Repo notes");
     expect(repoBody).toContain(SANE_REPO_AGENTS_BEGIN);
     expect(repoBody).toContain(SANE_REPO_AGENTS_END);
+    expect(repoBody).toContain(
+      createSaneRepoAgentsOverlay(
+        {
+          caveman: false,
+          cavemem: false,
+          rtk: true,
+          frontendCraft: false
+        },
+        roles
+      )
+    );
+    expect(repoBody).toContain("Prefer repo-local truth over generic memory or stale chat context");
+    expect(repoBody).not.toBe(globalBody);
+
+    const inventory = inspectCodexSkillsAndAgents(projectPaths, codexPaths);
+    expect(inventory.find((item) => item.name === "repo-agents")?.status).toBe(
+      InventoryStatus.Installed
+    );
 
     const uninstallGlobal = uninstallGlobalAgents(codexPaths);
     const uninstallRepo = uninstallRepoAgents(projectPaths);

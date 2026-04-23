@@ -20,6 +20,7 @@ import {
   SANE_REPO_AGENTS_END,
   createOptionalPackSkills,
   createSaneGlobalAgentsOverlay,
+  createSaneRepoAgentsOverlay,
   createSaneRouterSkill,
   optionalPackNames,
   optionalPackSkillNames,
@@ -128,7 +129,8 @@ export function uninstallRepoAgents(paths: ProjectPaths): OperationResult {
 export function inspectCodexSkillsAndAgents(paths: ProjectPaths, codexPaths: CodexPaths) {
   const { packs, roles } = activeGuidance(paths, codexPaths);
   const expectedSkill = createSaneRouterSkill(packs, roles);
-  const expectedAgents = createSaneGlobalAgentsOverlay(packs, roles);
+  const expectedGlobalAgents = createSaneGlobalAgentsOverlay(packs, roles);
+  const expectedRepoAgents = createSaneRepoAgentsOverlay(packs, roles);
 
   const userSkillPath = join(codexPaths.userSkillsDir, "sane-router", "SKILL.md");
   const repoSkillPath = join(paths.repoSkillsDir, "sane-router", "SKILL.md");
@@ -153,7 +155,7 @@ export function inspectCodexSkillsAndAgents(paths: ProjectPaths, codexPaths: Cod
       "repo-agents",
       SANE_REPO_AGENTS_BEGIN,
       SANE_REPO_AGENTS_END,
-      expectedAgents,
+      expectedRepoAgents,
       true,
       "export repo-agents"
     ),
@@ -162,7 +164,7 @@ export function inspectCodexSkillsAndAgents(paths: ProjectPaths, codexPaths: Cod
       "global-agents",
       SANE_GLOBAL_AGENTS_BEGIN,
       SANE_GLOBAL_AGENTS_END,
-      expectedAgents,
+      expectedGlobalAgents,
       false,
       "export global-agents"
     )
@@ -244,11 +246,15 @@ function exportAgentsTarget(
   const { packs, roles } = activeGuidance(paths, codexPaths);
   mkdirSync(dirname(agentsPath), { recursive: true });
   const existing = existsSync(agentsPath) ? readFileSync(agentsPath, "utf8") : "";
+  const overlay =
+    inventoryName === "repo-agents"
+      ? createSaneRepoAgentsOverlay(packs, roles)
+      : createSaneGlobalAgentsOverlay(packs, roles);
   const updated = upsertManagedBlock(
     existing,
     begin,
     end,
-    createSaneGlobalAgentsOverlay(packs, roles)
+    overlay
   );
   writeFileSync(agentsPath, updated, "utf8");
 
