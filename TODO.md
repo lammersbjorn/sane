@@ -263,8 +263,17 @@ pnpm check
   - capability-gated only, never assumed
   - prefer only for latency-first `realtime` work where it actually fits
   - preserve normal fallback for `implementation` / `verifier` / unavailable-plan cases
-- [ ] Exact contents/split of `Sane`'s own minimal self-hosting `AGENTS.md` vs repo skill files
-- [ ] Exact self-hosting milestone checklist
+- [x] Exact contents/split of `Sane`'s own minimal self-hosting `AGENTS.md` vs repo skill files:
+  - root `AGENTS.md` stays small and durable
+  - Sane-building procedure lives in `.agents/skills/sane-self-hosting/SKILL.md`
+  - continuation behavior lives in `.agents/skills/continue/SKILL.md`
+  - this split is dogfooding only, not a default requirement for user repos
+- [ ] Exact self-hosting milestone checklist:
+  - prove exported `continue` skill installs through Sane, not only local `.agents`
+  - prove exported router/custom-agent guidance uses current model routing and enabled packs
+  - prove `.sane` runtime state is enough for handoff without Codex native memories
+  - add shadow-mode inspection before any self-improvement/self-heal runner
+  - keep all self-hosting surfaces reversible and optional outside this repo
 - [ ] Exact TypeScript package split and TS-only packaging checklist
 - [x] internal TS launch supports no-args / `settings` / `inspect` / `repair`, backend verbs, and `hook session-start`
 - [x] internal TS preview is smart-routed across non-TTY text vs TTY live terminal
