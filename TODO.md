@@ -141,6 +141,7 @@ Implemented:
 - TypeScript TUI now has explicit shell, view, editor, and overlay model layers
 - TypeScript TUI now also owns pure input/key handling plus internal non-interactive CLI parsing/execution for backend verbs and `hook session-start`, while the public shipped entrypoint still remains Rust-owned for now
 - TS runtime resolution now works for internal text and live terminal preview paths via workspace package `exports`, self-package app imports, terminal-loop wiring, and `tsx`; the remaining blockers are real terminal parity plus a deliberate packaged public entrypoint
+- internal TS preview launch is now unified through one smart `tsx` entrypoint that chooses live terminal on TTY launch commands and falls back to text for non-TTY or backend command flows
 - app-local TUI imports now use `@/*`, and workspace package imports now use `@sane/*`
 - optional repo-local skill export now exists as an explicit separate target and is not part of `export all`
 - optional repo-local AGENTS export now exists as an explicit separate target and is not part of `export all`

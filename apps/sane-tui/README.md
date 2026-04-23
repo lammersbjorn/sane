@@ -9,7 +9,7 @@ Current role:
 - owns shell state for section selection, confirmations, notices, and editor flows
 - owns pure input/key handling on top of the shell state machine
 - owns internal non-interactive TS CLI parsing/execution for backend verbs and hook output
-- exposes internal text and live terminal preview paths through `tsx`
+- exposes internal smart/text/live preview paths through `tsx`
 - owns render-ready dashboard / overlay / app view models
 - owns internal text-frame rendering scaffolding for the future TS terminal driver
 - owns internal text-driver glue that wires discovery, shell, input, and text rendering together
@@ -59,6 +59,7 @@ Boundary rules:
 Verification:
 
 ```bash
+pnpm --filter @sane/sane-tui run preview settings
 pnpm --filter @sane/sane-tui run preview:terminal settings
 pnpm --filter @sane/sane-tui run preview:text settings
 pnpm --filter @sane/sane-tui test
