@@ -842,10 +842,26 @@ function readCodexConfig(path: string): TomlTable {
 
 function writeCodexConfigBackup(paths: ProjectPaths, codexPaths: CodexPaths): string {
   const timestamp = Math.floor(Date.now() / 1000);
-  const backupPath = join(paths.codexConfigBackupsDir, `config-${timestamp}.toml`);
   mkdirSync(paths.codexConfigBackupsDir, { recursive: true });
+  const backupPath = nextCodexConfigBackupPath(paths, timestamp);
   copyFileSync(codexPaths.configToml, backupPath);
   return backupPath;
+}
+
+function nextCodexConfigBackupPath(paths: ProjectPaths, timestamp: number): string {
+  const basePath = join(paths.codexConfigBackupsDir, `config-${timestamp}.toml`);
+  if (!existsSync(basePath)) {
+    return basePath;
+  }
+
+  for (let index = 1; index < 1000; index += 1) {
+    const candidate = join(paths.codexConfigBackupsDir, `config-${timestamp}-${index}.toml`);
+    if (!existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  throw new Error(`could not allocate unique Codex config backup path for ${timestamp}`);
 }
 
 function latestCodexConfigBackup(paths: ProjectPaths): string | null {
@@ -858,9 +874,27 @@ function listCodexConfigBackups(paths: ProjectPaths): string[] {
   }
 
   return readdirSync(paths.codexConfigBackupsDir, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && /^config-\d+\.toml$/.test(entry.name))
-    .map((entry) => join(paths.codexConfigBackupsDir, entry.name))
-    .sort();
+    .filter((entry) => entry.isFile())
+    .map((entry) => parseCodexConfigBackupEntry(paths, entry.name))
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== null)
+    .sort((left, right) => left.timestamp - right.timestamp || left.index - right.index)
+    .map((entry) => entry.path);
+}
+
+function parseCodexConfigBackupEntry(
+  paths: ProjectPaths,
+  name: string
+): { path: string; timestamp: number; index: number } | null {
+  const match = /^config-(\d+)(?:-(\d+))?\.toml$/.exec(name);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    path: join(paths.codexConfigBackupsDir, name),
+    timestamp: Number(match[1]),
+    index: match[2] ? Number(match[2]) : 0
+  };
 }
 
 function previewCodexProfileFromAudit(

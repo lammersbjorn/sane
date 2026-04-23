@@ -280,6 +280,26 @@ describe("codex config control plane", () => {
     expect(body).toContain('model_reasoning_effort = "medium"');
   });
 
+  it("does not overwrite codex config backups created in the same second", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+    writeFileSync(codexPaths.configToml, 'model = "gpt-5.2"\n', "utf8");
+    const first = backupCodexConfig(projectPaths, codexPaths);
+    writeFileSync(codexPaths.configToml, 'model = "gpt-5.4"\n', "utf8");
+    const second = backupCodexConfig(projectPaths, codexPaths);
+
+    expect(first.pathsTouched[1]).not.toBe(second.pathsTouched[1]);
+    expect(inspectCodexConfigBackupSnapshot(projectPaths)).toMatchObject({
+      restoreAvailable: true,
+      backupCount: 2,
+      latestBackupPath: second.pathsTouched[1]
+    });
+  });
+
   it("ignores stray backup-dir entries when reporting and restoring backups", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
