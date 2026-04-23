@@ -12,6 +12,7 @@ Current role:
 - owns render-ready dashboard / overlay / app view models
 - owns internal text-frame rendering scaffolding for the future TS terminal driver
 - owns internal text-driver glue that wires discovery, shell, input, and text rendering together
+- owns terminal-key decoding for the future real TS key loop
 - does not yet render a real terminal UI by itself
 
 Important files:
@@ -38,6 +39,8 @@ Important files:
   - internal text-frame renderer for the TS app view
 - `src/text-driver.ts`
   - internal runtime glue for discovery + shell + input driver + text rendering
+- `src/terminal-keys.ts`
+  - terminal escape-sequence decoding into TS TUI input keys
 
 Boundary rules:
 
