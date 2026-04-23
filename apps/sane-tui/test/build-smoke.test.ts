@@ -15,13 +15,21 @@ describe("built sane tui bin", () => {
     const distDir = join(process.cwd(), "dist");
     const packageJson = JSON.parse(readFileSync(join(distDir, "package.json"), "utf8")) as {
       bin?: Record<string, string>;
+      description?: string;
+      license?: string;
+      name?: string;
       private?: boolean;
       type?: string;
+      version?: string;
     };
     const saneBin = packageJson.bin?.sane;
 
+    expect(packageJson.name).toBe("@sane/sane-tui");
+    expect(packageJson.version).toBe("0.1.0");
     expect(packageJson.private).toBe(false);
     expect(packageJson.type).toBe("commonjs");
+    expect(packageJson.license).toBe("MIT OR Apache-2.0");
+    expect(packageJson.description).toBe("Sane terminal onboarding and setup surface for Codex.");
     expect(saneBin).toBe("./bin/sane.cjs");
 
     const inspect = spawnSync(process.execPath, [join(distDir, saneBin!) , "inspect"], {
