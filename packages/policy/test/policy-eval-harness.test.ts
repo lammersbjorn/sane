@@ -181,6 +181,49 @@ describe("policy eval harness", () => {
     });
   });
 
+  it("returns structured failures for roles mismatches", () => {
+    const result = evaluatePolicyFixtures([
+      {
+        caseId: "bad-roles",
+        input: {
+          intent: Intent.Question,
+          taskShape: TaskShape.Trivial,
+          risk: Level.Low,
+          ambiguity: Level.Low,
+          parallelism: Parallelism.None,
+          contextPressure: Level.Low,
+          runState: RunState.Exploring
+        },
+        expected: {
+          roles: {
+            sidecar: true,
+            verifier: true
+          }
+        }
+      }
+    ]);
+
+    expect(result).toEqual({
+      passed: false,
+      caseCount: 1,
+      failureCount: 2,
+      failures: [
+        {
+          caseId: "bad-roles",
+          field: "roles.sidecar",
+          expected: true,
+          actual: false
+        },
+        {
+          caseId: "bad-roles",
+          field: "roles.verifier",
+          expected: true,
+          actual: false
+        }
+      ]
+    });
+  });
+
   it("returns multiple structured failures for one case", () => {
     const result = evaluatePolicyFixtures([
       {
