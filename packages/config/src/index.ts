@@ -5,6 +5,7 @@ import { parse as parseToml } from 'toml';
 import { z } from 'zod';
 
 export const AVAILABLE_MODELS = [
+  'gpt-5.5',
   'gpt-5.4',
   'gpt-5.4-mini',
   'gpt-5.3-codex',
@@ -18,12 +19,12 @@ export const AVAILABLE_MODELS = [
 ] as const;
 
 export const PICKER_MODELS = [
+  'gpt-5.5',
   'gpt-5.4',
   'gpt-5.4-mini',
   'gpt-5.3-codex',
   'gpt-5.3-codex-spark',
   'gpt-5.2',
-  'gpt-5.2-codex',
   'gpt-5.1-codex',
   'gpt-5.1-codex-mini',
   'gpt-5-codex',
@@ -99,6 +100,7 @@ export interface LocalConfig {
 const reasoningEffortSchema = z.enum(REASONING_EFFORTS);
 const telemetryLevelSchema = z.enum(TELEMETRY_LEVELS);
 const COORDINATOR_PRIORITY = [
+  'gpt-5.5',
   'gpt-5.4',
   'gpt-5.3-codex',
   'gpt-5.2-codex',
@@ -112,6 +114,7 @@ const COORDINATOR_PRIORITY = [
 ] as const;
 const EXECUTION_PRIORITY = [
   'gpt-5.3-codex',
+  'gpt-5.5',
   'gpt-5.2-codex',
   'gpt-5.4',
   'gpt-5.2',
@@ -128,6 +131,7 @@ const SIDECAR_PRIORITY = [
   'gpt-5.3-codex',
   'gpt-5.2-codex',
   'gpt-5.4',
+  'gpt-5.5',
   'gpt-5.2',
   'gpt-5.1-codex-mini',
   'gpt-5.1-codex',
@@ -135,6 +139,7 @@ const SIDECAR_PRIORITY = [
   'gpt-5.1-codex-max',
 ] as const;
 const VERIFIER_PRIORITY = [
+  'gpt-5.5',
   'gpt-5.4',
   'gpt-5.3-codex',
   'gpt-5.2-codex',
@@ -152,6 +157,7 @@ const REALTIME_PRIORITY = [
   'gpt-5.3-codex',
   'gpt-5.2-codex',
   'gpt-5.4',
+  'gpt-5.5',
   'gpt-5.2',
   'gpt-5.1-codex-mini',
   'gpt-5.1-codex',
@@ -163,6 +169,9 @@ const EXECUTION_REASONING: readonly ReasoningEffort[] = ['medium', 'high', 'low'
 const SIDECAR_REASONING: readonly ReasoningEffort[] = ['medium', 'low', 'high', 'xhigh'];
 const VERIFIER_REASONING: readonly ReasoningEffort[] = ['high', 'medium', 'xhigh', 'low'];
 const REALTIME_REASONING: readonly ReasoningEffort[] = ['low', 'medium', 'high', 'xhigh'];
+const COORDINATOR_REASONING_BY_MODEL: Record<string, readonly ReasoningEffort[]> = {
+  'gpt-5.5': ['medium', 'high', 'xhigh', 'low'],
+};
 
 const modelPresetSchema = z.object({
   model: z.string(),
@@ -282,7 +291,12 @@ export function createRecommendedModelRoutingPresets(
 
   return {
     coordinator:
-      pickModelPreset(environment.availableModels, COORDINATOR_PRIORITY, COORDINATOR_REASONING) ??
+      pickModelPreset(
+        environment.availableModels,
+        COORDINATOR_PRIORITY,
+        COORDINATOR_REASONING,
+        COORDINATOR_REASONING_BY_MODEL,
+      ) ??
       selectAvailableModelPreset(environment.availableModels, true, COORDINATOR_REASONING)!,
     execution:
       pickModelPreset(environment.availableModels, EXECUTION_PRIORITY, EXECUTION_REASONING) ??
@@ -709,6 +723,7 @@ function pickModelPreset(
   availableModels: readonly DetectedAvailableModel[],
   priority: readonly string[],
   reasoningPriority: readonly ReasoningEffort[],
+  reasoningPriorityByModel: Readonly<Record<string, readonly ReasoningEffort[]>> = {},
 ): ModelPreset | undefined {
   for (const slug of priority) {
     const model = availableModels.find((candidate) => candidate.slug === slug);
@@ -716,8 +731,9 @@ function pickModelPreset(
       continue;
     }
 
+    const candidateReasoningPriority = reasoningPriorityByModel[slug] ?? reasoningPriority;
     const reasoningEffort =
-      reasoningPriority.find((candidate) => model.reasoningEfforts.includes(candidate)) ??
+      candidateReasoningPriority.find((candidate) => model.reasoningEfforts.includes(candidate)) ??
       model.reasoningEfforts[0];
     if (!reasoningEffort) {
       continue;

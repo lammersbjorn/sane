@@ -96,8 +96,8 @@ When no saved local config exists yet, `Sane` derives recommended defaults from 
 
 Routing note:
 - `Sane` uses task-shaped model routing, not one static fallback chain.
-- Documented OpenAI baseline: start with `gpt-5.4` for most coding/reasoning work, use `gpt-5.4-mini` for lighter subagent-style work, keep `gpt-5.3-codex` and `gpt-5.2-codex` as coding-specialized options, and treat `gpt-5.3-codex-spark` as near-instant research-preview iteration.
-- Local runtime caveat (2026-04-22): in this ChatGPT-backed Codex environment, spawning a worker with `gpt-5.2-codex` failed with `"model is not supported when using Codex with a ChatGPT account"`.
+- Documented OpenAI baseline: start with `gpt-5.5` in Codex when it appears in the picker, keep `gpt-5.4` as the stable API/current fallback, use `gpt-5.4-mini` for lighter subagent-style work, keep `gpt-5.3-codex` as the coding-specialized execution option, and treat `gpt-5.3-codex-spark` as near-instant research-preview iteration.
+- Local runtime caveat: `gpt-5.2-codex` is kept for compatibility when a runtime exposes it, but the current Pro Codex picker reported on 2026-04-23 does not show it.
 - `Sane` therefore separates documented model availability from spawnable-here runtime support.
 
 ### Recommended integrations

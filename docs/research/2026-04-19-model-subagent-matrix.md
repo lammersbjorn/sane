@@ -1,6 +1,6 @@
 # Sane Model / Subagent Preset Matrix
 
-Last updated: 2026-04-22
+Last updated: 2026-04-23
 
 Purpose:
 - keep model routing aligned with official OpenAI guidance and explicit non-OpenAI provider research
@@ -8,7 +8,10 @@ Purpose:
 - separate documented facts from Sane inference and local runtime findings
 
 OpenAI sources:
+- [Introducing GPT-5.5](https://openai.com/index/introducing-gpt-5-5/)
 - [Models overview](https://developers.openai.com/api/docs/models)
+- [Codex models](https://developers.openai.com/codex/models)
+- [API pricing](https://openai.com/api/pricing/)
 - [GPT-5.4 model page](https://developers.openai.com/api/docs/models/gpt-5.4)
 - [GPT-5.4 mini model page](https://developers.openai.com/api/docs/models/gpt-5.4-mini)
 - [GPT-5.3-Codex model page](https://developers.openai.com/api/docs/models/gpt-5.3-codex)
@@ -25,13 +28,18 @@ Non-OpenAI sources:
 ## Documented Facts (OpenAI)
 
 Documented model-positioning facts:
-- OpenAI model docs say: if you are not sure where to start, use `gpt-5.4` for complex reasoning and coding.
+- OpenAI announced `gpt-5.5` on 2026-04-23 and says it is rolling out in ChatGPT and Codex first, with API availability coming soon.
+- Codex model docs say: for most Codex tasks, start with `gpt-5.5` when it appears in the model picker.
+- API model docs still say: if you are not sure where to start in the API, use `gpt-5.4` for complex reasoning and coding, because `gpt-5.5` API availability is not yet live.
+- OpenAI pricing lists `gpt-5.5` as coming soon at $5 input / $30 output per 1M tokens, double `gpt-5.4` standard token pricing.
 - `gpt-5.4-mini` is documented as the strongest mini model for coding, computer use, and subagents.
 - `gpt-5.3-codex` is documented as the most capable agentic coding model to date.
 - `gpt-5.2-codex` is documented as optimized for long-horizon, agentic coding tasks.
 - `gpt-5.3-codex-spark` is documented as a research-preview, real-time coding model tuned for near-instant iteration.
 
 Documented Codex prompting and subagent facts:
+- OpenAI says `gpt-5.5` is strongest for complex coding, computer use, knowledge work, and research workflows, and that it matches `gpt-5.4` per-token latency while often using fewer tokens on Codex tasks.
+- OpenAI's published `gpt-5.5` launch evals put it above `gpt-5.4` on Terminal-Bench 2.0, SWE-Bench Pro, Expert-SWE, OSWorld-Verified, MCP Atlas, Toolathlon, and long-context Graphwalks.
 - Codex Prompting Guide says `gpt-5.3-codex` is faster and more token efficient than earlier Codex generations, with higher autonomy.
 - The same guide says the starter prompt was optimized against internal evals for correctness, completeness, quality, correct tool usage, and parallelism (plus bias for action).
 - Subagents docs say Codex only spawns subagents when explicitly asked.
@@ -64,10 +72,18 @@ Runtime implication:
   - model visible in picker
   - model actually spawnable-here for worker sessions
 
+Observed from current user-reported Pro Codex picker on 2026-04-23:
+- available: `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.3-codex`, `gpt-5.3-codex-spark`, `gpt-5.2`
+- not currently available in that picker: `gpt-5.2-codex`
+
+Runtime implication:
+- keep `gpt-5.2-codex` parser-compatible for old configs and future/runtime-specific detection
+- do not present `gpt-5.2-codex` as a normal current Pro picker default
+
 ## What Providers Do Not Publish (Current Docs)
 
 Current provider docs still do not publish:
-- one hard benchmark table directly ranking `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.3-codex`, `gpt-5.2-codex`, and `gpt-5.3-codex-spark` across Codex workflow classes
+- one hard benchmark table directly ranking `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.3-codex`, `gpt-5.2`, `gpt-5.2-codex`, and `gpt-5.3-codex-spark` across Codex workflow classes
 - one universal official ranking for coordinator vs sidecar vs verifier roles across all Codex surfaces and auth plans
 - one neutral cross-provider benchmark table we can use to hard-rank OpenAI and non-OpenAI models together for `explorer` / `implementation` / `verifier` / `realtime`
 
@@ -82,6 +98,8 @@ Sane should:
 - map work to capability class
 - choose the cheapest model that safely fits the class
 - escalate only when task shape or risk justifies it
+- reserve `gpt-5.5` for high-value coordination, verification, complex synthesis, and fallback implementation when Codex-specialized execution models are missing or insufficient
+- default `gpt-5.5` coordinator routing to `medium` reasoning unless the task explicitly needs extra depth; OpenAI's launch evals used `xhigh` in a research environment, but Sane should not make every parent session pay that cost by default
 - skip models that are known spawn-unsupported in the current auth/runtime surface
 - treat cross-provider additions as capability candidates, not universal rank overrides
 
@@ -100,6 +118,25 @@ Important:
 - these orders are not an OpenAI-published benchmark ranking
 - cross-provider candidate additions must stay runtime/auth gated and benchmark-caveated
 
+### Coordinator
+
+Use for:
+- parent-session synthesis
+- task decomposition
+- final authority across subagent outputs
+- high-ambiguity decisions
+
+Working order (heuristic):
+1. `gpt-5.5` when detected in the current Codex picker
+2. `gpt-5.4`
+3. `gpt-5.3-codex`
+4. `gpt-5.2`
+
+Reasoning default:
+- `medium` for `gpt-5.5`
+- `high` for `gpt-5.4` fallback
+- escalate to `high` or `xhigh` only for unusually risky, broad, or under-specified coordination
+
 ### Explorer
 
 Use for:
@@ -111,7 +148,7 @@ Working order (heuristic):
 1. `gpt-5.4-mini`
 2. `gpt-5.3-codex-spark`
 3. `gpt-5.1-codex-mini`
-4. fallback to coordinator model only if no lighter viable option exists
+4. fallback to coordinator model only if no lighter viable option exists, including `gpt-5.5` only as a last-resort expensive sidecar
 
 Reasoning default:
 - `medium`
@@ -126,9 +163,10 @@ Use for:
 
 Working order (heuristic):
 1. `gpt-5.3-codex`
-2. `gpt-5.2-codex` when spawn/runtime supports it
-3. `gpt-5.4`
-4. `gpt-5.2`
+2. `gpt-5.5` for ambiguous, high-risk, multi-system implementation or when `gpt-5.3-codex` is unavailable
+3. `gpt-5.2-codex` only when a runtime actually exposes and supports it
+4. `gpt-5.4`
+5. `gpt-5.2`
 
 Reasoning default:
 - `medium` for straightforward execution
@@ -142,11 +180,12 @@ Use for:
 - regression scanning
 
 Working order (heuristic):
-1. `gpt-5.4`
-2. `gpt-5.3-codex`
-3. `gpt-5.2-codex` when spawn/runtime supports it
+1. `gpt-5.5`
+2. `gpt-5.4`
+3. `gpt-5.3-codex`
 4. `gpt-5.4-mini` for low-risk bounded reviews
 5. `gpt-5.2`
+6. `gpt-5.2-codex` only when a runtime actually exposes and supports it
 
 Reasoning default:
 - `high` for risky changes
@@ -162,6 +201,7 @@ Working order (heuristic):
 1. `gpt-5.3-codex-spark`
 2. `gpt-5.4-mini`
 3. `gpt-5.3-codex`
+4. `gpt-5.5` only when realtime routes have no cheaper viable option
 
 Reasoning default:
 - `low` or `medium` depending on risk and ambiguity

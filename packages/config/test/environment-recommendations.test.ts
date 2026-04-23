@@ -36,6 +36,97 @@ afterEach(() => {
 });
 
 describe('environment-aware recommendations', () => {
+  it('uses gpt-5.5 for high-value coordination and verification when available', () => {
+    const environment: CodexEnvironment = {
+      planType: 'plus',
+      availableModels: [
+        {
+          slug: 'gpt-5.5',
+          reasoningEfforts: ['medium', 'high', 'xhigh'],
+        },
+        {
+          slug: 'gpt-5.4',
+          reasoningEfforts: ['medium', 'high', 'xhigh'],
+        },
+        {
+          slug: 'gpt-5.4-mini',
+          reasoningEfforts: ['low', 'medium', 'high'],
+        },
+        {
+          slug: 'gpt-5.3-codex',
+          reasoningEfforts: ['medium', 'high', 'xhigh'],
+        },
+        {
+          slug: 'gpt-5.3-codex-spark',
+          reasoningEfforts: ['low', 'medium'],
+        },
+      ],
+    };
+
+    expect(createRecommendedModelRoutingPresets(environment)).toEqual({
+      coordinator: {
+        model: 'gpt-5.5',
+        reasoningEffort: 'medium',
+      },
+      execution: {
+        model: 'gpt-5.3-codex',
+        reasoningEffort: 'medium',
+      },
+      sidecar: {
+        model: 'gpt-5.4-mini',
+        reasoningEffort: 'medium',
+      },
+      verifier: {
+        model: 'gpt-5.5',
+        reasoningEffort: 'high',
+      },
+      realtime: {
+        model: 'gpt-5.3-codex-spark',
+        reasoningEffort: 'low',
+      },
+    });
+
+    expect(createRecommendedSubagentRoutingPresets(environment)).toEqual({
+      explorer: {
+        model: 'gpt-5.4-mini',
+        reasoningEffort: 'low',
+      },
+      implementation: {
+        model: 'gpt-5.3-codex',
+        reasoningEffort: 'medium',
+      },
+      verifier: {
+        model: 'gpt-5.5',
+        reasoningEffort: 'high',
+      },
+      realtime: {
+        model: 'gpt-5.3-codex-spark',
+        reasoningEffort: 'low',
+      },
+    });
+  });
+
+  it('keeps high reasoning for gpt-5.4 coordinator fallback', () => {
+    const environment: CodexEnvironment = {
+      planType: 'plus',
+      availableModels: [
+        {
+          slug: 'gpt-5.4',
+          reasoningEfforts: ['medium', 'high', 'xhigh'],
+        },
+        {
+          slug: 'gpt-5.4-mini',
+          reasoningEfforts: ['low', 'medium', 'high'],
+        },
+      ],
+    };
+
+    expect(createRecommendedModelRoutingPresets(environment).coordinator).toEqual({
+      model: 'gpt-5.4',
+      reasoningEffort: 'high',
+    });
+  });
+
   it('builds a task-shaped routing matrix from modern frontier and codex models', () => {
     const environment: CodexEnvironment = {
       planType: 'plus',
@@ -175,6 +266,11 @@ describe('environment-aware recommendations', () => {
     const detected = detectAvailableModelsFromJson({
       models: [
         {
+          slug: 'gpt-5.5',
+          supported_reasoning_levels: ['high', 'xhigh'],
+          priority: -10,
+        },
+        {
           slug: 'gpt-5.4',
           supported_reasoning_levels: ['high', { effort: 'medium' }],
           priority: '2',
@@ -203,6 +299,10 @@ describe('environment-aware recommendations', () => {
     });
 
     expect(detected).toEqual([
+      {
+        slug: 'gpt-5.5',
+        reasoningEfforts: ['high', 'xhigh'],
+      },
       {
         slug: 'gpt-5.4-mini',
         reasoningEfforts: ['low', 'medium'],

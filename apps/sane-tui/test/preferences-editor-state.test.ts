@@ -59,7 +59,9 @@ describe("preferences editor state", () => {
 
     const cycled = cycleSelectedConfigField(editor, 1);
     expect(cycled.config.models.coordinator.model).not.toBe(config.models.coordinator.model);
-    expect(cycleSelectedConfigField(editor, -1).config.models.coordinator.model).toBe("gpt-5-codex");
+    expect(cycleSelectedConfigField(editor, -1).config.models.coordinator.model).toBe(
+      previousOption(CONFIG_FIELD_METADATA.coordinator_model.options, config.models.coordinator.model)
+    );
 
     const coordinatorReasoning = cycleSelectedConfigField(moveConfigFieldSelection(editor, 1), 1);
     expect(coordinatorReasoning.config.models.coordinator.reasoningEffort).toBe("xhigh");
@@ -93,7 +95,7 @@ describe("preferences editor state", () => {
 
     const reverseModel = cycleSelectedConfigField(editor, -1);
     expect(reverseModel.config.models.coordinator.model).toBe(
-      CONFIG_FIELD_METADATA.coordinator_model.options.at(-1)
+      previousOption(CONFIG_FIELD_METADATA.coordinator_model.options, defaults.models.coordinator.model)
     );
 
     const reasoningEditor = moveConfigFieldSelection(editor, 1);
@@ -161,3 +163,7 @@ describe("preferences editor state", () => {
     expectSaveResetAffordances(resetPrivacyEditor(dirtyPrivacy), { canSave: false, canReset: false });
   });
 });
+
+function previousOption<T extends string>(options: readonly T[], value: T): T {
+  return options[(options.indexOf(value) + options.length - 1) % options.length];
+}
