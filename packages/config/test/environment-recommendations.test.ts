@@ -148,7 +148,7 @@ describe('environment-aware recommendations', () => {
           reasoningEfforts: ['low', 'medium'],
         },
         {
-          slug: 'gpt-5.2-codex',
+          slug: 'gpt-5.2',
           reasoningEfforts: ['medium', 'high'],
         },
       ],
@@ -178,7 +178,7 @@ describe('environment-aware recommendations', () => {
     });
   });
 
-  it('keeps gpt-5.2-codex first-class for long-horizon execution when gpt-5.3-codex is absent', () => {
+  it('uses gpt-5.4 for execution when gpt-5.3-codex is absent but frontier fallback exists', () => {
     const environment: CodexEnvironment = {
       availableModels: [
         {
@@ -190,7 +190,7 @@ describe('environment-aware recommendations', () => {
           reasoningEfforts: ['low', 'medium'],
         },
         {
-          slug: 'gpt-5.2-codex',
+          slug: 'gpt-5.2',
           reasoningEfforts: ['medium', 'high', 'xhigh'],
         },
       ],
@@ -199,7 +199,7 @@ describe('environment-aware recommendations', () => {
     const routing = createRecommendedModelRoutingPresets(environment);
 
     expect(routing.execution).toEqual({
-      model: 'gpt-5.2-codex',
+      model: 'gpt-5.4',
       reasoningEffort: 'medium',
     });
     expect(routing.sidecar).toEqual({
@@ -209,6 +209,26 @@ describe('environment-aware recommendations', () => {
     expect(routing.coordinator).toEqual({
       model: 'gpt-5.4',
       reasoningEffort: 'high',
+    });
+  });
+
+  it('keeps gpt-5.2 as the execution fallback when newer execution models are absent', () => {
+    const environment: CodexEnvironment = {
+      availableModels: [
+        {
+          slug: 'gpt-5.4-mini',
+          reasoningEfforts: ['low', 'medium'],
+        },
+        {
+          slug: 'gpt-5.2',
+          reasoningEfforts: ['medium', 'high', 'xhigh'],
+        },
+      ],
+    };
+
+    expect(createRecommendedModelRoutingPresets(environment).execution).toEqual({
+      model: 'gpt-5.2',
+      reasoningEffort: 'medium',
     });
   });
 
@@ -286,7 +306,7 @@ describe('environment-aware recommendations', () => {
           priority: 10,
         },
         {
-          name: 'gpt-5.2-codex',
+          name: 'gpt-5.2',
           default_reasoning_level: 'high',
           priority: 3,
         },
@@ -312,7 +332,7 @@ describe('environment-aware recommendations', () => {
         reasoningEfforts: ['medium', 'high'],
       },
       {
-        slug: 'gpt-5.2-codex',
+        slug: 'gpt-5.2',
         reasoningEfforts: ['high'],
       },
     ]);
@@ -516,7 +536,7 @@ describe('environment-aware recommendations', () => {
           reasoningEfforts: ['low', 'medium'],
         },
         {
-          slug: 'gpt-5.2-codex',
+          slug: 'gpt-5.2',
           reasoningEfforts: ['medium', 'high'],
         },
       ],

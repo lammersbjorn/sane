@@ -195,7 +195,7 @@ describe("tui shell", () => {
     const paths = createProjectPaths(projectRoot);
     const codexPaths = createCodexPaths(homeDir);
     const config = createDefaultLocalConfig();
-    config.models.coordinator.model = "gpt-5.2-codex";
+    config.models.coordinator.model = "gpt-5.2";
     saveConfig(paths, config);
 
     const shell = createTuiShell(paths, codexPaths, "settings");
@@ -205,8 +205,8 @@ describe("tui shell", () => {
     if (shell.activeEditor?.kind !== "config") {
       throw new Error("expected config editor");
     }
-    expect(shell.activeEditor.initial.models.coordinator.model).toBe("gpt-5.2-codex");
-    expect(shell.activeEditor.config.models.coordinator.model).toBe("gpt-5.2-codex");
+    expect(shell.activeEditor.initial.models.coordinator.model).toBe("gpt-5.2");
+    expect(shell.activeEditor.config.models.coordinator.model).toBe("gpt-5.2");
     expect(shell.activeEditor.defaults.models.coordinator.model).toBe("gpt-5.4");
   });
 

@@ -77,7 +77,7 @@ describe("preferences screen model", () => {
     const paths = createProjectPaths(projectRoot);
     const codexPaths = createCodexPaths(homeDir);
     const config = createDefaultLocalConfig();
-    config.models.coordinator.model = "gpt-5.2-codex";
+    config.models.coordinator.model = "gpt-5.2";
     config.packs.caveman = true;
     config.privacy.telemetry = "product-improvement";
 
@@ -85,7 +85,7 @@ describe("preferences screen model", () => {
     const screen = loadPreferencesScreen(paths, codexPaths);
 
     expect(screen.source).toBe("local");
-    expect(screen.models.coordinator.model).toBe("gpt-5.2-codex");
+    expect(screen.models.coordinator.model).toBe("gpt-5.2");
     expect(screen.derivedRouting.execution.model).toBe("gpt-5.3-codex");
     expect(screen.derivedRouting.realtime.model).toBe("gpt-5.3-codex-spark");
     expect(screen.subagents.explorer.model).toBe("gpt-5.4-mini");

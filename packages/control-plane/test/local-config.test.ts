@@ -28,7 +28,7 @@ describe("local config helpers", () => {
     const projectRoot = makeTempDir();
     const paths = createProjectPaths(projectRoot);
     const recommended = createDefaultLocalConfig();
-    recommended.models.coordinator.model = "gpt-5.2-codex";
+    recommended.models.coordinator.model = "gpt-5.2";
 
     expect(inspectSavedLocalConfig(paths)).toEqual({ kind: "missing" });
     expect(inspectLocalConfigFamily(paths, recommended)).toEqual({
@@ -47,7 +47,7 @@ describe("local config helpers", () => {
     saveConfig(paths, local);
 
     const recommended = createDefaultLocalConfig();
-    recommended.models.verifier.model = "gpt-5.2-codex";
+    recommended.models.verifier.model = "gpt-5.2";
 
     expect(inspectLocalConfigFamily(paths, recommended)).toEqual({
       source: "local",

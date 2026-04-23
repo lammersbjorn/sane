@@ -115,7 +115,7 @@ describe("preferences control plane", () => {
     const first = createDefaultLocalConfig();
     first.privacy.telemetry = "product-improvement";
     const second = createDefaultLocalConfig();
-    second.models.verifier.model = "gpt-5.2-codex";
+    second.models.verifier.model = "gpt-5.2";
     second.privacy.telemetry = "product-improvement";
 
     saveConfig(paths, first);
@@ -127,7 +127,7 @@ describe("preferences control plane", () => {
     expect(result.details).toContain(`backup path: ${result.rewrite?.backupPath}`);
     expect(result.details).toContain("write mode: rewrite");
     expect(existsSync(result.rewrite?.backupPath ?? "")).toBe(true);
-    expect(readFileSync(paths.configPath, "utf8")).toContain('model = "gpt-5.2-codex"');
+    expect(readFileSync(paths.configPath, "utf8")).toContain('model = "gpt-5.2"');
     expect(reset.summary).toBe("telemetry reset: removed local telemetry data");
     expect(existsSync(paths.telemetryDir)).toBe(false);
   });
@@ -175,7 +175,7 @@ describe("preferences control plane", () => {
     });
 
     const config = createDefaultLocalConfig();
-    config.models.coordinator.model = "gpt-5.2-codex";
+    config.models.coordinator.model = "gpt-5.2";
     config.packs.caveman = true;
     saveConfig(paths, config);
 
@@ -210,7 +210,7 @@ describe("preferences control plane", () => {
       },
       models: {
         coordinator: {
-          model: "gpt-5.2-codex"
+          model: "gpt-5.2"
         }
       }
     });
@@ -241,7 +241,7 @@ describe("preferences control plane", () => {
     });
 
     const config = createDefaultLocalConfig();
-    config.models.coordinator.model = "gpt-5.2-codex";
+    config.models.coordinator.model = "gpt-5.2";
     saveConfig(paths, config);
 
     expect(inspectEditablePreferencesConfig(paths, codexPaths)).toMatchObject({
@@ -249,7 +249,7 @@ describe("preferences control plane", () => {
       current: {
         models: {
           coordinator: {
-            model: "gpt-5.2-codex"
+            model: "gpt-5.2"
           }
         }
       },
@@ -275,7 +275,7 @@ describe("preferences control plane", () => {
     expect(recommendedFamily.telemetry).toEqual(inspectTelemetrySnapshot(paths));
 
     const config = createDefaultLocalConfig();
-    config.models.coordinator.model = "gpt-5.2-codex";
+    config.models.coordinator.model = "gpt-5.2";
     config.privacy.telemetry = "product-improvement";
     saveConfig(paths, config);
 

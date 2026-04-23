@@ -1,7 +1,7 @@
 version = 1
 
 [models.coordinator]
-model = "gpt-5.2-codex"
+model = "gpt-5.2"
 reasoning_effort = "xhigh"
 
 [models.sidecar]

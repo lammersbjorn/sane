@@ -15,7 +15,6 @@ OpenAI sources:
 - [GPT-5.4 model page](https://developers.openai.com/api/docs/models/gpt-5.4)
 - [GPT-5.4 mini model page](https://developers.openai.com/api/docs/models/gpt-5.4-mini)
 - [GPT-5.3-Codex model page](https://developers.openai.com/api/docs/models/gpt-5.3-codex)
-- [GPT-5.2-Codex model page](https://developers.openai.com/api/docs/models/gpt-5.2-codex)
 - [Codex Prompting Guide](https://developers.openai.com/cookbook/examples/gpt-5/codex_prompting_guide)
 - [Subagents docs](https://developers.openai.com/codex/subagents)
 - [Introducing GPT-5.3-Codex-Spark](https://openai.com/index/introducing-gpt-5-3-codex-spark/)
@@ -34,7 +33,7 @@ Documented model-positioning facts:
 - OpenAI pricing lists `gpt-5.5` as coming soon at $5 input / $30 output per 1M tokens, double `gpt-5.4` standard token pricing.
 - `gpt-5.4-mini` is documented as the strongest mini model for coding, computer use, and subagents.
 - `gpt-5.3-codex` is documented as the most capable agentic coding model to date.
-- `gpt-5.2-codex` is documented as optimized for long-horizon, agentic coding tasks.
+- `gpt-5.2` remains available in the current Pro Codex picker reported on 2026-04-23.
 - `gpt-5.3-codex-spark` is documented as a research-preview, real-time coding model tuned for near-instant iteration.
 
 Documented Codex prompting and subagent facts:
@@ -63,7 +62,7 @@ What those sources do not yet give us cleanly enough for Sane defaults:
 Observed in this ChatGPT-backed Codex environment on 2026-04-22:
 - picker currently shows `GPT-5.4`, `GPT-5.4-Mini`, `GPT-5.3-Codex`, `GPT-5.3-Codex-Spark`, `GPT-5.2`, `GPT-5.2-Codex`, `GPT-5.1-Codex-Max`, `GPT-5.1-Codex-Mini`
 - reasoning picker currently shows `Low`, `Medium`, `High`, `Extra High`
-- important local finding: spawning a worker with `gpt-5.2-codex` failed with:
+- important local finding: spawning a worker with `gpt-5.2-codex` failed before it was removed from the active Sane model set:
   - `"model is not supported when using Codex with a ChatGPT account"`
 
 Runtime implication:
@@ -72,18 +71,19 @@ Runtime implication:
   - model visible in picker
   - model actually spawnable-here for worker sessions
 
-Observed from current user-reported Pro Codex picker on 2026-04-23:
+Observed from current local Pro Codex model cache and user-reported picker on 2026-04-23:
 - available: `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.3-codex`, `gpt-5.3-codex-spark`, `gpt-5.2`
 - not currently available in that picker: `gpt-5.2-codex`
 
 Runtime implication:
-- keep `gpt-5.2-codex` parser-compatible for old configs and future/runtime-specific detection
-- do not present `gpt-5.2-codex` as a normal current Pro picker default
+- remove `gpt-5.2-codex` from Sane's active ChatGPT-subscription model set
+- keep `gpt-5.2` as a detected/runtime-gated fallback below `gpt-5.4`
+- do not claim `gpt-5.2` availability for every subscription tier unless OpenAI publishes a current tier matrix or Sane detects it locally
 
 ## What Providers Do Not Publish (Current Docs)
 
 Current provider docs still do not publish:
-- one hard benchmark table directly ranking `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.3-codex`, `gpt-5.2`, `gpt-5.2-codex`, and `gpt-5.3-codex-spark` across Codex workflow classes
+- one hard benchmark table directly ranking `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.3-codex`, `gpt-5.2`, and `gpt-5.3-codex-spark` across Codex workflow classes
 - one universal official ranking for coordinator vs sidecar vs verifier roles across all Codex surfaces and auth plans
 - one neutral cross-provider benchmark table we can use to hard-rank OpenAI and non-OpenAI models together for `explorer` / `implementation` / `verifier` / `realtime`
 
@@ -164,9 +164,8 @@ Use for:
 Working order (heuristic):
 1. `gpt-5.3-codex`
 2. `gpt-5.5` for ambiguous, high-risk, multi-system implementation or when `gpt-5.3-codex` is unavailable
-3. `gpt-5.2-codex` only when a runtime actually exposes and supports it
-4. `gpt-5.4`
-5. `gpt-5.2`
+3. `gpt-5.4`
+4. `gpt-5.2`
 
 Reasoning default:
 - `medium` for straightforward execution
@@ -185,7 +184,6 @@ Working order (heuristic):
 3. `gpt-5.3-codex`
 4. `gpt-5.4-mini` for low-risk bounded reviews
 5. `gpt-5.2`
-6. `gpt-5.2-codex` only when a runtime actually exposes and supports it
 
 Reasoning default:
 - `high` for risky changes
@@ -240,7 +238,7 @@ Use it only as a legacy compatibility path if:
 That means:
 - keep parser compatibility if needed
 - keep it out of the normal picker/default story
-- do not rank it above `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.3-codex`, or `gpt-5.2-codex`
+- do not rank it above `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.3-codex`, or `gpt-5.2`
 
 Popular-but-unverified rule:
 - do not promote a newly popular external model into the default routing matrix unless we have all three:

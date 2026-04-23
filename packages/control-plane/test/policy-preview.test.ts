@@ -58,14 +58,14 @@ describe("policy preview", () => {
     const projectRoot = makeTempDir();
     const paths = createProjectPaths(projectRoot);
     const config = createDefaultLocalConfig();
-    config.models.coordinator.model = "gpt-5.2-codex";
+    config.models.coordinator.model = "gpt-5.2";
     config.models.verifier.model = "gpt-5.1-codex-mini";
     saveConfig(paths, config);
 
     const result = previewPolicy(paths);
     const featureLine = result.details.find((line) => line.startsWith("multi-file-feature:")) ?? "";
 
-    expect(featureLine).toContain("coordinator=gpt-5.2-codex/high");
+    expect(featureLine).toContain("coordinator=gpt-5.2/high");
     expect(featureLine).toContain("explorer=gpt-5.4-mini/low");
     expect(featureLine).toContain("verifier=gpt-5.1-codex-mini/high");
     expect(featureLine).toContain("execution=gpt-5.3-codex/medium");

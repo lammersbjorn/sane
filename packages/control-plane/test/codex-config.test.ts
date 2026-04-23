@@ -230,7 +230,7 @@ describe("codex config control plane", () => {
     writeFileSync(
       codexPaths.configToml,
       [
-        'model = "gpt-5.2-codex"',
+        'model = "gpt-5.2"',
         'model_reasoning_effort = "medium"',
         ""
       ].join("\n"),
@@ -260,7 +260,7 @@ describe("codex config control plane", () => {
       latestBackupPath: expect.stringContaining(projectPaths.codexConfigBackupsDir)
     });
     expect(restore.summary).toContain("codex-config restore: restored from");
-    expect(body).toContain('model = "gpt-5.2-codex"');
+    expect(body).toContain('model = "gpt-5.2"');
     expect(body).toContain('model_reasoning_effort = "medium"');
   });
 
@@ -274,7 +274,7 @@ describe("codex config control plane", () => {
     writeFileSync(
       codexPaths.configToml,
       [
-        'model = "gpt-5.2-codex"',
+        'model = "gpt-5.2"',
         'model_reasoning_effort = "medium"',
         ""
       ].join("\n"),
@@ -306,7 +306,7 @@ describe("codex config control plane", () => {
     });
     expect(restore.summary).toContain("codex-config restore: restored from");
     expect(restore.summary).not.toContain("notes.txt");
-    expect(body).toContain('model = "gpt-5.2-codex"');
+    expect(body).toContain('model = "gpt-5.2"');
     expect(body).toContain('model_reasoning_effort = "medium"');
   });
 
