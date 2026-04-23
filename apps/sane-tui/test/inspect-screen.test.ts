@@ -390,6 +390,7 @@ describe("inspect screen model", () => {
             verifierTiming: "inline"
           },
           obligationCount: 0,
+          continuation: null,
           traceCount: 0,
           trace: []
         },
@@ -400,6 +401,7 @@ describe("inspect screen model", () => {
           roles: null,
           orchestration: null,
           obligationCount: 0,
+          continuation: null,
           traceCount: 0,
           trace: []
         }

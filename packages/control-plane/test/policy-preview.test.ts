@@ -7,7 +7,12 @@ import { createProjectPaths } from "@sane/platform";
 import { writeCurrentRunState } from "@sane/state";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { buildCurrentRunInspectPreview, previewPolicy } from "../src/policy-preview.js";
+import {
+  buildCurrentRunInspectPreview,
+  buildPolicyPreviewPayload,
+  previewPolicyForCurrentRun,
+  previewPolicy
+} from "../src/policy-preview.js";
 import { formatInspectPolicyPreviewLines } from "../src/policy-preview-presenter.js";
 import { saveConfig } from "../src/preferences.js";
 
@@ -134,6 +139,63 @@ describe("policy preview", () => {
       contextPressure: "medium",
       runState: "exploring"
     });
+  });
+
+  it("keeps current-run policy-preview derivation behind a typed payload helper", () => {
+    const withoutCurrentRun = buildPolicyPreviewPayload(null);
+    const withCurrentRun = buildPolicyPreviewPayload({
+      version: 2,
+      objective: "inspect runtime drift",
+      phase: "inspect",
+      activeTasks: ["inspect runtime drift"],
+      blockingQuestions: [],
+      verification: {
+        status: "pending",
+        summary: "inspection queued"
+      },
+      lastCompactionTsUnix: null,
+      extra: {}
+    });
+
+    expect(withoutCurrentRun.scenarios.map((scenario) => scenario.id)).toEqual([
+      "simple-question",
+      "local-edit",
+      "unknown-bug",
+      "multi-file-feature",
+      "blocked-long-run"
+    ]);
+    expect(withCurrentRun.scenarios.map((scenario) => scenario.id)).toEqual([
+      "simple-question",
+      "local-edit",
+      "unknown-bug",
+      "multi-file-feature",
+      "blocked-long-run",
+      "current-run-inspect"
+    ]);
+    expect(withCurrentRun.scenarios.at(-1)?.continuation).toEqual({
+      strategy: "continue_until_verified",
+      stopCondition: "verified"
+    });
+
+    const projectRoot = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const result = previewPolicyForCurrentRun(paths, {
+      version: 2,
+      objective: "inspect runtime drift",
+      phase: "inspect",
+      activeTasks: ["inspect runtime drift"],
+      blockingQuestions: [],
+      verification: {
+        status: "pending",
+        summary: "inspection queued"
+      },
+      lastCompactionTsUnix: null,
+      extra: {}
+    });
+
+    expect(result.policyPreview?.scenarios.at(-1)?.id).toBe("current-run-inspect");
+    expect(result.details.at(-1)).toContain("current-run-inspect: verify_light");
+    expect(result.details.at(-1)).toContain("explorer=gpt-5.4-mini/low");
   });
 
   it("exposes a pure typed helper for current-run inspect preview derivation", () => {

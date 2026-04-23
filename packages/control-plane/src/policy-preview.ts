@@ -43,7 +43,7 @@ export function previewPolicyForCurrentRun(
   const config = loadOrDefaultConfig(paths);
   const routing = loadDerivedRouting(paths, env);
   const subagents = buildSubagentRouting(paths, env);
-  const policyPreview = buildPolicyPreview(currentRun);
+  const policyPreview = buildPolicyPreviewPayload(currentRun);
   const details = policyPreview.scenarios.map((scenario) =>
     renderPolicyPreviewLine(config, routing, subagents, scenario)
   );
@@ -100,7 +100,7 @@ function renderRolePlan(
   return parts.join(", ");
 }
 
-function buildPolicyPreview(currentRun: CurrentRunState | null): PolicyPreviewPayload {
+export function buildPolicyPreviewPayload(currentRun: CurrentRunState | null): PolicyPreviewPayload {
   const scenarios = canonicalScenarios().map((scenario) =>
     buildScenarioPreview(scenario.id, scenario.summary, scenario.input)
   );
