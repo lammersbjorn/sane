@@ -28,7 +28,6 @@ use sane_core::{
     sane_optional_pack_skills, sane_reviewer_agent, sane_router_skill,
 };
 use sane_platform::{CodexPaths, ProjectPaths, detect_platform};
-use sane_policy::{PolicyInput, canonical_scenarios, explain};
 use sane_state::{
     ArtifactRecord, CanonicalRewriteResult, CanonicalStateFormat, CanonicalStatePaths,
     CurrentRunState, DecisionRecord, EventRecord, LayeredStateBundle, RunSummary,
@@ -138,7 +137,6 @@ enum Command {
     CodexConfig,
     BackupCodexConfig,
     Debug,
-    DebugPolicyPreview,
     Preview,
     PreviewCodexProfile,
     PreviewIntegrationsProfile,
@@ -242,7 +240,6 @@ impl Command {
             Command::Config => show_config(paths),
             Command::CodexConfig => show_codex_config(codex_paths),
             Command::BackupCodexConfig => backup_codex_config(paths, codex_paths),
-            Command::DebugPolicyPreview => preview_policy(paths),
             Command::PreviewCodexProfile => preview_codex_profile(codex_paths),
             Command::PreviewIntegrationsProfile => preview_integrations_profile(codex_paths),
             Command::PreviewCloudflareProfile => preview_cloudflare_profile(codex_paths),
@@ -447,7 +444,6 @@ fn section_actions(section: TuiSection) -> Vec<TuiAction> {
                 "Preview optional recommended Codex tools",
                 Command::PreviewIntegrationsProfile,
             ),
-            TuiAction::backend("Explain Sane's routing policy", Command::DebugPolicyPreview),
         ],
         TuiSection::Repair => vec![
             TuiAction::backend("Repair Sane's local project files", Command::Install),
@@ -1964,14 +1960,6 @@ fn command_help_lines(command: Command) -> Vec<Line<'static>> {
             Line::from(""),
             Line::from("Use this if a profile apply did not give you the result you wanted."),
         ],
-        Command::DebugPolicyPreview => vec![
-            Line::from("Show Sane's legacy Rust-side adaptive policy preview."),
-            Line::from(""),
-            Line::from("This is a migration-only path while the public Rust TUI still ships."),
-            Line::from(
-                "The TypeScript control-plane preview is the current source of truth for policy behavior.",
-            ),
-        ],
         Command::Doctor => vec![
             Line::from("Check Sane's local project files and Codex installs."),
             Line::from(""),
@@ -2401,66 +2389,6 @@ fn operation_kind_label(kind: OperationKind) -> &'static str {
         OperationKind::UninstallCustomAgents => "uninstall_custom_agents",
         OperationKind::UninstallAll => "uninstall_all",
     }
-}
-
-fn preview_policy(paths: &ProjectPaths) -> Result<OperationResult, String> {
-    let config = LocalConfig::read_from_path(&paths.config_path).unwrap_or_default();
-    let details = canonical_scenarios()
-        .iter()
-        .map(|scenario| render_policy_preview_line(&config, scenario.id, scenario.input))
-        .collect::<Vec<_>>();
-
-    Ok(OperationResult {
-        kind: OperationKind::PreviewPolicy,
-        summary: "policy preview: rendered adaptive obligation scenarios".to_string(),
-        rewrite: None,
-        details,
-        paths_touched: Vec::new(),
-        inventory: Vec::new(),
-    })
-}
-
-fn render_policy_preview_line(config: &LocalConfig, label: &str, input: PolicyInput) -> String {
-    let explanation = explain(input);
-    let obligations = explanation
-        .decision
-        .obligations
-        .into_iter()
-        .map(|obligation| obligation.as_str())
-        .collect::<Vec<_>>();
-    format!(
-        "{label}: {} | {}",
-        obligations.join(", "),
-        render_role_plan(config, explanation.roles)
-    )
-}
-
-fn render_role_plan(config: &LocalConfig, roles: sane_policy::RolePlan) -> String {
-    let mut parts = Vec::new();
-
-    if roles.coordinator {
-        parts.push(format!(
-            "coordinator={}/{}",
-            config.models.coordinator.model,
-            config.models.coordinator.reasoning_effort.as_str()
-        ));
-    }
-    if roles.sidecar {
-        parts.push(format!(
-            "sidecar={}/{}",
-            config.models.sidecar.model,
-            config.models.sidecar.reasoning_effort.as_str()
-        ));
-    }
-    if roles.verifier {
-        parts.push(format!(
-            "verifier={}/{}",
-            config.models.verifier.model,
-            config.models.verifier.reasoning_effort.as_str()
-        ));
-    }
-
-    parts.join(", ")
 }
 
 fn promote_operation_summary(
@@ -5451,9 +5379,7 @@ mod tests {
     use sane_state::CurrentRunState;
     use tempfile::tempdir;
 
-    use sane_platform::ProjectPaths;
-
-    use super::{preview_policy, run, run_with_home};
+    use super::{run, run_with_home};
 
     #[test]
     fn install_creates_dot_sane_runtime() {
@@ -5891,25 +5817,6 @@ mod tests {
         assert!(output.contains("doctor"));
         assert!(output.contains("hook"));
         assert!(output.contains("debug"));
-    }
-
-    #[test]
-    fn debug_policy_preview_renders_adaptive_scenarios() {
-        let dir = tempdir().unwrap();
-        let paths = ProjectPaths::discover(dir.path()).unwrap();
-        let output = preview_policy(&paths).unwrap().render_text();
-
-        assert!(output.contains("policy preview: rendered adaptive obligation scenarios"));
-        assert!(output.contains("simple-question: direct_answer | coordinator=gpt-5.4/high"));
-        assert!(output.contains(
-            "unknown-bug: debug_rigor, verify_light | coordinator=gpt-5.4/high, verifier=gpt-5.4/medium"
-        ));
-        assert!(output.contains(
-            "multi-file-feature: planning, tdd, review, subagent_eligible | coordinator=gpt-5.4/high, sidecar=gpt-5.4-mini/medium, verifier=gpt-5.4/medium"
-        ));
-        assert!(output.contains(
-            "blocked-long-run: planning, review, context_compaction, self_repair | coordinator=gpt-5.4/high, verifier=gpt-5.4/medium"
-        ));
     }
 
     #[test]
