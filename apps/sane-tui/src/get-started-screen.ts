@@ -10,6 +10,7 @@ import {
   type OnboardingAttentionItem,
   type OnboardingReasonId
 } from "@sane/control-plane/inventory.js";
+import { presentManagedInventoryItem } from "@sane/control-plane/status-presenter.js";
 import { listSectionActions } from "@sane/sane-tui/command-registry.js";
 
 export interface GetStartedStep {
@@ -116,8 +117,5 @@ function exportAllFilesTouched(
 }
 
 function hookStatusLabel(statusBundle: ReturnType<typeof inspectStatusBundle>): string {
-  const hooks = statusBundle.primary.hooks;
-  return hooks?.status.asString() === "invalid" && hooks.repairHint?.includes("native Windows")
-    ? "unsupported"
-    : statusBundle.primary.status.hooks;
+  return presentManagedInventoryItem(statusBundle.primary.hooks).label;
 }

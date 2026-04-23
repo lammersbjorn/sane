@@ -3,10 +3,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
+import { InventoryScope, InventoryStatus } from "@sane/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as inventory from "@sane/control-plane/inventory.js";
 
 import { installRuntime } from "@sane/control-plane";
+import { exportAll } from "@sane/control-plane";
 import { loadDashboardView } from "@sane/sane-tui/dashboard.js";
 import * as getStarted from "@sane/sane-tui/get-started-screen.js";
 import { createTuiShell } from "@sane/sane-tui/shell.js";
@@ -199,6 +201,15 @@ describe("dashboard view", () => {
         driftItems: [],
         primary: {
           ...bundle.primary,
+          hooks: bundle.primary.hooks
+            ? { ...bundle.primary.hooks, status: InventoryStatus.Installed }
+            : {
+                name: "hooks",
+                path: join(homeDir, ".codex", "hooks.json"),
+                scope: InventoryScope.CodexNative,
+                status: InventoryStatus.Installed,
+                repairHint: null
+              },
           installBundle: "installed",
           status: {
             ...bundle.primary.status,
@@ -238,5 +249,30 @@ describe("dashboard view", () => {
     expect(view.chips.find((chip) => chip.id === "install_bundle")?.value).toBe("installed");
     expect(view.chips.find((chip) => chip.id === "phase")?.value).toBe("setup");
     expect(view.chips.find((chip) => chip.id === "verification")?.value).toBe("pending");
+  });
+
+  it("shows unsupported hooks chip on native Windows once the rest of the bundle is installed", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    installRuntime(paths, codexPaths);
+    exportAll(paths, codexPaths, "windows");
+    const shell = createTuiShell(paths, codexPaths);
+
+    shell.statusSnapshot = {
+      ...shell.statusSnapshot,
+      statusBundle: inventory.inspectStatusBundle(paths, codexPaths, "windows")
+    };
+
+    const view = loadDashboardView(shell);
+
+    expect(view.chips.find((chip) => chip.id === "hooks")).toEqual({
+      id: "hooks",
+      label: "Hooks",
+      value: "unsupported (use WSL)",
+      tone: "muted"
+    });
   });
 });

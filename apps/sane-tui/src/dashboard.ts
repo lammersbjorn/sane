@@ -1,4 +1,8 @@
-import { presentManagedStatus, type ManagedStatusKind } from "@sane/control-plane/status-presenter.js";
+import {
+  presentManagedInventoryItem,
+  presentManagedStatus,
+  type ManagedStatusKind
+} from "@sane/control-plane/status-presenter.js";
 import * as getStartedScreen from "@sane/sane-tui/get-started-screen.js";
 import { currentAction, currentActions, currentSection, projectLabel, type TuiShell } from "@sane/sane-tui/shell.js";
 
@@ -85,9 +89,10 @@ function buildStatusChips(statusSnapshot: TuiShell["statusSnapshot"]): Dashboard
   const { statusBundle } = statusSnapshot;
   const runtimeState = statusBundle.runtimeState;
   const chips: DashboardChip[] = PRIMARY_STATUS_CHIP_SPECS.map((chip) => {
-    const presentation = presentManagedStatus(
-      chip.pick(statusBundle.primary.status) as ManagedStatusKind
-    );
+    const presentation =
+      chip.id === "hooks"
+        ? presentManagedInventoryItem(statusBundle.primary.hooks)
+        : presentManagedStatus(chip.pick(statusBundle.primary.status) as ManagedStatusKind);
     return {
       id: chip.id,
       label: chip.label,

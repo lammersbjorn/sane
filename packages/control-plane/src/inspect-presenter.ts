@@ -2,6 +2,7 @@ import {
   type LayeredStateHistoryPreview,
   type LatestPolicyPreviewSnapshot
 } from "@sane/state";
+import { presentManagedInventoryItem } from "./status-presenter.js";
 
 import { type StatusBundle } from "./inventory.js";
 import {
@@ -68,10 +69,11 @@ export interface InspectOverviewSnapshot {
 export function formatInspectOverviewLines(snapshot: InspectOverviewSnapshot): string[] {
   const counts = snapshot.statusBundle.counts;
   const primary = snapshot.statusBundle.primary.status;
+  const hooksLabel = presentManagedInventoryItem(snapshot.statusBundle.primary.hooks).label;
 
   return [
     `status counts: installed ${counts.installed}, configured ${counts.configured}, disabled ${counts.disabled}, missing ${counts.missing}, invalid ${counts.invalid}, drift ${snapshot.statusBundle.driftItems.length}`,
-    `primary surfaces: runtime ${primary.runtime}, codex ${primary.codexConfig}, user ${primary.userSkills}, hooks ${primary.hooks}, custom-agents ${primary.customAgents}`,
+    `primary surfaces: runtime ${primary.runtime}, codex ${primary.codexConfig}, user ${primary.userSkills}, hooks ${hooksLabel}, custom-agents ${primary.customAgents}`,
     `install bundle: ${snapshot.statusBundle.primary.installBundle}`,
     `doctor result: ${snapshot.doctorHeadline}`,
     `runtime summary (read-only local visibility): ${snapshot.runtimeSummary.summary}`,
@@ -110,7 +112,7 @@ export function formatInspectDriftItemLines(
   driftItems: InspectDriftItemPresentation[]
 ): string[] {
   return driftItems.map((item) =>
-    item.repairHint
+    item.repairHint && item.status !== "unsupported (use WSL)"
       ? `${item.name}: ${item.status} (${item.repairHint})`
       : `${item.name}: ${item.status}`
   );

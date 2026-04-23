@@ -187,4 +187,4 @@ Future plan/spec docs must:
 - keep `Recommended` separate from `Locked`
 - keep `Open` separate from both
 - not silently promote `Open` items into implementation facts
-- not reintroduce Rust-first assumptions now that TypeScript-first is the locked stack direction
+- not reintroduce legacy-stack assumptions now that TypeScript-first is the locked stack direction

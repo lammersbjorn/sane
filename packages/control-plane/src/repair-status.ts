@@ -6,7 +6,9 @@ import { CORE_INSTALL_BUNDLE_TARGETS } from "./core-install-bundle-targets.js";
 import { inspectStatusBundle } from "./inventory.js";
 import { inspectTelemetrySnapshot } from "./preferences.js";
 import {
+  isUnsupportedNativeWindowsHooks,
   managedStatusKindFromInventory,
+  presentManagedInventoryItem,
   presentManagedStatus,
   type ManagedStatusKind
 } from "./status-presenter.js";
@@ -89,7 +91,17 @@ function statusFor(
   inventory: ReturnType<typeof inspectStatusBundle>["inventory"],
   name: string
 ): RepairActionStatus {
-  return fromInventoryStatus(inventory.find((item) => item.name === name)?.status);
+  const item = inventory.find((entry) => entry.name === name);
+
+  if (item && isUnsupportedNativeWindowsHooks(item)) {
+    const presentation = presentManagedInventoryItem(item);
+    return {
+      kind: presentation.kind,
+      label: presentation.label
+    };
+  }
+
+  return fromInventoryStatus(item?.status);
 }
 
 function uninstallAllStatus(

@@ -54,7 +54,7 @@ Do not mix them.
 
 ## Stack Migration Rule
 
-- The stack target is TypeScript-first. Do not keep adding Rust-first assumptions to new plans/specs.
+- The stack target is TypeScript-first. Do not keep adding legacy-stack assumptions to new plans/specs.
 - Temporary bridge code is allowed only to preserve behavior while landing parity.
 - Migration work must not be used to reopen product philosophy, add wrapper ritual, or widen repo self-hosting guidance.
 

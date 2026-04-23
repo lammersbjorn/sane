@@ -17,6 +17,12 @@ export interface ManagedStatusPresentation {
   tone: "ok" | "warn" | "muted";
 }
 
+export interface ManagedInventoryPresentationTarget {
+  name?: string;
+  status?: InventoryStatus;
+  repairHint?: string | null;
+}
+
 export function managedStatusKindFromInventory(status: InventoryStatus | undefined): ManagedStatusKind {
   if (status === InventoryStatus.Installed) {
     return "installed";
@@ -62,6 +68,28 @@ export function presentInventoryStatus(
   status: InventoryStatus | undefined
 ): ManagedStatusPresentation {
   return presentManagedStatus(managedStatusKindFromInventory(status));
+}
+
+export function presentManagedInventoryItem(
+  item: ManagedInventoryPresentationTarget | null | undefined
+): ManagedStatusPresentation {
+  if (isUnsupportedNativeWindowsHooks(item)) {
+    return {
+      kind: "disabled",
+      label: "unsupported (use WSL)",
+      tone: "muted"
+    };
+  }
+
+  return presentInventoryStatus(item?.status);
+}
+
+export function isUnsupportedNativeWindowsHooks(
+  item: ManagedInventoryPresentationTarget | null | undefined
+): boolean {
+  return item?.name === "hooks"
+    && item.status === InventoryStatus.Invalid
+    && item.repairHint?.includes("native Windows") === true;
 }
 
 export function inventoryStatusFromRuntimeLayer(status: RuntimeLayerKind): InventoryStatus {

@@ -1,36 +1,37 @@
 # Sane Packaging / Distribution Audit
 
-Last updated: 2026-04-19
+Last updated: 2026-04-23
 
 Purpose:
 - decide how `Sane` should become broadly installable once `v1` is stable
-- prefer official package-manager paths with low user friction
-- keep distribution aligned with Sane's cross-platform and low-ceremony philosophy
+- keep distribution aligned with the shipped TypeScript CLI/TUI path
+- prefer low-friction package-manager installs over bespoke installers
 
 ## Primary Sources
 
+- npm:
+  - [package.json](https://docs.npmjs.com/cli/v11/configuring-npm/package-json/)
+  - [publishing packages](https://docs.npmjs.com/creating-and-publishing-unscoped-public-packages)
+  - [npx / npm exec](https://docs.npmjs.com/cli/v11/commands/npx)
 - Homebrew:
   - [Formula Cookbook](https://docs.brew.sh/Formula-Cookbook)
   - [How to Create and Maintain a Tap](https://docs.brew.sh/How-to-Create-and-Maintain-a-Tap)
-  - [Acceptable Formulae](https://docs.brew.sh/Acceptable-Formulae)
 - Windows Package Manager:
   - [Create your package manifest](https://learn.microsoft.com/en-us/windows/package-manager/package/manifest)
   - [Submit your manifest to the repository](https://learn.microsoft.com/en-us/windows/package-manager/package/repository)
   - [winget-create](https://github.com/microsoft/winget-create)
 - Scoop:
   - [Scoop app manifests](https://github.com/ScoopInstaller/Scoop/wiki/App-Manifests)
-- Rust distribution:
-  - [Publishing on crates.io](https://doc.rust-lang.org/cargo/reference/publishing.html)
-  - [cargo-binstall](https://github.com/cargo-bins/cargo-binstall)
 
 ## Audit Rule
 
 Good `Sane` distribution should satisfy most of these:
+
 - one obvious install path per major OS
 - low maintenance burden for `v1`
-- works with prebuilt Rust binaries
+- works with the bundled TypeScript CLI output
 - easy rollback/version pinning
-- does not force users to build from source unless they want to
+- does not force users into source builds unless they want them
 
 ## Recommendation
 
@@ -39,88 +40,93 @@ Good `Sane` distribution should satisfy most of these:
 Use GitHub Releases as the canonical artifact source.
 
 Why:
-- every downstream channel needs stable versioned artifacts anyway
-- easiest place to attach platform binaries and checksums
-- matches Rust binary tooling well
 
-Expected artifacts later:
-- macOS Apple Silicon
-- macOS Intel
-- Linux x86_64
-- Linux arm64 if feasible
-- Windows x86_64
+- downstream package-manager channels still need stable versioned artifacts
+- release archives and checksums stay useful even when npm is the direct-install path
+- Homebrew / winget / Scoop all fit cleanly on top of release artifacts
 
 Important product implication:
-- end-user distribution should converge on one public binary name, likely `sane`
-- do not ship the end-user product publicly as `sane-tui`
+
+- end-user distribution should converge on one public binary name: `sane`
+- do not publicly ship the product as `sane-tui`
+
+### Direct Install Fallback
+
+Primary direct install recommendation:
+
+- publish a public npm package for `sane`
+
+Why:
+
+- matches the shipped TypeScript CLI
+- fits the current `build:package` / packaged `dist/bin/sane.cjs` path
+- gives low-friction install modes:
+  - `pnpm dlx sane`
+  - `npx sane`
+  - `npm i -g sane`
+
+Important caution:
+
+- npm should be the direct-install fallback, not the only install story
+- package-manager channels still matter for normal OS-native installs
 
 ### macOS and Linux
 
 Primary recommendation:
+
 - Homebrew tap
 
 Why:
-- official tap flow is straightforward
-- works on both macOS and Linux
-- very strong fit for CLI/TUI binaries
+
+- strong fit for CLI/TUI tools
+- works across macOS and Linux
+- good default for users who want package-manager installs instead of npm globals
 
 Recommended shape:
+
 - separate tap repo later, likely `lammersbjorn/homebrew-sane`
 - install path:
   - `brew install lammersbjorn/sane/sane`
 
-Why not `homebrew/core` first:
-- stricter long-term maintenance bar
-- easier to iterate in your own tap first
-
 ### Windows
 
 Primary recommendation:
+
 - `winget`
 
 Why:
+
 - official Windows package-manager path
 - broadest Windows reach
-- clear manifest and submission workflow
+- clear manifest and update workflow
 
 Recommended shape:
-- publish installer/zip artifacts in GitHub Releases
+
+- publish zip artifacts in GitHub Releases
 - submit manifests to `microsoft/winget-pkgs`
-- likely automate manifest creation/update with `wingetcreate`
+- automate manifest creation/update with `wingetcreate` once release shape stabilizes
 
 ### Windows Secondary Channel
 
 Secondary recommendation:
+
 - Scoop
 
 Why:
-- popular with developer/power-user Windows audience
+
+- popular with developer/power-user Windows users
 - lightweight for zip-based CLI tools
 - good complement to `winget`
 
 Recommended shape:
+
 - own Scoop bucket later if needed
 - do not make Scoop the only Windows path
-
-### Rust / Developer Fallback
-
-Recommended fallback:
-- publish the end-user crate on `crates.io`
-- support `cargo install`
-- support `cargo binstall` once release artifacts are predictable
-
-Why:
-- strong fit for Rust developer audience
-- useful cross-platform fallback
-- `cargo-binstall` gives binary installs without local compilation when metadata/artifacts line up
-
-Important caution:
-- this should stay fallback, not the only install story
-- many non-Rust users should never need a Rust toolchain
 
 ## What Not To Do First
 
 Do not make these the first distribution milestone:
+
 - custom curl-pipe installer as the main path
 - hand-maintained `.deb` / `.rpm` packaging before the product stabilizes
 - MSI-first Windows distribution without `winget`
@@ -129,39 +135,40 @@ Do not make these the first distribution milestone:
 ## Best `v1.x` Distribution Sequence
 
 1. stable GitHub Release artifacts
-2. Homebrew tap
-3. winget
-4. Scoop
-5. crates.io + `cargo install`
-6. `cargo-binstall` metadata/artifact polish
+2. npm package for direct install / trial
+3. Homebrew tap
+4. winget
+5. Scoop
 
 Why this order:
+
 - establishes one artifact truth first
+- gives the current TypeScript CLI a native distribution path fast
 - covers macOS/Linux quickly with Homebrew
 - covers mainstream Windows with winget
-- adds power-user and Rust-native fallbacks after that
+- adds a power-user Windows fallback after that
 
 ## Plan Impact
 
-Add a dedicated post-`v1` packaging track:
+Keep a dedicated post-`v1` packaging track:
+
 - release artifact matrix
-- binary naming cleanup
+- binary/package naming cleanup
 - checksums/signing strategy
+- npm publishing automation
 - Homebrew tap automation
 - winget manifest automation
 - optional Scoop bucket automation
-- crates.io publish flow
-- `cargo-binstall` support validation
 
 ## Decision
 
 Best current plan:
+
 - yes, `Sane` should become broadly installable after `v1`
 - canonical distribution base should be GitHub Releases
+- first direct-install path should be a public npm package
 - first package-manager targets should be:
   - Homebrew for macOS/Linux
   - winget for Windows
-- secondary channels later:
+- secondary channel later:
   - Scoop
-  - crates.io / `cargo install`
-  - `cargo-binstall`

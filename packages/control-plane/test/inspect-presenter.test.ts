@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { InventoryStatus } from "@sane/core";
 
 import {
   formatInspectDriftItemLines,
@@ -65,7 +66,7 @@ describe("inspect presenter", () => {
       },
       {
         name: "hooks",
-        status: "invalid",
+        status: "unsupported (use WSL)",
         repairHint: "Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows."
       }
     ];
@@ -73,7 +74,7 @@ describe("inspect presenter", () => {
     expect(formatInspectDriftSummaryLine(driftItems)).toBe("export drift view: config, hooks");
     expect(formatInspectDriftItemLines(driftItems)).toEqual([
       "config: invalid",
-      "hooks: invalid (Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows.)"
+      "hooks: unsupported (use WSL)"
     ]);
   });
 
@@ -105,7 +106,7 @@ describe("inspect presenter", () => {
         driftItems: [
           {
             name: "hooks",
-            status: "invalid",
+            status: "unsupported (use WSL)",
             repairHint: "Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows."
           }
         ],
@@ -113,7 +114,11 @@ describe("inspect presenter", () => {
           runtime: null,
           codexConfig: null,
           userSkills: null,
-          hooks: null,
+          hooks: {
+            name: "hooks",
+            status: InventoryStatus.Invalid,
+            repairHint: "Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows."
+          },
           customAgents: null,
           installBundle: "missing",
           status: {
@@ -171,7 +176,7 @@ describe("inspect presenter", () => {
     );
     expect(lines).toContain("export drift view: hooks");
     expect(lines).toContain(
-      "hooks: invalid (Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows.)"
+      "primary surfaces: runtime installed, codex configured, user missing, hooks unsupported (use WSL), custom-agents missing"
     );
     expect(lines.filter((line) => line === "")).toHaveLength(3);
   });

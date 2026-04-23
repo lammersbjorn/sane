@@ -1,30 +1,26 @@
 # Sane TUI Tooling And UX Audit
 
-Last updated: 2026-04-20
+Last updated: 2026-04-23
 
 Purpose:
-- avoid blindly swapping TUI libraries
+- avoid blindly swapping terminal UI stacks
 - study what makes strong terminal tools feel polished
-- define what `Sane` should copy and what it should reject
+- define what `Sane` should copy and what it should reject now that the shipped path is TypeScript-only
 
 ## Sources
 
-- [Ratatui](https://ratatui.rs/)
-- [Tachyonfx](https://ratatui.rs/ecosystem/tachyonfx/)
-- [ratatui-image](https://docs.rs/ratatui-image/latest/ratatui_image/)
 - [Yazi](https://github.com/sxyazi/yazi)
-- [gitui](https://github.com/gitui-org/gitui)
 - [lazygit](https://github.com/jesseduffield/lazygit)
+- [gitui](https://github.com/gitui-org/gitui)
 - [k9s](https://github.com/derailed/k9s)
 - [Bubble Tea](https://github.com/charmbracelet/bubbletea)
 - [Lip Gloss](https://github.com/charmbracelet/lipgloss)
 - [Textual](https://textual.textualize.io/)
-- [egui](https://github.com/emilk/egui)
-- [iced](https://iced.rs/)
+- [Ink](https://github.com/vadimdemedes/ink)
 
 ## Main Finding
 
-Good terminal apps do not feel polished because they use a magical library.
+Good terminal apps do not feel polished because they use a magical renderer.
 
 They feel polished because they:
 
@@ -35,15 +31,15 @@ They feel polished because they:
 - avoid dumping every diagnostic panel on the first view
 - add motion only after the information architecture is already clean
 
-`Sane` was failing more on information architecture than on rendering technology.
+`Sane` was failing more on information architecture than on renderer choice.
 
-The current `sane-tui` work already validates that call:
+That finding still holds after the TypeScript cutover:
 
-- `ratatui` stayed
-- onboarding moved to section tabs
-- the default screen now shows one ordered action list instead of a box wall
-- successful writes use notice popups and a compact last-result area
-- narrow layouts stack content before reaching for a cramped split view
+- onboarding is section-first
+- the default view is guided, not a backend verb wall
+- risky writes use confirmations
+- result feedback stays compact and close to the current task
+- narrow layouts stack instead of forcing cramped splits
 
 ## What Strong Tools Actually Do
 
@@ -55,12 +51,11 @@ Strong patterns:
 - wide, readable primary pane
 - secondary detail, not six equally loud boxes
 - performance and polish on top of a sharp structure
-- plugin/extensibility does not leak into first-run clutter
 
 Relevance to `Sane`:
 
 - `Sane` should have one obvious primary action on each screen
-- detailed status belongs behind inspect/expand views, not always on the home screen
+- detailed status belongs behind inspect/expand views, not on first load
 
 ### lazygit / gitui
 
@@ -74,157 +69,74 @@ Strong patterns:
 Relevance to `Sane`:
 
 - the app should feel like a guided control surface, not a wall of backend verbs
-- `Sane` should separate onboarding, configure, inspect, and repair clearly
+- `Sane` should keep onboarding, configure, inspect, and repair clearly separated
 
 ### k9s
 
 Strong patterns:
 
-- strong theming / skins
+- strong theming and focus states
 - shortcuts available, but not required to grasp the layout
 - the default screen is still focused
 
 Relevance to `Sane`:
 
-- theming/skins should come after layout clarity
-- `Sane` can support optional skins later, but should not use style to hide structural problems
+- theming should follow layout clarity, not substitute for it
+- shortcuts can exist, but first-run comprehension wins
 
-### Bubble Tea / Lip Gloss apps
+### Bubble Tea / Lip Gloss, Textual, Ink
 
 Strong patterns:
 
 - strong visual hierarchy
-- tasteful spacing, borders, and focus treatment
-- often more expressive than average terminal apps
-
-Important caveat:
-
-- the Charm stack is in Go, not Rust
-- this does not automatically justify a Rust stack migration
+- deliberate spacing and focus treatment
+- expressive but still task-oriented terminal UX
 
 Relevance to `Sane`:
 
-- copy the visual discipline, not the language stack blindly
+- copy the visual discipline and interaction patterns
+- do not switch stacks just because another ecosystem has nicer examples
 
-## Library Assessment
+## Renderer Assessment
 
-### Ratatui
+Current call:
 
-Pros:
+- stay on the current TypeScript terminal path
+- keep improving structure, terminal behavior, and packaging before entertaining another renderer swap
 
-- strongest mainstream Rust TUI base
-- cross-platform
-- rich ecosystem
-- already in this repo
-- enough to build a polished installer if the UX is good
+Why:
 
-Cons:
+- the current gaps are polish, parity, and packaging hardening
+- none of those require reopening the implementation stack
+- another renderer migration would mostly burn time while preserving the same UX problems if IA slips again
 
-- lower-level than some "batteries included" stacks
-- easier to build ugly box soup if structure is weak
+Only reconsider the renderer if:
 
-Call:
-
-- keep `ratatui` for now
-
-### Ratatui + Tachyonfx
-
-Pros:
-
-- lets `Sane` add subtle motion and transitions later
-
-Cons:
-
-- polish only matters after layout is fixed
-
-Call:
-
-- later, not now
-
-### Ratatui + ratatui-image
-
-Pros:
-
-- terminal image/logo support where protocols exist
-
-Cons:
-
-- terminal compatibility varies
-- easy to become gimmicky
-
-Call:
-
-- optional future flourish only
-
-### Textual
-
-Pros:
-
-- beautiful, batteries-included terminal app framework
-- very strong for polished layouts
-
-Cons:
-
-- Python
-- would fight the locked Rust decision
-
-Call:
-
-- reference for UX, not implementation
-
-### Bubble Tea / Lip Gloss
-
-Pros:
-
-- very good design patterns for terminal apps
-- expressive visual system
-
-Cons:
-
-- Go stack
-- switching language/runtime would be unjustified right now
-
-Call:
-
-- copy interaction/design ideas, do not migrate stack
-
-### egui / iced
-
-Pros:
-
-- if `Sane` wants true graphics, richer widgets, and GUI-level polish, these are the real options
-
-Cons:
-
-- no longer a terminal UI
-- much larger product shift
-
-Call:
-
-- only consider if `Sane` deliberately pivots from TUI to GUI
+- the current terminal path cannot deliver the required layout/focus behavior
+- packaged distribution becomes materially worse because of the current stack
+- a concrete blocker appears that is renderer-specific rather than product-architecture-specific
 
 ## Recommendation
 
-Do not switch away from `ratatui`.
+Do not chase a renderer rewrite right now.
 
-Current code already proves the right order of operations:
+Current order of operations stays:
 
-1. fix information architecture first
-2. prioritize narrow readable layouts
-3. use popups/modals for confirmations and success feedback
-4. keep result feedback compact and close to the current task
-5. continue theme/motion polish only after the structure holds
-
-Only reconsider library choice if this `ratatui` path clearly stops meeting product needs.
+1. keep the information architecture sharp
+2. keep narrow layouts readable
+3. use confirmations/notices for risky or successful writes
+4. keep result feedback compact
+5. improve parity and packaging before visual flourish
 
 ## Current Implementation Check
 
-- Section tabs are now the primary navigation model: `Get started`, `Preferences`, `Install`, `Inspect`, `Repair`.
-- Onboarding is an ordered `Get started` flow, not a separate command launcher.
-- Widths under roughly `120` columns prioritize stacked layouts over a forced wide split.
-- Risky writes use confirm popups; successful writes commonly use notice popups.
-- The dashboard keeps `Last Result` visible without dedicating the whole screen to output.
-- User-facing install language should name concrete things like skills, hooks, `AGENTS.md` blocks, and custom agents instead of calling them "assets".
+- section tabs remain the primary navigation model: `Get started`, `Preferences`, `Install`, `Inspect`, `Repair`
+- onboarding is an ordered `Get started` flow, not a command launcher
+- user-facing install language names concrete things like skills, hooks, `AGENTS.md` blocks, and custom agents
+- inspect holds detailed inventory
+- repair holds dangerous / rollback actions
+- preferences holds local choices
+- install holds Codex-native write actions
 
 ## Concrete Design Rules For Sane
 
@@ -254,7 +166,7 @@ If `Sane` adds a growth/attribution option in onboarding:
 
 ## Rejected For Now
 
-- blind library switch because current TUI feels bad
-- adding graphics before fixing IA
-- stuffing more status panels into the current home screen
+- blind renderer switch because the TUI feels rough
+- adding motion before fixing IA
+- stuffing more status panels into the home screen
 - treating style/theme as a substitute for product clarity

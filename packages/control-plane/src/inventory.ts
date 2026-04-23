@@ -20,7 +20,12 @@ import { inspectCodexConfigInventory } from "./codex-config.js";
 import { inspectCodexSkillsAndAgents } from "./codex-native.js";
 import { inspectCustomAgentsInventory, inspectHooksInventory } from "./hooks-custom-agents.js";
 import { inspectSavedLocalConfig } from "./local-config.js";
-import { managedStatusKindFromInventory, presentManagedStatus } from "./status-presenter.js";
+import {
+  isUnsupportedNativeWindowsHooks,
+  managedStatusKindFromInventory,
+  presentManagedInventoryItem,
+  presentManagedStatus
+} from "./status-presenter.js";
 import { inspectOpencodeAgentsInventory } from "./opencode-native.js";
 import { inspectRuntimeInventory } from "./runtime-inventory.js";
 import { inspectRuntimeState } from "./runtime-state.js";
@@ -584,11 +589,6 @@ function isMissingOrInvalid(status: InventoryStatus | undefined): boolean {
   return status === InventoryStatus.Missing || status === InventoryStatus.Invalid;
 }
 
-function isUnsupportedNativeWindowsHooks(item: InventoryItem | null): boolean {
-  return item?.status === InventoryStatus.Invalid
-    && item.repairHint?.includes("native Windows") === true;
-}
-
 function inventoryStatusName(item: InventoryItem | null): InventoryStatusName {
   return (item?.status.asString() as InventoryStatusName | undefined) ?? "missing";
 }
@@ -611,7 +611,7 @@ function doctorInventoryLine(inventory: InventoryItem[], name: string): string {
 }
 
 function doctorManagedFallback(item: InventoryItem): string {
-  return presentManagedStatus(managedStatusKindFromInventory(item.status)).label;
+  return presentManagedInventoryItem(item).label;
 }
 
 function doctorInstallFileLabel(item: InventoryItem, filename: string): string {
@@ -639,6 +639,12 @@ function doctorPackLabel(item: InventoryItem): string {
 }
 
 function doctorManagedConfigLabel(item: InventoryItem, applyCommand: string, repairPath: string): string {
+  const presentation = presentManagedInventoryItem(item);
+
+  if (presentation.label === "unsupported (use WSL)") {
+    return presentation.label;
+  }
+
   return item.status === InventoryStatus.Installed
     ? "installed"
     : item.status === InventoryStatus.Missing

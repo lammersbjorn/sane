@@ -218,6 +218,22 @@ describe("full inventory and doctor", () => {
     expect(bundle.primary.installBundle).toBe("installed");
   });
 
+  it("formats native Windows hooks as unsupported in doctor output", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    exportUserSkills(paths, codexPaths);
+    exportGlobalAgents(paths, codexPaths);
+    exportCustomAgents(paths, codexPaths);
+
+    const bundle = inspectStatusBundle(paths, codexPaths, "windows");
+    const doctorSnapshot = inspectDoctorSnapshot(paths, codexPaths, bundle);
+
+    expect(doctorSnapshot.lines).toContain("hooks: unsupported (use WSL)");
+  });
+
   it("does not keep unsupported native Windows hooks in onboarding attention once the bundle is installed", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();

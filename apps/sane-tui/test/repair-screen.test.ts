@@ -170,4 +170,22 @@ describe("repair screen model", () => {
     expect(fromBundleSpy).toHaveBeenCalledWith(paths, codexPaths, bundle);
     expect(screen.installBundle).toBe("missing");
   });
+
+  it("shows native Windows hooks as unsupported instead of invalid", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    installRuntime(paths, codexPaths);
+    exportAll(paths, codexPaths, "windows");
+
+    const bundle = inventory.inspectStatusBundle(paths, codexPaths, "windows");
+    const screen = loadRepairScreenFromStatusBundle(paths, codexPaths, bundle);
+
+    expect(screen.actions.find((action) => action.id === "uninstall_hooks")?.status).toEqual({
+      kind: "disabled",
+      label: "unsupported (use WSL)"
+    });
+  });
 });

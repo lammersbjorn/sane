@@ -59,6 +59,8 @@ import {
 import { inspectRuntimeInventory } from "./runtime-inventory.js";
 import {
   inventoryStatusFromRuntimeLayer,
+  isUnsupportedNativeWindowsHooks,
+  presentManagedInventoryItem,
   presentInventoryStatus,
   runtimeLayerLabelFromInventory
 } from "./status-presenter.js";
@@ -230,8 +232,8 @@ export function inspectSnapshotFromStatusBundle(
     driftItems: statusBundle.driftItems.map((item) => ({
       name: item.name,
       path: item.path,
-      status: presentInventoryStatus(item.status).label,
-      repairHint: item.repairHint
+      status: presentManagedInventoryItem(item).label,
+      repairHint: isUnsupportedNativeWindowsHooks(item) ? null : item.repairHint
     })),
     policyPreview: previewPolicyForCurrentRun(paths, runtimeState.current)
   };

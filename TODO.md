@@ -167,7 +167,7 @@ Current gate:
 
 - `B4` managed Codex surfaces remain additive/reversible only
 - `B7` may proceed only as internal adaptive policy/state groundwork and inspection surfaces, not user-facing workflow ritual or orchestration runtime
-- stack direction is now TypeScript-first; do not add new Rust-first assumptions to source-of-truth docs while migration planning is in flight
+- stack direction is now TypeScript-first; do not add new legacy-stack assumptions to source-of-truth docs
 
 Current command examples:
 
@@ -266,11 +266,11 @@ pnpm check
 - [x] internal TS preview is smart-routed across non-TTY text vs TTY live terminal
 - [x] TS terminal preview has visible nav chrome, key parity, viewport fitting, resize redraw, and a local bin shim
 - [x] internal TS build can emit a bundled `dist/bin/sane.cjs` and smoke-run it without `tsx`
-- [x] switch public root `start` / `start:settings` away from Rust
+- [x] switch public root `start` / `start:settings` to the packaged TS entrypoint
   - [x] switch public README/setup docs away from Cargo-first instructions
   - [x] declare the packaged/public CLI story for `@sane/sane-tui`
     current story: root public start uses the built TS path; internal source preview uses `apps/sane-tui/bin/sane.mjs`; internal built preview uses `dist/bin/sane.cjs`; generated distribution metadata lives at `dist/package.json` and points the package CLI at the built output
-  - [x] remove the legacy Rust workspace and fallback startup path
+  - [x] remove the legacy workspace and fallback startup path
 - [ ] Exact post-`v1` packaging automation sequence
 - [ ] Exact default attribution surface if onboarding opt-in ships:
   - README badge
