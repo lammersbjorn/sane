@@ -121,9 +121,10 @@ Primary source:
 
 ### Built-in Packs
 
-- Do not lock final `v1` builtin packs yet
-- Builtin pack shortlist needs dedicated research
-- That research should be a `v1 capability audit`, not vibes
+- `v1` built-in pack set is now fixed from the capability audit: `core`, `caveman`, `rtk`, and `frontend-craft`
+- `frontend-craft` stays one curated pack containing the pinned upstream Taste Skill suite plus `impeccable`
+- Post-`v1` pack changes require a new capability audit, provenance, explicit optional/experimental status first, and install/inspect/uninstall coverage before graduation
+- No public plugin API compatibility promise exists in `v1`
 
 ### Self-Hosting / Self-Improvement
 
@@ -169,7 +170,6 @@ These are still undecided and should stay out of `Locked`.
 
 - Exact local runtime directory layout and names
 - Exact state file formats and compaction strategy
-- Exact `v1` built-in packs
 - Any additional export surfaces beyond the current user skill, repo skills, repo `AGENTS.md` block, global `AGENTS.md` block, hooks, and custom agents
 - Exact model preset matrix and routing rules
 - Exact control-surface implementation details within the TypeScript-first stack

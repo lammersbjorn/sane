@@ -248,7 +248,7 @@ pnpm check
 
 ## Open Research / Decisions
 
-- [ ] Exact post-`v1` built-in pack expansion/contraction policy (current built-in set is fixed today)
+- [x] Exact post-`v1` built-in pack expansion/contraction policy (current built-in set is fixed today; later changes require capability audit, provenance, optional/experimental status first, and install/inspect/uninstall coverage)
 - [ ] Exact long-term `Opencode` compatibility scope beyond the current optional `opensrc` profile plus optional OpenCode-agent export
 - [x] Exact scope for native Codex statusline/title config helper:
   - keep only the current optional native config profile over `tui.status_line`, `tui.terminal_title`, and `tui.notification_condition`

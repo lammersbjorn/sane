@@ -205,3 +205,28 @@ Do not expose a public pack API yet.
 - `frontend-craft` should use `Taste Skill` as the primary upstream inspiration/reference instead of `Uncodixfy`.
 - the full pinned upstream `Leonxlnx/taste-skill` skill suite and `impeccable` should stay bundled together initially under `frontend-craft`.
 - marketplace/plugin extensibility remains deferred until after `v1`.
+
+## Post-v1 Expansion / Contraction Policy
+
+The `v1` built-in pack set is fixed until a new capability audit says otherwise.
+
+Post-`v1` pack changes must follow this gate:
+
+1. Candidate starts as an optional integration/profile or explicit experimental pack, not a default.
+2. Candidate must map to a concrete Codex-native surface or Sane-owned inspect/export behavior.
+3. Candidate must have broad user value, not just one repo's workflow.
+4. Candidate must have clear provenance:
+   - upstream URL, ref, path, and license where derived from upstream
+   - internal ownership note where Sane-authored
+   - pinned/manual update strategy unless a later supply-chain policy explicitly allows automation
+5. Candidate must have uninstall/repair/status coverage before it can graduate from experimental.
+6. Candidate must not require live runtime fetches, git submodules, or auto-updating upstream content in normal installs.
+7. Candidate must not create a public plugin API compatibility promise unless a separate plugin API decision has shipped.
+
+Contraction rule:
+
+- remove or demote a pack if it loses upstream clarity, becomes too niche, creates too much prompt surface, or cannot be kept reversible/auditable.
+
+Default-promotion rule:
+
+- no optional pack becomes default-on without a dedicated decision log entry, tests for install/inspect/uninstall behavior, and a docs update explaining why it now helps most users.
