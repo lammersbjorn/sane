@@ -12,3 +12,8 @@ export * from "@sane/sane-tui/repair-screen.js";
 export * from "@sane/sane-tui/result-panel.js";
 export * from "@sane/sane-tui/result-panel-layer.js";
 export * from "@sane/sane-tui/shell.js";
+export * from "@sane/sane-tui/terminal-driver.js";
+export * from "@sane/sane-tui/terminal-keys.js";
+export * from "@sane/sane-tui/terminal-loop.js";
+export * from "@sane/sane-tui/text-driver.js";
+export * from "@sane/sane-tui/text-renderer.js";
