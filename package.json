@@ -6,6 +6,8 @@
   "scripts": {
     "start": "cargo run -p sane --",
     "start:settings": "cargo run -p sane -- settings",
+    "start:ts-live-preview": "pnpm --filter @sane/sane-tui run preview:terminal",
+    "start:ts-live-preview:settings": "pnpm --filter @sane/sane-tui run preview:terminal settings",
     "start:ts-preview": "pnpm --filter @sane/sane-tui run preview:text",
     "start:ts-preview:settings": "pnpm --filter @sane/sane-tui run preview:text settings",
     "check": "pnpm typecheck && pnpm test",

@@ -7,6 +7,7 @@
     "./*.js": "./src/*.ts"
   },
   "scripts": {
+    "preview:terminal": "tsx ./bin/sane-terminal-preview.ts",
     "preview:text": "tsx ./bin/sane-text-preview.ts",
     "test": "vitest run",
     "test:watch": "vitest",

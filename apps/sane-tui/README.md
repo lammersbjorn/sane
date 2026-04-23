@@ -9,7 +9,7 @@ Current role:
 - owns shell state for section selection, confirmations, notices, and editor flows
 - owns pure input/key handling on top of the shell state machine
 - owns internal non-interactive TS CLI parsing/execution for backend verbs and hook output
-- exposes an internal text preview path through `tsx`
+- exposes internal text and live terminal preview paths through `tsx`
 - owns render-ready dashboard / overlay / app view models
 - owns internal text-frame rendering scaffolding for the future TS terminal driver
 - owns internal text-driver glue that wires discovery, shell, input, and text rendering together
@@ -45,6 +45,8 @@ Important files:
   - terminal escape-sequence decoding into TS TUI input keys
 - `src/terminal-driver.ts`
   - raw terminal input -> TS runtime step glue
+- `src/terminal-loop.ts`
+  - internal live terminal loop for alt-screen preview over the TS runtime
 
 Boundary rules:
 
@@ -57,6 +59,7 @@ Boundary rules:
 Verification:
 
 ```bash
+pnpm --filter @sane/sane-tui run preview:terminal settings
 pnpm --filter @sane/sane-tui run preview:text settings
 pnpm --filter @sane/sane-tui test
 pnpm --filter @sane/sane-tui typecheck
