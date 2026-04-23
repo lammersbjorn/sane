@@ -292,7 +292,7 @@ function projectRootMarker(candidate: string): ProjectRootMarker | undefined {
 }
 
 function nonEmpty(value: string | undefined): string | undefined {
-  if (value && value.length > 0) {
+  if (value && value.trim().length > 0) {
     return value;
   }
   return undefined;

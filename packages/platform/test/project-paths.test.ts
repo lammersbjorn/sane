@@ -243,6 +243,42 @@ describe('codex path parity', () => {
     ).toBe('C:\\Users\\sane');
   });
 
+  it('ignores blank home env vars before using Windows and fallback sources', () => {
+    expect(
+      resolveHomeDir(
+        {
+          HOME: '   ',
+          USERPROFILE: 'C:\\Users\\sane'
+        },
+        '/fallback/home'
+      )
+    ).toBe('C:\\Users\\sane');
+    expect(
+      resolveHomeDir(
+        {
+          HOME: '',
+          USERPROFILE: '',
+          HOMEDRIVE: 'C:',
+          HOMEPATH: '\\Users\\sane'
+        },
+        '/fallback/home'
+      )
+    ).toBe('C:\\Users\\sane');
+    expect(resolveHomeDir({ HOME: '   ' }, '/fallback/home')).toBe('/fallback/home');
+  });
+
+  it('normalizes selected home paths before deriving Codex paths', () => {
+    const dir = makeTempDir();
+    const home = join(dir, 'workspace', '..', 'home');
+    const paths = discoverCodexPaths({ HOME: home });
+    const normalizedHome = join(dir, 'home');
+
+    expect(paths.homeDir).toBe(normalizedHome);
+    expect(paths.codexHome).toBe(join(normalizedHome, '.codex'));
+    expect(paths.userSkillsDir).toBe(join(normalizedHome, '.agents', 'skills'));
+    expect(paths.opencodeGlobalAgentsDir).toBe(join(normalizedHome, '.config', 'opencode', 'agents'));
+  });
+
   it('falls back to os.homedir-compatible values when env vars are missing', () => {
     expect(discoverCodexPaths({}, '/fallback/home').homeDir).toBe('/fallback/home');
     expect(resolveHomeDir({}, '/fallback/home')).toBe('/fallback/home');

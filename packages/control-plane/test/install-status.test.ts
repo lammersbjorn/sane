@@ -147,4 +147,19 @@ describe("install status snapshot", () => {
     expect(status.actionStatus.export_all).toEqual({ kind: "installed", label: "installed" });
     expect(status.actionStatus.export_hooks).toEqual({ kind: "disabled", label: "unsupported (use WSL)" });
   });
+
+  it("infers native Windows from unsupported hook inventory when status bundle is preloaded", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    exportAll(paths, codexPaths, "windows");
+    const bundle = inspectStatusBundle(paths, codexPaths, "windows");
+    const status = inspectInstallStatusFromStatusBundle(paths, codexPaths, bundle);
+
+    expect(status.missingTargets).toEqual([]);
+    expect(status.actionStatus.export_all).toEqual({ kind: "installed", label: "installed" });
+    expect(status.actionStatus.export_hooks).toEqual({ kind: "disabled", label: "unsupported (use WSL)" });
+  });
 });
