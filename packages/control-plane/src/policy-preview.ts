@@ -29,7 +29,7 @@ import {
 } from "@sane/state";
 
 import { loadOrDefaultLocalConfig } from "./local-config.js";
-import { loadRuntimeHandoffState } from "./runtime-state.js";
+import { inspectRuntimeState } from "./runtime-state.js";
 
 export function previewPolicy(paths: ProjectPaths, env: HomeDirEnv = process.env): OperationResult {
   return previewPolicyForCurrentRun(paths, loadCurrentRunInspectState(paths), env);
@@ -113,7 +113,7 @@ function buildPolicyPreview(currentRun: CurrentRunState | null): PolicyPreviewPa
 }
 
 function loadCurrentRunInspectState(paths: ProjectPaths): CurrentRunState | null {
-  return loadRuntimeHandoffState(paths).current;
+  return inspectRuntimeState(paths).current;
 }
 
 function buildScenarioPreview(
