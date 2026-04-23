@@ -36,7 +36,13 @@ import {
   inspectIntegrationsProfileSnapshot,
   showCodexConfig
 } from "./codex-config.js";
-import { doctor, doctorForStatusBundle, inspectDoctorSnapshot, inspectStatusBundle } from "./inventory.js";
+import {
+  doctor,
+  doctorForStatusBundle,
+  inspectDoctorSnapshot,
+  inspectStatusBundle,
+  showStatusFromStatusBundle
+} from "./inventory.js";
 import { formatLatestPolicyPreviewLines } from "./policy-preview-presenter.js";
 import { previewPolicy, previewPolicyForCurrentRun } from "./policy-preview.js";
 import { showConfig } from "./preferences.js";
@@ -193,16 +199,24 @@ export function showRuntimeProgress(paths: ProjectPaths): RuntimeProgressSnapsho
 }
 
 export function inspectSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): InspectSnapshot {
-  const statusBundle = inspectStatusBundle(paths, codexPaths);
+  return inspectSnapshotFromStatusBundle(paths, codexPaths, inspectStatusBundle(paths, codexPaths));
+}
+
+export function inspectSnapshotFromStatusBundle(
+  paths: ProjectPaths,
+  codexPaths: CodexPaths,
+  statusBundle: ReturnType<typeof inspectStatusBundle>
+): InspectSnapshot {
   const runtimeState = inspectRuntimeStateSnapshot(paths);
   const doctorResult = doctorForStatusBundle(paths, codexPaths, statusBundle);
   const doctorSnapshot = inspectDoctorSnapshot(paths, codexPaths, statusBundle);
   const integrationsProfile = inspectIntegrationsProfileSnapshot(codexPaths);
+  const statusResult = showStatusFromStatusBundle(statusBundle);
 
   return {
     status: {
-      summary: `status: ${statusBundle.inventory.length} managed targets inspected`,
-      inventory: statusBundle.inventory
+      summary: statusResult.summary,
+      inventory: statusResult.inventory
     },
     statusBundle,
     doctor: doctorResult,

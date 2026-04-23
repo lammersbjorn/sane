@@ -101,8 +101,10 @@ export interface DoctorSnapshot {
 }
 
 export function showStatus(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
-  const bundle = inspectStatusBundle(paths, codexPaths);
+  return showStatusFromStatusBundle(inspectStatusBundle(paths, codexPaths));
+}
 
+export function showStatusFromStatusBundle(bundle: StatusBundle): OperationResult {
   return new OperationResult({
     kind: OperationKind.ShowStatus,
     summary: `status: ${bundle.inventory.length} managed targets inspected`,

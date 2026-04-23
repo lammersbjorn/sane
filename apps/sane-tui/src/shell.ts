@@ -33,7 +33,12 @@ import {
 } from "@sane/control-plane/hooks-custom-agents.js";
 import { exportOpencodeAgents, uninstallOpencodeAgents } from "@sane/control-plane/opencode-native.js";
 import { executeConfigSave, executeOperation, readLastOperationSummary } from "@sane/control-plane/history.js";
-import { doctor, inspectStatusBundle, showStatus } from "@sane/control-plane/inventory.js";
+import {
+  doctor,
+  inspectStatusBundle,
+  showStatus,
+  showStatusFromStatusBundle
+} from "@sane/control-plane/inventory.js";
 import { previewPolicy } from "@sane/control-plane/policy-preview.js";
 import {
   inspectEditablePreferencesConfig,
@@ -414,9 +419,10 @@ function executeUiCommand(
 }
 
 function buildStatusSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): ShellStatusSnapshot {
+  const statusBundle = inspectStatusBundle(paths, codexPaths);
   return {
-    status: showStatus(paths, codexPaths),
-    statusBundle: inspectStatusBundle(paths, codexPaths),
+    status: showStatusFromStatusBundle(statusBundle),
+    statusBundle,
     runtimeProgress: showRuntimeProgress(paths)
   };
 }

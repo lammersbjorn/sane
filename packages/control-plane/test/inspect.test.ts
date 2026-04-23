@@ -10,10 +10,12 @@ import { afterEach, describe, expect, it } from "vite-plus/test";
 import {
   applyCodexProfile,
   formatInspectOverviewLines,
+  inspectSnapshotFromStatusBundle,
   inspectSnapshot,
   installRuntime
 } from "../src/index.js";
 import { exportHooks } from "../src/hooks-custom-agents.js";
+import { inspectStatusBundle, showStatusFromStatusBundle } from "../src/inventory.js";
 import { saveConfig } from "../src/preferences.js";
 
 const tempDirs: string[] = [];
@@ -80,6 +82,10 @@ describe("inspect snapshot", () => {
     expect(snapshot.policyPreview.summary).toBe(
       "policy preview: rendered adaptive obligation scenarios"
     );
+    expect(snapshot.status).toEqual({
+      summary: showStatusFromStatusBundle(snapshot.statusBundle).summary,
+      inventory: showStatusFromStatusBundle(snapshot.statusBundle).inventory
+    });
     const overview = formatInspectOverviewLines(snapshot).join("\n");
 
     expect(overview).toContain("status counts:");
@@ -187,5 +193,23 @@ describe("inspect snapshot", () => {
     expect(overview).toContain("export drift view: config, hooks");
     expect(overview).toContain("config: invalid");
     expect(overview).toContain("hooks: invalid (repair ~/.codex/hooks.json or remove conflicting JSON)");
+  });
+
+  it("keeps bundle-based inspect snapshot aligned with the wrapper helper", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const config = createDefaultLocalConfig();
+
+    installRuntime(paths, codexPaths);
+    saveConfig(paths, config);
+    applyCodexProfile(paths, codexPaths);
+
+    const bundle = inspectStatusBundle(paths, codexPaths);
+
+    expect(inspectSnapshotFromStatusBundle(paths, codexPaths, bundle)).toEqual(
+      inspectSnapshot(paths, codexPaths)
+    );
   });
 });

@@ -60,6 +60,8 @@ describe("tui shell", () => {
     const paths = createProjectPaths(projectRoot);
     const codexPaths = createCodexPaths(homeDir);
     const statusBundleSpy = vi.spyOn(inventory, "inspectStatusBundle");
+    const statusFromBundleSpy = vi.spyOn(inventory, "showStatusFromStatusBundle");
+    const statusWrapperSpy = vi.spyOn(inventory, "showStatus");
     const progressSpy = vi.spyOn(controlPlane, "showRuntimeProgress");
     const shell = createTuiShell(paths, codexPaths);
 
@@ -68,10 +70,15 @@ describe("tui shell", () => {
     expect(shell.statusSnapshot.runtimeProgress).toBeNull();
 
     statusBundleSpy.mockClear();
+    statusFromBundleSpy.mockClear();
+    statusWrapperSpy.mockClear();
     progressSpy.mockClear();
     runSelectedAction(shell);
 
     expect(statusBundleSpy).toHaveBeenCalledWith(paths, codexPaths);
+    expect(statusFromBundleSpy).toHaveBeenCalledTimes(1);
+    expect(statusFromBundleSpy).toHaveBeenCalledWith(shell.statusSnapshot.statusBundle);
+    expect(statusWrapperSpy).not.toHaveBeenCalled();
     expect(progressSpy).toHaveBeenCalledWith(paths);
     expect(shell.status).toBe(shell.statusSnapshot.status);
     expect(shell.statusSnapshot.statusBundle.primary.status.runtime).toBe("installed");

@@ -16,6 +16,7 @@ import {
   inspectOnboardingSnapshot,
   inspectOnboardingSnapshotFromStatusBundle,
   inspectStatusBundle,
+  showStatusFromStatusBundle,
   showStatus
 } from "../src/inventory.js";
 import { installRuntime } from "../src/index.js";
@@ -160,6 +161,19 @@ describe("full inventory and doctor", () => {
     expect(result.inventory.find((item) => item.name === "hooks")?.status).toBe(
       InventoryStatus.Missing
     );
+  });
+
+  it("keeps bundle-based show-status aligned with the wrapper", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    installRuntime(paths, codexPaths);
+
+    const bundle = inspectStatusBundle(paths, codexPaths);
+
+    expect(showStatusFromStatusBundle(bundle)).toEqual(showStatus(paths, codexPaths));
   });
 
   it("keeps bundle-based onboarding snapshot aligned with the wrapper", () => {
