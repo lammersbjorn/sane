@@ -7,9 +7,12 @@ import {
   Parallelism,
   RunState,
   StopCondition,
+  SubagentReadinessReason,
   SubagentStrategy,
   TaskShape,
   ContinuationStrategy,
+  VerifierTiming,
+  canonicalPolicyEvalFixtures,
   evaluatePolicyFixtures,
   type PolicyEvalFixture
 } from "../src/index.js";
@@ -74,6 +77,53 @@ describe("policy eval harness", () => {
       failureCount: 0,
       failures: []
     });
+  });
+
+  it("evaluates the canonical policy suite", () => {
+    const fixtures = canonicalPolicyEvalFixtures();
+
+    expect(fixtures.map((fixture) => fixture.caseId)).toEqual([
+      "simple-question",
+      "local-edit",
+      "unknown-bug",
+      "multi-file-feature",
+      "blocked-long-run"
+    ]);
+    expect(evaluatePolicyFixtures(fixtures)).toEqual({
+      passed: true,
+      caseCount: 5,
+      failureCount: 0,
+      failures: []
+    });
+    expect(fixtures.find((fixture) => fixture.caseId === "multi-file-feature")?.expected).toEqual(
+      expect.objectContaining({
+        obligations: [
+          Obligation.Planning,
+          Obligation.Tdd,
+          Obligation.Review,
+          Obligation.SubagentEligible
+        ],
+        orchestration: expect.objectContaining({
+          subagents: SubagentStrategy.AllowIndependentSlices,
+          subagentReadiness: SubagentReadinessReason.IndependentSlicesReady,
+          verifierTiming: VerifierTiming.ThroughoutExecution
+        })
+      })
+    );
+    expect(fixtures.find((fixture) => fixture.caseId === "blocked-long-run")?.expected).toEqual(
+      expect.objectContaining({
+        obligations: [
+          Obligation.Planning,
+          Obligation.Review,
+          Obligation.ContextCompaction,
+          Obligation.SelfRepair
+        ],
+        continuation: {
+          strategy: ContinuationStrategy.SelfRepairUntilUnblocked,
+          stopCondition: StopCondition.UnblockedOrNeedsInput
+        }
+      })
+    );
   });
 
   it("returns structured failures for mismatched expectations", () => {

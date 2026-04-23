@@ -1,4 +1,5 @@
 import {
+  canonicalScenarios,
   explain,
   type ContinuationGuidance,
   type Obligation,
@@ -45,6 +46,22 @@ export function evaluatePolicyFixtures(
     failureCount: failures.length,
     failures
   };
+}
+
+export function canonicalPolicyEvalFixtures(): readonly PolicyEvalFixture[] {
+  return canonicalScenarios().map((scenario) => {
+    const explanation = explain(scenario.input);
+    return {
+      caseId: scenario.id,
+      input: scenario.input,
+      expected: {
+        obligations: explanation.decision.obligations,
+        roles: explanation.roles,
+        orchestration: explanation.orchestration,
+        continuation: explanation.continuation
+      }
+    };
+  });
 }
 
 function evaluatePolicyFixture(fixture: PolicyEvalFixture): PolicyEvalFailure[] {

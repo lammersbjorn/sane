@@ -10,6 +10,7 @@ export enum Intent {
 }
 
 export {
+  canonicalPolicyEvalFixtures,
   evaluatePolicyFixtures,
   type PolicyEvalExpected,
   type PolicyEvalFailure,
