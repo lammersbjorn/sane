@@ -1,7 +1,7 @@
 import { type CodexPaths, type ProjectPaths } from "@sane/platform";
 
 import {
-  inspectCodexProfileSnapshot
+  inspectCodexProfileFamilySnapshot
 } from "@sane/control-plane/codex-config.js";
 import {
   inspectStatusBundle,
@@ -30,9 +30,9 @@ export interface GetStartedScreenModel {
   recommendedNextStep: string;
   attentionItems: string[];
   statusLine: string;
-  codexProfileAudit: ReturnType<typeof inspectCodexProfileSnapshot>["audit"];
-  codexProfileApply: ReturnType<typeof inspectCodexProfileSnapshot>["apply"];
-  codexProfilePreview: ReturnType<typeof inspectCodexProfileSnapshot>["preview"];
+  codexProfileAudit: ReturnType<typeof inspectCodexProfileFamilySnapshot>["core"]["audit"];
+  codexProfileApply: ReturnType<typeof inspectCodexProfileFamilySnapshot>["core"]["apply"];
+  codexProfilePreview: ReturnType<typeof inspectCodexProfileFamilySnapshot>["core"]["preview"];
   steps: GetStartedStep[];
 }
 
@@ -49,7 +49,7 @@ export function loadGetStartedScreenFromStatusBundle(
   statusBundle: ReturnType<typeof inspectStatusBundle>
 ): GetStartedScreenModel {
   const onboarding = inspectOnboardingSnapshotFromStatusBundle(paths, statusBundle);
-  const codexProfile = inspectCodexProfileSnapshot(codexPaths);
+  const codexProfile = inspectCodexProfileFamilySnapshot(codexPaths).core;
   const steps = listSectionActions("get_started").map((action) => ({
     id: action.id as GetStartedStep["id"],
     title: action.label,

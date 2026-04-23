@@ -32,7 +32,6 @@ import {
 
 import {
   inspectCodexProfileFamilySnapshot,
-  inspectIntegrationsProfileSnapshot,
   showCodexConfig
 } from "./codex-config.js";
 import {
@@ -92,9 +91,9 @@ export interface InspectSnapshot {
   latestPolicyPreview: ReturnType<typeof inspectLatestPolicyPreview>;
   localConfig: ReturnType<typeof showConfig>;
   codexConfig: ReturnType<typeof showCodexConfig>;
-  integrationsAudit: ReturnType<typeof inspectIntegrationsProfileSnapshot>["audit"];
-  integrationsApply: ReturnType<typeof inspectIntegrationsProfileSnapshot>["apply"];
-  integrationsPreview: ReturnType<typeof inspectIntegrationsProfileSnapshot>["preview"];
+  integrationsAudit: ReturnType<typeof inspectCodexProfileFamilySnapshot>["integrations"]["audit"];
+  integrationsApply: ReturnType<typeof inspectCodexProfileFamilySnapshot>["integrations"]["apply"];
+  integrationsPreview: ReturnType<typeof inspectCodexProfileFamilySnapshot>["integrations"]["preview"];
   statuslineAudit: ReturnType<typeof inspectCodexProfileFamilySnapshot>["statusline"]["audit"];
   statuslineApply: ReturnType<typeof inspectCodexProfileFamilySnapshot>["statusline"]["apply"];
   statuslinePreview: ReturnType<typeof inspectCodexProfileFamilySnapshot>["statusline"]["preview"];
