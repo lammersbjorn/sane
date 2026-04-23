@@ -66,6 +66,14 @@ describe("bundled install/remove operations", () => {
     expect(result.inventory.find((item) => item.name === "custom-agents")?.status).toBe(
       InventoryStatus.Installed
     );
+    expect(result.details).not.toContain("export repo-skills: installed core skills");
+    expect(result.details).not.toContain("export repo-agents: installed managed block");
+    expect(result.inventory.find((item) => item.name === "repo-skills")).toBeUndefined();
+    expect(result.inventory.find((item) => item.name === "repo-agents")).toBeUndefined();
+    expect(result.pathsTouched.some((path) => path.startsWith(paths.repoSkillsDir))).toBe(
+      false
+    );
+    expect(result.pathsTouched).not.toContain(paths.repoAgentsMd);
   });
 
   it("skips hooks from export-all on native Windows", () => {
@@ -124,5 +132,9 @@ describe("bundled install/remove operations", () => {
     expect(result.inventory.find((item) => item.name === "custom-agents")?.status).toBe(
       InventoryStatus.Removed
     );
+    expect(result.details).not.toContain("uninstall repo-skills: removed core skills");
+    expect(result.details).not.toContain("uninstall repo-agents: removed managed block");
+    expect(result.inventory.find((item) => item.name === "repo-skills")).toBeUndefined();
+    expect(result.inventory.find((item) => item.name === "repo-agents")).toBeUndefined();
   });
 });

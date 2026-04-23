@@ -273,7 +273,7 @@ pnpm check
   - [x] prove exported router/custom-agent guidance uses current model routing and enabled packs (`@sane/framework-assets`, `export user-skills`, `export custom-agents`, and OpenCode-agent tests cover it)
   - [x] prove `.sane` runtime state is enough for handoff without Codex native memories (`inspectRuntimeState` ignores native `features.memories` while Codex config remains read-only)
   - [x] add shadow-mode inspection before any self-improvement/self-heal runner (`inspectSelfHostingShadowSnapshot` is read-only and keeps the runner disabled)
-  - keep all self-hosting surfaces reversible and optional outside this repo
+  - [x] keep all self-hosting surfaces reversible and optional outside this repo (`export all` / `uninstall all` exclude repo-local skills and repo `AGENTS.md`; explicit repo export/remove tests cover reversibility)
 - [ ] Exact TypeScript package split and TS-only packaging checklist
 - [x] internal TS launch supports no-args / `settings` / `inspect` / `repair`, backend verbs, and `hook session-start`
 - [x] internal TS preview is smart-routed across non-TTY text vs TTY live terminal
