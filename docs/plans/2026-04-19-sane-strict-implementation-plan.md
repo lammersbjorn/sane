@@ -62,12 +62,16 @@ Do not mix them.
 
 Keep this explicit and ordered by migration value:
 
-1. Policy-preview cutover
+1. Public startup / packaging cutover
+   - the public shipped entrypoint is still Rust-owned today via `cargo run -p sane --`.
+   - internal TS text preview now works through `tsx`, workspace package `exports`, and self-package app imports.
+   - do not flip the public path until terminal parity and packaging are deliberate.
+2. Policy-preview legacy cleanup
    - `packages/control-plane/src/policy-preview.ts` is the current source of truth.
    - `crates/sane-tui/src/main.rs` still has a legacy `debug policy-preview` path; treat it as migration-only until it can be removed.
-2. Rust workspace bootstrap retirement
+3. Rust workspace bootstrap retirement
    - keep only the minimal bootstrap / cutover scaffolding needed to land the TS-first stack split.
-3. Leftover Rust compatibility glue
+4. Leftover Rust compatibility glue
    - remove only after the TS path owns the user-visible behavior and tests.
 
 ## Git Progress Tracking
@@ -144,6 +148,8 @@ Must answer:
 - user-level targets
 - global targets
 - optional user-level Codex settings profile target
+- whether an optional Codex statusline/status-bar surface belongs in the managed set
+- whether that surface is config-only or needs managed helper files/hooks
 - repo-level optional exports
 - order of rollout
 
@@ -291,6 +297,7 @@ Remaining order:
 
 Next justified additions to evaluate inside `B4`:
 - future managed surfaces only if clearly justified by the Codex-native surface map
+- optional Codex statusline/status-bar support inspired by `openagentsbtw`, only if it stays explicit opt-in, additive, removable, and non-wrapper-first
 
 Rules:
 - additive only
@@ -410,6 +417,7 @@ Before touching docs:
 
 Allowed now:
 - `B4` optional `Opencode` compatibility work is shipped; evaluate only further managed surfaces that are clearly justified
+- optional Codex statusline/status-bar support may be evaluated inside `B4` under the additive/reversible rules above
 - otherwise keep aligning real state files with the `R3` design
 - keep privacy / telemetry local-first
 - keep TUI first and backend verbs secondary
