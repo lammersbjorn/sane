@@ -12,6 +12,8 @@ Primary sources:
 - [Skills guide](https://developers.openai.com/codex/skills)
 - [Hooks guide](https://developers.openai.com/codex/hooks)
 - [Subagents / custom agents guide](https://developers.openai.com/codex/subagents)
+- [OpenCode agents docs](https://opencode.ai/docs/agents/)
+- [OpenCode config docs](https://opencode.ai/docs/config/)
 
 ## Official Surfaces
 
@@ -142,9 +144,28 @@ Defer until after repo export UX is explicit:
 - managed plugin distribution format
 - broader managed `~/.codex/config.toml` presets beyond the current narrow explicit opt-in profiles
 
+## OpenCode Compatibility Scope
+
+Current source re-check on 2026-04-23:
+
+- OpenCode supports markdown agent files under user-level `~/.config/opencode/agents/`.
+- OpenCode also supports project-level agent files, but project-local exports would mutate the repo and should stay explicit/future-only.
+- OpenCode has primary agents and subagents, so Sane's `sane-agent`, `sane-reviewer`, and `sane-explorer` mapping remains a compatibility export, not a Codex product surface.
+
+Long-term Sane scope:
+
+- keep OpenCode support optional and separate from the default Codex install bundle
+- keep the current optional `opensrc` profile as compatibility tooling, not part of recommended integrations
+- keep the current optional global OpenCode-agent export in `~/.config/opencode/agents/`
+- do not add a wrapper, launcher, bridge server, or OpenCode-first workflow
+- do not auto-export `.opencode/agents/` into repos
+- project-local OpenCode agent export may be considered later only as an explicit reversible repo-mutation action with inspect/uninstall coverage
+- any broader OpenCode config management must go through the same preview/apply/backup/restore rules as Codex config management
+
 ## Decision
 
 `R4` answer:
 - Sane should stay user-level first.
 - repo-native surfaces are opt-in export targets, not baseline install targets.
 - official Codex paths already give Sane the right surface map; Sane should manage those exact paths rather than inventing new ones.
+- OpenCode compatibility should stay optional and additive: `opensrc` profile plus global OpenCode-agent export only for now.

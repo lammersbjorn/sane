@@ -138,6 +138,7 @@ These are the backend actions the TUI is allowed to call in the current phase.
   - current compatibility target:
     - `opensrc`
   - keep it separate from the broad recommended integrations profile
+  - keep OpenCode compatibility optional and additive; do not widen it into an OpenCode wrapper or default install path
 
 - `preview_statusline_profile`
   - compute read-only optional native Codex TUI changes
@@ -152,6 +153,7 @@ These are the backend actions the TUI is allowed to call in the current phase.
   - write only:
     - `mcp_servers.opensrc`
   - preserve all unrelated user config
+  - any future OpenCode config/profile expansion must keep preview/apply/backup/restore behavior
 
 - `apply_statusline_profile`
   - backup current `~/.codex/config.toml` first when it exists

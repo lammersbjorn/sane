@@ -249,7 +249,10 @@ pnpm check
 ## Open Research / Decisions
 
 - [x] Exact post-`v1` built-in pack expansion/contraction policy (current built-in set is fixed today; later changes require capability audit, provenance, optional/experimental status first, and install/inspect/uninstall coverage)
-- [ ] Exact long-term `Opencode` compatibility scope beyond the current optional `opensrc` profile plus optional OpenCode-agent export
+- [x] Exact long-term `Opencode` compatibility scope beyond the current optional `opensrc` profile plus optional OpenCode-agent export:
+  - keep optional and outside the default Codex install bundle
+  - no OpenCode wrapper, launcher, bridge server, or OpenCode-first workflow
+  - no automatic project `.opencode/agents/` export; future project-local support must be explicit, reversible, and inspectable
 - [x] Exact scope for native Codex statusline/title config helper:
   - keep only the current optional native config profile over `tui.status_line`, `tui.terminal_title`, and `tui.notification_condition`
   - do not build a Sane-owned custom statusline/status-bar system in `v1`
