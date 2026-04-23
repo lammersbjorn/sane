@@ -13,6 +13,7 @@ import {
   TaskShape,
   ContinuationStrategy,
   VerifierTiming,
+  b7PolicyEvalFixtures,
   canonicalPolicyEvalFixtures,
   evaluatePolicyFixtures,
   type PolicyEvalFixture
@@ -137,6 +138,66 @@ describe("policy eval harness", () => {
           Obligation.ContextCompaction,
           Obligation.SelfRepair
         ],
+        continuation: {
+          strategy: ContinuationStrategy.SelfRepairUntilUnblocked,
+          stopCondition: StopCondition.UnblockedOrNeedsInput
+        }
+      })
+    );
+  });
+
+  it("evaluates the B7 routing, compaction, and self-repair fixture suite", () => {
+    const fixtures = b7PolicyEvalFixtures();
+
+    expect(fixtures.map((fixture) => fixture.caseId)).toEqual([
+      "parallel-multifile-routing",
+      "long-run-compaction-before-drift",
+      "blocked-run-self-repair-without-sidecar"
+    ]);
+    expect(evaluatePolicyFixtures(fixtures)).toEqual({
+      passed: true,
+      caseCount: 3,
+      failureCount: 0,
+      failures: []
+    });
+    expect(fixtures.find((fixture) => fixture.caseId === "parallel-multifile-routing")?.expected).toEqual(
+      expect.objectContaining({
+        roles: {
+          coordinator: true,
+          sidecar: true,
+          verifier: true
+        },
+        orchestration: expect.objectContaining({
+          subagents: SubagentStrategy.AllowIndependentSlices,
+          subagentReadiness: SubagentReadinessReason.IndependentSlicesReady,
+          verifierTiming: VerifierTiming.ThroughoutExecution
+        })
+      })
+    );
+    expect(fixtures.find((fixture) => fixture.caseId === "long-run-compaction-before-drift")?.expected).toEqual(
+      expect.objectContaining({
+        obligations: [
+          Obligation.Planning,
+          Obligation.Review,
+          Obligation.ContextCompaction
+        ],
+        continuation: {
+          strategy: ContinuationStrategy.ContinueUntilVerified,
+          stopCondition: StopCondition.Verified
+        }
+      })
+    );
+    expect(fixtures.find((fixture) => fixture.caseId === "blocked-run-self-repair-without-sidecar")?.expected).toEqual(
+      expect.objectContaining({
+        roles: {
+          coordinator: true,
+          sidecar: false,
+          verifier: true
+        },
+        orchestration: expect.objectContaining({
+          subagents: SubagentStrategy.SoloOnly,
+          subagentReadiness: SubagentReadinessReason.RunStateDisallowsDelegation
+        }),
         continuation: {
           strategy: ContinuationStrategy.SelfRepairUntilUnblocked,
           stopCondition: StopCondition.UnblockedOrNeedsInput

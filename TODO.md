@@ -99,7 +99,7 @@ Implemented:
 - internal backend policy preview now shows task-shaped routing classes per scenario and keeps role-default compatibility where still required
 - policy explanations now include typed orchestration guidance and stable rule traces for canonical scenarios
 - policy explanations now also include typed continuation guidance (`answer_directly`, `continue_until_verified`, `continue_until_blocked`, `self_repair_until_unblocked`, `close_when_verified`) with explicit stop conditions, still internal/inspect-only
-- `@sane/policy` now has a pure internal eval harness for fixture-based routing/orchestration/continuation checks; this is a foundation only, not a shipped self-improvement runner
+- `@sane/policy` now has a pure internal eval harness for fixture-based routing/orchestration/continuation checks, plus a B7 fixture suite for routing, compaction, and self-repair expectations; this is a foundation only, not a shipped self-improvement runner
 - internal backend policy preview now carries typed scenario/orchestration/trace payloads in `OperationResult` and persists them into decision history without changing TUI copy
 - policy preview history now has typed shared context helpers, tail-first latest-preview lookup, and runtime-summary plumbing for the latest valid snapshot
 - inspect/app-view now surface the latest persisted current-run-derived policy-preview snapshot through a bounded typed read path instead of re-parsing runtime-summary copy, and this remains a read-only Inspect surface
@@ -229,7 +229,7 @@ pnpm check
 ## Later
 
 - [x] Self-hosting shadow mode
-- [ ] Broaden eval harness coverage for routing, compaction, and self-improvement
+- [x] Broaden eval harness coverage for routing, compaction, and self-improvement
 - [ ] Later end-to-end outcome runner:
   - future only, not part of the current user-facing product surface
   - a user-facing one-shot command for idea-to-finished-result work
