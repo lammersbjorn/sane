@@ -4,6 +4,7 @@ import { OperationKind } from "@sane/core";
 import {
   COMMAND_METADATA_REGISTRY,
   getCommandSpec,
+  getSectionMetadata,
   listSectionActions,
   listSections
 } from "@sane/sane-tui/index.js";
@@ -176,5 +177,29 @@ describe("command metadata registry", () => {
     expect(getCommandSpec("reset_telemetry_data").successNoticeTitle).toBe("Reset");
     expect(getCommandSpec("export_all").successNoticeTitle).toBe("Installed");
     expect(getCommandSpec("uninstall_all").successNoticeTitle).toBe("Uninstalled");
+  });
+
+  it("adapts install metadata for native Windows", () => {
+    expect(getSectionMetadata("install", "windows").description[3]).toBe(
+      "On native Windows, hooks stay outside the default bundle. Use WSL for hook-enabled flows."
+    );
+    expect(getCommandSpec("export_hooks", "windows").filesTouched).toEqual([]);
+    expect(getCommandSpec("export_all", "windows").filesTouched).toEqual([
+      "~/.agents/skills/sane-router",
+      "~/.agents/skills/continue",
+      "~/.codex/AGENTS.md",
+      "~/.codex/agents/"
+    ]);
+    expect(getCommandSpec("export_all", "windows").includes).toEqual([
+      "user-skills",
+      "global-agents",
+      "custom-agents"
+    ]);
+    expect(listSectionActions("install", "windows").find((action) => action.id === "export_all")?.filesTouched).toEqual([
+      "~/.agents/skills/sane-router",
+      "~/.agents/skills/continue",
+      "~/.codex/AGENTS.md",
+      "~/.codex/agents/"
+    ]);
   });
 });

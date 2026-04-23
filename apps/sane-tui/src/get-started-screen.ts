@@ -1,4 +1,4 @@
-import { type CodexPaths, type ProjectPaths } from "@sane/platform";
+import { detectPlatform, type CodexPaths, type ProjectPaths } from "@sane/platform";
 
 import {
   inspectCodexProfileFamilySnapshot
@@ -51,7 +51,8 @@ export function loadGetStartedScreenFromStatusBundle(
 ): GetStartedScreenModel {
   const onboarding = inspectOnboardingSnapshotFromStatusBundle(paths, statusBundle);
   const codexProfile = inspectCodexProfileFamilySnapshot(codexPaths).core;
-  const steps = listSectionActions("get_started").map((action) => ({
+  const hostPlatform = detectPlatform();
+  const steps = listSectionActions("get_started", hostPlatform).map((action) => ({
     id: action.id as GetStartedStep["id"],
     title: action.label,
     filesTouched:

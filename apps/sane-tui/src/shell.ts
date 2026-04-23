@@ -1,7 +1,7 @@
 import { basename } from "node:path";
 
 import { type OperationResult } from "@sane/core";
-import { type CodexPaths, type ProjectPaths } from "@sane/platform";
+import { detectPlatform, type CodexPaths, type HostPlatform, type ProjectPaths } from "@sane/platform";
 
 import { exportAll, uninstallAll } from "@sane/control-plane/bundles.js";
 import {
@@ -57,6 +57,7 @@ import {
   COMMAND_METADATA_REGISTRY,
   getCommandSpec,
   getSectionMetadata,
+  listSections,
   listSectionActions,
   type SectionActionMetadata,
   type TuiSectionId,
@@ -93,7 +94,8 @@ export interface PendingConfirmation {
 export interface TuiShell {
   paths: ProjectPaths;
   codexPaths: CodexPaths;
-  sections: ReturnType<typeof COMMAND_METADATA_REGISTRY.sections.slice>;
+  hostPlatform: HostPlatform;
+  sections: ReturnType<typeof listSections>;
   statusSnapshot: ShellStatusSnapshot;
   activeSectionId: TuiSectionId;
   activeActionIndex: number;
@@ -113,12 +115,14 @@ export function createTuiShell(
   launchShortcut: keyof typeof COMMAND_METADATA_REGISTRY.shortcuts = "default"
 ): TuiShell {
   const sectionId = COMMAND_METADATA_REGISTRY.shortcuts[launchShortcut];
+  const hostPlatform = detectPlatform();
   const statusSnapshot = buildStatusSnapshot(paths, codexPaths);
   const lastSummary = statusSnapshot.statusBundle.runtimeState.historyPreview.latestEvent?.summary ?? null;
   return {
     paths,
     codexPaths,
-    sections: COMMAND_METADATA_REGISTRY.sections.slice(),
+    hostPlatform,
+    sections: listSections(hostPlatform),
     statusSnapshot,
     activeSectionId: sectionId,
     activeActionIndex: 0,
@@ -157,11 +161,11 @@ export function moveSelection(
 }
 
 export function currentSection(shell: TuiShell) {
-  return getSectionMetadata(shell.activeSectionId);
+  return getSectionMetadata(shell.activeSectionId, shell.hostPlatform);
 }
 
 export function currentActions(shell: TuiShell): SectionActionMetadata[] {
-  return listSectionActions(shell.activeSectionId);
+  return listSectionActions(shell.activeSectionId, shell.hostPlatform);
 }
 
 export function currentAction(shell: TuiShell): SectionActionMetadata {
@@ -176,7 +180,7 @@ export function runSelectedAction(shell: TuiShell): OperationResult | null {
   const action = currentAction(shell);
 
   if (action.confirmation?.required) {
-    shell.pendingConfirmation = buildPendingConfirmation(action);
+    shell.pendingConfirmation = buildPendingConfirmation(shell, action);
     shell.lastResult = buildLastResultView(
       null,
       `Review \`${action.label}\`. Enter or y confirms. Esc or n cancels.`
@@ -437,8 +441,8 @@ function refreshStatusSnapshot(shell: TuiShell): void {
   shell.statusSnapshot = buildStatusSnapshot(shell.paths, shell.codexPaths);
 }
 
-function buildPendingConfirmation(action: SectionActionMetadata): PendingConfirmation {
-  const confirmation = getCommandSpec(action.id).confirmation!;
+function buildPendingConfirmation(shell: TuiShell, action: SectionActionMetadata): PendingConfirmation {
+  const confirmation = getCommandSpec(action.id, shell.hostPlatform).confirmation!;
   const body = [`Selected action: ${action.label}`, "", confirmation.impactCopy];
   if (confirmation.remindPreviewOrBackup) {
     body.push("Use preview or backup first when available.");

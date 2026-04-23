@@ -1,4 +1,5 @@
 import { OperationKind } from "@sane/core";
+import { type HostPlatform } from "@sane/platform";
 
 export type TuiSectionId = "get_started" | "preferences" | "install" | "inspect" | "repair";
 export type LaunchShortcut = "default" | "settings" | "inspect" | "repair";
@@ -93,6 +94,15 @@ export interface SectionActionMetadata extends CommandSpec {
   order: number;
   section: TuiSectionId;
 }
+
+const WINDOWS_EXPORT_ALL_FILES_TOUCHED = [
+  "~/.agents/skills/sane-router",
+  "~/.agents/skills/continue",
+  "~/.codex/AGENTS.md",
+  "~/.codex/agents/"
+] as const;
+
+const WINDOWS_EXPORT_ALL_INCLUDES = ["user-skills", "global-agents", "custom-agents"] as const;
 
 export const COMMAND_METADATA_REGISTRY = {
   shortcuts: {
@@ -927,24 +937,80 @@ export const COMMAND_METADATA_REGISTRY = {
   ] satisfies CommandPlacement[]
 } as const;
 
-export function listSections(): TuiSectionMetadata[] {
-  return [...COMMAND_METADATA_REGISTRY.sections];
+export function listSections(hostPlatform?: HostPlatform): TuiSectionMetadata[] {
+  return COMMAND_METADATA_REGISTRY.sections.map((section) => getSectionMetadata(section.id, hostPlatform));
 }
 
-export function getSectionMetadata(sectionId: TuiSectionId): TuiSectionMetadata {
-  return COMMAND_METADATA_REGISTRY.sections.find((section) => section.id === sectionId)!;
+export function getSectionMetadata(
+  sectionId: TuiSectionId,
+  hostPlatform?: HostPlatform
+): TuiSectionMetadata {
+  const section = COMMAND_METADATA_REGISTRY.sections.find((entry) => entry.id === sectionId)!;
+
+  if (sectionId !== "install" || hostPlatform !== "windows") {
+    return { ...section, description: [...section.description] };
+  }
+
+  return {
+    ...section,
+    description: [
+      "Install Sane into Codex on purpose.",
+      "Current install bundle:",
+      "user skills, global AGENTS.md block, sane-agent, sane-reviewer, sane-explorer",
+      "On native Windows, hooks stay outside the default bundle. Use WSL for hook-enabled flows.",
+      "User-level install changes your own Codex setup.",
+      "Repo-level install is explicit and optional.",
+      "Nothing here should silently take over a repo."
+    ]
+  };
 }
 
-export function getCommandSpec(commandId: UiCommandId): CommandSpec {
-  return COMMAND_METADATA_REGISTRY.commands[commandId];
+export function getCommandSpec(commandId: UiCommandId, hostPlatform?: HostPlatform): CommandSpec {
+  const spec = COMMAND_METADATA_REGISTRY.commands[commandId] as CommandSpec;
+
+  if (hostPlatform !== "windows") {
+    return {
+      ...spec,
+      help: [...spec.help],
+      filesTouched: [...spec.filesTouched],
+      includes: spec.includes ? [...spec.includes] : undefined
+    };
+  }
+
+  if (commandId === "export_hooks") {
+    return {
+      ...spec,
+      help: [...spec.help],
+      filesTouched: []
+    };
+  }
+
+  if (commandId === "export_all") {
+    return {
+      ...spec,
+      help: [...spec.help],
+      filesTouched: [...WINDOWS_EXPORT_ALL_FILES_TOUCHED],
+      includes: [...WINDOWS_EXPORT_ALL_INCLUDES]
+    };
+  }
+
+  return {
+    ...spec,
+    help: [...spec.help],
+    filesTouched: [...spec.filesTouched],
+    includes: spec.includes ? [...spec.includes] : undefined
+  };
 }
 
-export function listSectionActions(sectionId: TuiSectionId): SectionActionMetadata[] {
+export function listSectionActions(
+  sectionId: TuiSectionId,
+  hostPlatform?: HostPlatform
+): SectionActionMetadata[] {
   return COMMAND_METADATA_REGISTRY.placements
     .filter((placement) => placement.section === sectionId)
     .sort((left, right) => left.order - right.order)
     .map((placement) => ({
-      ...getCommandSpec(placement.commandId),
+      ...getCommandSpec(placement.commandId, hostPlatform),
       label: placement.label,
       order: placement.order,
       section: placement.section

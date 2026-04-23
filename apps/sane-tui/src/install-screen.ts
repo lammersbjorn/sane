@@ -1,4 +1,4 @@
-import { type CodexPaths, type ProjectPaths } from "@sane/platform";
+import { detectPlatform, type CodexPaths, type ProjectPaths } from "@sane/platform";
 
 import { exportAll } from "@sane/control-plane/bundles.js";
 import { applyIntegrationsProfile } from "@sane/control-plane/codex-config.js";
@@ -68,7 +68,8 @@ export function loadInstallScreenFromStatusBundle(
 ): InstallScreenModel {
   const status = inspectInstallStatusFromStatusBundle(paths, codexPaths, statusBundle);
   const inventory = status.inventory;
-  const actions = buildInstallActionRows(listSectionActions("install"), status.actionStatus).map((action) =>
+  const hostPlatform = detectPlatform();
+  const actions = buildInstallActionRows(listSectionActions("install", hostPlatform), status.actionStatus).map((action) =>
     action.id === "export_all"
       ? { ...action, includes: exportAllIncludes(inventory) }
       : action

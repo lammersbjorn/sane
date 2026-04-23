@@ -1,4 +1,4 @@
-import { type CodexPaths, type ProjectPaths } from "@sane/platform";
+import { detectPlatform, type CodexPaths, type ProjectPaths } from "@sane/platform";
 
 import {
   formatInspectOverviewLines as formatSharedInspectOverviewLines,
@@ -50,7 +50,7 @@ export function loadInspectScreenFromStatusBundle(
 
   return {
     summary: "Inspect",
-    actions: listSectionActions("inspect").map((action) => ({
+    actions: listSectionActions("inspect", detectPlatform()).map((action) => ({
       id: action.id as InspectScreenAction["id"],
       title: action.label
     })),
