@@ -169,7 +169,14 @@ describe("preferences control plane", () => {
       queuePresent: false
     });
     expect(reduced.details).toContain(`telemetry path: ${paths.telemetryQueuePath}`);
-    expect(reduced.pathsTouched).toContain(paths.telemetryQueuePath);
+    expect(reduced.pathsTouched).toEqual(
+      expect.arrayContaining([
+        paths.configPath,
+        paths.telemetrySummaryPath,
+        paths.telemetryEventsPath,
+        paths.telemetryQueuePath
+      ])
+    );
 
     const disabled = saveConfig(paths, off);
     expect(inspectTelemetrySnapshot(paths)).toEqual({
@@ -179,7 +186,19 @@ describe("preferences control plane", () => {
       queuePresent: false
     });
     expect(disabled.details).toContain(`telemetry path: ${paths.telemetryDir}`);
-    expect(disabled.pathsTouched).toContain(paths.telemetryDir);
+    expect(disabled.pathsTouched).toEqual(
+      expect.arrayContaining([
+        paths.configPath,
+        paths.telemetryDir
+      ])
+    );
+    expect(disabled.pathsTouched).not.toEqual(
+      expect.arrayContaining([
+        paths.telemetrySummaryPath,
+        paths.telemetryEventsPath,
+        paths.telemetryQueuePath
+      ])
+    );
   });
 
   it("builds a local-or-recommended preferences snapshot for TUI consumers", () => {
