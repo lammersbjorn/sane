@@ -220,6 +220,43 @@ export function b7PolicyEvalFixtures(): readonly PolicyEvalFixture[] {
           }
         ]
       }
+    },
+    {
+      caseId: "closing-review-gate",
+      input: {
+        intent: Intent.Review,
+        taskShape: TaskShape.Local,
+        risk: Level.Medium,
+        ambiguity: Level.Low,
+        parallelism: Parallelism.None,
+        contextPressure: Level.Low,
+        runState: RunState.Closing
+      },
+      expected: {
+        obligations: [
+          PolicyObligation.Review
+        ],
+        roles: {
+          coordinator: true,
+          sidecar: false,
+          verifier: true
+        },
+        orchestration: {
+          subagents: SubagentStrategy.SoloOnly,
+          subagentReadiness: SubagentReadinessReason.TaskTooSmall,
+          verifierTiming: VerifierTiming.ClosingGate
+        },
+        continuation: {
+          strategy: ContinuationStrategy.CloseWhenVerified,
+          stopCondition: StopCondition.Closed
+        },
+        trace: [
+          {
+            obligation: PolicyObligation.Review,
+            rule: PolicyRule.NeedsIndependentReview
+          }
+        ]
+      }
     }
   ];
 }

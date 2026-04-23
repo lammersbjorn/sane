@@ -152,11 +152,12 @@ describe("policy eval harness", () => {
     expect(fixtures.map((fixture) => fixture.caseId)).toEqual([
       "parallel-multifile-routing",
       "long-run-compaction-before-drift",
-      "blocked-run-self-repair-without-sidecar"
+      "blocked-run-self-repair-without-sidecar",
+      "closing-review-gate"
     ]);
     expect(evaluatePolicyFixtures(fixtures)).toEqual({
       passed: true,
-      caseCount: 3,
+      caseCount: 4,
       failureCount: 0,
       failures: []
     });
@@ -201,6 +202,24 @@ describe("policy eval harness", () => {
         continuation: {
           strategy: ContinuationStrategy.SelfRepairUntilUnblocked,
           stopCondition: StopCondition.UnblockedOrNeedsInput
+        }
+      })
+    );
+    expect(fixtures.find((fixture) => fixture.caseId === "closing-review-gate")?.expected).toEqual(
+      expect.objectContaining({
+        roles: {
+          coordinator: true,
+          sidecar: false,
+          verifier: true
+        },
+        orchestration: expect.objectContaining({
+          subagents: SubagentStrategy.SoloOnly,
+          subagentReadiness: SubagentReadinessReason.TaskTooSmall,
+          verifierTiming: VerifierTiming.ClosingGate
+        }),
+        continuation: {
+          strategy: ContinuationStrategy.CloseWhenVerified,
+          stopCondition: StopCondition.Closed
         }
       })
     );
