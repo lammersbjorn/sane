@@ -13,6 +13,7 @@ Current role:
 - owns internal text-frame rendering scaffolding for the future TS terminal driver
 - owns internal text-driver glue that wires discovery, shell, input, and text rendering together
 - owns terminal-key decoding for the future real TS key loop
+- owns terminal-driver glue that maps raw terminal input into the TS runtime
 - does not yet render a real terminal UI by itself
 
 Important files:
@@ -41,6 +42,8 @@ Important files:
   - internal runtime glue for discovery + shell + input driver + text rendering
 - `src/terminal-keys.ts`
   - terminal escape-sequence decoding into TS TUI input keys
+- `src/terminal-driver.ts`
+  - raw terminal input -> TS runtime step glue
 
 Boundary rules:
 
