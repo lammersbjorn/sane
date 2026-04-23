@@ -48,7 +48,7 @@ describe("bundled install/remove operations", () => {
 
     expect(result.kind).toBe(OperationKind.ExportAll);
     expect(result.summary).toBe("export all: installed managed targets");
-    expect(result.details).toContain("export user-skills: installed sane-router");
+    expect(result.details).toContain("export user-skills: installed core skills");
     expect(result.details).toContain("export global-agents: installed managed block");
     expect(result.details).toContain("export hooks: installed managed SessionStart hook");
     expect(result.details).toContain(
@@ -79,7 +79,7 @@ describe("bundled install/remove operations", () => {
 
     expect(result.kind).toBe(OperationKind.UninstallAll);
     expect(result.summary).toBe("uninstall all: removed Sane's Codex changes");
-    expect(result.details).toContain("uninstall user-skills: removed sane-router");
+    expect(result.details).toContain("uninstall user-skills: removed core skills");
     expect(result.details).toContain("uninstall global-agents: removed managed block");
     expect(result.details).toContain("uninstall hooks: removed managed SessionStart hook");
     expect(result.details).toContain(

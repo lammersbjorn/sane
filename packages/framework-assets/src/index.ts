@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 export const NAME = "Sane";
 export const SANE_ROUTER_SKILL_NAME = "sane-router";
+export const SANE_CONTINUE_SKILL_NAME = "continue";
 export const SANE_CAVEMAN_PACK_SKILL_NAME = "sane-caveman";
 export const SANE_FRONTEND_CRAFT_PACK_SKILL_NAME = "design-taste-frontend";
 export const SANE_FRONTEND_REVIEW_PACK_SKILL_NAME = "impeccable";
@@ -118,6 +119,7 @@ interface CorePackManifest {
   name: string;
   assets: {
     routerSkill: string;
+    continueSkill: string;
     globalOverlay: string;
     repoOverlay: string;
     agents: {
@@ -189,6 +191,43 @@ export function createSaneRouterSkill(packs: GuidancePacks, roles: ModelRoutingG
       .join("\n"),
     ENABLED_PACK_SKILL_SELECTIONS: enabledPackSkillSelections(packs)
   });
+}
+
+export function createSaneContinueSkill(): string {
+  return readCoreAsset(CORE_PACK_MANIFEST.assets.continueSkill);
+}
+
+export function createCoreSkills(
+  packs: GuidancePacks = createDefaultGuidancePacks(),
+  roles: ModelRoutingGuidance = {
+    coordinatorModel: "gpt-5.4",
+    coordinatorReasoning: "high",
+    executionModel: "gpt-5.3-codex",
+    executionReasoning: "medium",
+    sidecarModel: "gpt-5.4-mini",
+    sidecarReasoning: "medium",
+    verifierModel: "gpt-5.4",
+    verifierReasoning: "medium",
+    realtimeModel: "gpt-5.3-codex-spark",
+    realtimeReasoning: "low"
+  }
+): Array<{
+  name: string;
+  content: string;
+  resources: Array<{ path: string; content: string }>;
+}> {
+  return [
+    {
+      name: SANE_ROUTER_SKILL_NAME,
+      content: createSaneRouterSkill(packs, roles),
+      resources: []
+    },
+    {
+      name: SANE_CONTINUE_SKILL_NAME,
+      content: createSaneContinueSkill(),
+      resources: []
+    }
+  ];
 }
 
 export function createSaneGlobalAgentsOverlay(

@@ -18,6 +18,7 @@ import {
   SANE_GLOBAL_AGENTS_END,
   SANE_REPO_AGENTS_BEGIN,
   SANE_REPO_AGENTS_END,
+  createCoreSkills,
   createOptionalPackSkills,
   createSaneGlobalAgentsOverlay,
   createSaneRepoAgentsOverlay,
@@ -129,6 +130,7 @@ export function uninstallRepoAgents(paths: ProjectPaths): OperationResult {
 export function inspectCodexSkillsAndAgents(paths: ProjectPaths, codexPaths: CodexPaths) {
   const { packs, roles } = activeGuidance(paths, codexPaths);
   const expectedSkill = createSaneRouterSkill(packs, roles);
+  const expectedCoreSkills = createCoreSkills(packs, roles);
   const expectedGlobalAgents = createSaneGlobalAgentsOverlay(packs, roles);
   const expectedRepoAgents = createSaneRepoAgentsOverlay(packs, roles);
 
@@ -139,16 +141,16 @@ export function inspectCodexSkillsAndAgents(paths: ProjectPaths, codexPaths: Cod
     {
       name: "user-skills",
       scope: InventoryScope.CodexNative,
-      status: skillTargetStatus(userSkillPath, expectedSkill, false),
+      status: coreSkillsTargetStatus(codexPaths.userSkillsDir, expectedCoreSkills, false),
       path: userSkillPath,
-      repairHint: skillTargetHint(userSkillPath, expectedSkill, false, "export user-skills")
+      repairHint: coreSkillsTargetHint(codexPaths.userSkillsDir, expectedCoreSkills, false, "export user-skills")
     },
     {
       name: "repo-skills",
       scope: InventoryScope.CodexNative,
-      status: skillTargetStatus(repoSkillPath, expectedSkill, true),
+      status: coreSkillsTargetStatus(paths.repoSkillsDir, expectedCoreSkills, true),
       path: repoSkillPath,
-      repairHint: skillTargetHint(repoSkillPath, expectedSkill, true, "export repo-skills")
+      repairHint: coreSkillsTargetHint(paths.repoSkillsDir, expectedCoreSkills, true, "export repo-skills")
     },
     inspectAgentsBlock(
       paths.repoAgentsMd,
@@ -180,13 +182,19 @@ function exportSkillsTarget(
   summaryPrefix: string
 ): OperationResult {
   const { packs, roles } = activeGuidance(paths, codexPaths);
-  const skillDir = join(skillsRoot, "sane-router");
-  const skillPath = join(skillDir, "SKILL.md");
-  mkdirSync(skillDir, { recursive: true });
-  writeFileSync(skillPath, createSaneRouterSkill(packs, roles), "utf8");
-  const pathsTouched = [skillPath];
+  const coreSkills = createCoreSkills(packs, roles);
+  const skillPath = join(skillsRoot, "sane-router", "SKILL.md");
+  const pathsTouched: string[] = [];
 
-  for (const [packName, skills] of enabledOptionalPackSkills(packs)) {
+  for (const skill of coreSkills) {
+    const skillDir = join(skillsRoot, skill.name);
+    const targetPath = join(skillDir, "SKILL.md");
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(targetPath, skill.content, "utf8");
+    pathsTouched.push(targetPath);
+  }
+
+  for (const [, skills] of enabledOptionalPackSkills(packs)) {
     for (const skill of skills) {
       const packDir = join(skillsRoot, skill.name);
       const packPath = join(packDir, "SKILL.md");
@@ -215,7 +223,7 @@ function exportSkillsTarget(
 
   return new OperationResult({
     kind,
-    summary: `${summaryPrefix}: installed sane-router`,
+    summary: `${summaryPrefix}: installed core skills`,
     details: [
       `path: ${skillPath}`,
       `packs: ${formatGuidancePacks(packs)}`
@@ -285,16 +293,16 @@ function uninstallSkillsTarget(
   optionalWhenMissing: boolean,
   summaryPrefix: string
 ): OperationResult {
-  const skillDir = join(skillsRoot, "sane-router");
-  const skillPath = join(skillDir, "SKILL.md");
+  const coreSkillDirs = ["sane-router", "continue"].map((skillName) => join(skillsRoot, skillName));
+  const skillPath = join(skillsRoot, "sane-router", "SKILL.md");
   const optionalDirs = optionalPackNames().flatMap((name) =>
     optionalPackSkillNames(name).map((skillName) => join(skillsRoot, skillName))
   );
 
-  if (!existsSync(skillDir) && optionalDirs.every((dir) => !existsSync(dir))) {
+  if (coreSkillDirs.every((dir) => !existsSync(dir)) && optionalDirs.every((dir) => !existsSync(dir))) {
     return new OperationResult({
       kind,
-      summary: `${summaryPrefix}: sane-router not installed`,
+      summary: `${summaryPrefix}: core skills not installed`,
       details: [],
       pathsTouched: [skillPath],
       inventory: [
@@ -310,9 +318,11 @@ function uninstallSkillsTarget(
   }
 
   const pathsTouched: string[] = [];
-  if (existsSync(skillDir)) {
-    rmSync(skillDir, { recursive: true, force: true });
-    pathsTouched.push(skillDir);
+  for (const dir of coreSkillDirs) {
+    if (existsSync(dir)) {
+      rmSync(dir, { recursive: true, force: true });
+      pathsTouched.push(dir);
+    }
   }
   for (const dir of optionalDirs) {
     if (existsSync(dir)) {
@@ -323,7 +333,7 @@ function uninstallSkillsTarget(
 
   return new OperationResult({
     kind,
-    summary: `${summaryPrefix}: removed sane-router`,
+    summary: `${summaryPrefix}: removed core skills`,
     details: [],
     pathsTouched,
     inventory: [
@@ -449,31 +459,49 @@ function inspectAgentsBlock(
   };
 }
 
-function skillTargetStatus(
-  skillPath: string,
-  expected: string,
+function coreSkillsTargetStatus(
+  skillsRoot: string,
+  expectedSkills: Array<{ name: string; content: string }>,
   optionalWhenMissing: boolean
 ): InventoryStatus {
-  if (!existsSync(skillPath)) {
+  const presentCount = expectedSkills.filter((skill) =>
+    existsSync(join(skillsRoot, skill.name, "SKILL.md"))
+  ).length;
+  if (presentCount === 0) {
     return optionalWhenMissing ? InventoryStatus.Disabled : InventoryStatus.Missing;
   }
+  if (presentCount !== expectedSkills.length) {
+    return InventoryStatus.Invalid;
+  }
 
-  return readFileSync(skillPath, "utf8") === expected
+  return expectedSkills.every(
+    (skill) => readFileSync(join(skillsRoot, skill.name, "SKILL.md"), "utf8") === skill.content
+  )
     ? InventoryStatus.Installed
     : InventoryStatus.Invalid;
 }
 
-function skillTargetHint(
-  skillPath: string,
-  expected: string,
+function coreSkillsTargetHint(
+  skillsRoot: string,
+  expectedSkills: Array<{ name: string; content: string }>,
   optionalWhenMissing: boolean,
   exportCommand: string
 ): string | null {
-  if (!existsSync(skillPath)) {
+  const presentCount = expectedSkills.filter((skill) =>
+    existsSync(join(skillsRoot, skill.name, "SKILL.md"))
+  ).length;
+  if (presentCount === 0) {
     return optionalWhenMissing ? "optional repo export" : `run \`${exportCommand}\``;
   }
+  if (presentCount !== expectedSkills.length) {
+    return `rerun \`${exportCommand}\``;
+  }
 
-  return readFileSync(skillPath, "utf8") === expected ? null : `rerun \`${exportCommand}\``;
+  return expectedSkills.every(
+    (skill) => readFileSync(join(skillsRoot, skill.name, "SKILL.md"), "utf8") === skill.content
+  )
+    ? null
+    : `rerun \`${exportCommand}\``;
 }
 
 function activeGuidance(paths: ProjectPaths, codexPaths: CodexPaths): {

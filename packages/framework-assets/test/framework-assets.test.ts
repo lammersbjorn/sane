@@ -5,15 +5,18 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import {
+  SANE_CONTINUE_SKILL_NAME,
   SANE_AGENT_NAME,
   SANE_CAVEMAN_PACK_SKILL_NAME,
   SANE_EXPLORER_AGENT_NAME,
   SANE_FRONTEND_CRAFT_PACK_SKILL_NAME,
   SANE_FRONTEND_REVIEW_PACK_SKILL_NAME,
   SANE_REVIEWER_AGENT_NAME,
+  createCoreSkills,
   createOptionalPackSkills,
   createDefaultGuidancePacks,
   createOptionalPackSkill,
+  createSaneContinueSkill,
   createSaneOpencodeAgentTemplate,
   createSaneOpencodeExplorerAgentTemplate,
   createSaneOpencodeReviewerAgentTemplate,
@@ -44,6 +47,7 @@ interface CorePackManifest {
   name: string;
   assets: {
     routerSkill: string;
+    continueSkill: string;
     globalOverlay: string;
     repoOverlay: string;
     agents: {
@@ -131,6 +135,7 @@ describe("framework asset parity", () => {
 
     expect(manifest.name).toBe("core");
     expect(manifest.assets.routerSkill).toBe("skills/sane-router.md.tmpl");
+    expect(manifest.assets.continueSkill).toBe("skills/continue/SKILL.md");
     expect(manifest.assets.globalOverlay).toBe("overlays/global-agents.md.tmpl");
     expect(manifest.assets.repoOverlay).toBe("overlays/repo-agents.md.tmpl");
     expect(manifest.assets.agents.primary).toBe("agents/sane-agent.toml.tmpl");
@@ -193,6 +198,26 @@ describe("framework asset parity", () => {
     expect(body).toContain("custom agents");
     expect(body).toContain("Prefer task-specific skills first");
     expect(body).not.toContain("{{");
+  });
+
+  it("core always-on skills resolve directly from checked-in files", () => {
+    const manifest = readCoreManifest();
+
+    expect(createSaneContinueSkill()).toBe(readCoreAsset(manifest.assets.continueSkill));
+    expect(createCoreSkills()).toEqual([
+      {
+        name: "sane-router",
+        content: createSaneRouterSkill(createDefaultGuidancePacks(), roleGuidance()),
+        resources: []
+      },
+      {
+        name: SANE_CONTINUE_SKILL_NAME,
+        content: readCoreAsset(manifest.assets.continueSkill),
+        resources: []
+      }
+    ]);
+    expect(createSaneContinueSkill()).toContain("name: continue");
+    expect(createSaneContinueSkill()).toContain("Keep the current mainline moving");
   });
 
   it("global overlay renders from the checked-in core template", () => {
@@ -419,6 +444,7 @@ describe("framework asset parity", () => {
     const manifest = readCoreManifest();
     const requiredAssetPaths = [
       manifest.assets.routerSkill,
+      manifest.assets.continueSkill,
       manifest.assets.globalOverlay,
       manifest.assets.repoOverlay,
       manifest.assets.agents.primary,

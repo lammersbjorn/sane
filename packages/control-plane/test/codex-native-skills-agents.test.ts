@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { createDefaultLocalConfig, writeLocalConfig } from "@sane/config";
 import { InventoryStatus } from "@sane/core";
 import {
+  SANE_CONTINUE_SKILL_NAME,
   SANE_GLOBAL_AGENTS_BEGIN,
   SANE_GLOBAL_AGENTS_END,
   SANE_REPO_AGENTS_BEGIN,
@@ -56,10 +57,12 @@ describe("codex-native skills and agents", () => {
 
     const result = exportUserSkills(projectPaths, codexPaths);
     const routerPath = join(codexPaths.userSkillsDir, "sane-router", "SKILL.md");
+    const continuePath = join(codexPaths.userSkillsDir, SANE_CONTINUE_SKILL_NAME, "SKILL.md");
     const cavemanPath = join(codexPaths.userSkillsDir, "sane-caveman", "SKILL.md");
 
-    expect(result.summary).toBe("export user-skills: installed sane-router");
+    expect(result.summary).toBe("export user-skills: installed core skills");
     expect(result.pathsTouched).toContain(routerPath);
+    expect(result.pathsTouched).toContain(continuePath);
     expect(result.pathsTouched).toContain(cavemanPath);
     expect(readFileSync(routerPath, "utf8")).toBe(
       createSaneRouterSkill(
@@ -83,6 +86,7 @@ describe("codex-native skills and agents", () => {
         }
       )
     );
+    expect(readFileSync(continuePath, "utf8")).toContain("name: continue");
     expect(readFileSync(cavemanPath, "utf8")).toBe(createOptionalPackSkill("caveman"));
   });
 
@@ -210,10 +214,12 @@ describe("codex-native skills and agents", () => {
     const uninstallUser = uninstallUserSkills(codexPaths);
     const uninstallRepo = uninstallRepoSkills(projectPaths);
 
-    expect(uninstallUser.summary).toBe("uninstall user-skills: removed sane-router");
-    expect(uninstallRepo.summary).toBe("uninstall repo-skills: removed sane-router");
+    expect(uninstallUser.summary).toBe("uninstall user-skills: removed core skills");
+    expect(uninstallRepo.summary).toBe("uninstall repo-skills: removed core skills");
     expect(uninstallUser.pathsTouched.some((path) => path.endsWith("/sane-router"))).toBe(true);
+    expect(uninstallUser.pathsTouched.some((path) => path.endsWith(`/${SANE_CONTINUE_SKILL_NAME}`))).toBe(true);
     expect(uninstallRepo.pathsTouched.some((path) => path.endsWith("/sane-router"))).toBe(true);
+    expect(uninstallRepo.pathsTouched.some((path) => path.endsWith(`/${SANE_CONTINUE_SKILL_NAME}`))).toBe(true);
   });
 
   it("uninstalls every generated skill directory for a multi-skill pack", () => {
@@ -258,6 +264,22 @@ describe("codex-native skills and agents", () => {
     );
     expect(inventory.find((item) => item.name === "global-agents")?.status).toBe(
       InventoryStatus.PresentWithoutSaneBlock
+    );
+  });
+
+  it("marks skills invalid when the exported continue skill is missing", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    exportUserSkills(projectPaths, codexPaths);
+    rmSync(join(codexPaths.userSkillsDir, SANE_CONTINUE_SKILL_NAME), { recursive: true, force: true });
+
+    const inventory = inspectCodexSkillsAndAgents(projectPaths, codexPaths);
+
+    expect(inventory.find((item) => item.name === "user-skills")?.status).toBe(
+      InventoryStatus.Invalid
     );
   });
 });

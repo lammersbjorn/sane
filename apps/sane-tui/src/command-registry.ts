@@ -137,7 +137,7 @@ export const COMMAND_METADATA_REGISTRY = {
       description: [
         "Install Sane into Codex on purpose.",
         "Current install bundle:",
-        "user skill, global AGENTS.md block, hooks, sane-agent, sane-reviewer, sane-explorer",
+        "user skills, global AGENTS.md block, hooks, sane-agent, sane-reviewer, sane-explorer",
         "User-level install changes your own Codex setup.",
         "Repo-level install is explicit and optional.",
         "Nothing here should silently take over a repo."
@@ -483,14 +483,14 @@ export const COMMAND_METADATA_REGISTRY = {
       kind: "backend",
       backendKind: OperationKind.ExportUserSkills,
       help: [
-        "Install the Sane user skill into your personal Codex skills folder.",
+        "Install Sane's core user skills into your personal Codex skills folder.",
         "",
-        "This lets Codex load Sane guidance as a user-level skill."
+        "This lets Codex load Sane guidance as user-level skills."
       ],
       confirmation: null,
       successNoticeTitle: "Installed",
       repoMutation: false,
-      filesTouched: ["~/.agents/skills/sane-router"]
+      filesTouched: ["~/.agents/skills/sane-router", "~/.agents/skills/continue"]
     },
     export_repo_skills: {
       id: "export_repo_skills",
@@ -572,7 +572,7 @@ export const COMMAND_METADATA_REGISTRY = {
       help: [
         "Add or refresh everything Sane manages in Codex.",
         "",
-        "This installs the Sane user skill, global AGENTS block, hooks, and custom agents.",
+        "This installs Sane's core user skills, global AGENTS block, hooks, and custom agents.",
         "Use this after changing packs or defaults so Codex matches current Sane config."
       ],
       confirmation: null,
@@ -580,6 +580,7 @@ export const COMMAND_METADATA_REGISTRY = {
       repoMutation: false,
       filesTouched: [
         "~/.agents/skills/sane-router",
+        "~/.agents/skills/continue",
         "~/.codex/AGENTS.md",
         "~/.codex/hooks.json",
         "~/.codex/agents/"
@@ -591,7 +592,7 @@ export const COMMAND_METADATA_REGISTRY = {
       kind: "backend",
       backendKind: OperationKind.UninstallUserSkills,
       help: [
-        "Remove Sane's user skill from your personal Codex skills folder.",
+        "Remove Sane's core user skills from your personal Codex skills folder.",
         "",
         "Only Sane-managed user skill directories should be removed.",
         "",
@@ -605,7 +606,7 @@ export const COMMAND_METADATA_REGISTRY = {
       },
       successNoticeTitle: "Uninstalled",
       repoMutation: false,
-      filesTouched: ["~/.agents/skills/sane-router"]
+      filesTouched: ["~/.agents/skills/sane-router", "~/.agents/skills/continue"]
     },
     uninstall_repo_skills: {
       id: "uninstall_repo_skills",
@@ -752,7 +753,7 @@ export const COMMAND_METADATA_REGISTRY = {
       },
       successNoticeTitle: "Uninstalled",
       repoMutation: false,
-      filesTouched: ["~/.agents/skills/sane-router", "~/.codex/AGENTS.md", "~/.codex/hooks.json", "~/.codex/agents/"]
+      filesTouched: ["~/.agents/skills/sane-router", "~/.agents/skills/continue", "~/.codex/AGENTS.md", "~/.codex/hooks.json", "~/.codex/agents/"]
     },
     show_status: {
       id: "show_status",

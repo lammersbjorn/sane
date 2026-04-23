@@ -74,7 +74,7 @@ Routing note:
 
 Today, `Sane` can manage:
 
-- the `sane-router` skill
+- the core skills `sane-router` and `continue`
 - a fixed built-in pack set today: always-on `core` plus optional `caveman`, `cavemem`, `rtk`, and `frontend-craft`
 - concrete optional skill exports where applicable: `sane-caveman` from `caveman`, plus `design-taste-frontend` and `impeccable` from `frontend-craft`
 - capability-only optional packs where applicable: `cavemem` and `rtk` affect router/overlay behavior without exporting dedicated skill directories

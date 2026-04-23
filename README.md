@@ -129,7 +129,7 @@ Some packs export concrete skills (`caveman`, `frontend-craft` today). Others ar
 
 `Sane` can currently manage:
 
-- the user-level `sane-router` skill
+- the user-level core skills `sane-router` and `continue`
 - optional repo-local shared skills in `.agents/skills/`
 - optional additive repo-local guidance in `AGENTS.md`
 - an additive global guidance block in `~/.codex/AGENTS.md`

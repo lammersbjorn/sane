@@ -45,8 +45,8 @@ Current internal exception:
 Current managed targets are:
 
 1. local operational runtime under project `.sane`
-2. user skill pack at `~/.agents/skills/sane-router`
-3. optional repo-local shared skill pack at `<repo>/.agents/skills/sane-router`
+2. user core skill pack at `~/.agents/skills/` (currently `sane-router` and `continue`)
+3. optional repo-local shared core skill pack at `<repo>/.agents/skills/` (same current core skill names)
 4. optional additive repo-local overlay block in `<repo>/AGENTS.md`
 5. optional additive global overlay block in `~/.codex/AGENTS.md`
 6. additive user-level hooks entry in `~/.codex/hooks.json`
@@ -56,6 +56,7 @@ Current managed targets are:
 
 Current managed export behavior also depends on local config:
 - built-in pack set is fixed today: always-on `core` plus optional `caveman`, `cavemem`, `rtk`, and `frontend-craft`
+- exported core skills currently include `sane-router` plus `continue`
 - exported `sane-router` skill content can reflect enabled guidance packs and current routing defaults
 - exported global and repo `AGENTS.md` overlays can reflect enabled guidance packs and current routing defaults
 - status/doctor should flag those assets as invalid when current exports drift from enabled guidance-pack or routing config
@@ -261,7 +262,8 @@ Current mappings:
 - `.sane` missing -> `missing`
 - invalid config -> `invalid`
 - invalid run snapshot -> `invalid`
-- missing `sane-router` skill -> `missing`
+- missing all core skills -> `missing`
+- partially missing or drifted core skills -> `invalid`
 - AGENTS file exists but no Sane block -> `present_without_sane_block`
 
 Current implementation note:

@@ -63,6 +63,7 @@ describe("get started screen model", () => {
     expect(screen.steps[0]?.filesTouched).toEqual([".sane/"]);
     expect(screen.steps[5]?.filesTouched).toEqual([
       "~/.agents/skills/sane-router",
+      "~/.agents/skills/continue",
       "~/.codex/AGENTS.md",
       "~/.codex/hooks.json",
       "~/.codex/agents/"

@@ -2,6 +2,7 @@
   "name": "core",
   "assets": {
     "routerSkill": "skills/sane-router.md.tmpl",
+    "continueSkill": "skills/continue/SKILL.md",
     "globalOverlay": "overlays/global-agents.md.tmpl",
     "repoOverlay": "overlays/repo-agents.md.tmpl",
     "agents": {
@@ -158,6 +159,13 @@
       "skills/sane-router.md.tmpl": {
         "repo": "https://github.com/lammersbjorn/sane",
         "path": "packs/core/skills/sane-router.md.tmpl",
+        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
+        "license": "MIT OR Apache-2.0",
+        "updateStrategy": "pinned-manual"
+      },
+      "skills/continue/SKILL.md": {
+        "repo": "https://github.com/lammersbjorn/sane",
+        "path": "packs/core/skills/continue/SKILL.md",
         "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
         "license": "MIT OR Apache-2.0",
         "updateStrategy": "pinned-manual"
