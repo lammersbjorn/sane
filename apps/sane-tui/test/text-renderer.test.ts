@@ -82,6 +82,23 @@ describe("text renderer", () => {
     expect(output).toContain("| > 2. View your current Codex");
   });
 
+  it("keeps the selected action visible when the rail is windowed", () => {
+    const shell = createTuiShell(
+      createProjectPaths(makeTempDir()),
+      createCodexPaths(makeTempDir()),
+      "settings"
+    );
+    shell.activeActionIndex = 8;
+
+    const output = renderTextAppView(loadAppView(shell), {
+      width: 56,
+      height: 24
+    });
+
+    expect(output).toContain("Selected: Apply Cloudflare Codex");
+    expect(output).toContain("...");
+  });
+
   it("fits output into a bounded viewport", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()), "settings");
 

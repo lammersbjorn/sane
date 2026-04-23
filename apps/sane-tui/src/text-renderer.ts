@@ -125,12 +125,17 @@ function renderWideBody(
 ): string[] {
   const railWidth = Math.min(WIDE_RAIL_WIDTH, Math.max(30, Math.floor(width * 0.32)));
   const detailWidth = width - railWidth - 2;
-  const rail = renderBox("Actions", actionRailLines(view), railWidth);
+  const naturalRail = renderBox("Actions", actionRailLines(view), railWidth);
   const detail = renderBox(detailPaneTitle(view), detailPaneLines(view), detailWidth);
   const targetHeight =
     availableHeight === undefined
-      ? Math.max(rail.length, detail.length)
+      ? Math.max(naturalRail.length, detail.length)
       : Math.max(10, availableHeight);
+  const rail = renderBox(
+    "Actions",
+    actionRailLines(view, { maxLines: targetHeight - BOX_FRAME_HEIGHT }),
+    railWidth
+  );
 
   return joinColumns(
     resizeBox(rail, railWidth, targetHeight),
@@ -151,43 +156,71 @@ function renderStackedBody(
     );
   }
 
-  const actions = renderBox("Actions", actionRailLines(view), width);
   const detail = renderBox(detailPaneTitle(view), detailPaneLines(view), width);
+  const actionHeight =
+    availableHeight === undefined
+      ? undefined
+      : Math.max(8, Math.min(12, Math.floor(availableHeight * 0.38)));
+  const actions = renderBox(
+    "Actions",
+    actionRailLines(view, {
+      maxLines: actionHeight === undefined ? undefined : actionHeight - BOX_FRAME_HEIGHT,
+      compactLabels: width < 64
+    }),
+    width
+  );
 
   if (availableHeight === undefined) {
     return [...actions, "", ...detail];
   }
 
-  const actionHeight = Math.max(8, Math.min(12, Math.floor(availableHeight * 0.38)));
-  const detailHeight = Math.max(10, availableHeight - actionHeight - 1);
+  const boundedActionHeight = Math.max(8, Math.min(12, Math.floor(availableHeight * 0.38)));
+  const detailHeight = Math.max(10, availableHeight - boundedActionHeight - 1);
 
   return [
-    ...resizeBox(actions, width, actionHeight),
+    ...resizeBox(actions, width, boundedActionHeight),
     "",
     ...resizeBox(detail, width, detailHeight)
   ];
 }
 
-function actionRailLines(view: SaneTuiAppView): string[] {
+interface ActionRailOptions {
+  maxLines?: number;
+  compactLabels?: boolean;
+}
+
+function actionRailLines(view: SaneTuiAppView, options: ActionRailOptions = {}): string[] {
+  const compact = options.compactLabels ?? false;
   const lines = [
     `Current section: ${view.activeSection.docLabel}`,
-    `Selected step: ${view.selectedAction.label}`,
+    `Selected step: ${presentActionLabel(view.selectedAction.label, compact)}`,
     ""
   ];
 
   const recommended = selectedActionLabel(view);
   if (recommended !== view.selectedAction.label) {
-    lines.push(`Recommended step: ${recommended}`);
+    lines.push(`Recommended step: ${presentActionLabel(recommended, compact)}`);
     lines.push("");
   }
 
-  for (const action of view.actions) {
+  const actionLines = view.actions.map((action) => {
     const selected = action.id === view.selectedAction.id ? ">" : " ";
-    const recommended = action.id === view.recommendedActionId ? " [recommended]" : "";
-    lines.push(`${selected} ${action.label}${recommended}`);
-  }
+    const recommendedBadge = action.id === view.recommendedActionId ? " [recommended]" : "";
+    return `${selected} ${presentActionLabel(action.label, compact)}${recommendedBadge}`;
+  });
 
-  if (view.activeSection.id === "get_started" && view.attentionItems.length > 0) {
+  const selectedIndex = view.actions.findIndex((action) => action.id === view.selectedAction.id);
+  const visibleActionLines = options.maxLines === undefined
+    ? actionLines
+    : windowLinesAroundSelection(actionLines, selectedIndex, options.maxLines - lines.length);
+
+  lines.push(...visibleActionLines);
+
+  if (
+    view.activeSection.id === "get_started"
+    && view.attentionItems.length > 0
+    && (options.maxLines === undefined || lines.length + view.attentionItems.length + 2 <= options.maxLines)
+  ) {
     lines.push("");
     lines.push("Needs attention");
     lines.push(...view.attentionItems);
@@ -248,6 +281,39 @@ function compactActionLabel(label: string): string {
     .replace("Codex settings", "Codex")
     .replace("compatibility settings", "compatibility")
     .replace("statusline settings", "statusline");
+}
+
+function presentActionLabel(label: string, compact: boolean): string {
+  return compact ? compactActionLabel(label) : label;
+}
+
+function windowLinesAroundSelection(
+  lines: string[],
+  selectedIndex: number,
+  availableLines: number
+): string[] {
+  if (availableLines <= 0 || lines.length <= availableLines) {
+    return lines;
+  }
+
+  const windowSize = Math.max(1, availableLines);
+  const halfWindow = Math.floor(windowSize / 2);
+  let start = Math.max(0, selectedIndex - halfWindow);
+  let end = Math.min(lines.length, start + windowSize);
+
+  if (end - start < windowSize) {
+    start = Math.max(0, end - windowSize);
+  }
+
+  const visible = lines.slice(start, end);
+  if (start > 0) {
+    visible[0] = "...";
+  }
+  if (end < lines.length) {
+    visible[visible.length - 1] = "...";
+  }
+
+  return visible;
 }
 
 function statusline(view: SaneTuiAppView): string {
