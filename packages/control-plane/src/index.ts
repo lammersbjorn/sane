@@ -22,10 +22,8 @@ import {
 import {
   type CanonicalRewriteResult,
   listCanonicalBackupSiblings,
-  readLocalStateConfig,
   writeCanonicalWithBackupResult,
   type CurrentRunState,
-  type LayeredStateLayerStatus,
   type LayeredStateHistoryCounts,
   type LayeredStateHistoryPreview,
   type LatestPolicyPreviewSnapshot,
@@ -54,6 +52,7 @@ import {
 } from "./runtime-history-presenter.js";
 import {
   ensureRuntimeHandoffBaseline,
+  inspectRuntimeState,
   loadRuntimeHandoffState,
   runtimeHistoryPaths,
   runtimeStatePaths
@@ -323,30 +322,18 @@ export * from "./preferences.js";
 export * from "./runtime-history-presenter.js";
 
 function inspectRuntimeStateSnapshot(paths: ProjectPaths): RuntimeStateSnapshot {
-  const handoff = loadRuntimeHandoffState(paths);
-  const layeredState = handoff.layeredState;
-  const { current, summary, brief } = handoff;
+  const runtimeState = inspectRuntimeState(paths);
 
   return {
-    current,
-    summary,
-    brief,
-    historyCounts: layeredState?.historyCounts ?? { events: 0, decisions: 0, artifacts: 0 },
-    historyPreview: layeredState?.historyPreview ?? {
-      latestEvent: null,
-      latestDecision: null,
-      latestArtifact: null
-    },
-    latestPolicyPreview: layeredState?.latestPolicyPreview ?? missingLatestPolicyPreview(),
-    currentRunStatus: layeredState
-      ? inventoryStatusFromLayeredState(layeredState.layerStatus.currentRun)
-      : fallbackRuntimeLayerStatus(paths.currentRunPath, current),
-    summaryStatus: layeredState
-      ? inventoryStatusFromLayeredState(layeredState.layerStatus.summary)
-      : fallbackRuntimeLayerStatus(paths.summaryPath, summary),
-    briefStatus: layeredState
-      ? inventoryStatusFromLayeredState(layeredState.layerStatus.brief)
-      : fallbackRuntimeLayerStatus(paths.briefPath, brief)
+    current: runtimeState.current,
+    summary: runtimeState.summary,
+    brief: runtimeState.brief,
+    historyCounts: runtimeState.historyCounts,
+    historyPreview: runtimeState.historyPreview,
+    latestPolicyPreview: runtimeState.latestPolicyPreview,
+    currentRunStatus: inventoryStatusFromLayeredState(runtimeState.layerStatus.currentRun),
+    summaryStatus: inventoryStatusFromLayeredState(runtimeState.layerStatus.summary),
+    briefStatus: inventoryStatusFromLayeredState(runtimeState.layerStatus.brief)
   };
 }
 
@@ -550,7 +537,9 @@ function fileStatus(path: string): InventoryStatus {
   return existsSync(path) ? InventoryStatus.Installed : InventoryStatus.Missing;
 }
 
-function inventoryStatusFromLayeredState(status: LayeredStateLayerStatus): InventoryStatus {
+function inventoryStatusFromLayeredState(
+  status: "present" | "invalid" | "missing"
+): InventoryStatus {
   switch (status) {
     case "present":
       return InventoryStatus.Installed;
@@ -559,14 +548,6 @@ function inventoryStatusFromLayeredState(status: LayeredStateLayerStatus): Inven
     case "missing":
       return InventoryStatus.Missing;
   }
-}
-
-function fallbackRuntimeLayerStatus(path: string, value: unknown): InventoryStatus {
-  if (value !== null) {
-    return InventoryStatus.Installed;
-  }
-
-  return existsSync(path) ? InventoryStatus.Invalid : InventoryStatus.Missing;
 }
 
 function runtimeLayerLabel(status: InventoryStatus): string {
@@ -580,25 +561,6 @@ function runtimeLayerLabel(status: InventoryStatus): string {
   }
 
   return "missing";
-}
-
-function missingLatestPolicyPreview(): LatestPolicyPreviewSnapshot {
-  return {
-    status: "missing",
-    scenarioCount: 0,
-    scenarioIds: [],
-    scenarios: [],
-    tsUnix: null,
-    summary: null
-  };
-}
-
-function safeRead<T>(reader: () => T): T | null {
-  try {
-    return reader();
-  } catch {
-    return null;
-  }
 }
 
 function repairHintForPath(path: string): string | null {

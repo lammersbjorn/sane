@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 
 import { type ProjectPaths } from "@sane/platform";
 import {
@@ -13,6 +13,9 @@ import {
   writeRunSummary,
   type CurrentRunState,
   type LayeredStateBundle,
+  type LayeredStateHistoryPreview,
+  type LayeredStateLayerStatus,
+  type LatestPolicyPreviewSnapshot,
   type RunSummary
 } from "@sane/state";
 
@@ -30,6 +33,20 @@ export interface RuntimeHandoffBaselineResult {
   summaryRewrite: CanonicalRewriteResult | null;
   briefUpdated: boolean;
   briefWriteMode: "preserved" | "first write" | "rewrite";
+}
+
+export interface RuntimeInspectSnapshot {
+  current: CurrentRunState | null;
+  summary: RunSummary | null;
+  brief: string | null;
+  layerStatus: {
+    currentRun: LayeredStateLayerStatus;
+    summary: LayeredStateLayerStatus;
+    brief: LayeredStateLayerStatus;
+  };
+  historyCounts: LayeredStateBundle["historyCounts"];
+  historyPreview: LayeredStateHistoryPreview;
+  latestPolicyPreview: LatestPolicyPreviewSnapshot;
 }
 
 export function runtimeHandoffPaths(paths: ProjectPaths): string[] {
@@ -144,6 +161,45 @@ export function loadRuntimeHandoffState(paths: ProjectPaths): RuntimeHandoffStat
   };
 }
 
+export function inspectRuntimeState(paths: ProjectPaths): RuntimeInspectSnapshot {
+  const handoff = loadRuntimeHandoffState(paths);
+  const layeredState = handoff.layeredState;
+
+  if (layeredState) {
+    return {
+      current: layeredState.currentRun,
+      summary: layeredState.summary,
+      brief: layeredState.brief,
+      layerStatus: {
+        currentRun: layeredState.layerStatus.currentRun,
+        summary: layeredState.layerStatus.summary,
+        brief: layeredState.layerStatus.brief
+      },
+      historyCounts: layeredState.historyCounts,
+      historyPreview: layeredState.historyPreview,
+      latestPolicyPreview: layeredState.latestPolicyPreview
+    };
+  }
+
+  return {
+    current: handoff.current,
+    summary: handoff.summary,
+    brief: handoff.brief,
+    layerStatus: {
+      currentRun: fallbackLayerStatus(paths.currentRunPath, handoff.current),
+      summary: fallbackLayerStatus(paths.summaryPath, handoff.summary),
+      brief: fallbackLayerStatus(paths.briefPath, handoff.brief)
+    },
+    historyCounts: { events: 0, decisions: 0, artifacts: 0 },
+    historyPreview: {
+      latestEvent: null,
+      latestDecision: null,
+      latestArtifact: null
+    },
+    latestPolicyPreview: missingLatestPolicyPreview()
+  };
+}
+
 function tryLoadRuntimeStateBundle(paths: ProjectPaths): LayeredStateBundle | null {
   try {
     return loadLayeredStateBundle(
@@ -168,4 +224,23 @@ function safeRead<T>(reader: () => T): T | null {
   } catch {
     return null;
   }
+}
+
+function fallbackLayerStatus(path: string, value: unknown): LayeredStateLayerStatus {
+  if (value !== null) {
+    return "present";
+  }
+
+  return existsSync(path) ? "invalid" : "missing";
+}
+
+function missingLatestPolicyPreview(): LatestPolicyPreviewSnapshot {
+  return {
+    status: "missing",
+    scenarioCount: 0,
+    scenarioIds: [],
+    scenarios: [],
+    tsUnix: null,
+    summary: null
+  };
 }
