@@ -350,7 +350,7 @@ function runCommand(shell: TuiShell, commandId: UiCommandId): OperationResult | 
   }
 }
 
-function executeUiCommand(
+export function executeUiCommand(
   paths: ProjectPaths,
   codexPaths: CodexPaths,
   commandId: Exclude<UiCommandId, "open_config_editor" | "open_pack_editor" | "open_privacy_editor">

@@ -7,6 +7,8 @@ Current role:
 - owns TUI-facing section/action metadata
 - owns screen loaders for `Get Started`, `Preferences`, `Install`, `Inspect`, and `Repair`
 - owns shell state for section selection, confirmations, notices, and editor flows
+- owns pure input/key handling on top of the shell state machine
+- owns internal non-interactive TS CLI parsing/execution for backend verbs and hook output
 - owns render-ready dashboard / overlay / app view models
 - does not yet render a real terminal UI by itself
 
@@ -26,6 +28,10 @@ Important files:
   - pure editor draft logic for model defaults, packs, and privacy
 - `src/main.ts`
   - package bootstrap entry for building the app model from project/home roots
+- `src/input-driver.ts`
+  - pure key/input mapping for the TS shell state machine
+- `src/cli.ts`
+  - internal TS CLI parser/executor for backend commands and `hook session-start`
 
 Boundary rules:
 

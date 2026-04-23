@@ -135,6 +135,7 @@ Implemented:
 - no-args TUI now opens into section-based onboarding instead of a flat settings/action wall
 - `sane settings` is the direct shortcut into configure mode
 - TypeScript TUI now has explicit shell, view, editor, and overlay model layers
+- TypeScript TUI now also owns pure input/key handling plus internal non-interactive CLI parsing/execution for backend verbs and `hook session-start`, while the public shipped entrypoint still remains Rust-owned for now
 - app-local TUI imports now use `@/*`, and workspace package imports now use `@sane/*`
 - optional repo-local skill export now exists as an explicit separate target and is not part of `export all`
 - optional repo-local AGENTS export now exists as an explicit separate target and is not part of `export all`
