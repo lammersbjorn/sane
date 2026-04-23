@@ -47,9 +47,11 @@ Documented Codex prompting and subagent facts:
 
 ## Documented Facts (Other Providers)
 
-As of April 22, 2026, Moonshot’s public Kimi platform pages say:
+As of April 23, 2026, Moonshot’s public Kimi platform pages say:
 - `kimi-k2.6` is its latest and most intelligent model.
 - Moonshot positions `kimi-k2.6` as stronger and more stable for long-term code writing and agent execution than earlier Kimi variants.
+- Moonshot documents `kimi-k2.6` with 256K context, text/image/video input, thinking and non-thinking modes, and multi-step tool calling.
+- Moonshot documents OpenAI SDK/API-format compatibility through the Moonshot API base URL.
 - Moonshot exposes official tools around web search, memory, code execution, and other agent workflows on its own platform.
 
 What those sources do not yet give us cleanly enough for Sane defaults:
@@ -242,6 +244,7 @@ Popular-but-unverified rule:
   - source quality better than pure marketing copy
   - runtime/auth support story for the actual Sane surface
   - evidence strong enough to stay explicitly labeled as heuristic or benchmark-backed
+- Kimi K2.6 currently stays a documented external candidate, not an active preset, because it is not exposed in the Codex picker/runtime surface that Sane targets today
 
 ## Config Surface Implication
 
