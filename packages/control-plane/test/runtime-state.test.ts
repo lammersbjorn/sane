@@ -12,7 +12,10 @@ import {
 import { afterEach, describe, expect, it } from "vitest";
 
 import { installRuntime } from "../src/index.js";
-import { inspectRuntimeState } from "../src/runtime-state.js";
+import {
+  inspectRuntimeState,
+  inspectSelfHostingShadowSnapshot
+} from "../src/runtime-state.js";
 
 const tempDirs: string[] = [];
 
@@ -192,5 +195,103 @@ describe("inspectRuntimeState", () => {
     expect(snapshot.latestPolicyPreview.scenarios).toHaveLength(32);
     expect(snapshot.latestPolicyPreview.scenarios[0]?.traceCount).toBe(16);
     expect(snapshot.latestPolicyPreview.scenarios[0]?.trace).toHaveLength(16);
+  });
+});
+
+describe("inspectSelfHostingShadowSnapshot", () => {
+  it("blocks shadow readiness until canonical handoff layers exist", () => {
+    const projectRoot = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+
+    const snapshot = inspectSelfHostingShadowSnapshot(paths);
+
+    expect(snapshot).toMatchObject({
+      mode: "shadow-inspect-only",
+      runnerEnabled: false,
+      status: "blocked"
+    });
+    expect(snapshot.checks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "current-run",
+          status: "block"
+        }),
+        expect.objectContaining({
+          id: "summary",
+          status: "block"
+        }),
+        expect.objectContaining({
+          id: "brief",
+          status: "block"
+        })
+      ])
+    );
+  });
+
+  it("reports ready shadow inspection after bootstrap without requiring native Codex memories", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+    writeFileSync(
+      codexPaths.configToml,
+      [
+        "[features]",
+        "memories = true"
+      ].join("\n"),
+      "utf8"
+    );
+
+    installRuntime(paths, codexPaths);
+
+    expect(inspectSelfHostingShadowSnapshot(paths)).toMatchObject({
+      mode: "shadow-inspect-only",
+      runnerEnabled: false,
+      status: "ready",
+      checks: expect.arrayContaining([
+        expect.objectContaining({
+          id: "codex-native-memories",
+          status: "pass"
+        }),
+        expect.objectContaining({
+          id: "latest-policy-preview",
+          status: "warn"
+        })
+      ])
+    });
+  });
+
+  it("blocks shadow readiness when current-run still has real blocking questions", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+
+    installRuntime(paths, createCodexPaths(homeDir));
+    const current = inspectRuntimeState(paths).current;
+    expect(current).not.toBeNull();
+    writeFileSync(
+      paths.currentRunPath,
+      JSON.stringify(
+        {
+          ...current!,
+          blockingQuestions: ["Which target should the self-heal runner mutate?"]
+        },
+        null,
+        2
+      ),
+      "utf8"
+    );
+
+    expect(inspectSelfHostingShadowSnapshot(paths)).toMatchObject({
+      status: "blocked",
+      checks: expect.arrayContaining([
+        expect.objectContaining({
+          id: "blocking-questions",
+          status: "block"
+        })
+      ])
+    });
   });
 });

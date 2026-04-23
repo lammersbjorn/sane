@@ -179,6 +179,7 @@ These are the backend actions the TUI is allowed to call in the current phase.
   - keep touched paths explicit for auditability
   - canonical status bundles include warning-only conflict signals for invalid Codex config, disabled `features.codex_hooks`, unmanaged `mcp_servers.*`, and enabled `plugins.*` entries without changing inventory status or attempting repair
   - current `show_status` output remains inventory-only; Inspect renders the conflict warnings
+  - Inspect also exposes read-only self-hosting shadow readiness over `.sane` handoff layers, blocking questions, verification status, and latest policy-preview presence; the runner remains disabled
   - may remain a backend/dev escape hatch under the later TUI
 
 - `preview_policy`

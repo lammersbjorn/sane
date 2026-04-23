@@ -52,6 +52,7 @@ import {
 } from "./runtime-history-presenter.js";
 import {
   ensureRuntimeHandoffBaseline,
+  inspectSelfHostingShadowSnapshot,
   inspectRuntimeState,
   runtimeHistoryPaths,
   runtimeStatePaths
@@ -90,6 +91,7 @@ export interface InspectSnapshot {
     artifacts: number;
   };
   runtimeHistoryPreview: LayeredStateHistoryPreview;
+  selfHostingShadow: ReturnType<typeof inspectSelfHostingShadowSnapshot>;
   latestPolicyPreview: ReturnType<typeof inspectLatestPolicyPreview>;
   localConfig: ReturnType<typeof showConfig>;
   codexConfig: ReturnType<typeof showCodexConfig>;
@@ -220,6 +222,7 @@ export function inspectSnapshotFromStatusBundle(
     runtimeSummary: buildRuntimeSummary(paths, runtimeState),
     runtimeHistory: runtimeState.historyCounts,
     runtimeHistoryPreview: runtimeState.historyPreview,
+    selfHostingShadow: inspectSelfHostingShadowSnapshot(paths),
     latestPolicyPreview: runtimeState.latestPolicyPreview,
     localConfig: showConfig(paths, codexPaths),
     codexConfig: showCodexConfig(codexPaths),

@@ -64,6 +64,11 @@ describe("inspect snapshot", () => {
       latestDecision: null,
       latestArtifact: null
     });
+    expect(snapshot.selfHostingShadow).toMatchObject({
+      mode: "shadow-inspect-only",
+      runnerEnabled: false,
+      status: "ready"
+    });
     expect(snapshot.latestPolicyPreview).toEqual({
       status: "missing",
       scenarioCount: 0,
@@ -93,6 +98,9 @@ describe("inspect snapshot", () => {
 
     expect(overview).toContain("status counts:");
     expect(overview).toContain("primary surfaces:");
+    expect(overview).toContain(
+      "self-hosting shadow (read-only): ready, runner disabled"
+    );
     expect(overview).toContain("statusline profile: missing");
     expect(overview).toContain("conflict warnings: none");
     expect(overview).toContain(

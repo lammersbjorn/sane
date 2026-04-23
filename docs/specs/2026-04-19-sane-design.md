@@ -320,6 +320,7 @@ For `Sane`'s own repo, self-hosting guidance should stay minimal. Dogfooding sho
 - prefer small file-based targeted skills when repo-local help is actually needed
 - use repo `AGENTS.md` only for durable facts that truly need to load every session
 - keep self-hosting artifacts narrow enough that public docs do not need inflated claims to justify them
+- current shadow-mode support is read-only Inspect visibility over `.sane` handoff readiness; it does not enable a self-heal or self-improvement runner
 
 ### Preconditions
 

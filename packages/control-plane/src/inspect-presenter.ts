@@ -33,6 +33,14 @@ export interface InspectOverviewSnapshot {
     artifacts: number;
   };
   runtimeHistoryPreview: LayeredStateHistoryPreview;
+  selfHostingShadow: {
+    mode: "shadow-inspect-only";
+    runnerEnabled: false;
+    status: "ready" | "blocked";
+    checks: Array<{
+      status: "pass" | "warn" | "block";
+    }>;
+  };
   latestPolicyPreview: LatestPolicyPreviewSnapshot;
   policyPreview: InspectCurrentPolicyPreview;
   localConfig: {
@@ -81,6 +89,7 @@ export function formatInspectOverviewLines(snapshot: InspectOverviewSnapshot): s
     `latest event (read-only local visibility): ${formatLatestHistoryEventPreview(snapshot.runtimeHistoryPreview.latestEvent)}`,
     `latest decision (read-only local visibility): ${formatLatestHistoryDecisionPreview(snapshot.runtimeHistoryPreview.latestDecision)}`,
     `latest artifact (read-only local visibility): ${formatLatestHistoryArtifactPreview(snapshot.runtimeHistoryPreview.latestArtifact)}`,
+    `self-hosting shadow (read-only): ${snapshot.selfHostingShadow.status}, runner disabled, checks ${formatSelfHostingShadowCheckCounts(snapshot.selfHostingShadow.checks)}`,
     "",
     ...formatInspectPolicyPreviewLines(snapshot.latestPolicyPreview, snapshot.policyPreview, {
       inputPrefix: "latest policy input"
@@ -101,6 +110,16 @@ export function formatInspectOverviewLines(snapshot: InspectOverviewSnapshot): s
     "",
     formatInspectDriftSummaryLine(snapshot.driftItems)
   ].concat(formatInspectDriftItemLines(snapshot.driftItems));
+}
+
+function formatSelfHostingShadowCheckCounts(
+  checks: InspectOverviewSnapshot["selfHostingShadow"]["checks"]
+): string {
+  const pass = checks.filter((check) => check.status === "pass").length;
+  const warn = checks.filter((check) => check.status === "warn").length;
+  const block = checks.filter((check) => check.status === "block").length;
+
+  return `pass ${pass}, warn ${warn}, block ${block}`;
 }
 
 export function formatInspectConflictSummaryLine(
