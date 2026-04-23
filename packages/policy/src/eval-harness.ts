@@ -5,6 +5,7 @@ import {
   type Obligation,
   type OrchestrationGuidance,
   type PolicyInput,
+  type PolicyTraceEntry,
   type RolePlan
 } from "./index.js";
 
@@ -13,6 +14,7 @@ export interface PolicyEvalExpected {
   roles?: Partial<RolePlan>;
   orchestration?: Partial<OrchestrationGuidance>;
   continuation?: Partial<ContinuationGuidance>;
+  trace?: readonly PolicyTraceEntry[];
 }
 
 export interface PolicyEvalFixture {
@@ -58,7 +60,8 @@ export function canonicalPolicyEvalFixtures(): readonly PolicyEvalFixture[] {
         obligations: explanation.decision.obligations,
         roles: explanation.roles,
         orchestration: explanation.orchestration,
-        continuation: explanation.continuation
+        continuation: explanation.continuation,
+        trace: explanation.trace
       }
     };
   });
@@ -86,6 +89,9 @@ function evaluatePolicyFixture(fixture: PolicyEvalFixture): PolicyEvalFailure[] 
     fixture.expected.continuation,
     explanation.continuation
   );
+  pushMismatch(failures, fixture.caseId, "trace", fixture.expected.trace, [
+    ...explanation.trace
+  ]);
 
   return failures;
 }

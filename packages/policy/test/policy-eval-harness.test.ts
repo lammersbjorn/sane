@@ -5,6 +5,7 @@ import {
   Level,
   Obligation,
   Parallelism,
+  PolicyRule,
   RunState,
   StopCondition,
   SubagentReadinessReason,
@@ -66,7 +67,25 @@ describe("policy eval harness", () => {
           },
           orchestration: {
             subagents: SubagentStrategy.WaitForIndependentSlices
-          }
+          },
+          trace: [
+            {
+              obligation: Obligation.Planning,
+              rule: PolicyRule.NeedsUpfrontPlanning
+            },
+            {
+              obligation: Obligation.Review,
+              rule: PolicyRule.NeedsIndependentReview
+            },
+            {
+              obligation: Obligation.ContextCompaction,
+              rule: PolicyRule.ContextNeedsCompaction
+            },
+            {
+              obligation: Obligation.SelfRepair,
+              rule: PolicyRule.BlockedRunNeedsSelfRepair
+            }
+          ]
         }
       }
     ];
@@ -206,5 +225,54 @@ describe("policy eval harness", () => {
         actual: SubagentStrategy.AllowIndependentSlices
       }
     ]);
+  });
+
+  it("returns structured failures for trace mismatches", () => {
+    const result = evaluatePolicyFixtures([
+      {
+        caseId: "bad-trace",
+        input: {
+          intent: Intent.Question,
+          taskShape: TaskShape.Trivial,
+          risk: Level.Low,
+          ambiguity: Level.Low,
+          parallelism: Parallelism.None,
+          contextPressure: Level.Low,
+          runState: RunState.Exploring
+        },
+        expected: {
+          trace: [
+            {
+              obligation: Obligation.VerifyLight,
+              rule: PolicyRule.LocalChangesNeedLightVerification
+            }
+          ]
+        }
+      }
+    ]);
+
+    expect(result).toEqual({
+      passed: false,
+      caseCount: 1,
+      failureCount: 1,
+      failures: [
+        {
+          caseId: "bad-trace",
+          field: "trace",
+          expected: [
+            {
+              obligation: Obligation.VerifyLight,
+              rule: PolicyRule.LocalChangesNeedLightVerification
+            }
+          ],
+          actual: [
+            {
+              obligation: Obligation.DirectAnswer,
+              rule: PolicyRule.KeepDirectAnswersLight
+            }
+          ]
+        }
+      ]
+    });
   });
 });
