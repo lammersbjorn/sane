@@ -143,7 +143,20 @@ export function inspectCustomAgentsInventory(paths: ProjectPaths, codexPaths: Co
   };
 }
 
-export function exportHooks(codexPaths: CodexPaths): OperationResult {
+export function exportHooks(
+  codexPaths: CodexPaths,
+  hostPlatform: HostPlatform = detectPlatform()
+): OperationResult {
+  if (hostPlatform === "windows") {
+    return new OperationResult({
+      kind: OperationKind.ExportHooks,
+      summary: "export hooks: unavailable on native Windows",
+      details: ["Use WSL for hook-enabled Codex flows."],
+      pathsTouched: [],
+      inventory: [inspectHooksInventory(codexPaths, hostPlatform)]
+    });
+  }
+
   mkdirSync(join(codexPaths.homeDir, ".codex"), { recursive: true });
   const root = readHooksJson(codexPaths.hooksJson);
   const hooksRoot = ensureObjectProperty(root, "hooks");

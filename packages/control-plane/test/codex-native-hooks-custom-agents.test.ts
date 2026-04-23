@@ -211,4 +211,18 @@ describe("hooks and custom agents", () => {
       "Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows."
     );
   });
+
+  it("does not export hooks on native windows", () => {
+    const homeDir = makeTempDir();
+    const codexPaths = createCodexPaths(homeDir);
+
+    const result = exportHooks(codexPaths, "windows");
+
+    expect(result.summary).toBe("export hooks: unavailable on native Windows");
+    expect(result.inventory[0]?.status).toBe(InventoryStatus.Invalid);
+    expect(result.inventory[0]?.repairHint).toBe(
+      "Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows."
+    );
+    expect(() => readFileSync(codexPaths.hooksJson, "utf8")).toThrow();
+  });
 });
