@@ -128,6 +128,22 @@ describe("codex config control plane", () => {
     expect(result.details).toContain("tui theme: zenburn");
   });
 
+  it("shows invalid codex config without pretending the config is ok", () => {
+    const homeDir = makeTempDir();
+    const codexPaths = createCodexPaths(homeDir);
+
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+    writeFileSync(codexPaths.configToml, 'model = "gpt-5.4"\ninvalid = [\n', "utf8");
+
+    const result = showCodexConfig(codexPaths);
+
+    expect(result.summary).toBe(`codex-config: invalid at ${codexPaths.configToml}`);
+    expect(result.details).toContain(
+      "cannot read Codex config until ~/.codex/config.toml parses cleanly"
+    );
+    expect(result.details).toContain("repair ~/.codex/config.toml first");
+  });
+
   it("applies core codex profile into a new config file", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();

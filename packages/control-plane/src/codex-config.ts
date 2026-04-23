@@ -116,6 +116,15 @@ export interface CodexConfigBackupSnapshot {
   latestBackupPath: string | null;
 }
 
+export type CodexConfigConflictWarningKind = "invalid_config" | "unmanaged_mcp_server";
+
+export interface CodexConfigConflictWarning {
+  kind: CodexConfigConflictWarningKind;
+  target: string;
+  path: string;
+  message: string;
+}
+
 export interface CodexProfileSnapshot {
   audit: CodexProfileAudit;
   apply: CodexProfileApplyResult;
@@ -175,6 +184,14 @@ const RECOMMENDED_STATUSLINE = [
 
 const RECOMMENDED_TERMINAL_TITLE = ["project", "spinner"] as const;
 const RECOMMENDED_TUI_NOTIFICATION_CONDITION = "always";
+const SANE_KNOWN_MCP_SERVERS = new Set([
+  "cloudflare-api",
+  "context7",
+  "grep",
+  "grep_app",
+  "opensrc",
+  "playwright"
+]);
 
 export function showCodexConfig(codexPaths: CodexPaths): OperationResult {
   const context = inspectCodexConfigContext(codexPaths);
@@ -186,6 +203,19 @@ export function showCodexConfig(codexPaths: CodexPaths): OperationResult {
       details: [
         "no user Codex config exists yet",
         "use `apply codex-profile` or `apply integrations-profile` to create one"
+      ],
+      pathsTouched: [codexPaths.configToml],
+      inventory: [context.inventory]
+    });
+  }
+
+  if (context.inventory.status === InventoryStatus.Invalid) {
+    return new OperationResult({
+      kind: OperationKind.ShowCodexConfig,
+      summary: `codex-config: invalid at ${codexPaths.configToml}`,
+      details: [
+        "cannot read Codex config until ~/.codex/config.toml parses cleanly",
+        "repair ~/.codex/config.toml first"
       ],
       pathsTouched: [codexPaths.configToml],
       inventory: [context.inventory]
@@ -697,6 +727,38 @@ export function inspectCodexConfigInventory(codexPaths: CodexPaths) {
           ? "use `apply codex-profile` or `apply integrations-profile` to create it"
           : "repair ~/.codex/config.toml first"
   };
+}
+
+export function inspectCodexConfigConflictWarnings(
+  codexPaths: CodexPaths
+): CodexConfigConflictWarning[] {
+  if (!existsSync(codexPaths.configToml)) {
+    return [];
+  }
+
+  let config: TomlTable;
+  try {
+    config = readCodexConfig(codexPaths.configToml);
+  } catch (error) {
+    return [
+      {
+        kind: "invalid_config",
+        target: "config.toml",
+        path: codexPaths.configToml,
+        message: `Codex config does not parse cleanly: ${messageOf(error)}`
+      }
+    ];
+  }
+
+  const mcpServers = sortedKeys(asTomlTable(config.mcp_servers));
+  return mcpServers
+    .filter((name) => !SANE_KNOWN_MCP_SERVERS.has(name))
+    .map((name) => ({
+      kind: "unmanaged_mcp_server" as const,
+      target: `mcp_servers.${name}`,
+      path: codexPaths.configToml,
+      message: `unmanaged Codex MCP server '${name}' is outside Sane's known profiles`
+    }));
 }
 
 function recommendedLocalConfig(codexPaths: CodexPaths): LocalConfig {

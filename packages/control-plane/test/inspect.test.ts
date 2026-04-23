@@ -94,8 +94,39 @@ describe("inspect snapshot", () => {
     expect(overview).toContain("status counts:");
     expect(overview).toContain("primary surfaces:");
     expect(overview).toContain("statusline profile: missing");
+    expect(overview).toContain("conflict warnings: none");
     expect(overview).toContain(
       `optional pack provenance: caveman configured (sane-caveman; derived from caveman); rtk disabled (no skills; internal); frontend-craft disabled (${optionalPackSkillNames("frontend-craft").join(" + ")}; derived from taste-skill + impeccable)`
+    );
+  });
+
+  it("surfaces conflict warnings in inspect overview without mutating Codex config", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+    writeFileSync(
+      codexPaths.configToml,
+      [
+        "[mcp_servers.experimental_sidecar]",
+        'command = "experimental"'
+      ].join("\n")
+    );
+
+    const snapshot = inspectSnapshot(paths, codexPaths);
+    const overview = formatInspectOverviewLines(snapshot).join("\n");
+
+    expect(snapshot.statusBundle.conflictWarnings).toEqual([
+      expect.objectContaining({
+        kind: "unmanaged_mcp_server",
+        target: "mcp_servers.experimental_sidecar"
+      })
+    ]);
+    expect(overview).toContain("conflict warnings: 1");
+    expect(overview).toContain(
+      "mcp_servers.experimental_sidecar: unmanaged Codex MCP server 'experimental_sidecar' is outside Sane's known profiles"
     );
   });
 

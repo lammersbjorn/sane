@@ -22,7 +22,7 @@ export interface InspectDriftItemPresentation {
 }
 
 export interface InspectOverviewSnapshot {
-  statusBundle: Pick<StatusBundle, "counts" | "driftItems" | "optionalPacks" | "primary">;
+  statusBundle: Pick<StatusBundle, "counts" | "conflictWarnings" | "driftItems" | "optionalPacks" | "primary">;
   doctorHeadline: string;
   runtimeSummary: {
     summary: string;
@@ -96,8 +96,25 @@ export function formatInspectOverviewLines(snapshot: InspectOverviewSnapshot): s
     `statusline apply: ${snapshot.statuslineApply.status} (${snapshot.statuslineApply.appliedKeys.length} keys)`,
     `statusline preview: ${snapshot.statuslinePreview.summary}`,
     "",
+    formatInspectConflictSummaryLine(snapshot.statusBundle.conflictWarnings),
+    ...formatInspectConflictWarningLines(snapshot.statusBundle.conflictWarnings),
+    "",
     formatInspectDriftSummaryLine(snapshot.driftItems)
   ].concat(formatInspectDriftItemLines(snapshot.driftItems));
+}
+
+export function formatInspectConflictSummaryLine(
+  warnings: StatusBundle["conflictWarnings"]
+): string {
+  return warnings.length === 0
+    ? "conflict warnings: none"
+    : `conflict warnings: ${warnings.length}`;
+}
+
+export function formatInspectConflictWarningLines(
+  warnings: StatusBundle["conflictWarnings"]
+): string[] {
+  return warnings.map((warning) => `${warning.target}: ${warning.message}`);
 }
 
 export function formatInspectDriftSummaryLine(

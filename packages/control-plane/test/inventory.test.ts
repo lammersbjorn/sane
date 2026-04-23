@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -122,6 +122,7 @@ describe("full inventory and doctor", () => {
     expect(bundle.counts.installed).toBeGreaterThan(0);
     expect(bundle.counts.missing).toBeGreaterThan(0);
     expect(bundle.driftItems).toEqual([]);
+    expect(bundle.conflictWarnings).toEqual([]);
   });
 
   it("reports optional packs as configured before export", () => {
@@ -200,6 +201,61 @@ describe("full inventory and doctor", () => {
 
     expect(bundle.driftItems.map((item) => item.name)).toContain("config");
     expect(bundle.counts.invalid).toBeGreaterThan(0);
+  });
+
+  it("surfaces warning-only unmanaged Codex MCP conflicts in the canonical bundle", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+    writeFileSync(
+      codexPaths.configToml,
+      [
+        "[mcp_servers.context7]",
+        'command = "context7"',
+        "",
+        "[mcp_servers.experimental_sidecar]",
+        'command = "experimental"'
+      ].join("\n")
+    );
+
+    const bundle = inspectStatusBundle(paths, codexPaths);
+
+    expect(bundle.primary.codexConfig?.status).toBe(InventoryStatus.Installed);
+    expect(bundle.driftItems.map((item) => item.name)).not.toContain("codex-config");
+    expect(bundle.conflictWarnings).toEqual([
+      {
+        kind: "unmanaged_mcp_server",
+        target: "mcp_servers.experimental_sidecar",
+        path: codexPaths.configToml,
+        message:
+          "unmanaged Codex MCP server 'experimental_sidecar' is outside Sane's known profiles"
+      }
+    ]);
+  });
+
+  it("surfaces invalid Codex config as a warning without replacing inventory drift", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+    writeFileSync(codexPaths.configToml, "{");
+
+    const bundle = inspectStatusBundle(paths, codexPaths);
+
+    expect(bundle.primary.codexConfig?.status).toBe(InventoryStatus.Invalid);
+    expect(bundle.driftItems.map((item) => item.name)).toContain("codex-config");
+    expect(bundle.conflictWarnings).toEqual([
+      expect.objectContaining({
+        kind: "invalid_config",
+        target: "config.toml",
+        path: codexPaths.configToml
+      })
+    ]);
   });
 
   it("marks hooks invalid but does not block the install bundle on native Windows", () => {

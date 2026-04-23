@@ -41,6 +41,7 @@ describe("inspect screen model", () => {
           missing: 0,
           invalid: 1
         },
+        conflictWarnings: [],
         optionalPacks: [
           {
             name: "caveman",

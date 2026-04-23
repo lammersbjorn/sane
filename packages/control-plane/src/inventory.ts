@@ -16,7 +16,11 @@ import { detectPlatform, type CodexPaths, type HostPlatform, type ProjectPaths }
 import { listCanonicalBackupSiblings } from "@sane/state";
 
 import { installableCoreInstallBundleTargets } from "./core-install-bundle-targets.js";
-import { inspectCodexConfigInventory } from "./codex-config.js";
+import {
+  inspectCodexConfigConflictWarnings,
+  inspectCodexConfigInventory,
+  type CodexConfigConflictWarning
+} from "./codex-config.js";
 import { inspectCodexSkillsAndAgents } from "./codex-native.js";
 import { inspectCustomAgentsInventory, inspectHooksInventory } from "./hooks-custom-agents.js";
 import { inspectSavedLocalConfig } from "./local-config.js";
@@ -88,6 +92,7 @@ export interface StatusBundle {
   runtimeState: ReturnType<typeof inspectRuntimeState>;
   optionalPacks: OptionalPackSnapshot[];
   driftItems: InventoryItem[];
+  conflictWarnings: CodexConfigConflictWarning[];
   counts: Record<InventoryStatusName, number>;
   primary: {
     runtime: InventoryItem | null;
@@ -294,6 +299,7 @@ export function inspectStatusBundle(
   const localRuntime = inventory.filter((item) => item.scope === InventoryScope.LocalRuntime);
   const codexNative = inventory.filter((item) => item.scope === InventoryScope.CodexNative);
   const compatibility = inventory.filter((item) => item.scope === InventoryScope.Compatibility);
+  const conflictWarnings = inspectCodexConfigConflictWarnings(codexPaths);
   const driftItems = inventory.filter(
     (item) =>
       item.status === InventoryStatus.Invalid
@@ -310,6 +316,7 @@ export function inspectStatusBundle(
     runtimeState,
     optionalPacks: inspectOptionalPackSnapshots(inventory),
     driftItems,
+    conflictWarnings,
     counts: countStatuses(countedInventory),
     primary: {
       runtime: findInventoryOrNull(inventory, "runtime"),

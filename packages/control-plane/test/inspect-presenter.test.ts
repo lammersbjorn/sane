@@ -89,6 +89,7 @@ describe("inspect presenter", () => {
           missing: 3,
           invalid: 1
         },
+        conflictWarnings: [],
         optionalPacks: [
           {
             name: "caveman",
@@ -176,9 +177,10 @@ describe("inspect presenter", () => {
       "optional pack provenance: caveman configured (sane-caveman; derived from caveman)"
     );
     expect(lines).toContain("export drift view: hooks");
+    expect(lines).toContain("conflict warnings: none");
     expect(lines).toContain(
       "primary surfaces: runtime installed, codex configured, user missing, hooks unsupported (use WSL), custom-agents missing"
     );
-    expect(lines.filter((line) => line === "")).toHaveLength(3);
+    expect(lines.filter((line) => line === "")).toHaveLength(4);
   });
 });
