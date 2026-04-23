@@ -44,7 +44,7 @@ export function renderTextAppView(view: SaneTuiAppView, viewport: TextViewport =
     ...overlayLines(view.overlay)
   ];
 
-  return decorateAnsi(fitViewport(lines, viewport), viewport).join("\n");
+  return decorateAnsi(fitViewport(lines, viewport), view, viewport).join("\n");
 }
 
 function formatTabs(view: SaneTuiAppView): string {
@@ -98,15 +98,15 @@ function fitViewport(lines: string[], viewport: TextViewport): string[] {
   return fitHeight(truncateWidth(lines, viewport.width), viewport.height);
 }
 
-function decorateAnsi(lines: string[], viewport: TextViewport): string[] {
+function decorateAnsi(lines: string[], view: SaneTuiAppView, viewport: TextViewport): string[] {
   if (!viewport.ansi) {
     return lines;
   }
 
-  return lines.map((line, index) => styleLine(line, index, lines.length));
+  return lines.map((line, index) => styleLine(line, index, lines.length, view));
 }
 
-function styleLine(line: string, index: number, lineCount: number): string {
+function styleLine(line: string, index: number, lineCount: number, view: SaneTuiAppView): string {
   if (index === 0) {
     return ansi("1", line);
   }
@@ -123,6 +123,10 @@ function styleLine(line: string, index: number, lineCount: number): string {
     return ansi("1;36", line);
   }
 
+  if (line.includes("Runtime: ") || line.includes("Codex config: ")) {
+    return styleStatusChipLine(line, view);
+  }
+
   if (index === lineCount - 1) {
     return ansi("2", line);
   }
@@ -134,6 +138,17 @@ function styleSectionsLine(line: string): string {
   const prefix = "Sections: ";
   const content = line.slice(prefix.length).replace(/\[[^\]]+\]/g, (match) => ansi("7", match));
   return `${ansi("1", prefix)}${content}`;
+}
+
+function styleStatusChipLine(line: string, view: SaneTuiAppView): string {
+  return view.chips.reduce((styled, chip) => {
+    const token = `${chip.label}: ${chip.value}`;
+    if (!styled.includes(token)) {
+      return styled;
+    }
+
+    return styled.replace(token, ansi(statusToneCode(chip.tone), token));
+  }, line);
 }
 
 function truncateWidth(lines: string[], width?: number): string[] {
@@ -175,4 +190,15 @@ function fitHeight(lines: string[], height?: number): string[] {
 
 function ansi(code: string, text: string): string {
   return `\u001b[${code}m${text}\u001b[0m`;
+}
+
+function statusToneCode(tone: SaneTuiAppView["chips"][number]["tone"]): string {
+  switch (tone) {
+    case "ok":
+      return "32";
+    case "warn":
+      return "33";
+    case "muted":
+      return "2";
+  }
 }

@@ -37,7 +37,7 @@ export interface SaneTuiAppView {
   footerTitle: "Now";
   footerLines: string[];
   footer: {
-    navHint: "left/right change section  |  up/down change option  |  enter runs";
+    navHint: "left/right or tab change section  |  up/down or j/k change option  |  enter runs  |  q quits";
     status: Record<"runtime" | "codex" | "user" | "hooks", string>;
   };
   overlay: OverlayModel;
@@ -91,7 +91,7 @@ export function loadAppView(shell: TuiShell): SaneTuiAppView {
     footerTitle: "Now",
     footerLines: [footerLine(dashboard.chips)],
     footer: {
-      navHint: "left/right change section  |  up/down change option  |  enter runs",
+      navHint: "left/right or tab change section  |  up/down or j/k change option  |  enter runs  |  q quits",
       status: footerStatusMap(dashboard.chips)
     },
     overlay: loadOverlayModel(shell)
@@ -331,7 +331,7 @@ function selectedActionHelp(action: SelectedAction, details?: string[]): string[
 }
 
 function footerLine(chips: ReturnType<typeof loadDashboardView>["chips"]): string {
-  return `left/right change section  |  up/down change option  |  enter runs  |  ${compactStatusLine(chips)}`;
+  return `left/right or tab change section  |  up/down or j/k change option  |  enter runs  |  q quits  |  ${compactStatusLine(chips)}`;
 }
 
 function compactStatusLine(chips: ReturnType<typeof loadDashboardView>["chips"]): string {
