@@ -10,9 +10,9 @@ import {
 } from "@sane/config";
 import { InventoryStatus } from "@sane/core";
 import {
-  createSaneAgentTemplate,
-  createSaneExplorerAgentTemplate,
-  createSaneReviewerAgentTemplate
+  createSaneAgentTemplateWithPacks,
+  createSaneExplorerAgentTemplateWithPacks,
+  createSaneReviewerAgentTemplateWithPacks
 } from "@sane/framework-assets";
 import { createProjectPaths, createCodexPaths } from "@sane/platform";
 import { afterEach, describe, expect, it } from "vitest";
@@ -54,6 +54,8 @@ describe("hooks and custom agents", () => {
     const config = createDefaultLocalConfig();
     config.models.coordinator.model = "gpt-5.3-codex";
     config.models.verifier.reasoningEffort = "high";
+    config.packs.caveman = true;
+    config.packs.cavemem = true;
     writeLocalConfig(projectPaths.configPath, config);
 
     const result = exportCustomAgents(projectPaths, codexPaths);
@@ -66,33 +68,48 @@ describe("hooks and custom agents", () => {
 
     expect(result.summary).toContain("installed sane-agent, sane-reviewer, and sane-explorer");
     expect(readFileSync(agentPath, "utf8")).toBe(
-      createSaneAgentTemplate({
+      createSaneAgentTemplateWithPacks({
         coordinatorModel: config.models.coordinator.model,
         coordinatorReasoning: config.models.coordinator.reasoningEffort,
         sidecarModel: config.models.sidecar.model,
         sidecarReasoning: config.models.sidecar.reasoningEffort,
         verifierModel: config.models.verifier.model,
         verifierReasoning: config.models.verifier.reasoningEffort
+      }, {
+        caveman: true,
+        cavemem: true,
+        rtk: false,
+        frontendCraft: false
       })
     );
     expect(readFileSync(reviewerPath, "utf8")).toBe(
-      createSaneReviewerAgentTemplate({
+      createSaneReviewerAgentTemplateWithPacks({
         coordinatorModel: config.models.coordinator.model,
         coordinatorReasoning: config.models.coordinator.reasoningEffort,
         sidecarModel: config.models.sidecar.model,
         sidecarReasoning: config.models.sidecar.reasoningEffort,
         verifierModel: config.models.verifier.model,
         verifierReasoning: config.models.verifier.reasoningEffort
+      }, {
+        caveman: true,
+        cavemem: true,
+        rtk: false,
+        frontendCraft: false
       })
     );
     expect(readFileSync(explorerPath, "utf8")).toBe(
-      createSaneExplorerAgentTemplate({
+      createSaneExplorerAgentTemplateWithPacks({
         coordinatorModel: config.models.coordinator.model,
         coordinatorReasoning: config.models.coordinator.reasoningEffort,
         sidecarModel: config.models.sidecar.model,
         sidecarReasoning: config.models.sidecar.reasoningEffort,
         verifierModel: config.models.verifier.model,
         verifierReasoning: config.models.verifier.reasoningEffort
+      }, {
+        caveman: true,
+        cavemem: true,
+        rtk: false,
+        frontendCraft: false
       })
     );
     expect(inspectCustomAgentsInventory(projectPaths, codexPaths).status).toBe(
@@ -103,6 +120,12 @@ describe("hooks and custom agents", () => {
     );
     expect(result.details).toContain(
       `derived routing classes: execution=${routing.execution.model} (${routing.execution.reasoningEffort}), realtime=${routing.realtime.model} (${routing.realtime.reasoningEffort}); not encoded in single-model custom-agent toml`
+    );
+    expect(readFileSync(agentPath, "utf8")).toContain(
+      "always use terse, token-efficient prose for normal narrative output"
+    );
+    expect(readFileSync(agentPath, "utf8")).toContain(
+      "always keep durable summaries, plans, handoffs, and memory updates compact, sparse, and high-signal"
     );
   });
 

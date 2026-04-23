@@ -27,8 +27,8 @@
           "taskKinds": ["communication", "brevity", "token-efficiency"]
         }
       ],
-      "routerNote": "- caveman pack active: prefer terse, token-efficient prose when normal clarity still holds",
-      "overlayNote": "- caveman pack active: default to terse, token-aware prose when it does not reduce correctness",
+      "routerNote": "- caveman pack active: default to terse, token-efficient prose for normal narrative output; only switch to normal phrasing when exact commands, code, paths, URLs, errors, diffs, or quotes need it",
+      "overlayNote": "- caveman pack active: always use terse, token-efficient prose for normal narrative output; keep exact commands, code, paths, URLs, errors, diffs, and direct quotes unchanged",
       "provenance": {
         "kind": "derived",
         "note": "Pinned mirror of the upstream Caveman skill, exported under a Sane-managed name to avoid collisions with user-installed plugin skills.",
@@ -46,8 +46,8 @@
       }
     },
     "cavemem": {
-      "routerNote": "- cavemem pack active: keep durable summaries compact and high-signal during long sessions",
-      "overlayNote": "- cavemem pack active: prefer compact durable memory and handoff summaries",
+      "routerNote": "- cavemem pack active: always keep durable summaries, plans, handoffs, and memory updates compact, sparse, and high-signal",
+      "overlayNote": "- cavemem pack active: always keep durable summaries, plans, handoffs, and memory updates compact, sparse, and high-signal",
       "provenance": {
         "kind": "derived",
         "note": "Capability-only pack derived from Cavemem's local-first memory model and README guidance. No dedicated skill export until there is an upstream skill worth mirroring.",

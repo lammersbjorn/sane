@@ -11,9 +11,10 @@ import {
   SANE_AGENT_NAME,
   SANE_EXPLORER_AGENT_NAME,
   SANE_REVIEWER_AGENT_NAME,
-  createSaneAgentTemplate,
-  createSaneExplorerAgentTemplate,
-  createSaneReviewerAgentTemplate,
+  createSaneAgentTemplateWithPacks,
+  createSaneExplorerAgentTemplateWithPacks,
+  createSaneReviewerAgentTemplateWithPacks,
+  type GuidancePacks,
   type ModelRoutingGuidance
 } from "@sane/framework-assets";
 import { detectPlatform, type CodexPaths, type HostPlatform, type ProjectPaths } from "@sane/platform";
@@ -26,16 +27,16 @@ import {
 import { recommendedLocalConfigFromEnvironment } from "./local-config.js";
 
 export function exportCustomAgents(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
-  const roles = activeModelRoutingGuidance(paths, codexPaths);
+  const { packs, roles } = activeGuidance(paths, codexPaths);
   mkdirSync(codexPaths.customAgentsDir, { recursive: true });
 
   const agentPath = join(codexPaths.customAgentsDir, `${SANE_AGENT_NAME}.toml`);
   const reviewerPath = join(codexPaths.customAgentsDir, `${SANE_REVIEWER_AGENT_NAME}.toml`);
   const explorerPath = join(codexPaths.customAgentsDir, `${SANE_EXPLORER_AGENT_NAME}.toml`);
 
-  writeFileSync(agentPath, createSaneAgentTemplate(roles), "utf8");
-  writeFileSync(reviewerPath, createSaneReviewerAgentTemplate(roles), "utf8");
-  writeFileSync(explorerPath, createSaneExplorerAgentTemplate(roles), "utf8");
+  writeFileSync(agentPath, createSaneAgentTemplateWithPacks(roles, packs), "utf8");
+  writeFileSync(reviewerPath, createSaneReviewerAgentTemplateWithPacks(roles, packs), "utf8");
+  writeFileSync(explorerPath, createSaneExplorerAgentTemplateWithPacks(roles, packs), "utf8");
 
   return new OperationResult({
     kind: OperationKind.ExportCustomAgents,
@@ -105,16 +106,16 @@ export function uninstallCustomAgents(codexPaths: CodexPaths): OperationResult {
 }
 
 export function inspectCustomAgentsInventory(paths: ProjectPaths, codexPaths: CodexPaths) {
-  const roles = activeModelRoutingGuidance(paths, codexPaths);
+  const { packs, roles } = activeGuidance(paths, codexPaths);
   const expected = [
-    [join(codexPaths.customAgentsDir, `${SANE_AGENT_NAME}.toml`), createSaneAgentTemplate(roles)],
+    [join(codexPaths.customAgentsDir, `${SANE_AGENT_NAME}.toml`), createSaneAgentTemplateWithPacks(roles, packs)],
     [
       join(codexPaths.customAgentsDir, `${SANE_REVIEWER_AGENT_NAME}.toml`),
-      createSaneReviewerAgentTemplate(roles)
+      createSaneReviewerAgentTemplateWithPacks(roles, packs)
     ],
     [
       join(codexPaths.customAgentsDir, `${SANE_EXPLORER_AGENT_NAME}.toml`),
-      createSaneExplorerAgentTemplate(roles)
+      createSaneExplorerAgentTemplateWithPacks(roles, packs)
     ]
   ] as const;
 
@@ -280,23 +281,34 @@ export function inspectHooksInventory(
   };
 }
 
-function activeModelRoutingGuidance(paths: ProjectPaths, codexPaths: CodexPaths): ModelRoutingGuidance {
+function activeGuidance(paths: ProjectPaths, codexPaths: CodexPaths): {
+  packs: GuidancePacks;
+  roles: ModelRoutingGuidance;
+} {
   const environment = detectCodexEnvironment(codexPaths.modelsCacheJson, codexPaths.authJson);
   const config = loadOrDefaultConfig(paths, environment);
   const routing = createRecommendedModelRoutingPresets(environment);
 
   // Custom-agent TOML files are single-model; execution/realtime classes stay in router guidance.
   return {
-    coordinatorModel: config.models.coordinator.model,
-    coordinatorReasoning: config.models.coordinator.reasoningEffort,
-    executionModel: routing.execution.model,
-    executionReasoning: routing.execution.reasoningEffort,
-    sidecarModel: config.models.sidecar.model,
-    sidecarReasoning: config.models.sidecar.reasoningEffort,
-    verifierModel: config.models.verifier.model,
-    verifierReasoning: config.models.verifier.reasoningEffort,
-    realtimeModel: routing.realtime.model,
-    realtimeReasoning: routing.realtime.reasoningEffort
+    packs: {
+      caveman: config.packs.caveman,
+      cavemem: config.packs.cavemem,
+      rtk: config.packs.rtk,
+      frontendCraft: config.packs.frontendCraft
+    },
+    roles: {
+      coordinatorModel: config.models.coordinator.model,
+      coordinatorReasoning: config.models.coordinator.reasoningEffort,
+      executionModel: routing.execution.model,
+      executionReasoning: routing.execution.reasoningEffort,
+      sidecarModel: config.models.sidecar.model,
+      sidecarReasoning: config.models.sidecar.reasoningEffort,
+      verifierModel: config.models.verifier.model,
+      verifierReasoning: config.models.verifier.reasoningEffort,
+      realtimeModel: routing.realtime.model,
+      realtimeReasoning: routing.realtime.reasoningEffort
+    }
   };
 }
 

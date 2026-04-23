@@ -18,13 +18,19 @@ import {
   createOptionalPackSkill,
   createSaneContinueSkill,
   createSaneOpencodeAgentTemplate,
+  createSaneOpencodeAgentTemplateWithPacks,
   createSaneOpencodeExplorerAgentTemplate,
+  createSaneOpencodeExplorerAgentTemplateWithPacks,
   createSaneOpencodeReviewerAgentTemplate,
+  createSaneOpencodeReviewerAgentTemplateWithPacks,
   createSaneAgentTemplate,
+  createSaneAgentTemplateWithPacks,
   createSaneExplorerAgentTemplate,
+  createSaneExplorerAgentTemplateWithPacks,
   createSaneGlobalAgentsOverlay,
   createSaneRepoAgentsOverlay,
   createSaneReviewerAgentTemplate,
+  createSaneReviewerAgentTemplateWithPacks,
   createSaneRouterSkill,
   corePackAssetSourceProvenance,
   corePackAssetSourceProvenanceStyle,
@@ -186,7 +192,7 @@ describe("framework asset parity", () => {
       REALTIME_MODEL: roles.realtimeModel,
       REALTIME_REASONING: roles.realtimeReasoning,
       ENABLED_PACK_ROUTER_NOTES: [
-        "- caveman pack active: prefer terse, token-efficient prose when normal clarity still holds",
+        "- caveman pack active: default to terse, token-efficient prose for normal narrative output; only switch to normal phrasing when exact commands, code, paths, URLs, errors, diffs, or quotes need it",
         "- rtk pack active: route shell work through RTK instead of raw shell"
       ].join("\n"),
       ENABLED_PACK_SKILL_SELECTIONS: [
@@ -243,7 +249,7 @@ describe("framework asset parity", () => {
       REALTIME_MODEL: roles.realtimeModel,
       REALTIME_REASONING: roles.realtimeReasoning,
       ENABLED_PACK_OVERLAY_NOTES: [
-        "- cavemem pack active: prefer compact durable memory and handoff summaries",
+        "- cavemem pack active: always keep durable summaries, plans, handoffs, and memory updates compact, sparse, and high-signal",
         "- frontend-craft pack active: for frontend work, pick the real task-specific frontend skills (`design-taste-frontend`, `impeccable`) instead of vague pack wrappers"
       ].join("\n"),
       ENABLED_PACK_SKILL_SELECTIONS: [
@@ -283,7 +289,7 @@ describe("framework asset parity", () => {
       REALTIME_MODEL: roles.realtimeModel,
       REALTIME_REASONING: roles.realtimeReasoning,
       ENABLED_PACK_OVERLAY_NOTES: [
-        "- cavemem pack active: prefer compact durable memory and handoff summaries",
+        "- cavemem pack active: always keep durable summaries, plans, handoffs, and memory updates compact, sparse, and high-signal",
         "- rtk pack active: prefer RTK-routed shell execution"
       ].join("\n"),
       ENABLED_PACK_SKILL_SELECTIONS: ""
@@ -486,15 +492,18 @@ describe("framework asset parity", () => {
     const explorer = createSaneExplorerAgentTemplate(roles);
     const expectedAgent = renderTemplate(readCoreAsset(manifest.assets.agents.primary), {
       MODEL: roles.coordinatorModel,
-      MODEL_REASONING: roles.coordinatorReasoning
+      MODEL_REASONING: roles.coordinatorReasoning,
+      ENABLED_PACK_AGENT_NOTES: ""
     });
     const expectedReviewer = renderTemplate(readCoreAsset(manifest.assets.agents.reviewer), {
       MODEL: roles.verifierModel,
-      MODEL_REASONING: roles.verifierReasoning
+      MODEL_REASONING: roles.verifierReasoning,
+      ENABLED_PACK_AGENT_NOTES: ""
     });
     const expectedExplorer = renderTemplate(readCoreAsset(manifest.assets.agents.explorer), {
       MODEL: roles.sidecarModel,
-      MODEL_REASONING: roles.sidecarReasoning
+      MODEL_REASONING: roles.sidecarReasoning,
+      ENABLED_PACK_AGENT_NOTES: ""
     });
 
     expect(agent).toBe(expectedAgent);
@@ -515,6 +524,30 @@ describe("framework asset parity", () => {
     expect(explorer).not.toContain("{{");
   });
 
+  it("custom agent templates enforce enabled caveman and cavemem pack rules", () => {
+    const roles = roleGuidance();
+    const packs: GuidancePacks = {
+      caveman: true,
+      cavemem: true,
+      rtk: false,
+      frontendCraft: false
+    };
+
+    const agent = createSaneAgentTemplateWithPacks(roles, packs);
+    const reviewer = createSaneReviewerAgentTemplateWithPacks(roles, packs);
+    const explorer = createSaneExplorerAgentTemplateWithPacks(roles, packs);
+
+    for (const body of [agent, reviewer, explorer]) {
+      expect(body).toContain(
+        "always use terse, token-efficient prose for normal narrative output"
+      );
+      expect(body).toContain(
+        "always keep durable summaries, plans, handoffs, and memory updates compact, sparse, and high-signal"
+      );
+      expect(body).not.toContain("{{ENABLED_PACK_AGENT_NOTES}}");
+    }
+  });
+
   it("opencode agent templates render from checked-in files", () => {
     const roles = roleGuidance();
     const manifest = readCoreManifest();
@@ -523,13 +556,16 @@ describe("framework asset parity", () => {
     const reviewer = createSaneOpencodeReviewerAgentTemplate(roles);
     const explorer = createSaneOpencodeExplorerAgentTemplate(roles);
     const expectedAgent = renderTemplate(readCoreAsset(manifest.assets.opencodeAgents.primary), {
-      MODEL: roles.coordinatorModel
+      MODEL: roles.coordinatorModel,
+      ENABLED_PACK_AGENT_NOTES: ""
     });
     const expectedReviewer = renderTemplate(readCoreAsset(manifest.assets.opencodeAgents.reviewer), {
-      MODEL: roles.verifierModel
+      MODEL: roles.verifierModel,
+      ENABLED_PACK_AGENT_NOTES: ""
     });
     const expectedExplorer = renderTemplate(readCoreAsset(manifest.assets.opencodeAgents.explorer), {
-      MODEL: roles.sidecarModel
+      MODEL: roles.sidecarModel,
+      ENABLED_PACK_AGENT_NOTES: ""
     });
 
     expect(agent).toBe(expectedAgent);
@@ -543,5 +579,29 @@ describe("framework asset parity", () => {
     expect(agent).not.toContain("{{");
     expect(reviewer).not.toContain("{{");
     expect(explorer).not.toContain("{{");
+  });
+
+  it("opencode agent templates enforce enabled caveman and cavemem pack rules", () => {
+    const roles = roleGuidance();
+    const packs: GuidancePacks = {
+      caveman: true,
+      cavemem: true,
+      rtk: false,
+      frontendCraft: false
+    };
+
+    const agent = createSaneOpencodeAgentTemplateWithPacks(roles, packs);
+    const reviewer = createSaneOpencodeReviewerAgentTemplateWithPacks(roles, packs);
+    const explorer = createSaneOpencodeExplorerAgentTemplateWithPacks(roles, packs);
+
+    for (const body of [agent, reviewer, explorer]) {
+      expect(body).toContain(
+        "always use terse, token-efficient prose for normal narrative output"
+      );
+      expect(body).toContain(
+        "always keep durable summaries, plans, handoffs, and memory updates compact, sparse, and high-signal"
+      );
+      expect(body).not.toContain("{{ENABLED_PACK_AGENT_NOTES}}");
+    }
   });
 });

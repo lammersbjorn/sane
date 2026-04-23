@@ -340,39 +340,108 @@ export function corePackAssetSourceProvenanceStyle(): string | undefined {
 export function createSaneReviewerAgentTemplate(roles: ModelRoleGuidance): string {
   return renderCoreAsset(CORE_PACK_MANIFEST.assets.agents.reviewer, {
     MODEL: roles.verifierModel,
-    MODEL_REASONING: roles.verifierReasoning
+    MODEL_REASONING: roles.verifierReasoning,
+    ENABLED_PACK_AGENT_NOTES: ""
+  });
+}
+
+export function createSaneReviewerAgentTemplateWithPacks(
+  roles: ModelRoleGuidance,
+  packs: GuidancePacks
+): string {
+  return renderCoreAsset(CORE_PACK_MANIFEST.assets.agents.reviewer, {
+    MODEL: roles.verifierModel,
+    MODEL_REASONING: roles.verifierReasoning,
+    ENABLED_PACK_AGENT_NOTES: enabledPackAgentNotes(packs)
   });
 }
 
 export function createSaneAgentTemplate(roles: ModelRoleGuidance): string {
   return renderCoreAsset(CORE_PACK_MANIFEST.assets.agents.primary, {
     MODEL: roles.coordinatorModel,
-    MODEL_REASONING: roles.coordinatorReasoning
+    MODEL_REASONING: roles.coordinatorReasoning,
+    ENABLED_PACK_AGENT_NOTES: ""
+  });
+}
+
+export function createSaneAgentTemplateWithPacks(
+  roles: ModelRoleGuidance,
+  packs: GuidancePacks
+): string {
+  return renderCoreAsset(CORE_PACK_MANIFEST.assets.agents.primary, {
+    MODEL: roles.coordinatorModel,
+    MODEL_REASONING: roles.coordinatorReasoning,
+    ENABLED_PACK_AGENT_NOTES: enabledPackAgentNotes(packs)
   });
 }
 
 export function createSaneExplorerAgentTemplate(roles: ModelRoleGuidance): string {
   return renderCoreAsset(CORE_PACK_MANIFEST.assets.agents.explorer, {
     MODEL: roles.sidecarModel,
-    MODEL_REASONING: roles.sidecarReasoning
+    MODEL_REASONING: roles.sidecarReasoning,
+    ENABLED_PACK_AGENT_NOTES: ""
+  });
+}
+
+export function createSaneExplorerAgentTemplateWithPacks(
+  roles: ModelRoleGuidance,
+  packs: GuidancePacks
+): string {
+  return renderCoreAsset(CORE_PACK_MANIFEST.assets.agents.explorer, {
+    MODEL: roles.sidecarModel,
+    MODEL_REASONING: roles.sidecarReasoning,
+    ENABLED_PACK_AGENT_NOTES: enabledPackAgentNotes(packs)
   });
 }
 
 export function createSaneOpencodeAgentTemplate(roles: ModelRoleGuidance): string {
   return renderCoreAsset(CORE_PACK_MANIFEST.assets.opencodeAgents.primary, {
-    MODEL: roles.coordinatorModel
+    MODEL: roles.coordinatorModel,
+    ENABLED_PACK_AGENT_NOTES: ""
+  });
+}
+
+export function createSaneOpencodeAgentTemplateWithPacks(
+  roles: ModelRoleGuidance,
+  packs: GuidancePacks
+): string {
+  return renderCoreAsset(CORE_PACK_MANIFEST.assets.opencodeAgents.primary, {
+    MODEL: roles.coordinatorModel,
+    ENABLED_PACK_AGENT_NOTES: enabledPackAgentNotes(packs)
   });
 }
 
 export function createSaneOpencodeReviewerAgentTemplate(roles: ModelRoleGuidance): string {
   return renderCoreAsset(CORE_PACK_MANIFEST.assets.opencodeAgents.reviewer, {
-    MODEL: roles.verifierModel
+    MODEL: roles.verifierModel,
+    ENABLED_PACK_AGENT_NOTES: ""
+  });
+}
+
+export function createSaneOpencodeReviewerAgentTemplateWithPacks(
+  roles: ModelRoleGuidance,
+  packs: GuidancePacks
+): string {
+  return renderCoreAsset(CORE_PACK_MANIFEST.assets.opencodeAgents.reviewer, {
+    MODEL: roles.verifierModel,
+    ENABLED_PACK_AGENT_NOTES: enabledPackAgentNotes(packs)
   });
 }
 
 export function createSaneOpencodeExplorerAgentTemplate(roles: ModelRoleGuidance): string {
   return renderCoreAsset(CORE_PACK_MANIFEST.assets.opencodeAgents.explorer, {
-    MODEL: roles.sidecarModel
+    MODEL: roles.sidecarModel,
+    ENABLED_PACK_AGENT_NOTES: ""
+  });
+}
+
+export function createSaneOpencodeExplorerAgentTemplateWithPacks(
+  roles: ModelRoleGuidance,
+  packs: GuidancePacks
+): string {
+  return renderCoreAsset(CORE_PACK_MANIFEST.assets.opencodeAgents.explorer, {
+    MODEL: roles.sidecarModel,
+    ENABLED_PACK_AGENT_NOTES: enabledPackAgentNotes(packs)
   });
 }
 
@@ -415,6 +484,12 @@ function enabledPackSkillSelections(packs: GuidancePacks): string {
         return [`- ${pack} task picks: ${taskKinds.join(", ")} -> ${skill.name}`];
       })
     )
+    .join("\n");
+}
+
+function enabledPackAgentNotes(packs: GuidancePacks): string {
+  return enabledPackEntries(packs)
+    .map(([, entry]) => entry.overlayNote)
     .join("\n");
 }
 
