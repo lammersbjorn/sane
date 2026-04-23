@@ -9,6 +9,14 @@ export enum Intent {
   Orchestrate = "orchestrate"
 }
 
+export {
+  evaluatePolicyFixtures,
+  type PolicyEvalExpected,
+  type PolicyEvalFailure,
+  type PolicyEvalFixture,
+  type PolicyEvalResult
+} from "./eval-harness.js";
+
 export enum TaskShape {
   Trivial = "trivial",
   Local = "local",
