@@ -50,6 +50,21 @@ type DoctorInventoryName =
   | "custom-agents"
   | "opencode-agents";
 
+type PackConfigState =
+  | { kind: "missing" }
+  | { kind: "invalid" }
+  | { kind: "loaded"; config: ReturnType<typeof createRecommendedLocalConfig> };
+
+type PackInventoryTarget =
+  | {
+      inventoryName: "pack-core";
+      packName: "core";
+    }
+  | {
+      inventoryName: `pack-${OptionalPackName}`;
+      packName: OptionalPackName;
+    };
+
 export interface OptionalPackSnapshot {
   name: OptionalPackName;
   inventoryName: `pack-${OptionalPackName}`;
@@ -167,6 +182,17 @@ const DOCTOR_STATUS_FORMATTERS: Partial<Record<DoctorInventoryName, (item: Inven
   "custom-agents": (item) => doctorExportLabel(item, "export custom-agents"),
   "opencode-agents": (item) => doctorExportLabel(item, "export opencode-agents")
 };
+
+const PACK_INVENTORY_TARGETS: PackInventoryTarget[] = [
+  {
+    inventoryName: "pack-core",
+    packName: "core"
+  },
+  ...optionalPackNames().map((packName) => ({
+    inventoryName: optionalPackInventoryName(packName),
+    packName
+  }))
+];
 
 export function showStatus(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
   return showStatusFromStatusBundle(inspectStatusBundle(paths, codexPaths));
@@ -299,19 +325,10 @@ export function inspectOnboardingSnapshotFromStatusBundle(
 }
 
 function inspectPackInventory(paths: ProjectPaths, codexPaths: CodexPaths): InventoryItem[] {
-  const configState = loadConfigState(paths, codexPaths);
-  const names = [
-    ["pack-core", "core"] as const,
-    ...optionalPackNames().map((pack) => [optionalPackInventoryName(pack), pack] as const)
-  ];
+  const configState = loadConfigState(paths);
 
-  return names.map(([inventoryName, packName]) => {
-    const status =
-      configState.kind === "missing"
-        ? InventoryStatus.Missing
-        : configState.kind === "invalid"
-          ? InventoryStatus.Invalid
-          : packStatusFromConfig(paths, codexPaths, configState.config, packName);
+  return PACK_INVENTORY_TARGETS.map(({ inventoryName, packName }) => {
+    const status = packInventoryStatus(configState, paths, codexPaths, packName);
 
     return {
       name: inventoryName,
@@ -352,7 +369,7 @@ function packStatusFromConfig(
   paths: ProjectPaths,
   codexPaths: CodexPaths,
   config: ReturnType<typeof createRecommendedLocalConfig>,
-  packName: "core" | "caveman" | "cavemem" | "rtk" | "frontend-craft"
+  packName: PackInventoryTarget["packName"]
 ) {
   if (packName === "core") {
     return config.packs.core ? InventoryStatus.Installed : InventoryStatus.Disabled;
@@ -416,10 +433,20 @@ function packSkillStatus(
   return InventoryStatus.Configured;
 }
 
-function loadConfigState(paths: ProjectPaths, codexPaths: CodexPaths):
-  | { kind: "missing" }
-  | { kind: "invalid" }
-  | { kind: "loaded"; config: ReturnType<typeof createRecommendedLocalConfig> } {
+function packInventoryStatus(
+  configState: PackConfigState,
+  paths: ProjectPaths,
+  codexPaths: CodexPaths,
+  packName: PackInventoryTarget["packName"]
+): InventoryStatus {
+  return configState.kind === "missing"
+    ? InventoryStatus.Missing
+    : configState.kind === "invalid"
+      ? InventoryStatus.Invalid
+      : packStatusFromConfig(paths, codexPaths, configState.config, packName);
+}
+
+function loadConfigState(paths: ProjectPaths): PackConfigState {
   return inspectSavedLocalConfig(paths);
 }
 
