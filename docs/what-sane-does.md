@@ -151,7 +151,7 @@ This structure is what lets `Sane` stay framework-first without becoming a wrapp
 
 | Already in place | Planned later |
 | --- | --- |
-| Onboarding-first TUI | Packaging and distribution polish |
+| Onboarding-first TUI | Public release packaging and distribution automation after `v1` |
 | Settings/configure flow | Post-`v1` pack expansion/contraction execution |
 | Preview/apply/restore for narrow Codex config | Broader adaptive orchestration |
 | Recommended integrations profile | Preflight-only groundwork for a later outcome runner / one-shot flow |

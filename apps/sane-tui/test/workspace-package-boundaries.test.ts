@@ -55,6 +55,7 @@ describe("workspace package boundaries", () => {
 
   it("keeps public root scripts on the packaged TypeScript entrypoint", () => {
     const rootPackage = readPackageJson("package.json");
+    const saneTuiPackage = readPackageJson("apps/sane-tui/package.json");
 
     expect(rootPackage.scripts?.start).toBe(
       "pnpm --filter @sane/sane-tui run build:package && node ./apps/sane-tui/dist/bin/sane.cjs"
@@ -62,7 +63,14 @@ describe("workspace package boundaries", () => {
     expect(rootPackage.scripts?.["pack:sane-tui"]).toBe(
       "pnpm --filter @sane/sane-tui run build:package && cd apps/sane-tui/dist && pnpm pack"
     );
+    expect(saneTuiPackage.scripts?.["build:package"]).toBe(
+      "pnpm run build && node ./scripts/write-dist-package.mjs"
+    );
+    expect(saneTuiPackage.scripts?.["build:smoke"]).toBe(
+      "pnpm run build:package && node ./dist/bin/sane.cjs inspect"
+    );
     expect(Object.values(rootPackage.scripts ?? {}).join("\n")).not.toMatch(/\bcargo\b/i);
+    expect(Object.values(saneTuiPackage.scripts ?? {}).join("\n")).not.toMatch(/\bcargo\b/i);
   });
 
   it("does not reintroduce Rust workspace files into the active Sane tree", () => {

@@ -170,7 +170,7 @@ This split matters because it keeps `Sane` useful without making it a wrapper yo
 
 ## Quick Start
 
-Right now, `Sane` still runs from source, but the default repo launcher now goes through the built TypeScript TUI path. Packaged installs come later.
+Right now, `Sane` still runs from source, but the default repo launcher now goes through the built TypeScript TUI path. The repo already has a local packaged-build path for the TUI (`build:package` / `build:smoke`), while public release automation stays post-`v1`.
 
 ```bash
 git clone https://github.com/lammersbjorn/sane.git
@@ -201,7 +201,7 @@ If you want the longer user-story version, read [docs/what-sane-does.md](./docs/
 | Status | Scope |
 | --- | --- |
 | In place today | Onboarding-first TUI, local `.sane/` runtime, read-only Inspect visibility (including latest current-run-derived policy-preview snapshot), config preview/apply/restore, recommended integrations profile, opt-in Cloudflare profile, opt-in Opencode compatibility profile, managed skills, additive `AGENTS.md` overlays, hooks, custom agents, optional OpenCode agent export, status/doctor, uninstall. |
-| Planned later | Packaging and distribution polish, broader adaptive orchestration, exact long-term pack set, and a later end-to-end outcome runner / one-shot flow. |
+| Planned later | Public release packaging/distribution automation (GitHub Releases, npm publish, Homebrew, winget, Scoop), broader adaptive orchestration, post-`v1` pack expansion/contraction, and a later end-to-end outcome runner / one-shot flow. |
 
 > [!IMPORTANT]
 > The later end-to-end outcome runner is future work. It is not the current product surface.
