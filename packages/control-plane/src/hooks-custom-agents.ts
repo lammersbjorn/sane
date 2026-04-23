@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
 import {
@@ -18,6 +18,7 @@ import {
   type ModelRoutingGuidance
 } from "@sane/framework-assets";
 import { detectPlatform, type CodexPaths, type HostPlatform, type ProjectPaths } from "@sane/platform";
+import { writeAtomicTextFile } from "@sane/state";
 
 import {
   MANAGED_SESSION_START_STATUS_MESSAGE,
@@ -34,9 +35,9 @@ export function exportCustomAgents(paths: ProjectPaths, codexPaths: CodexPaths):
   const reviewerPath = join(codexPaths.customAgentsDir, `${SANE_REVIEWER_AGENT_NAME}.toml`);
   const explorerPath = join(codexPaths.customAgentsDir, `${SANE_EXPLORER_AGENT_NAME}.toml`);
 
-  writeFileSync(agentPath, createSaneAgentTemplateWithPacks(roles, packs), "utf8");
-  writeFileSync(reviewerPath, createSaneReviewerAgentTemplateWithPacks(roles, packs), "utf8");
-  writeFileSync(explorerPath, createSaneExplorerAgentTemplateWithPacks(roles, packs), "utf8");
+  writeAtomicTextFile(agentPath, createSaneAgentTemplateWithPacks(roles, packs));
+  writeAtomicTextFile(reviewerPath, createSaneReviewerAgentTemplateWithPacks(roles, packs));
+  writeAtomicTextFile(explorerPath, createSaneExplorerAgentTemplateWithPacks(roles, packs));
 
   return new OperationResult({
     kind: OperationKind.ExportCustomAgents,
@@ -343,7 +344,7 @@ function readHooksJson(path: string): Record<string, any> {
 }
 
 function writeHooksJson(path: string, value: unknown): void {
-  writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+  writeAtomicTextFile(path, `${JSON.stringify(value, null, 2)}\n`);
 }
 
 function ensureObjectProperty(root: Record<string, any>, key: string): Record<string, any> {

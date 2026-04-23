@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 import { type ProjectPaths } from "@sane/platform";
 import {
@@ -18,6 +18,7 @@ import {
   type LatestPolicyPreviewSnapshot,
   type RunSummary
 } from "@sane/state";
+import { writeAtomicTextFile } from "@sane/state";
 
 export interface RuntimeHandoffState {
   layeredState: LayeredStateBundle | null;
@@ -67,7 +68,7 @@ export function writeRuntimeSummaryAndBrief(
   current: CurrentRunState
 ): void {
   writeRunSummary(paths.summaryPath, summary);
-  writeFileSync(paths.briefPath, buildRunBrief(summary, current), "utf8");
+  writeAtomicTextFile(paths.briefPath, buildRunBrief(summary, current));
 }
 
 export function createInstallCurrentRunState(): CurrentRunState {
@@ -128,7 +129,7 @@ export function ensureRuntimeHandoffBaseline(
         : "preserved";
 
   if (briefUpdated) {
-    writeFileSync(paths.briefPath, buildRunBrief(summary, current), "utf8");
+    writeAtomicTextFile(paths.briefPath, buildRunBrief(summary, current));
   }
 
   return {

@@ -35,6 +35,7 @@ import {
   stringifyArtifactRecord,
   stringifyEventRecord,
   stringifyRunSnapshot,
+  writeAtomicTextFile,
   writeCanonicalWithBackup,
   writeCanonicalWithBackupResult,
   writeCurrentRunState,
@@ -795,6 +796,16 @@ describe('local state config parity', () => {
 });
 
 describe('canonical rewrite parity', () => {
+  it('writes plain text atomically through the shared helper', () => {
+    const dir = makeTempDir();
+    const path = join(dir, 'nested', 'brief.md');
+
+    writeAtomicTextFile(path, '# first\n');
+    writeAtomicTextFile(path, '# second\n');
+
+    expect(readFileSync(path, 'utf8')).toBe('# second\n');
+  });
+
   it('creates backups before json replacement and reports metadata', () => {
     const dir = makeTempDir();
     const path = join(dir, 'summary.json');

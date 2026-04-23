@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 import * as TOML from "@iarna/toml";
@@ -6,6 +6,7 @@ import * as TOML from "@iarna/toml";
 import { createRecommendedLocalConfig, detectCodexEnvironment, type LocalConfig } from "@sane/config";
 import { InventoryScope, InventoryStatus, OperationKind, OperationResult } from "@sane/core";
 import { type CodexPaths, ensureRuntimeDirs, type ProjectPaths } from "@sane/platform";
+import { writeAtomicTextFile } from "@sane/state";
 
 type TomlTable = Record<string, unknown>;
 
@@ -735,7 +736,7 @@ function installedCodexConfigInventory(codexPaths: CodexPaths) {
 
 function writeCodexConfig(path: string, config: TomlTable): void {
   mkdirSync(codexPathsParent(path), { recursive: true });
-  writeFileSync(path, `${TOML.stringify(config as TOML.JsonMap).trimEnd()}\n`, "utf8");
+  writeAtomicTextFile(path, `${TOML.stringify(config as TOML.JsonMap).trimEnd()}\n`);
 }
 
 function readCodexConfig(path: string): TomlTable {

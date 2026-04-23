@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
 import {
@@ -21,6 +21,7 @@ import {
   type ModelRoleGuidance
 } from "@sane/framework-assets";
 import { type CodexPaths, type ProjectPaths } from "@sane/platform";
+import { writeAtomicTextFile } from "@sane/state";
 
 import { recommendedLocalConfigFromEnvironment } from "./local-config.js";
 
@@ -32,9 +33,9 @@ export function exportOpencodeAgents(paths: ProjectPaths, codexPaths: CodexPaths
   const reviewerPath = join(codexPaths.opencodeGlobalAgentsDir, `${SANE_REVIEWER_AGENT_NAME}.md`);
   const explorerPath = join(codexPaths.opencodeGlobalAgentsDir, `${SANE_EXPLORER_AGENT_NAME}.md`);
 
-  writeFileSync(agentPath, createSaneOpencodeAgentTemplate(roles), "utf8");
-  writeFileSync(reviewerPath, createSaneOpencodeReviewerAgentTemplate(roles), "utf8");
-  writeFileSync(explorerPath, createSaneOpencodeExplorerAgentTemplate(roles), "utf8");
+  writeAtomicTextFile(agentPath, createSaneOpencodeAgentTemplate(roles));
+  writeAtomicTextFile(reviewerPath, createSaneOpencodeReviewerAgentTemplate(roles));
+  writeAtomicTextFile(explorerPath, createSaneOpencodeExplorerAgentTemplate(roles));
 
   return new OperationResult({
     kind: OperationKind.ExportOpencodeAgents,

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 
 import { parse as parseToml } from 'toml';
@@ -450,11 +450,27 @@ export function readLocalConfig(path: string): LocalConfig {
 export function writeLocalConfig(path: string, config: LocalConfig): void {
   validateLocalConfig(config, path);
 
-  mkdirSync(dirname(path), { recursive: true });
   try {
-    writeFileSync(path, stringifyLocalConfig(config));
+    writeAtomicTextFile(path, stringifyLocalConfig(config));
   } catch (error) {
     throw new Error(`failed to write config to ${path}: ${messageOf(error)}`);
+  }
+}
+
+function writeAtomicTextFile(path: string, body: string): void {
+  mkdirSync(dirname(path), { recursive: true });
+  const tmpPath = `${path}.tmp.${process.hrtime.bigint()}`;
+
+  try {
+    writeFileSync(tmpPath, body, { encoding: 'utf8', flag: 'wx' });
+    renameSync(tmpPath, path);
+  } catch (error) {
+    try {
+      rmSync(tmpPath, { force: true });
+    } catch {
+      // Ignore cleanup failures on an already failing write path.
+    }
+    throw error;
   }
 }
 

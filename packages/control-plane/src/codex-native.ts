@@ -30,8 +30,9 @@ import {
   type ModelRoutingGuidance
 } from "@sane/framework-assets";
 import { type CodexPaths, type ProjectPaths } from "@sane/platform";
+import { writeAtomicTextFile } from "@sane/state";
 
-import { existsSync, mkdirSync, readFileSync, rmSync, rmSync as removeSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, rmSync as removeSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 import { recommendedLocalConfigFromEnvironment } from "./local-config.js";
@@ -190,7 +191,7 @@ function exportSkillsTarget(
     const skillDir = join(skillsRoot, skill.name);
     const targetPath = join(skillDir, "SKILL.md");
     mkdirSync(skillDir, { recursive: true });
-    writeFileSync(targetPath, skill.content, "utf8");
+    writeAtomicTextFile(targetPath, skill.content);
     pathsTouched.push(targetPath);
   }
 
@@ -199,13 +200,13 @@ function exportSkillsTarget(
       const packDir = join(skillsRoot, skill.name);
       const packPath = join(packDir, "SKILL.md");
       mkdirSync(packDir, { recursive: true });
-      writeFileSync(packPath, skill.content, "utf8");
+      writeAtomicTextFile(packPath, skill.content);
       pathsTouched.push(packPath);
 
       for (const resource of skill.resources) {
         const resourcePath = join(packDir, resource.path);
         mkdirSync(dirname(resourcePath), { recursive: true });
-        writeFileSync(resourcePath, resource.content, "utf8");
+        writeAtomicTextFile(resourcePath, resource.content);
         pathsTouched.push(resourcePath);
       }
     }
@@ -264,7 +265,7 @@ function exportAgentsTarget(
     end,
     overlay
   );
-  writeFileSync(agentsPath, updated, "utf8");
+  writeAtomicTextFile(agentsPath, updated);
 
   return new OperationResult({
     kind,
@@ -398,7 +399,7 @@ function uninstallAgentsTarget(
   if (updated.trim().length === 0) {
     rmSync(agentsPath, { force: true });
   } else {
-    writeFileSync(agentsPath, updated, "utf8");
+  writeAtomicTextFile(agentsPath, updated);
   }
 
   return new OperationResult({

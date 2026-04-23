@@ -1071,6 +1071,23 @@ export function writeCanonicalWithBackupResult<T>(
   };
 }
 
+export function writeAtomicTextFile(path: string, body: string): void {
+  ensureParentDir(path);
+  const tmpPath = temporaryReplacementPath(path);
+
+  try {
+    writeFileSync(tmpPath, body, { encoding: 'utf8', flag: 'wx' });
+    renameSync(tmpPath, path);
+  } catch (error) {
+    try {
+      rmSync(tmpPath, { force: true });
+    } catch {
+      // Ignore cleanup failures on an already failing write path.
+    }
+    throw new Error(`failed to write snapshot to ${path}: ${messageOf(error)}`);
+  }
+}
+
 export function listCanonicalBackupSiblings(canonicalPath: string): string[] {
   const parent = dirname(canonicalPath);
   if (!existsSync(parent)) {
@@ -1418,12 +1435,7 @@ function writeJsonFile(path: string, body: string): void {
 }
 
 function writeTextFile(path: string, body: string): void {
-  ensureParentDir(path);
-  try {
-    writeFileSync(path, body, 'utf8');
-  } catch (error) {
-    throw new Error(`failed to write snapshot to ${path}: ${messageOf(error)}`);
-  }
+  writeAtomicTextFile(path, body);
 }
 
 function ensureParentDir(path: string): void {
