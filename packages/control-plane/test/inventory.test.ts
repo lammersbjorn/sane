@@ -368,6 +368,27 @@ describe("full inventory and doctor", () => {
     expect(doctorSnapshot.lines).toContain("opencode-agents: missing (run `export opencode-agents`)");
   });
 
+  it("formats overflowed backup history in the doctor snapshot", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    installRuntime(paths, codexPaths);
+    writeBackupSiblings(paths.configPath, "config.local.toml.bak");
+    writeBackupSiblings(paths.summaryPath, "summary.json.bak");
+
+    const doctorSnapshot = inspectDoctorSnapshot(paths, codexPaths);
+
+    expect(doctorSnapshot.lines).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("config-backups: 4 (config.local.toml.bak.4"),
+        expect.stringContaining("summary-backups: 4 (summary.json.bak.4")
+      ])
+    );
+    expect(doctorSnapshot.lines.join("\n")).toContain("+1 more)");
+  });
+
   it("reports installed codex-native surfaces and enabled exported packs", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
@@ -515,3 +536,9 @@ describe("full inventory and doctor", () => {
     });
   });
 });
+
+function writeBackupSiblings(basePath: string, prefix: string): void {
+  for (let index = 1; index <= 4; index += 1) {
+    writeFileSync(`${basePath}.bak.${index}`, `${prefix}.${index}\n`, "utf8");
+  }
+}

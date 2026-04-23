@@ -97,4 +97,27 @@ describe("doctorRuntime", () => {
       projectPaths.summaryPath
     ]);
   });
+
+  it("summarizes overflowed local runtime backup history", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+
+    installRuntime(projectPaths, createCodexPaths(homeDir));
+    writeBackupSiblings(projectPaths.configPath, "config.local.toml.bak");
+    writeBackupSiblings(projectPaths.summaryPath, "summary.json.bak");
+
+    const result = doctorRuntime(projectPaths);
+
+    expect(result.summary).toContain("config-backups: 4 (config.local.toml.bak.4");
+    expect(result.summary).toContain("+1 more)");
+    expect(result.summary).toContain("summary-backups: 4 (summary.json.bak.4");
+    expect(result.summary).toContain("+1 more)");
+  });
 });
+
+function writeBackupSiblings(basePath: string, prefix: string): void {
+  for (let index = 1; index <= 4; index += 1) {
+    writeFileSync(`${basePath}.bak.${index}`, `${prefix}.${index}\n`, "utf8");
+  }
+}
