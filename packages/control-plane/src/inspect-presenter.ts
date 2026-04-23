@@ -51,6 +51,17 @@ export interface InspectOverviewSnapshot {
   integrationsPreview: {
     summary: string;
   };
+  statuslineAudit: {
+    status: string;
+    recommendedChangeCount: number;
+  };
+  statuslineApply: {
+    status: string;
+    appliedKeys: string[];
+  };
+  statuslinePreview: {
+    summary: string;
+  };
   driftItems: InspectDriftItemPresentation[];
 }
 
@@ -77,6 +88,9 @@ export function formatInspectOverviewLines(snapshot: InspectOverviewSnapshot): s
     `integrations audit: ${snapshot.integrationsAudit.status} (${snapshot.integrationsAudit.recommendedChangeCount} recommended changes)`,
     `integrations apply: ${snapshot.integrationsApply.status} (${snapshot.integrationsApply.appliedKeys.length} keys)`,
     `integrations preview: ${snapshot.integrationsPreview.summary}`,
+    `statusline profile: ${snapshot.statuslineAudit.status} (${snapshot.statuslineAudit.recommendedChangeCount} recommended changes)`,
+    `statusline apply: ${snapshot.statuslineApply.status} (${snapshot.statuslineApply.appliedKeys.length} keys)`,
+    `statusline preview: ${snapshot.statuslinePreview.summary}`,
     formatInspectDriftSummaryLine(snapshot.driftItems)
   ].concat(formatInspectDriftItemLines(snapshot.driftItems));
 }

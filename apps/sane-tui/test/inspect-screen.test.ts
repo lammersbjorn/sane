@@ -118,6 +118,12 @@ describe("inspect screen model", () => {
       integrationsAudit: { status: "missing", recommendedChangeCount: 0 },
       integrationsApply: { status: "ready", appliedKeys: [] },
       integrationsPreview: { summary: "integrations-profile preview" },
+      statuslineAudit: { status: "missing", recommendedChangeCount: 3 },
+      statuslineApply: {
+        status: "ready",
+        appliedKeys: ["tui.notification_condition", "tui.status_line", "tui.terminal_title"]
+      },
+      statuslinePreview: { summary: "statusline-profile preview: 3 recommended change(s)" },
       policyPreview: {
         summary: "policy preview: rendered adaptive obligation scenarios",
         details: ["simple-question: direct_answer | coordinator=gpt-5.4/high"],
@@ -167,6 +173,7 @@ describe("inspect screen model", () => {
       "show_config",
       "show_codex_config",
       "preview_integrations_profile",
+      "preview_statusline_profile",
       "preview_policy"
     ]);
     expect(screen.actions.map((action) => action.id)).not.toContain("apply_integrations_profile");
@@ -191,6 +198,15 @@ describe("inspect screen model", () => {
       "mcp_servers.playwright",
       "mcp_servers.grep_app"
     ]);
+    expect(screen.statuslineAudit.status).toBe("missing");
+    expect(screen.statuslineAudit.recommendedChangeCount).toBe(3);
+    expect(screen.statuslineApply.status).toBe("ready");
+    expect(screen.statuslineApply.appliedKeys).toEqual([
+      "tui.notification_condition",
+      "tui.status_line",
+      "tui.terminal_title"
+    ]);
+    expect(screen.statuslinePreview.summary).toContain("statusline-profile preview");
     expect(screen.runtimeHistory).toEqual({
       events: 0,
       decisions: 0,
@@ -254,6 +270,7 @@ describe("inspect screen model", () => {
     expect(screen.overviewLines.join("\n")).toContain(
       "current policy preview: policy preview: rendered adaptive obligation scenarios;"
     );
+    expect(screen.overviewLines.join("\n")).toContain("statusline profile: missing (3 recommended changes)");
     expect(screen.overviewLines.join("\n")).toContain(
       "optional pack provenance: caveman configured (sane-caveman; derived from caveman); rtk disabled (no skills; internal); frontend-craft disabled (design-taste-frontend + impeccable; derived from taste-skill + impeccable)"
     );

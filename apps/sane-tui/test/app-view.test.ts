@@ -400,7 +400,7 @@ describe("app view", () => {
   it("surfaces policy preview payload for the inspect policy action", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
     selectSection(shell, "inspect");
-    for (let index = 0; index < 6; index += 1) {
+    for (let index = 0; index < 7; index += 1) {
       moveSelection(shell, "action", 1);
     }
 
@@ -449,7 +449,7 @@ describe("app view", () => {
     const inspectScreen = await import("@/inspect-screen.js");
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
     selectSection(shell, "inspect");
-    for (let index = 0; index < 6; index += 1) {
+    for (let index = 0; index < 7; index += 1) {
       moveSelection(shell, "action", 1);
     }
 
@@ -497,7 +497,7 @@ describe("app view", () => {
 
     const shell = createTuiShell(paths, codexPaths);
     selectSection(shell, "inspect");
-    for (let index = 0; index < 6; index += 1) {
+    for (let index = 0; index < 7; index += 1) {
       moveSelection(shell, "action", 1);
     }
 

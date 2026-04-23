@@ -42,20 +42,23 @@ Keep the current mainline moving until there is a real blocker. Delegate side ta
 2. If `continue` is truly ambiguous, ask one short question once at the start. Otherwise do not ask.
 3. Pick the highest-value next slice that is small enough to verify and meaningful enough to move the project forward.
 4. Use repo-local agents, tools, skills, local state, and routing defaults when present.
-5. Use parallel read/research lanes aggressively when safe. Keep one write lane when edits would conflict.
-6. Delegate side tasks and bounded side lanes by default when possible so mainline progress does not stall.
+5. Preserve the repo's own terminology and current surface names. If the user points at a file, command, path, screen, or label, inspect it before arguing from memory.
+6. Use parallel read/research lanes aggressively when safe. Keep one write lane when edits would conflict.
+7. Delegate side tasks and bounded side lanes by default when possible so mainline progress does not stall.
 7. If the user injects a side task:
    - delegate it when possible
    - do it directly only when delegation does not make sense
    - then resume the mainline automatically
-8. Keep model and reasoning choice task-shaped instead of reusing one default everywhere.
-9. Use the lightest process that still works:
+8. When a repo exposes local subagents, tools, or skills, prefer using them instead of ad hoc habits so the workflow can self-improve later.
+9. Keep model and reasoning choice task-shaped instead of reusing one default everywhere.
+10. Use the lightest process that still works:
    - no mandatory mega-plan unless ambiguity or risk is real
    - no per-tool narration
    - brief milestone updates only
    - answer from context directly when no extra tooling is needed
-10. If you reread or re-edit the same area twice without real progress, switch approach instead of looping.
-11. Stop only for a real blocker:
+11. If you reread or re-edit the same area twice without real progress, switch approach instead of looping.
+12. After any side answer, research result, checkpoint, or verify pass, keep going on the mainline unless the user explicitly paused or a real blocker exists.
+13. Stop only for a real blocker:
    - missing required decision the repo/context does not answer
    - missing credential or dependency with no workaround
    - destructive risk requiring approval
@@ -72,6 +75,8 @@ Keep the current mainline moving until there is a real blocker. Delegate side ta
 - reaching a checkpoint is not a blocker
 - finishing one subtask is not a blocker
 - a side task is not a blocker if you can do it and return
+- answering the user's side question is not a blocker
+- finishing research is not a blocker if implementation can continue from it
 - do not keep asking whether to continue
 - do not over-tool trivial asks just because you are in continuation mode
 - do not leave idle subagents open after their result is no longer needed

@@ -147,6 +147,12 @@ describe("inspect presenter", () => {
       integrationsAudit: { status: "missing", recommendedChangeCount: 0 },
       integrationsApply: { status: "ready", appliedKeys: [] },
       integrationsPreview: { summary: "integrations-profile preview" },
+      statuslineAudit: { status: "missing", recommendedChangeCount: 3 },
+      statuslineApply: {
+        status: "ready",
+        appliedKeys: ["tui.notification_condition", "tui.status_line", "tui.terminal_title"]
+      },
+      statuslinePreview: { summary: "statusline-profile preview: 3 recommended change(s)" },
       driftItems: [
         {
           name: "hooks",

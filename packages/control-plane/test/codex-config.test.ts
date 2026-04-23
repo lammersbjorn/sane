@@ -93,7 +93,7 @@ describe("codex config control plane", () => {
     );
   });
 
-  it("shows native memories and tui footer state from existing codex config", () => {
+  it("shows native memories and statusline state from existing codex config", () => {
     const homeDir = makeTempDir();
     const codexPaths = createCodexPaths(homeDir);
 

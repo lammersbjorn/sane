@@ -20,6 +20,7 @@ export interface InspectScreenAction {
     | "show_config"
     | "show_codex_config"
     | "preview_integrations_profile"
+    | "preview_statusline_profile"
     | "preview_policy"
   >;
   title: string;

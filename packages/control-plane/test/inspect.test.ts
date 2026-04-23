@@ -78,6 +78,8 @@ describe("inspect snapshot", () => {
     expect(snapshot.codexConfig.summary).toContain("codex-config: ok");
     expect(snapshot.integrationsAudit.status).toBe("missing");
     expect(snapshot.integrationsPreview.summary).toContain("integrations-profile preview");
+    expect(snapshot.statuslineAudit.status).toBe("missing");
+    expect(snapshot.statuslinePreview.summary).toContain("statusline-profile preview");
     expect(snapshot.driftItems).toEqual([]);
     expect(snapshot.policyPreview.summary).toBe(
       "policy preview: rendered adaptive obligation scenarios"
@@ -90,6 +92,7 @@ describe("inspect snapshot", () => {
 
     expect(overview).toContain("status counts:");
     expect(overview).toContain("primary surfaces:");
+    expect(overview).toContain("statusline profile: missing");
     expect(overview).toContain(
       "optional pack provenance: caveman configured (sane-caveman; derived from caveman); rtk disabled (no skills; internal); frontend-craft disabled (design-taste-frontend + impeccable; derived from taste-skill + impeccable)"
     );

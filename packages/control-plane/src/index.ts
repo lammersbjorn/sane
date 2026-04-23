@@ -31,6 +31,7 @@ import {
 } from "@sane/state";
 
 import {
+  inspectCodexProfileFamilySnapshot,
   inspectIntegrationsProfileSnapshot,
   showCodexConfig
 } from "./codex-config.js";
@@ -94,6 +95,9 @@ export interface InspectSnapshot {
   integrationsAudit: ReturnType<typeof inspectIntegrationsProfileSnapshot>["audit"];
   integrationsApply: ReturnType<typeof inspectIntegrationsProfileSnapshot>["apply"];
   integrationsPreview: ReturnType<typeof inspectIntegrationsProfileSnapshot>["preview"];
+  statuslineAudit: ReturnType<typeof inspectCodexProfileFamilySnapshot>["statusline"]["audit"];
+  statuslineApply: ReturnType<typeof inspectCodexProfileFamilySnapshot>["statusline"]["apply"];
+  statuslinePreview: ReturnType<typeof inspectCodexProfileFamilySnapshot>["statusline"]["preview"];
   driftItems: Array<{
     name: string;
     path: string;
@@ -201,7 +205,7 @@ export function inspectSnapshotFromStatusBundle(
   const runtimeState = inspectRuntimeState(paths);
   const doctorResult = doctorForStatusBundle(paths, codexPaths, statusBundle);
   const doctorSnapshot = inspectDoctorSnapshot(paths, codexPaths, statusBundle);
-  const integrationsProfile = inspectIntegrationsProfileSnapshot(codexPaths);
+  const codexProfileFamily = inspectCodexProfileFamilySnapshot(codexPaths);
   const statusResult = showStatusFromStatusBundle(statusBundle);
 
   return {
@@ -218,9 +222,12 @@ export function inspectSnapshotFromStatusBundle(
     latestPolicyPreview: runtimeState.latestPolicyPreview,
     localConfig: showConfig(paths, codexPaths),
     codexConfig: showCodexConfig(codexPaths),
-    integrationsAudit: integrationsProfile.audit,
-    integrationsApply: integrationsProfile.apply,
-    integrationsPreview: integrationsProfile.preview,
+    integrationsAudit: codexProfileFamily.integrations.audit,
+    integrationsApply: codexProfileFamily.integrations.apply,
+    integrationsPreview: codexProfileFamily.integrations.preview,
+    statuslineAudit: codexProfileFamily.statusline.audit,
+    statuslineApply: codexProfileFamily.statusline.apply,
+    statuslinePreview: codexProfileFamily.statusline.preview,
     driftItems: statusBundle.driftItems.map((item) => ({
       name: item.name,
       path: item.path,

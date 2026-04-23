@@ -548,7 +548,7 @@ export function applyStatuslineProfile(paths: ProjectPaths, codexPaths: CodexPat
 
   return new OperationResult({
     kind: OperationKind.ApplyStatuslineProfile,
-    summary: "statusline-profile apply: wrote native tui footer settings",
+    summary: "statusline-profile apply: wrote native Codex statusline settings",
     details,
     pathsTouched: unique([codexPaths.configToml, backupPath]),
     inventory: [installedCodexConfigInventory(codexPaths)]
