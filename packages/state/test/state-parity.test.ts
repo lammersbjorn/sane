@@ -731,6 +731,104 @@ describe('typed record parity', () => {
     });
   });
 
+  it('normalizes mixed-type policy preview scenario fields instead of dropping latest snapshot', () => {
+    const dir = makeTempDir();
+    const path = join(dir, 'decisions.jsonl');
+
+    appendJsonlRecord(
+      path,
+      createDecisionRecord('policy preview: malformed-ish', 'coerce fields', [], {
+        kind: 'policy_preview',
+        scenarios: [
+          {
+            id: 'simple-question',
+            summary: 123,
+            obligations: ['keep_direct_answers_light', 99, ''],
+            roles: { coordinator: true, sidecar: 'yes', verifier: null },
+            orchestration: { subagents: 'none', reviewPosture: 7 },
+            continuation: { strategy: false, stopCondition: 'done' },
+            trace: [
+              { obligation: 'keep_direct_answers_light', rule: 'keep_direct_answers_light' },
+              { obligation: 'bad', rule: 5 },
+              { obligation: '', rule: 'empty_obligation' },
+            ],
+          },
+        ],
+      } as never),
+      stringifyDecisionRecord,
+    );
+
+    expect(readLatestPolicyPreviewSnapshot(path)).toEqual({
+      status: 'present',
+      scenarioCount: 1,
+      scenarioIds: ['simple-question'],
+      scenarios: [
+        {
+          id: 'simple-question',
+          summary: null,
+          input: null,
+          roles: {
+            coordinator: true,
+            sidecar: false,
+            verifier: false,
+          },
+          orchestration: {
+            subagents: 'none',
+            subagentReadiness: null,
+            reviewPosture: null,
+            verifierTiming: null,
+          },
+          continuation: {
+            strategy: null,
+            stopCondition: 'done',
+          },
+          obligationCount: 1,
+          traceCount: 1,
+          trace: [
+            {
+              obligation: 'keep_direct_answers_light',
+              rule: 'keep_direct_answers_light',
+            },
+          ],
+        },
+      ],
+      tsUnix: expect.any(Number),
+      summary: 'policy preview: malformed-ish',
+    });
+  });
+
+  it('caps latest policy preview scenarios and trace entries to bounded inspect size', () => {
+    const dir = makeTempDir();
+    const path = join(dir, 'decisions.jsonl');
+    const scenarios = Array.from({ length: 80 }, (_, index) => ({
+      id: `s-${index}`,
+      trace: Array.from({ length: 40 }, (_, traceIndex) => ({
+        obligation: `o-${traceIndex}`,
+        rule: `r-${traceIndex}`,
+      })),
+    }));
+
+    appendJsonlRecord(
+      path,
+      createDecisionRecord(
+        'policy preview: rendered adaptive obligation scenarios',
+        'bounded',
+        [],
+        createPolicyPreviewDecisionContext(scenarios),
+      ),
+      stringifyDecisionRecord,
+    );
+
+    const snapshot = readLatestPolicyPreviewSnapshot(path);
+
+    expect(snapshot.status).toBe('present');
+    expect(snapshot.scenarioCount).toBe(32);
+    expect(snapshot.scenarioIds).toHaveLength(32);
+    expect(snapshot.scenarios).toHaveLength(32);
+    expect(snapshot.scenarios[0]?.traceCount).toBe(16);
+    expect(snapshot.scenarios[0]?.trace).toHaveLength(16);
+  });
+
   it('returns last valid typed snapshot when trailing policy context is malformed', () => {
     const dir = makeTempDir();
     const path = join(dir, 'decisions.jsonl');

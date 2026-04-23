@@ -123,4 +123,39 @@ describe("inspectRuntimeState", () => {
       }
     });
   });
+
+  it("surfaces bounded latest policy preview through inspectRuntimeState", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+
+    installRuntime(paths, createCodexPaths(homeDir));
+    appendJsonlRecord(
+      paths.decisionsPath,
+      createDecisionRecord(
+        "policy preview: rendered adaptive obligation scenarios",
+        "bounded",
+        [],
+        {
+          kind: "policy_preview",
+          scenarios: Array.from({ length: 80 }, (_, index) => ({
+            id: `s-${index}`,
+            trace: Array.from({ length: 40 }, (_, traceIndex) => ({
+              obligation: `o-${traceIndex}`,
+              rule: `r-${traceIndex}`
+            }))
+          }))
+        }
+      ),
+      stringifyDecisionRecord
+    );
+
+    const snapshot = inspectRuntimeState(paths);
+
+    expect(snapshot.latestPolicyPreview.status).toBe("present");
+    expect(snapshot.latestPolicyPreview.scenarioCount).toBe(32);
+    expect(snapshot.latestPolicyPreview.scenarios).toHaveLength(32);
+    expect(snapshot.latestPolicyPreview.scenarios[0]?.traceCount).toBe(16);
+    expect(snapshot.latestPolicyPreview.scenarios[0]?.trace).toHaveLength(16);
+  });
 });

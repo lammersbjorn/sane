@@ -286,6 +286,9 @@ export interface LatestPolicyPreviewSnapshot {
   summary: string | null;
 }
 
+const MAX_LATEST_POLICY_PREVIEW_SCENARIOS = 32;
+const MAX_LATEST_POLICY_PREVIEW_TRACE_ENTRIES = 16;
+
 export interface ArtifactRecord {
   version: number;
   tsUnix: number;
@@ -865,28 +868,32 @@ export function readLatestPolicyPreviewSnapshot(path: string): LatestPolicyPrevi
     return createMissingLatestPolicyPreviewSnapshot();
   }
 
-  const scenarioIds = latestPolicyContext.scenarios.flatMap((scenario) =>
+  const scenarios = latestPolicyContext.scenarios.slice(0, MAX_LATEST_POLICY_PREVIEW_SCENARIOS);
+  const scenarioIds = scenarios.flatMap((scenario) =>
     typeof scenario.id === 'string' ? [scenario.id] : [],
   );
 
   return {
     status: 'present',
-    scenarioCount: latestPolicyContext.scenarios.length,
+    scenarioCount: scenarios.length,
     scenarioIds,
-    scenarios: latestPolicyContext.scenarios.map((scenario) => ({
-      id: scenario.id,
-      summary: scenario.summary,
-      input: scenario.input,
-      roles: scenario.roles,
-      orchestration: scenario.orchestration,
-      continuation: scenario.continuation,
-      obligationCount: scenario.obligations.length,
-      traceCount: scenario.trace.length,
-      trace: scenario.trace.map((entry) => ({
-        obligation: entry.obligation,
-        rule: entry.rule,
-      })),
-    })),
+    scenarios: scenarios.map((scenario) => {
+      const trace = scenario.trace.slice(0, MAX_LATEST_POLICY_PREVIEW_TRACE_ENTRIES);
+      return {
+        id: scenario.id,
+        summary: scenario.summary,
+        input: scenario.input,
+        roles: scenario.roles,
+        orchestration: scenario.orchestration,
+        continuation: scenario.continuation,
+        obligationCount: scenario.obligations.length,
+        traceCount: trace.length,
+        trace: trace.map((entry) => ({
+          obligation: entry.obligation,
+          rule: entry.rule,
+        })),
+      };
+    }),
     tsUnix: latestPolicyDecision.tsUnix,
     summary: latestPolicyDecision.summary,
   };
@@ -978,7 +985,7 @@ function normalizePolicyPreviewScenarioRecord(record: JsonRecord): PolicyPreview
           runState: asOptionalString(input.runState) ?? null,
         }
       : null,
-    obligations: asOptionalStringArray(record.obligations) ?? [],
+    obligations: coerceOptionalStringItems(record.obligations),
     roles: roles
       ? {
           coordinator: asOptionalBoolean(roles.coordinator) ?? false,
@@ -1077,6 +1084,14 @@ function normalizePolicyPreviewTraceEntries(
   return (trace ?? []).flatMap((entry) =>
     entry.obligation && entry.rule ? [{ obligation: entry.obligation, rule: entry.rule }] : [],
   );
+}
+
+function coerceOptionalStringItems(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter((item): item is string => typeof item === 'string' && item.length > 0);
 }
 
 export function writeCanonicalWithBackup<T>(
