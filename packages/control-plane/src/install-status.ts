@@ -1,7 +1,7 @@
 import { InventoryStatus } from "@sane/core";
 import { type CodexPaths, type ProjectPaths } from "@sane/platform";
 
-import { inspectIntegrationsProfileSnapshot } from "./codex-config.js";
+import { inspectCodexProfileFamilySnapshot } from "./codex-config.js";
 import { CORE_INSTALL_BUNDLE_TARGETS } from "./core-install-bundle-targets.js";
 import { inspectStatusBundle } from "./inventory.js";
 import {
@@ -53,7 +53,7 @@ export function inspectInstallStatusFromStatusBundle(
   statusBundle: ReturnType<typeof inspectStatusBundle>
 ): InstallStatusSnapshot {
   const inventory = statusBundle.codexNative;
-  const integrationsProfile = inspectIntegrationsProfileSnapshot(codexPaths);
+  const integrationsProfile = inspectCodexProfileFamilySnapshot(codexPaths).integrations;
   const missingTargets = missingBundleTargets(inventory);
   const bundleStatus = statusBundle.primary.installBundle;
   const integrationsStatusSnapshot = integrationsStatus(integrationsProfile.audit.status);
