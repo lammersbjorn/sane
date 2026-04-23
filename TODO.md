@@ -268,7 +268,7 @@ pnpm check
   - Sane-building procedure lives in `.agents/skills/sane-self-hosting/SKILL.md`
   - continuation behavior lives in `.agents/skills/continue/SKILL.md`
   - this split is dogfooding only, not a default requirement for user repos
-- [ ] Exact self-hosting milestone checklist:
+- [x] Exact self-hosting milestone checklist:
   - [x] prove exported `continue` skill installs through Sane, not only local `.agents` (`packs/core/manifest.json`, `@sane/framework-assets`, and `export user-skills` tests cover it)
   - [x] prove exported router/custom-agent guidance uses current model routing and enabled packs (`@sane/framework-assets`, `export user-skills`, `export custom-agents`, and OpenCode-agent tests cover it)
   - [x] prove `.sane` runtime state is enough for handoff without Codex native memories (`inspectRuntimeState` ignores native `features.memories` while Codex config remains read-only)
