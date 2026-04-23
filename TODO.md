@@ -267,7 +267,8 @@ pnpm check
 - [x] internal TS build can emit a bundled `dist/bin/sane.cjs` and smoke-run it without `tsx`
 - [ ] switch public root `start` / `start:settings` away from Rust
   - [ ] switch public README/setup docs away from Cargo-first instructions
-  - [ ] declare the packaged/public CLI story for `@sane/sane-tui`
+  - [x] declare the packaged/public CLI story for `@sane/sane-tui`
+    current story: root public start stays Rust; internal source preview uses `apps/sane-tui/bin/sane.mjs`; internal built preview uses `dist/bin/sane.cjs`; eventual package/public CLI should point at built output after parity
   - [ ] remove Rust launch/compat glue only after the TS path is the documented public entrypoint
 - [ ] Exact post-`v1` packaging automation sequence
 - [ ] Exact default attribution surface if onboarding opt-in ships:

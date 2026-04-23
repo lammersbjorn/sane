@@ -77,7 +77,7 @@ Keep this explicit and ordered by migration value:
      - [x] internal TS build can emit a bundled `dist/bin/sane.cjs` that runs without `tsx`
      - [ ] public root `start` / `start:settings` switched from Rust to TS
      - [ ] public README/setup docs switched from Cargo-first to TS-first
-     - [ ] packaged/public CLI story declared for `@sane/sane-tui` instead of internal-only preview/bin usage
+     - [x] packaged/public CLI story declared for `@sane/sane-tui`: Rust still owns the public root entrypoint; source preview stays on `bin/sane.mjs`; built preview stays on `dist/bin/sane.cjs`; eventual package/public CLI points at built output only after parity
      - [ ] Rust `main.rs` launch/command glue removed after TS path is the documented public entrypoint
 2. Policy-preview legacy cleanup
    - `packages/control-plane/src/policy-preview.ts` is the current source of truth.

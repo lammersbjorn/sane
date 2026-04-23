@@ -57,6 +57,14 @@ Boundary rules:
 - do not reintroduce hardcoded Rust-only behavior if the TS layer can own it cleanly
 - keep product framing aligned with `docs/decisions/2026-04-19-sane-decision-log.md`
 
+Current package story:
+
+- public repo entrypoint still stays Rust-owned through the root `cargo run -p sane --` scripts
+- internal source preview path is `apps/sane-tui/bin/sane.mjs`, which shells through `tsx`
+- internal built preview path is `apps/sane-tui/dist/bin/sane.cjs`, emitted by `pnpm --filter @sane/sane-tui run build`
+- eventual package/public CLI should point at the built output, not the source `tsx` shim
+- do not flip the public root scripts until TS parity is deliberate
+
 Verification:
 
 ```bash
