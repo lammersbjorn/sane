@@ -102,6 +102,9 @@ Rules:
 - `summary.json` is canonical for counts and last-seen timestamps
 - `events.jsonl` is bounded and prunable
 - `queue.jsonl` must not exist unless remote telemetry is enabled
+- saving `telemetry = "off"` removes `.sane/telemetry/`
+- reducing from `product-improvement` to `local-only` removes `queue.jsonl`
+- config save results must report telemetry file/directory side effects in `pathsTouched`
 
 ## Event Shape
 

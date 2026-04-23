@@ -110,6 +110,7 @@ Implemented:
 - runtime summary/inspect now surface bounded latest `.sane` history previews for the most recent `event`, `decision`, and `artifact`, plus the underlying `events` / `decisions` / `artifacts` counts, through canonical layered-state bundle `historyCounts`, without adding a new log-browsing surface
 - startup last-event reads now go through control-plane history helper instead of direct TUI peek logic, keeping history access on one typed bounded path
 - preferences, telemetry presence, and Codex backup-availability reads now go through control-plane snapshot helpers instead of ad hoc TUI file checks
+- telemetry file state now syncs downward with privacy consent: `off` removes `.sane/telemetry/`, `local-only` removes stale upload queue state, and config save results report telemetry paths touched
 - Codex backup snapshot truth now uses actual backup-file presence, count, and latest path instead of treating backup-directory existence as restore truth
 - task-shaped subagent presets now target `explorer`, `implementation`, `verifier`, and `realtime` classes; class candidate ordering remains heuristic and runtime-gated, not benchmark certainty
 - task-shaped routing classes are now wired through config + policy preview surfaces (with legacy role-default compatibility kept only where still required)
