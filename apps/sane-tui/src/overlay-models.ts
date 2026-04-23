@@ -39,6 +39,57 @@ export interface NoticeOverlayModel {
 
 export type OverlayModel = EditorOverlayModel | ConfirmOverlayModel | NoticeOverlayModel | null;
 
+const CONFIG_FIELD_METADATA: Record<
+  ConfigFieldId,
+  {
+    label: string;
+    explanation: string;
+    value: (editor: ConfigEditorState) => string;
+  }
+> = {
+  coordinator_model: {
+    label: "Coordinator model",
+    explanation:
+      "Editable default model for highest-context work: planning, shaping, integration, and hard calls.",
+    value: (editor) => editor.config.models.coordinator.model
+  },
+  coordinator_reasoning: {
+    label: "Coordinator reasoning",
+    explanation: "Default reasoning depth for the main coordinator role.",
+    value: (editor) => editor.config.models.coordinator.reasoningEffort
+  },
+  sidecar_model: {
+    label: "Sidecar model",
+    explanation:
+      "Editable default model for bounded helper work that should not consume coordinator budget.",
+    value: (editor) => editor.config.models.sidecar.model
+  },
+  sidecar_reasoning: {
+    label: "Sidecar reasoning",
+    explanation: "Default reasoning depth for sidecar tasks such as narrow inspections or support work.",
+    value: (editor) => editor.config.models.sidecar.reasoningEffort
+  },
+  verifier_model: {
+    label: "Verifier model",
+    explanation: "Editable default model when Sane runs reviewer or checker work.",
+    value: (editor) => editor.config.models.verifier.model
+  },
+  verifier_reasoning: {
+    label: "Verifier reasoning",
+    explanation: "Default reasoning depth for review, checking, and verification tasks.",
+    value: (editor) => editor.config.models.verifier.reasoningEffort
+  }
+};
+
+const PACK_FIELD_EXPLANATIONS: Record<PackFieldId, string> = {
+  caveman:
+    "Compressed communication guidance. Useful when you want less token-heavy prose by default.",
+  cavemem: "Compact durable-memory guidance for long sessions and cleaner handoffs.",
+  rtk: "Shell-routing guidance: if RTK policy exists, prefer RTK-routed command execution.",
+  frontend_craft:
+    "Frontend craft guidance. Biases Sane away from generic AI UI output and toward stronger design quality."
+};
+
 export function loadOverlayModel(shell: TuiShell): OverlayModel {
   if (shell.notice) {
     return {
@@ -108,12 +159,13 @@ export function loadOverlayModel(shell: TuiShell): OverlayModel {
 
 function configFieldHelpLines(editor: ConfigEditorState): string[] {
   const field = editor.fields[editor.selected]!;
-  const value = configFieldValue(field, editor);
+  const metadata = CONFIG_FIELD_METADATA[field];
+  const value = metadata.value(editor);
   const lines = [
-    configFieldLabel(field),
+    metadata.label,
     `Current value: ${value}`,
     "",
-    configFieldExplanation(field),
+    metadata.explanation,
     "",
     "Editable defaults",
     "Coordinator = top-level session baseline",
@@ -134,57 +186,6 @@ function configFieldHelpLines(editor: ConfigEditorState): string[] {
   }
 
   return lines;
-}
-
-function configFieldLabel(field: ConfigFieldId): string {
-  switch (field) {
-    case "coordinator_model":
-      return "Coordinator model";
-    case "coordinator_reasoning":
-      return "Coordinator reasoning";
-    case "sidecar_model":
-      return "Sidecar model";
-    case "sidecar_reasoning":
-      return "Sidecar reasoning";
-    case "verifier_model":
-      return "Verifier model";
-    case "verifier_reasoning":
-      return "Verifier reasoning";
-  }
-}
-
-function configFieldValue(field: ConfigFieldId, editor: ConfigEditorState): string {
-  switch (field) {
-    case "coordinator_model":
-      return editor.config.models.coordinator.model;
-    case "coordinator_reasoning":
-      return editor.config.models.coordinator.reasoningEffort;
-    case "sidecar_model":
-      return editor.config.models.sidecar.model;
-    case "sidecar_reasoning":
-      return editor.config.models.sidecar.reasoningEffort;
-    case "verifier_model":
-      return editor.config.models.verifier.model;
-    case "verifier_reasoning":
-      return editor.config.models.verifier.reasoningEffort;
-  }
-}
-
-function configFieldExplanation(field: ConfigFieldId): string {
-  switch (field) {
-    case "coordinator_model":
-      return "Editable default model for highest-context work: planning, shaping, integration, and hard calls.";
-    case "coordinator_reasoning":
-      return "Default reasoning depth for the main coordinator role.";
-    case "sidecar_model":
-      return "Editable default model for bounded helper work that should not consume coordinator budget.";
-    case "sidecar_reasoning":
-      return "Default reasoning depth for sidecar tasks such as narrow inspections or support work.";
-    case "verifier_model":
-      return "Editable default model when Sane runs reviewer or checker work.";
-    case "verifier_reasoning":
-      return "Default reasoning depth for review, checking, and verification tasks.";
-  }
 }
 
 function privacyLines(shell: TuiShell): string[] {
@@ -235,16 +236,7 @@ function packFieldLabel(field: PackFieldId): string {
 }
 
 function packFieldExplanation(field: PackFieldId): string {
-  switch (field) {
-    case "caveman":
-      return "Compressed communication guidance. Useful when you want less token-heavy prose by default.";
-    case "cavemem":
-      return "Compact durable-memory guidance for long sessions and cleaner handoffs.";
-    case "rtk":
-      return "Shell-routing guidance: if RTK policy exists, prefer RTK-routed command execution.";
-    case "frontend_craft":
-      return "Frontend craft guidance. Biases Sane away from generic AI UI output and toward stronger design quality.";
-  }
+  return PACK_FIELD_EXPLANATIONS[field];
 }
 
 function selectedPackSkillNames(field: PackFieldId): string[] {
