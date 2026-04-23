@@ -65,8 +65,8 @@
       }
     },
     "rtk": {
-      "routerNote": "- rtk pack active: route shell work through RTK instead of raw shell",
-      "overlayNote": "- rtk pack active: prefer RTK-routed shell execution",
+      "routerNote": "- rtk pack active: always route shell work through RTK instead of raw shell",
+      "overlayNote": "- rtk pack active: always route shell work through RTK instead of raw shell",
       "provenance": {
         "kind": "internal",
         "note": "Capability-only workflow pack for RTK-aware shell routing. No dedicated skill export until there is a concrete upstream skill worth mirroring.",

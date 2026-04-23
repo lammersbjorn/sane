@@ -193,7 +193,7 @@ describe("framework asset parity", () => {
       REALTIME_REASONING: roles.realtimeReasoning,
       ENABLED_PACK_ROUTER_NOTES: [
         "- caveman pack active: default to terse, token-efficient prose for normal narrative output; only switch to normal phrasing when exact commands, code, paths, URLs, errors, diffs, or quotes need it",
-        "- rtk pack active: route shell work through RTK instead of raw shell"
+        "- rtk pack active: always route shell work through RTK instead of raw shell"
       ].join("\n"),
       ENABLED_PACK_SKILL_SELECTIONS: [
         "- caveman task picks: communication, brevity, token-efficiency -> sane-caveman"
@@ -290,7 +290,7 @@ describe("framework asset parity", () => {
       REALTIME_REASONING: roles.realtimeReasoning,
       ENABLED_PACK_OVERLAY_NOTES: [
         "- cavemem pack active: always keep durable summaries, plans, handoffs, and memory updates compact, sparse, and high-signal",
-        "- rtk pack active: prefer RTK-routed shell execution"
+        "- rtk pack active: always route shell work through RTK instead of raw shell"
       ].join("\n"),
       ENABLED_PACK_SKILL_SELECTIONS: ""
     });

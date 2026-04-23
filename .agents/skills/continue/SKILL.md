@@ -7,7 +7,7 @@ description: Use when the user says continue, keep going, resume, don't stop, or
 
 ## Goal
 
-Keep the current mainline moving until there is a real blocker. Do side tasks, then resume automatically.
+Keep the current mainline moving until there is a real blocker. Delegate side tasks when possible, then resume automatically.
 
 ## Use When
 
@@ -27,6 +27,7 @@ Keep the current mainline moving until there is a real blocker. Do side tasks, t
 - current plan, TODO, handoff docs, runtime state, or local state if present
 - latest user instruction
 - side tasks that arrived during the mainline
+- repo-local agents, tools, skills, routing defaults, and verify commands when present
 
 ## Outputs
 
@@ -40,18 +41,21 @@ Keep the current mainline moving until there is a real blocker. Do side tasks, t
 1. Re-read current repo state before guessing from memory or old chat.
 2. If `continue` is truly ambiguous, ask one short question once at the start. Otherwise do not ask.
 3. Pick the highest-value next slice that is small enough to verify and meaningful enough to move the project forward.
-4. Use parallel read/research lanes aggressively when safe. Keep one write lane when edits would conflict.
-5. If the user injects a side task:
-   - do it directly if small
-   - delegate if cleaner
+4. Use repo-local agents, tools, skills, local state, and routing defaults when present.
+5. Use parallel read/research lanes aggressively when safe. Keep one write lane when edits would conflict.
+6. Delegate side tasks and bounded side lanes by default when possible so mainline progress does not stall.
+7. If the user injects a side task:
+   - delegate it when possible
+   - do it directly only when delegation does not make sense
    - then resume the mainline automatically
-6. Use the lightest process that still works:
+8. Keep model and reasoning choice task-shaped instead of reusing one default everywhere.
+9. Use the lightest process that still works:
    - no mandatory mega-plan unless ambiguity or risk is real
    - no per-tool narration
    - brief milestone updates only
    - answer from context directly when no extra tooling is needed
-7. If you reread or re-edit the same area twice without real progress, switch approach instead of looping.
-8. Stop only for a real blocker:
+10. If you reread or re-edit the same area twice without real progress, switch approach instead of looping.
+11. Stop only for a real blocker:
    - missing required decision the repo/context does not answer
    - missing credential or dependency with no workaround
    - destructive risk requiring approval
@@ -70,6 +74,7 @@ Keep the current mainline moving until there is a real blocker. Do side tasks, t
 - a side task is not a blocker if you can do it and return
 - do not keep asking whether to continue
 - do not over-tool trivial asks just because you are in continuation mode
+- do not leave idle subagents open after their result is no longer needed
 
 ## Examples
 

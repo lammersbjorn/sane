@@ -77,7 +77,7 @@ Today, `Sane` can manage:
 - the core skills `sane-router` and `continue`
 - a fixed built-in pack set today: always-on `core` plus optional `caveman`, `cavemem`, `rtk`, and `frontend-craft`
 - concrete optional skill exports where applicable: `sane-caveman` from `caveman`, plus `design-taste-frontend` and `impeccable` from `frontend-craft`
-- capability-only optional packs where applicable: `cavemem` and `rtk` affect router/overlay behavior without exporting dedicated skill directories
+- capability-only optional packs where applicable: `cavemem` and `rtk` do not export dedicated skill directories, but they still change and can be enforced through Sane's exported always-on guidance
 - installed `caveman` and `cavemem` packs are enforced in Sane's exported always-on guidance, not left as optional soft notes
 - the separate recommended integrations profile for Codex tools like `Context7`, `Playwright`, and `grep.app`
 - structured integrations audit output in install/apply/inspect flows so recommended adds are reviewable before write without summary-string guessing
