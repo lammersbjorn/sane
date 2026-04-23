@@ -248,6 +248,36 @@ describe("full inventory and doctor", () => {
     ]);
   });
 
+  it("surfaces disabled Codex hooks as a warning-only config conflict", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+    writeFileSync(
+      codexPaths.configToml,
+      [
+        "[features]",
+        "codex_hooks = false"
+      ].join("\n")
+    );
+
+    const bundle = inspectStatusBundle(paths, codexPaths);
+
+    expect(bundle.primary.codexConfig?.status).toBe(InventoryStatus.Installed);
+    expect(bundle.driftItems.map((item) => item.name)).not.toContain("codex-config");
+    expect(bundle.conflictWarnings).toEqual([
+      {
+        kind: "disabled_codex_hooks",
+        target: "features.codex_hooks",
+        path: codexPaths.configToml,
+        message:
+          "Codex hooks are disabled, so Sane-managed hook exports will not run until features.codex_hooks is enabled"
+      }
+    ]);
+  });
+
   it("surfaces invalid Codex config as a warning without replacing inventory drift", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();

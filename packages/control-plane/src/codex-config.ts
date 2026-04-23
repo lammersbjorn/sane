@@ -118,6 +118,7 @@ export interface CodexConfigBackupSnapshot {
 
 export type CodexConfigConflictWarningKind =
   | "invalid_config"
+  | "disabled_codex_hooks"
   | "unmanaged_mcp_server"
   | "unmanaged_plugin";
 
@@ -762,6 +763,18 @@ export function inspectCodexConfigConflictWarnings(
       path: codexPaths.configToml,
       message: `unmanaged Codex MCP server '${name}' is outside Sane's known profiles`
     }));
+  const features = asTomlTable(config.features);
+  const hooksWarnings: CodexConfigConflictWarning[] = features?.codex_hooks === false
+    ? [
+        {
+          kind: "disabled_codex_hooks",
+          target: "features.codex_hooks",
+          path: codexPaths.configToml,
+          message:
+            "Codex hooks are disabled, so Sane-managed hook exports will not run until features.codex_hooks is enabled"
+        }
+      ]
+    : [];
   const plugins = asTomlTable(config.plugins);
   const pluginWarnings = sortedKeys(plugins)
     .filter((name) => asTomlTable(plugins?.[name])?.enabled === true)
@@ -772,7 +785,7 @@ export function inspectCodexConfigConflictWarnings(
       message: `enabled Codex plugin '${name}' is outside Sane's managed profiles`
     }));
 
-  return [...mcpWarnings, ...pluginWarnings];
+  return [...mcpWarnings, ...hooksWarnings, ...pluginWarnings];
 }
 
 function recommendedLocalConfig(codexPaths: CodexPaths): LocalConfig {

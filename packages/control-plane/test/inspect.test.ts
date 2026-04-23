@@ -130,6 +130,36 @@ describe("inspect snapshot", () => {
     );
   });
 
+  it("surfaces disabled Codex hooks in inspect overview without mutating Codex config", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+    writeFileSync(
+      codexPaths.configToml,
+      [
+        "[features]",
+        "codex_hooks = false"
+      ].join("\n")
+    );
+
+    const snapshot = inspectSnapshot(paths, codexPaths);
+    const overview = formatInspectOverviewLines(snapshot).join("\n");
+
+    expect(snapshot.statusBundle.conflictWarnings).toEqual([
+      expect.objectContaining({
+        kind: "disabled_codex_hooks",
+        target: "features.codex_hooks"
+      })
+    ]);
+    expect(overview).toContain("conflict warnings: 1");
+    expect(overview).toContain(
+      "features.codex_hooks: Codex hooks are disabled, so Sane-managed hook exports will not run until features.codex_hooks is enabled"
+    );
+  });
+
   it("surfaces latest policy snapshot and invalid drift through one helper", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
