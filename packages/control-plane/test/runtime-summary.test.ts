@@ -17,7 +17,10 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   inspectLatestPolicyPreview,
   installRuntime,
+  showRuntimeHistory,
+  showRuntimeHistoryFromRuntimeState,
   showRuntimeProgress,
+  showRuntimeProgressFromRuntimeState,
   showRuntimeSummary,
   showRuntimeSummaryFromRuntimeState
 } from "../src/index.js";
@@ -113,6 +116,18 @@ describe("showRuntimeSummary", () => {
     const runtimeState = inspectRuntimeState(paths);
 
     expect(showRuntimeSummaryFromRuntimeState(paths, runtimeState)).toEqual(showRuntimeSummary(paths));
+  });
+
+  it("can derive runtime progress and history from an already captured runtime snapshot", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+
+    installRuntime(paths, createCodexPaths(homeDir));
+    const runtimeState = inspectRuntimeState(paths);
+
+    expect(showRuntimeProgressFromRuntimeState(runtimeState)).toEqual(showRuntimeProgress(paths));
+    expect(showRuntimeHistoryFromRuntimeState(runtimeState)).toEqual(showRuntimeHistory(paths));
   });
 
   it("includes the latest policy preview snapshot when present", () => {

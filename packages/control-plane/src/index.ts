@@ -180,11 +180,23 @@ export function doctorRuntime(paths: ProjectPaths): OperationResult {
 }
 
 export function showRuntimeHistory(paths: ProjectPaths): LayeredStateHistoryCounts {
-  return inspectRuntimeState(paths).historyCounts;
+  return showRuntimeHistoryFromRuntimeState(inspectRuntimeState(paths));
+}
+
+export function showRuntimeHistoryFromRuntimeState(
+  runtimeState: ReturnType<typeof inspectRuntimeState>
+): LayeredStateHistoryCounts {
+  return runtimeState.historyCounts;
 }
 
 export function showRuntimeProgress(paths: ProjectPaths): RuntimeProgressSnapshot | null {
-  const current = inspectRuntimeState(paths).current;
+  return showRuntimeProgressFromRuntimeState(inspectRuntimeState(paths));
+}
+
+export function showRuntimeProgressFromRuntimeState(
+  runtimeState: ReturnType<typeof inspectRuntimeState>
+): RuntimeProgressSnapshot | null {
+  const current = runtimeState.current;
 
   if (!current) {
     return null;
