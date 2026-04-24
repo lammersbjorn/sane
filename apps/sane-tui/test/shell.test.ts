@@ -183,6 +183,28 @@ describe("tui shell", () => {
     expect(doctorResult?.summary).toContain("runtime: missing");
   });
 
+  it("uses the captured runtime snapshot for TUI policy preview before refresh", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const shell = createTuiShell(paths, codexPaths);
+
+    while (shell.activeSectionId !== "inspect") {
+      moveSelection(shell, "section", 1);
+    }
+    while (currentAction(shell).id !== "preview_policy") {
+      moveSelection(shell, "action", 1);
+    }
+
+    controlPlane.installRuntime(paths, codexPaths);
+    const result = runSelectedAction(shell);
+
+    expect(result?.policyPreview?.scenarios.map((scenario) => scenario.id)).not.toContain(
+      "current-run-inspect"
+    );
+  });
+
   it("wraps selection and resets action cursor when section changes", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();

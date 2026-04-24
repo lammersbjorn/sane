@@ -44,7 +44,7 @@ import {
 } from "@sane/control-plane/inventory.js";
 import { inspectInstallStatusFromStatusBundle } from "@sane/control-plane/install-status.js";
 import { showStatus } from "@sane/control-plane";
-import { previewPolicy } from "@sane/control-plane/policy-preview.js";
+import { previewPolicy, previewPolicyForCurrentRun } from "@sane/control-plane/policy-preview.js";
 import {
   inspectEditablePreferencesConfig,
   resetTelemetryData,
@@ -380,6 +380,12 @@ function runCommand(shell: TuiShell, commandId: UiCommandId): OperationResult | 
           : commandId === "doctor"
             ? executeOperation(shell.paths, () =>
                 doctorForStatusBundle(shell.paths, shell.codexPaths, shell.statusSnapshot.statusBundle)
+              )
+          : commandId === "preview_policy"
+            ? executeOperationWithRuntimeState(
+                shell.paths,
+                shell.statusSnapshot.statusBundle.runtimeState,
+                () => previewPolicyForCurrentRun(shell.paths, shell.statusSnapshot.statusBundle.runtimeState.current)
               )
           : executeUiCommand(shell.paths, shell.codexPaths, commandId);
       refreshStatusSnapshot(shell);
