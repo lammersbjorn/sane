@@ -37,8 +37,10 @@ import { exportOpencodeAgents, uninstallOpencodeAgents } from "@sane/control-pla
 import { executeConfigSave, executeOperation, executeOperationWithRuntimeState } from "@sane/control-plane/history.js";
 import {
   doctor,
+  doctorForStatusBundle,
   inspectOnboardingSnapshotFromStatusBundle,
-  inspectStatusBundle
+  inspectStatusBundle,
+  showStatusFromStatusBundle
 } from "@sane/control-plane/inventory.js";
 import { inspectInstallStatusFromStatusBundle } from "@sane/control-plane/install-status.js";
 import { showStatus } from "@sane/control-plane";
@@ -373,6 +375,12 @@ function runCommand(shell: TuiShell, commandId: UiCommandId): OperationResult | 
               shell.statusSnapshot.statusBundle.runtimeState,
               () => showRuntimeSummaryFromRuntimeState(shell.paths, shell.statusSnapshot.statusBundle.runtimeState)
             )
+          : commandId === "show_status"
+            ? executeOperation(shell.paths, () => showStatusFromStatusBundle(shell.statusSnapshot.statusBundle))
+          : commandId === "doctor"
+            ? executeOperation(shell.paths, () =>
+                doctorForStatusBundle(shell.paths, shell.codexPaths, shell.statusSnapshot.statusBundle)
+              )
           : executeUiCommand(shell.paths, shell.codexPaths, commandId);
       refreshStatusSnapshot(shell);
       shell.activeEditor = null;

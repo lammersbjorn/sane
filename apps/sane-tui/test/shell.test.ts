@@ -2,6 +2,7 @@ import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { InventoryStatus } from "@sane/core";
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { parseEventRecordJson, readJsonlRecords } from "@sane/state";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -143,6 +144,43 @@ describe("tui shell", () => {
 
     expect(result?.summary).toBe(`runtime-summary: local handoff state at ${paths.runtimeRoot}`);
     expect(runtimeStateSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses the captured status bundle for TUI status and doctor before refresh", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const shell = createTuiShell(paths, codexPaths);
+
+    while (shell.activeSectionId !== "inspect") {
+      moveSelection(shell, "section", 1);
+    }
+
+    controlPlane.installRuntime(paths, codexPaths);
+    const statusResult = runSelectedAction(shell);
+
+    expect(statusResult?.inventory.find((item) => item.name === "runtime")?.status).toBe(
+      InventoryStatus.Missing
+    );
+
+    const doctorProjectRoot = makeTempDir();
+    const doctorHomeDir = makeTempDir();
+    const doctorPaths = createProjectPaths(doctorProjectRoot);
+    const doctorCodexPaths = createCodexPaths(doctorHomeDir);
+    const doctorShell = createTuiShell(doctorPaths, doctorCodexPaths);
+
+    while (doctorShell.activeSectionId !== "inspect") {
+      moveSelection(doctorShell, "section", 1);
+    }
+    while (currentAction(doctorShell).id !== "doctor") {
+      moveSelection(doctorShell, "action", 1);
+    }
+
+    controlPlane.installRuntime(doctorPaths, doctorCodexPaths);
+    const doctorResult = runSelectedAction(doctorShell);
+
+    expect(doctorResult?.summary).toContain("runtime: missing");
   });
 
   it("wraps selection and resets action cursor when section changes", () => {
