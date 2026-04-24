@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createDefaultLocalConfig } from "@sane/config";
+import { InventoryScope, InventoryStatus } from "@sane/core";
 import { optionalPackSkillNames } from "@sane/framework-assets";
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { appendJsonlRecord, createDecisionRecord, stringifyDecisionRecord } from "@sane/state";
@@ -14,6 +15,7 @@ import * as controlPlane from "@sane/control-plane";
 import * as inventory from "@sane/control-plane/inventory.js";
 import { formatInspectOverviewLines as formatSharedInspectOverviewLines, installRuntime } from "@sane/control-plane";
 import { saveConfig } from "@sane/control-plane/preferences.js";
+import { type InspectOverviewSnapshot } from "@sane/control-plane";
 import { inspectOverviewLines, loadInspectScreen, loadInspectScreenFromStatusBundle } from "@sane/sane-tui/inspect-screen.js";
 
 const tempDirs: string[] = [];
@@ -32,14 +34,16 @@ afterEach(() => {
 
 describe("inspect screen model", () => {
   it("includes hook repair hints in overview lines", () => {
-    const snapshot = {
+    const snapshot: InspectOverviewSnapshot = {
       statusBundle: {
         counts: {
           installed: 0,
           configured: 0,
           disabled: 0,
           missing: 0,
-          invalid: 1
+          invalid: 1,
+          present_without_sane_block: 0,
+          removed: 0
         },
         conflictWarnings: [],
         optionalPacks: [
@@ -84,7 +88,9 @@ describe("inspect screen model", () => {
         driftItems: [
           {
             name: "hooks",
-            status: "invalid",
+            scope: InventoryScope.CodexNative,
+            status: InventoryStatus.Invalid,
+            path: "/tmp/.codex/hooks.json",
             repairHint: "Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows."
           }
         ],
@@ -105,7 +111,6 @@ describe("inspect screen model", () => {
           }
         }
       },
-      doctor: { summary: "doctor: hooks invalid" },
       doctorHeadline: "doctor: hooks invalid",
       runtimeSummary: { summary: "runtime-summary: no local handoff state" },
       runtimeHistory: { events: 0, decisions: 0, artifacts: 0 },
@@ -123,7 +128,14 @@ describe("inspect screen model", () => {
           { status: "block" }
         ]
       },
-      latestPolicyPreview: { status: "missing" },
+      latestPolicyPreview: {
+        status: "missing",
+        scenarioCount: 0,
+        scenarioIds: [],
+        scenarios: [],
+        tsUnix: null,
+        summary: null
+      },
       localConfig: { summary: "config: ok" },
       codexConfig: { summary: "codex-config: ok" },
       integrationsAudit: { status: "missing", recommendedChangeCount: 0 },
@@ -139,7 +151,19 @@ describe("inspect screen model", () => {
         summary: "policy preview: rendered adaptive obligation scenarios",
         details: ["simple-question: direct_answer | coordinator=gpt-5.4/high"],
         policyPreview: {
-          scenarios: [{ id: "simple-question" }]
+          scenarios: [
+            {
+              id: "simple-question",
+              obligations: [],
+              orchestration: {
+                subagents: "none",
+                subagentReadiness: "not_needed",
+                reviewPosture: "inline_only",
+                verifierTiming: "inline"
+              },
+              trace: []
+            }
+          ]
         }
       },
       driftItems: [
@@ -149,7 +173,7 @@ describe("inspect screen model", () => {
           repairHint: "Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows."
         }
       ]
-    } as any;
+    };
     const lines = inspectOverviewLines(snapshot);
 
     expect(lines).toContain(

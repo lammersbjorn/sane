@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
-import { InventoryScope, InventoryStatus } from "@sane/core";
+import { InventoryScope, InventoryStatus, OperationKind, OperationResult } from "@sane/core";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as inventory from "@sane/control-plane/inventory.js";
 
@@ -142,13 +142,13 @@ describe("dashboard view", () => {
         appliedKeys: ["model", "model_reasoning_effort", "features.codex_hooks"],
         details: []
       },
-      codexProfilePreview: {
+      codexProfilePreview: new OperationResult({
+        kind: OperationKind.PreviewCodexProfile,
         summary: "codex-profile preview: 3 recommended change(s)",
         details: [],
         pathsTouched: [],
-        inventory: [],
-        kind: { value: "PreviewCodexProfile" }
-      } as any,
+        inventory: []
+      }),
       steps: []
     });
     const statusBundleSpy = vi.spyOn(inventory, "inspectStatusBundle");
@@ -184,13 +184,13 @@ describe("dashboard view", () => {
         appliedKeys: ["model", "model_reasoning_effort", "features.codex_hooks"],
         details: []
       },
-      codexProfilePreview: {
+      codexProfilePreview: new OperationResult({
+        kind: OperationKind.PreviewCodexProfile,
         summary: "codex-profile preview: 3 recommended change(s)",
         details: [],
         pathsTouched: [],
-        inventory: [],
-        kind: { value: "PreviewCodexProfile" }
-      } as any,
+        inventory: []
+      }),
       steps: []
     });
     const bundle = shell.statusSnapshot.statusBundle;

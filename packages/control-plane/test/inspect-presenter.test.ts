@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { InventoryStatus } from "@sane/core";
+import { InventoryScope, InventoryStatus } from "@sane/core";
 import { optionalPackSkillNames } from "@sane/framework-assets";
 
 import {
   formatInspectDriftItemLines,
   formatInspectDriftSummaryLine,
   formatInspectOptionalPackProvenanceLine,
-  formatInspectOverviewLines
+  formatInspectOverviewLines,
+  type InspectOverviewSnapshot
 } from "../src/inspect-presenter.js";
 
 describe("inspect presenter", () => {
@@ -80,14 +81,16 @@ describe("inspect presenter", () => {
   });
 
   it("formats inspect overview lines from shared backend snapshot data", () => {
-    const lines = formatInspectOverviewLines({
+    const snapshot: InspectOverviewSnapshot = {
       statusBundle: {
         counts: {
           installed: 1,
           configured: 1,
           disabled: 2,
           missing: 3,
-          invalid: 1
+          invalid: 1,
+          present_without_sane_block: 0,
+          removed: 0
         },
         conflictWarnings: [],
         optionalPacks: [
@@ -108,7 +111,9 @@ describe("inspect presenter", () => {
         driftItems: [
           {
             name: "hooks",
-            status: "unsupported (use WSL)",
+            scope: InventoryScope.CodexNative,
+            status: InventoryStatus.Invalid,
+            path: "/tmp/.codex/hooks.json",
             repairHint: "Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows."
           }
         ],
@@ -118,7 +123,9 @@ describe("inspect presenter", () => {
           userSkills: null,
           hooks: {
             name: "hooks",
+            scope: InventoryScope.CodexNative,
             status: InventoryStatus.Invalid,
+            path: "/tmp/.codex/hooks.json",
             repairHint: "Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows."
           },
           customAgents: null,
@@ -151,7 +158,14 @@ describe("inspect presenter", () => {
           { status: "block" }
         ]
       },
-      latestPolicyPreview: { status: "missing" },
+      latestPolicyPreview: {
+        status: "missing",
+        scenarioCount: 0,
+        scenarioIds: [],
+        scenarios: [],
+        tsUnix: null,
+        summary: null
+      },
       policyPreview: {
         summary: "policy preview: rendered adaptive obligation scenarios",
         details: ["simple-question: direct_answer | coordinator=gpt-5.4/high"],
@@ -177,7 +191,8 @@ describe("inspect presenter", () => {
           repairHint: "Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows."
         }
       ]
-    } as any);
+    };
+    const lines = formatInspectOverviewLines(snapshot);
 
     expect(lines).toContain(
       "status counts: installed 1, configured 1, disabled 2, missing 3, invalid 1, drift 1"

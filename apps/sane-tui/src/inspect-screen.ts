@@ -6,7 +6,8 @@ import {
   formatLatestPolicyPreviewInputLines as formatSharedLatestPolicyPreviewInputLines,
   formatLatestPolicyPreviewLines as formatSharedLatestPolicyPreviewLines,
   inspectSnapshotFromStatusBundle,
-  inspectSnapshot
+  inspectSnapshot,
+  type InspectOverviewSnapshot
 } from "@sane/control-plane";
 import { inspectStatusBundle } from "@sane/control-plane/inventory.js";
 import { listSectionActions, type UiCommandId } from "@sane/sane-tui/command-registry.js";
@@ -59,7 +60,7 @@ export function loadInspectScreenFromStatusBundle(
   };
 }
 
-export function inspectOverviewLines(snapshot: InspectScreenSnapshot): string[] {
+export function inspectOverviewLines(snapshot: InspectOverviewSnapshot): string[] {
   return formatSharedInspectOverviewLines(snapshot);
 }
 

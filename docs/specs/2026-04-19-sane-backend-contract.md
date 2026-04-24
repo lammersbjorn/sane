@@ -174,6 +174,7 @@ These are the backend actions the TUI is allowed to call in the current phase.
 - `restore_codex_config`
   - restore latest local backup from `.sane/backups/codex-config/`
   - only count real local backup files, not mere directory presence or stray entries
+  - return the post-restore `codex-config` inventory from the restored file
   - never guess from remote state
 
 - `show_status`
