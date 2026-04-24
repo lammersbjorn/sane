@@ -90,6 +90,10 @@ export interface StatusBundle {
   codexNative: InventoryItem[];
   compatibility: InventoryItem[];
   runtimeState: ReturnType<typeof inspectRuntimeState>;
+  backupHistory: {
+    config: string[];
+    summary: string[];
+  };
   optionalPacks: OptionalPackSnapshot[];
   driftItems: InventoryItem[];
   conflictWarnings: CodexConfigConflictWarning[];
@@ -258,13 +262,11 @@ export function inspectDoctorSnapshot(
   codexPaths: CodexPaths,
   bundle: StatusBundle = inspectStatusBundle(paths, codexPaths)
 ): DoctorSnapshot {
-  const configBackups = listCanonicalBackupSiblings(paths.configPath);
-  const summaryBackups = listCanonicalBackupSiblings(paths.summaryPath);
   const lines = [
     ...DOCTOR_ROW_NAMES.slice(0, 2).map((name) => doctorInventoryLine(bundle.inventory, name)),
-    `config-backups: ${canonicalBackupHistorySummary(configBackups)}`,
+    `config-backups: ${canonicalBackupHistorySummary(bundle.backupHistory.config)}`,
     ...DOCTOR_ROW_NAMES.slice(2, 4).map((name) => doctorInventoryLine(bundle.inventory, name)),
-    `summary-backups: ${canonicalBackupHistorySummary(summaryBackups)}`,
+    `summary-backups: ${canonicalBackupHistorySummary(bundle.backupHistory.summary)}`,
     ...DOCTOR_ROW_NAMES.slice(4, 6).map((name) => doctorInventoryLine(bundle.inventory, name)),
     ...OPTIONAL_PACK_INVENTORY_TARGETS.map(({ inventoryName }) =>
       doctorInventoryLine(bundle.inventory, inventoryName)
@@ -314,6 +316,10 @@ export function inspectStatusBundle(
     codexNative,
     compatibility,
     runtimeState,
+    backupHistory: {
+      config: listCanonicalBackupSiblings(paths.configPath),
+      summary: listCanonicalBackupSiblings(paths.summaryPath)
+    },
     optionalPacks: inspectOptionalPackSnapshots(inventory),
     driftItems,
     conflictWarnings,

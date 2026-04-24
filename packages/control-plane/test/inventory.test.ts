@@ -53,7 +53,6 @@ describe("full inventory and doctor", () => {
 
     const bundle = inspectStatusBundle(paths, codexPaths);
 
-    expect(bundle.inventory).toHaveLength(17);
     expect(bundle.localRuntime.map((item) => item.name)).toEqual([
       "runtime",
       "config",
@@ -77,6 +76,9 @@ describe("full inventory and doctor", () => {
     expect(bundle.compatibility.map((item) => item.name)).toEqual([
       "opencode-agents"
     ]);
+    expect(bundle.inventory).toHaveLength(
+      bundle.localRuntime.length + bundle.codexNative.length + bundle.compatibility.length
+    );
     expect(bundle.optionalPacks).toEqual([
       expect.objectContaining({
         name: "caveman",
@@ -202,6 +204,24 @@ describe("full inventory and doctor", () => {
     const bundle = inspectStatusBundle(paths, codexPaths);
 
     expect(doctorForStatusBundle(paths, codexPaths, bundle)).toEqual(doctor(paths, codexPaths));
+  });
+
+  it("keeps bundle-based doctor backup history snapshot-consistent", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    installRuntime(paths, codexPaths);
+
+    const bundle = inspectStatusBundle(paths, codexPaths);
+    writeBackupSiblings(paths.configPath, "config.local.toml.bak");
+    writeBackupSiblings(paths.summaryPath, "summary.json.bak");
+
+    const doctorSnapshot = inspectDoctorSnapshot(paths, codexPaths, bundle);
+
+    expect(doctorSnapshot.lines).toContain("config-backups: none");
+    expect(doctorSnapshot.lines).toContain("summary-backups: none");
   });
 
   it("surfaces invalid and unmanaged drift in the canonical bundle", () => {
