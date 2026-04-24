@@ -19,6 +19,7 @@ describe("built sane tui bin", () => {
       license?: string;
       name?: string;
       private?: boolean;
+      files?: string[];
       type?: string;
       version?: string;
     };
@@ -30,6 +31,7 @@ describe("built sane tui bin", () => {
     expect(packageJson.type).toBe("commonjs");
     expect(packageJson.license).toBe("MIT OR Apache-2.0");
     expect(packageJson.description).toBe("Sane terminal onboarding and setup surface for Codex.");
+    expect(packageJson.files).toEqual(["bin", "README.md"]);
     expect(saneBin).toBe("./bin/sane.cjs");
 
     const inspect = spawnSync(process.execPath, [join(distDir, saneBin!) , "inspect"], {

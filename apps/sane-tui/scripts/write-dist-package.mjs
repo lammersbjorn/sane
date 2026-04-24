@@ -18,6 +18,7 @@ const distPackage = {
   bin: {
     sane: "./bin/sane.cjs"
   },
+  files: ["bin", "README.md"],
   license: "MIT OR Apache-2.0",
   description: "Sane terminal onboarding and setup surface for Codex."
 };
