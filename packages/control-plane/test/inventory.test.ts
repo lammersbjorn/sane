@@ -14,6 +14,7 @@ import { exportGlobalAgents, exportUserSkills } from "../src/codex-native.js";
 import { exportCustomAgents, exportHooks } from "../src/hooks-custom-agents.js";
 import {
   doctor,
+  doctorForStatusBundle,
   inspectDoctorSnapshot,
   inspectOnboardingSnapshot,
   inspectOnboardingSnapshotFromStatusBundle,
@@ -186,6 +187,21 @@ describe("full inventory and doctor", () => {
     expect(inspectOnboardingSnapshotFromStatusBundle(paths, bundle)).toEqual(
       inspectOnboardingSnapshot(paths, codexPaths)
     );
+  });
+
+  it("keeps bundle-based doctor aligned with the wrapper", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    installRuntime(paths, codexPaths);
+    writeBackupSiblings(paths.configPath, "config.local.toml.bak");
+    writeBackupSiblings(paths.summaryPath, "summary.json.bak");
+
+    const bundle = inspectStatusBundle(paths, codexPaths);
+
+    expect(doctorForStatusBundle(paths, codexPaths, bundle)).toEqual(doctor(paths, codexPaths));
   });
 
   it("surfaces invalid and unmanaged drift in the canonical bundle", () => {
