@@ -1,7 +1,10 @@
 import { detectPlatform, type CodexPaths, type ProjectPaths } from "@sane/platform";
 
 import { exportAll } from "@sane/control-plane/bundles.js";
-import { applyIntegrationsProfile } from "@sane/control-plane/codex-config.js";
+import {
+  applyIntegrationsProfile,
+  inspectCodexProfileFamilySnapshot
+} from "@sane/control-plane/codex-config.js";
 import {
   exportGlobalAgents,
   exportRepoAgents,
@@ -17,7 +20,8 @@ import {
   type InstallActionStatus,
   inspectInstallStatusFromStatusBundle,
   inspectInstallStatus,
-  type InstallActionStatusId
+  type InstallActionStatusId,
+  inferHostPlatformFromStatusBundle
 } from "@sane/control-plane/install-status.js";
 import { inspectStatusBundle } from "@sane/control-plane/inventory.js";
 import { exportOpencodeAgents } from "@sane/control-plane/opencode-native.js";
@@ -54,21 +58,29 @@ export interface InstallAction {
   includes?: string[];
 }
 
+type CodexProfileFamilySnapshot = ReturnType<typeof inspectCodexProfileFamilySnapshot>;
+
 export function loadInstallScreen(
   paths: ProjectPaths,
   codexPaths: CodexPaths
 ): InstallScreenModel {
-  return loadInstallScreenFromStatusBundle(paths, codexPaths, inspectStatusBundle(paths, codexPaths));
+  return loadInstallScreenFromStatusBundle(
+    paths,
+    codexPaths,
+    inspectStatusBundle(paths, codexPaths),
+    inspectCodexProfileFamilySnapshot(codexPaths)
+  );
 }
 
 export function loadInstallScreenFromStatusBundle(
   paths: ProjectPaths,
   codexPaths: CodexPaths,
-  statusBundle: ReturnType<typeof inspectStatusBundle>
+  statusBundle: ReturnType<typeof inspectStatusBundle>,
+  profiles: CodexProfileFamilySnapshot = inspectCodexProfileFamilySnapshot(codexPaths)
 ): InstallScreenModel {
-  const status = inspectInstallStatusFromStatusBundle(paths, codexPaths, statusBundle);
+  const hostPlatform = inferHostPlatformFromStatusBundle(statusBundle);
+  const status = inspectInstallStatusFromStatusBundle(paths, codexPaths, statusBundle, hostPlatform, profiles);
   const inventory = status.inventory;
-  const hostPlatform = detectPlatform();
   const actions = buildInstallActionRows(listSectionActions("install", hostPlatform), status.actionStatus).map((action) =>
     action.id === "export_all"
       ? { ...action, includes: exportAllIncludes(inventory) }

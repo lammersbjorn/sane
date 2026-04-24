@@ -39,6 +39,7 @@ export interface InstallStatusSnapshot {
 }
 
 export type InstallActionStatusMap = InstallStatusSnapshot["actionStatus"];
+type CodexProfileFamilySnapshot = ReturnType<typeof inspectCodexProfileFamilySnapshot>;
 
 export function inspectInstallStatus(
   paths: ProjectPaths,
@@ -57,10 +58,11 @@ export function inspectInstallStatusFromStatusBundle(
   _paths: ProjectPaths,
   codexPaths: CodexPaths,
   statusBundle: ReturnType<typeof inspectStatusBundle>,
-  hostPlatform: HostPlatform = inferHostPlatformFromStatusBundle(statusBundle)
+  hostPlatform: HostPlatform = inferHostPlatformFromStatusBundle(statusBundle),
+  profiles: CodexProfileFamilySnapshot = inspectCodexProfileFamilySnapshot(codexPaths)
 ): InstallStatusSnapshot {
   const inventory = statusBundle.codexNative;
-  const integrationsProfile = inspectCodexProfileFamilySnapshot(codexPaths).integrations;
+  const integrationsProfile = profiles.integrations;
   const missingTargets = missingBundleTargets(inventory, hostPlatform);
   const bundleStatus = statusBundle.primary.installBundle;
   const integrationsStatusSnapshot = integrationsStatus(integrationsProfile.audit.status);
@@ -116,7 +118,7 @@ function missingBundleTargets(
   );
 }
 
-function inferHostPlatformFromStatusBundle(
+export function inferHostPlatformFromStatusBundle(
   statusBundle: ReturnType<typeof inspectStatusBundle>
 ): HostPlatform {
   const hooksInventory = statusBundle.codexNative.find((item) => item.name === "hooks");

@@ -1,4 +1,5 @@
 import { type TuiShell, currentAction } from "@sane/sane-tui/shell.js";
+import { inspectCodexProfileFamilySnapshot } from "@sane/control-plane/codex-config.js";
 import { loadDashboardView } from "@sane/sane-tui/dashboard.js";
 import { loadGetStartedScreenFromStatusBundle } from "@sane/sane-tui/get-started-screen.js";
 import { loadInstallScreenFromStatusBundle } from "@sane/sane-tui/install-screen.js";
@@ -57,17 +58,24 @@ const FOOTER_STATUS_SPECS = [
 ] as const;
 
 export function loadAppView(shell: TuiShell): SaneTuiAppView {
+  const codexProfiles = inspectCodexProfileFamilySnapshot(shell.codexPaths);
   const getStarted = loadGetStartedScreenFromStatusBundle(
     shell.paths,
     shell.codexPaths,
-    shell.statusSnapshot.statusBundle
+    shell.statusSnapshot.statusBundle,
+    codexProfiles
   );
   const dashboard = loadDashboardView(shell, getStarted);
-  const install = loadInstallScreenFromStatusBundle(shell.paths, shell.codexPaths, shell.statusSnapshot.statusBundle);
+  const install = loadInstallScreenFromStatusBundle(
+    shell.paths,
+    shell.codexPaths,
+    shell.statusSnapshot.statusBundle,
+    codexProfiles
+  );
   const inspect = lazy(() =>
     loadInspectScreenFromStatusBundle(shell.paths, shell.codexPaths, shell.statusSnapshot.statusBundle)
   );
-  const preferences = lazy(() => loadPreferencesScreen(shell.paths, shell.codexPaths));
+  const preferences = lazy(() => loadPreferencesScreen(shell.paths, shell.codexPaths, codexProfiles));
   const repair = lazy(() =>
     loadRepairScreenFromStatusBundle(shell.paths, shell.codexPaths, shell.statusSnapshot.statusBundle)
   );

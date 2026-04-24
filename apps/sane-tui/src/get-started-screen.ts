@@ -38,20 +38,28 @@ export interface GetStartedScreenModel {
   steps: GetStartedStep[];
 }
 
+type CodexProfileFamily = ReturnType<typeof inspectCodexProfileFamilySnapshot>;
+
 export function loadGetStartedScreen(
   paths: ProjectPaths,
   codexPaths: CodexPaths
 ): GetStartedScreenModel {
-  return loadGetStartedScreenFromStatusBundle(paths, codexPaths, inspectStatusBundle(paths, codexPaths));
+  return loadGetStartedScreenFromStatusBundle(
+    paths,
+    codexPaths,
+    inspectStatusBundle(paths, codexPaths),
+    inspectCodexProfileFamilySnapshot(codexPaths)
+  );
 }
 
 export function loadGetStartedScreenFromStatusBundle(
   paths: ProjectPaths,
   codexPaths: CodexPaths,
-  statusBundle: ReturnType<typeof inspectStatusBundle>
+  statusBundle: ReturnType<typeof inspectStatusBundle>,
+  profiles: CodexProfileFamily = inspectCodexProfileFamilySnapshot(codexPaths)
 ): GetStartedScreenModel {
   const onboarding = inspectOnboardingSnapshotFromStatusBundle(paths, statusBundle);
-  const codexProfile = inspectCodexProfileFamilySnapshot(codexPaths).core;
+  const codexProfile = profiles.core;
   const hostPlatform = detectPlatform();
   const steps = listSectionActions("get_started", hostPlatform).map((action) => ({
     id: action.id as GetStartedStep["id"],

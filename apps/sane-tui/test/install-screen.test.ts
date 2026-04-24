@@ -173,7 +173,17 @@ describe("install screen model", () => {
     const screen = loadInstallScreenFromStatusBundle(paths, codexPaths, bundle);
 
     expect(fromBundleSpy).toHaveBeenCalledTimes(1);
-    expect(fromBundleSpy).toHaveBeenCalledWith(paths, codexPaths, bundle);
+    expect(fromBundleSpy).toHaveBeenCalledWith(
+      paths,
+      codexPaths,
+      bundle,
+      expect.any(String),
+      expect.objectContaining({
+        integrations: expect.objectContaining({
+          audit: expect.objectContaining({ status: "missing" })
+        })
+      })
+    );
     expect(screen.recommendedActionId).toBe("export_all");
   });
 

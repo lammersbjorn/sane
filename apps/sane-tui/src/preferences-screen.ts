@@ -6,6 +6,7 @@ import { inspectPreferencesFamilySnapshot } from "@sane/control-plane/preference
 import { listSectionActions, type UiCommandId } from "@sane/sane-tui/command-registry.js";
 
 type PreferencesSnapshotModel = ReturnType<typeof inspectPreferencesFamilySnapshot>["preferences"];
+type CodexProfileFamily = ReturnType<typeof inspectCodexProfileFamilySnapshot>;
 
 export interface PreferencesScreenAction {
   id: Extract<
@@ -49,7 +50,8 @@ export interface PreferencesScreenModel {
 
 export function loadPreferencesScreen(
   paths: ProjectPaths,
-  codexPaths: CodexPaths
+  codexPaths: CodexPaths,
+  profiles: CodexProfileFamily = inspectCodexProfileFamilySnapshot(codexPaths)
 ): PreferencesScreenModel {
   const hostPlatform = detectPlatform();
   const actions: PreferencesScreenAction[] = listSectionActions("preferences", hostPlatform).map((action) => ({
@@ -65,7 +67,6 @@ export function loadPreferencesScreen(
             : "backend"
   }));
   const snapshot = inspectPreferencesFamilySnapshot(paths, codexPaths).preferences;
-  const profiles = inspectCodexProfileFamilySnapshot(codexPaths);
   return {
     summary: "Preferences",
     source: snapshot.source,

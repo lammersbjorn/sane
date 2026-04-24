@@ -82,12 +82,59 @@ describe("app view", () => {
     expect(vi.mocked(getStartedScreen.loadGetStartedScreenFromStatusBundle).mock.calls[0]?.[2]).toBe(
       shell.statusSnapshot.statusBundle
     );
+    expect(vi.mocked(getStartedScreen.loadGetStartedScreenFromStatusBundle).mock.calls[0]?.[3]).toBeDefined();
     expect(vi.mocked(installScreen.loadInstallScreenFromStatusBundle)).toHaveBeenCalledTimes(1);
     expect(vi.mocked(installScreen.loadInstallScreenFromStatusBundle).mock.calls[0]?.[2]).toBe(
       shell.statusSnapshot.statusBundle
     );
+    expect(vi.mocked(installScreen.loadInstallScreenFromStatusBundle).mock.calls[0]?.[3]).toBeDefined();
     vi.doUnmock("@sane/sane-tui/get-started-screen.js");
     vi.doUnmock("@sane/sane-tui/install-screen.js");
+    vi.resetModules();
+  });
+
+  it("reuses one codex profile family snapshot per app-view render", async () => {
+    vi.resetModules();
+    vi.doMock("@sane/control-plane/codex-config.js", async () => {
+      const actual = await vi.importActual<typeof import("@sane/control-plane/codex-config.js")>("@sane/control-plane/codex-config.js");
+      return {
+        ...actual,
+        inspectCodexProfileFamilySnapshot: vi.fn(actual.inspectCodexProfileFamilySnapshot)
+      };
+    });
+    vi.doMock("@sane/sane-tui/get-started-screen.js", async () => {
+      const actual = await vi.importActual<typeof import("@sane/sane-tui/get-started-screen.js")>("@sane/sane-tui/get-started-screen.js");
+      return {
+        ...actual,
+        loadGetStartedScreenFromStatusBundle: vi.fn(actual.loadGetStartedScreenFromStatusBundle)
+      };
+    });
+    vi.doMock("@sane/sane-tui/preferences-screen.js", async () => {
+      const actual = await vi.importActual<typeof import("@sane/sane-tui/preferences-screen.js")>("@sane/sane-tui/preferences-screen.js");
+      return {
+        ...actual,
+        loadPreferencesScreen: vi.fn(actual.loadPreferencesScreen)
+      };
+    });
+
+    const { loadAppView: loadAppViewWithSpy } = await import("@sane/sane-tui/app-view.js");
+    const codexConfig = await import("@sane/control-plane/codex-config.js");
+    const getStartedScreen = await import("@sane/sane-tui/get-started-screen.js");
+    const preferencesScreen = await import("@sane/sane-tui/preferences-screen.js");
+    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
+    selectSection(shell, "preferences");
+
+    loadAppViewWithSpy(shell);
+
+    expect(vi.mocked(codexConfig.inspectCodexProfileFamilySnapshot)).toHaveBeenCalledTimes(1);
+    const profileSnapshot = vi.mocked(codexConfig.inspectCodexProfileFamilySnapshot).mock.results[0]?.value;
+    expect(vi.mocked(getStartedScreen.loadGetStartedScreenFromStatusBundle).mock.calls[0]?.[3]).toBe(
+      profileSnapshot
+    );
+    expect(vi.mocked(preferencesScreen.loadPreferencesScreen).mock.calls[0]?.[2]).toBe(profileSnapshot);
+    vi.doUnmock("@sane/control-plane/codex-config.js");
+    vi.doUnmock("@sane/sane-tui/get-started-screen.js");
+    vi.doUnmock("@sane/sane-tui/preferences-screen.js");
     vi.resetModules();
   });
 

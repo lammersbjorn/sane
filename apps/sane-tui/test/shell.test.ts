@@ -205,7 +205,7 @@ describe("tui shell", () => {
     );
   });
 
-  it("uses the captured codex profile snapshot for TUI preview before refresh", () => {
+  it("uses a fresh codex profile snapshot for TUI preview actions", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const paths = createProjectPaths(projectRoot);
@@ -232,8 +232,10 @@ describe("tui shell", () => {
 
     const result = runSelectedAction(shell);
 
-    expect(result?.summary).toBe("codex-profile preview: 3 recommended change(s)");
-    expect(result?.details).toContain("model: <missing> -> gpt-5.4");
+    expect(result?.summary).toBe("codex-profile preview: 0 recommended change(s)");
+    expect(result?.details).toContain("model: keep gpt-5.4");
+    expect(result?.details).toContain("reasoning: keep high");
+    expect(result?.details).toContain("codex hooks: keep enabled");
   });
 
   it("wraps selection and resets action cursor when section changes", () => {
