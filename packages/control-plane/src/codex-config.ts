@@ -710,7 +710,7 @@ export function restoreCodexConfig(paths: ProjectPaths, codexPaths: CodexPaths):
     summary: `codex-config restore: restored from ${backupPath}`,
     details: [`target: ${codexPaths.configToml}`],
     pathsTouched: [backupPath, codexPaths.configToml],
-    inventory: [installedCodexConfigInventory(codexPaths)]
+    inventory: [inspectCodexConfigInventory(codexPaths)]
   });
 }
 

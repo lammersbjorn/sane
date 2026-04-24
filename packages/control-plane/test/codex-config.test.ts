@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createProjectPaths, createCodexPaths } from "@sane/platform";
+import { InventoryStatus } from "@sane/core";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
@@ -344,6 +345,26 @@ describe("codex config control plane", () => {
     expect(restore.summary).not.toContain("notes.txt");
     expect(body).toContain('model = "gpt-5.2"');
     expect(body).toContain('model_reasoning_effort = "medium"');
+  });
+
+  it("reports actual inventory after restoring invalid backup content", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    mkdirSync(projectPaths.codexConfigBackupsDir, { recursive: true });
+    writeFileSync(join(projectPaths.codexConfigBackupsDir, "config-1.toml"), "model = [\n", "utf8");
+
+    const restore = restoreCodexConfig(projectPaths, codexPaths);
+
+    expect(restore.summary).toContain("codex-config restore: restored from");
+    expect(restore.inventory).toEqual([
+      expect.objectContaining({
+        name: "codex-config",
+        status: InventoryStatus.Invalid
+      })
+    ]);
   });
 
   it("reports structured integrations audit state without scraping preview strings", () => {
