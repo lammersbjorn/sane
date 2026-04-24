@@ -243,7 +243,14 @@ export function inspectSnapshotFromStatusBundle(
 }
 
 export function showRuntimeSummary(paths: ProjectPaths): OperationResult {
-  return buildRuntimeSummary(paths, inspectRuntimeState(paths));
+  return showRuntimeSummaryFromRuntimeState(paths, inspectRuntimeState(paths));
+}
+
+export function showRuntimeSummaryFromRuntimeState(
+  paths: ProjectPaths,
+  runtimeState: ReturnType<typeof inspectRuntimeState>
+): OperationResult {
+  return buildRuntimeSummary(paths, runtimeState);
 }
 
 function buildRuntimeSummary(

@@ -18,8 +18,10 @@ import {
   inspectLatestPolicyPreview,
   installRuntime,
   showRuntimeProgress,
-  showRuntimeSummary
+  showRuntimeSummary,
+  showRuntimeSummaryFromRuntimeState
 } from "../src/index.js";
+import { inspectRuntimeState } from "../src/runtime-state.js";
 
 const tempDirs: string[] = [];
 
@@ -100,6 +102,17 @@ describe("showRuntimeSummary", () => {
       phase: "setup",
       verificationStatus: "pending"
     });
+  });
+
+  it("can render runtime summary from an already captured runtime snapshot", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+
+    installRuntime(paths, createCodexPaths(homeDir));
+    const runtimeState = inspectRuntimeState(paths);
+
+    expect(showRuntimeSummaryFromRuntimeState(paths, runtimeState)).toEqual(showRuntimeSummary(paths));
   });
 
   it("includes the latest policy preview snapshot when present", () => {

@@ -34,7 +34,7 @@ import {
   exportHooks
 } from "@sane/control-plane/hooks-custom-agents.js";
 import { exportOpencodeAgents, uninstallOpencodeAgents } from "@sane/control-plane/opencode-native.js";
-import { executeConfigSave, executeOperation } from "@sane/control-plane/history.js";
+import { executeConfigSave, executeOperation, executeOperationWithRuntimeState } from "@sane/control-plane/history.js";
 import {
   doctor,
   inspectOnboardingSnapshotFromStatusBundle,
@@ -51,6 +51,7 @@ import {
 import {
   installRuntime,
   showRuntimeSummary,
+  showRuntimeSummaryFromRuntimeState,
   uninstallRepoAgents,
   uninstallRepoSkills
 } from "@sane/control-plane";
@@ -365,7 +366,14 @@ function runCommand(shell: TuiShell, commandId: UiCommandId): OperationResult | 
       shell.notice = null;
       return null;
     default: {
-      const result = executeUiCommand(shell.paths, shell.codexPaths, commandId);
+      const result =
+        commandId === "show_runtime_summary"
+          ? executeOperationWithRuntimeState(
+              shell.paths,
+              shell.statusSnapshot.statusBundle.runtimeState,
+              () => showRuntimeSummaryFromRuntimeState(shell.paths, shell.statusSnapshot.statusBundle.runtimeState)
+            )
+          : executeUiCommand(shell.paths, shell.codexPaths, commandId);
       refreshStatusSnapshot(shell);
       shell.activeEditor = null;
       shell.lastResult = buildLastResultView(result, result.renderText());

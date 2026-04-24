@@ -21,6 +21,7 @@ import { saveConfig } from "./preferences.js";
 import {
   ensureRuntimeHandoffBaseline,
   inspectRuntimeState,
+  type RuntimeInspectSnapshot,
   writeRuntimeSummaryAndBrief
 } from "./runtime-state.js";
 
@@ -39,11 +40,36 @@ export function executeOperation(
   return result;
 }
 
+export function executeOperationWithRuntimeState(
+  paths: ProjectPaths,
+  runtimeState: RuntimeInspectSnapshot,
+  run: () => OperationResult
+): OperationResult {
+  const result = run();
+  recordOperationWithRuntimeState(paths, result, runtimeState);
+  return result;
+}
+
 export function recordOperation(paths: ProjectPaths, result: OperationResult): void {
   ensureRuntimeHandoffBaseline(paths);
   const runtime = inspectRuntimeState(paths);
   const current = runtime.current ?? createDefaultCurrentRunState("unknown");
   persistOperationState(paths, result, runtime.summary, current);
+}
+
+function recordOperationWithRuntimeState(
+  paths: ProjectPaths,
+  result: OperationResult,
+  runtimeState: RuntimeInspectSnapshot
+): void {
+  ensureRuntimeHandoffBaseline(paths);
+  const runtime = hasRuntimeHandoff(runtimeState) ? runtimeState : inspectRuntimeState(paths);
+  const current = runtime.current ?? createDefaultCurrentRunState("unknown");
+  persistOperationState(paths, result, runtime.summary, current);
+}
+
+function hasRuntimeHandoff(runtimeState: RuntimeInspectSnapshot): boolean {
+  return runtimeState.current !== null || runtimeState.summary !== null || runtimeState.brief !== null;
 }
 
 function persistOperationState(

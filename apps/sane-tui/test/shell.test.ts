@@ -121,6 +121,30 @@ describe("tui shell", () => {
     ]);
   });
 
+  it("uses the captured status bundle for TUI runtime summary before refresh", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    controlPlane.installRuntime(paths, codexPaths);
+    const runtimeStateSpy = vi.spyOn(runtimeState, "inspectRuntimeState");
+    const shell = createTuiShell(paths, codexPaths);
+
+    while (shell.activeSectionId !== "inspect") {
+      moveSelection(shell, "section", 1);
+    }
+    while (currentAction(shell).id !== "show_runtime_summary") {
+      moveSelection(shell, "action", 1);
+    }
+
+    runtimeStateSpy.mockClear();
+    const result = runSelectedAction(shell);
+
+    expect(result?.summary).toBe(`runtime-summary: local handoff state at ${paths.runtimeRoot}`);
+    expect(runtimeStateSpy).toHaveBeenCalledTimes(1);
+  });
+
   it("wraps selection and resets action cursor when section changes", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
