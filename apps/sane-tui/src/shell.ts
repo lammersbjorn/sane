@@ -16,6 +16,7 @@ import {
   previewIntegrationsProfile,
   previewOpencodeProfile,
   previewStatuslineProfile,
+  inspectCodexProfileFamilySnapshot,
   restoreCodexConfig,
   showCodexConfig
 } from "@sane/control-plane/codex-config.js";
@@ -102,6 +103,7 @@ export interface TuiShell {
   hostPlatform: HostPlatform;
   sections: ReturnType<typeof listSections>;
   statusSnapshot: ShellStatusSnapshot;
+  profileSnapshot: ReturnType<typeof inspectCodexProfileFamilySnapshot>;
   activeSectionId: TuiSectionId;
   activeActionIndex: number;
   activeEditor: ConfigEditorState | PackEditorState | PrivacyEditorState | null;
@@ -122,6 +124,7 @@ export function createTuiShell(
   const sectionId = COMMAND_METADATA_REGISTRY.shortcuts[launchShortcut];
   const hostPlatform = detectPlatform();
   const statusSnapshot = buildStatusSnapshot(paths, codexPaths);
+  const profileSnapshot = inspectCodexProfileFamilySnapshot(codexPaths);
   const lastSummary = statusSnapshot.statusBundle.runtimeState.historyPreview.latestEvent?.summary ?? null;
   return {
     paths,
@@ -129,6 +132,7 @@ export function createTuiShell(
     hostPlatform,
     sections: listSections(hostPlatform),
     statusSnapshot,
+    profileSnapshot,
     activeSectionId: sectionId,
     activeActionIndex: defaultActionIndex(sectionId, statusSnapshot, paths, codexPaths, hostPlatform),
     activeEditor: null,
@@ -387,6 +391,8 @@ function runCommand(shell: TuiShell, commandId: UiCommandId): OperationResult | 
                 shell.statusSnapshot.statusBundle.runtimeState,
                 () => previewPolicyForCurrentRun(shell.paths, shell.statusSnapshot.statusBundle.runtimeState.current)
               )
+          : commandId === "preview_codex_profile"
+            ? executeOperation(shell.paths, () => shell.profileSnapshot.core.preview)
           : executeUiCommand(shell.paths, shell.codexPaths, commandId);
       refreshStatusSnapshot(shell);
       shell.activeEditor = null;
@@ -492,6 +498,7 @@ function buildStatusSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): Shell
 
 function refreshStatusSnapshot(shell: TuiShell): void {
   shell.statusSnapshot = buildStatusSnapshot(shell.paths, shell.codexPaths);
+  shell.profileSnapshot = inspectCodexProfileFamilySnapshot(shell.codexPaths);
 }
 
 function buildPendingConfirmation(shell: TuiShell, action: SectionActionMetadata): PendingConfirmation {

@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -203,6 +203,37 @@ describe("tui shell", () => {
     expect(result?.policyPreview?.scenarios.map((scenario) => scenario.id)).not.toContain(
       "current-run-inspect"
     );
+  });
+
+  it("uses the captured codex profile snapshot for TUI preview before refresh", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const shell = createTuiShell(paths, codexPaths);
+
+    while (currentAction(shell).id !== "preview_codex_profile") {
+      moveSelection(shell, "action", 1);
+    }
+
+    mkdirSync(codexPaths.codexHome, { recursive: true });
+    writeFileSync(
+      codexPaths.configToml,
+      [
+        'model = "gpt-5.4"',
+        'model_reasoning_effort = "high"',
+        "",
+        "[features]",
+        "codex_hooks = true",
+        ""
+      ].join("\n"),
+      "utf8"
+    );
+
+    const result = runSelectedAction(shell);
+
+    expect(result?.summary).toBe("codex-profile preview: 3 recommended change(s)");
+    expect(result?.details).toContain("model: <missing> -> gpt-5.4");
   });
 
   it("wraps selection and resets action cursor when section changes", () => {
