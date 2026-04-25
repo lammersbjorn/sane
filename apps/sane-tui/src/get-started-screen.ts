@@ -1,4 +1,4 @@
-import { detectPlatform, type CodexPaths, type ProjectPaths } from "@sane/platform";
+import { detectPlatform, type CodexPaths, type HostPlatform, type ProjectPaths } from "@sane/platform";
 
 import {
   inspectCodexProfileFamilySnapshot
@@ -42,13 +42,15 @@ type CodexProfileFamily = ReturnType<typeof inspectCodexProfileFamilySnapshot>;
 
 export function loadGetStartedScreen(
   paths: ProjectPaths,
-  codexPaths: CodexPaths
+  codexPaths: CodexPaths,
+  hostPlatform: HostPlatform = detectPlatform()
 ): GetStartedScreenModel {
   return loadGetStartedScreenFromStatusBundle(
     paths,
     codexPaths,
-    inspectStatusBundle(paths, codexPaths),
-    inspectCodexProfileFamilySnapshot(codexPaths)
+    inspectStatusBundle(paths, codexPaths, hostPlatform),
+    inspectCodexProfileFamilySnapshot(codexPaths),
+    hostPlatform
   );
 }
 
@@ -56,11 +58,11 @@ export function loadGetStartedScreenFromStatusBundle(
   paths: ProjectPaths,
   codexPaths: CodexPaths,
   statusBundle: ReturnType<typeof inspectStatusBundle>,
-  profiles: CodexProfileFamily = inspectCodexProfileFamilySnapshot(codexPaths)
+  profiles: CodexProfileFamily = inspectCodexProfileFamilySnapshot(codexPaths),
+  hostPlatform: HostPlatform = detectPlatform()
 ): GetStartedScreenModel {
   const onboarding = inspectOnboardingSnapshotFromStatusBundle(paths, statusBundle);
   const codexProfile = profiles.core;
-  const hostPlatform = detectPlatform();
   const steps = listSectionActions("get_started", hostPlatform).map((action) => ({
     id: action.id as GetStartedStep["id"],
     title: action.label,

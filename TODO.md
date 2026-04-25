@@ -131,6 +131,7 @@ Implemented:
 - Inspect can now derive from a preloaded typed status bundle too, and app-view threads shell status bundle through that path when the inspect section is opened instead of forcing another inspect status-bundle rebuild
 - shell status refresh now reads one canonical status bundle and derives `show status` from it instead of rebuilding the same status inventory twice on every refresh
 - shell status snapshots now use the shell's captured host platform, so Windows/WSL bundle status and TUI action metadata do not drift across independent platform detection calls
+- app-view now threads the shell's captured host platform through Start Here, Inspect, Preferences, and Repair screen loaders, keeping section/action metadata aligned with the same platform snapshot as status inventory
 - canonical status bundles now also carry the typed runtime snapshot they already depend on, so shell/inspect can reuse one runtime read instead of reopening `.sane` state separately
 - TUI shell status snapshots now also carry the Codex profile family snapshot, so app-view rendering reuses the captured profile read across get-started/install/preferences surfaces instead of reparsing Codex config during each render
 - Inspect action details now also reuse the shell-captured Codex profile family snapshot when rendering integrations/statusline profile state instead of triggering a fresh Codex config read during app-view rendering

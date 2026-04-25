@@ -1,4 +1,4 @@
-import { detectPlatform, type CodexPaths, type ProjectPaths } from "@sane/platform";
+import { detectPlatform, type CodexPaths, type HostPlatform, type ProjectPaths } from "@sane/platform";
 import {
   inspectCodexProfileFamilySnapshot
 } from "@sane/control-plane/codex-config.js";
@@ -54,9 +54,9 @@ export function loadPreferencesScreen(
   paths: ProjectPaths,
   codexPaths: CodexPaths,
   profiles: CodexProfileFamily = inspectCodexProfileFamilySnapshot(codexPaths),
-  preferencesFamily: PreferencesFamily = inspectPreferencesFamilySnapshot(paths, codexPaths)
+  preferencesFamily: PreferencesFamily = inspectPreferencesFamilySnapshot(paths, codexPaths),
+  hostPlatform: HostPlatform = detectPlatform()
 ): PreferencesScreenModel {
-  const hostPlatform = detectPlatform();
   const actions: PreferencesScreenAction[] = listSectionActions("preferences", hostPlatform).map((action) => ({
     id: action.id as PreferencesScreenAction["id"],
     title: action.label,

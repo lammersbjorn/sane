@@ -1,4 +1,4 @@
-import { detectPlatform, type CodexPaths, type ProjectPaths } from "@sane/platform";
+import { detectPlatform, type CodexPaths, type HostPlatform, type ProjectPaths } from "@sane/platform";
 
 import {
   formatInspectOverviewLines as formatSharedInspectOverviewLines,
@@ -37,9 +37,17 @@ export interface InspectScreenModel extends InspectScreenSnapshot {
 
 export function loadInspectScreen(
   paths: ProjectPaths,
-  codexPaths: CodexPaths
+  codexPaths: CodexPaths,
+  hostPlatform: HostPlatform = detectPlatform()
 ): InspectScreenModel {
-  return loadInspectScreenFromStatusBundle(paths, codexPaths, inspectStatusBundle(paths, codexPaths));
+  return loadInspectScreenFromStatusBundle(
+    paths,
+    codexPaths,
+    inspectStatusBundle(paths, codexPaths, hostPlatform),
+    undefined,
+    undefined,
+    hostPlatform
+  );
 }
 
 export function loadInspectScreenFromStatusBundle(
@@ -47,7 +55,8 @@ export function loadInspectScreenFromStatusBundle(
   codexPaths: CodexPaths,
   statusBundle: ReturnType<typeof inspectStatusBundle>,
   profiles?: Parameters<typeof inspectSnapshotFromStatusBundle>[3],
-  preferencesFamily?: Parameters<typeof inspectSnapshotFromStatusBundle>[4]
+  preferencesFamily?: Parameters<typeof inspectSnapshotFromStatusBundle>[4],
+  hostPlatform: HostPlatform = detectPlatform()
 ): InspectScreenModel {
   const snapshot = profiles || preferencesFamily
     ? inspectSnapshotFromStatusBundle(paths, codexPaths, statusBundle, profiles, preferencesFamily)
@@ -55,7 +64,7 @@ export function loadInspectScreenFromStatusBundle(
 
   return {
     summary: "Inspect",
-    actions: listSectionActions("inspect", detectPlatform()).map((action) => ({
+    actions: listSectionActions("inspect", hostPlatform).map((action) => ({
       id: action.id as InspectScreenAction["id"],
       title: action.label
     })),

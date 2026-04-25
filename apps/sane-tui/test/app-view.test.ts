@@ -83,6 +83,9 @@ describe("app view", () => {
       shell.statusSnapshot.statusBundle
     );
     expect(vi.mocked(getStartedScreen.loadGetStartedScreenFromStatusBundle).mock.calls[0]?.[3]).toBeDefined();
+    expect(vi.mocked(getStartedScreen.loadGetStartedScreenFromStatusBundle).mock.calls[0]?.[4]).toBe(
+      shell.hostPlatform
+    );
     expect(vi.mocked(installScreen.loadInstallScreenFromStatusBundle)).toHaveBeenCalledTimes(1);
     expect(vi.mocked(installScreen.loadInstallScreenFromStatusBundle).mock.calls[0]?.[2]).toBe(
       shell.statusSnapshot.statusBundle
@@ -155,6 +158,7 @@ describe("app view", () => {
     );
     expect(vi.mocked(preferencesScreen.loadPreferencesScreen).mock.calls[0]?.[2]).toBe(profileSnapshot);
     expect(vi.mocked(preferencesScreen.loadPreferencesScreen).mock.calls[0]?.[3]).toBe(preferencesSnapshot);
+    expect(vi.mocked(preferencesScreen.loadPreferencesScreen).mock.calls[0]?.[4]).toBe(shell.hostPlatform);
     shellModule.selectSection(shell, "inspect");
     while (shellModule.currentAction(shell).id !== "preview_integrations_profile") {
       shellModule.moveSelection(shell, "action", 1);
@@ -166,6 +170,9 @@ describe("app view", () => {
     expect(vi.mocked(codexConfig.showCodexConfig)).not.toHaveBeenCalled();
     expect(vi.mocked(inspectScreen.loadInspectScreenFromStatusBundle).mock.calls[0]?.[3]).toBe(
       profileSnapshot
+    );
+    expect(vi.mocked(inspectScreen.loadInspectScreenFromStatusBundle).mock.calls[0]?.[5]).toBe(
+      shell.hostPlatform
     );
     vi.doUnmock("@sane/control-plane/codex-config.js");
     vi.doUnmock("@sane/control-plane/preferences.js");
@@ -291,6 +298,7 @@ describe("app view", () => {
     expect(vi.mocked(inspectScreen.loadInspectScreenFromStatusBundle).mock.calls[0]?.[2]).toBe(
       shell.statusSnapshot.statusBundle
     );
+    expect(vi.mocked(inspectScreen.loadInspectScreenFromStatusBundle).mock.calls[0]?.[5]).toBe(shell.hostPlatform);
     vi.doUnmock("@sane/sane-tui/inspect-screen.js");
     vi.resetModules();
   });
@@ -316,6 +324,7 @@ describe("app view", () => {
     expect(vi.mocked(repairScreen.loadRepairScreenFromStatusBundle).mock.calls[0]?.[2]).toBe(
       shell.statusSnapshot.statusBundle
     );
+    expect(vi.mocked(repairScreen.loadRepairScreenFromStatusBundle).mock.calls[0]?.[3]).toBe(shell.hostPlatform);
     vi.doUnmock("@sane/sane-tui/repair-screen.js");
     vi.resetModules();
   });

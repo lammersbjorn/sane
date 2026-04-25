@@ -1,4 +1,4 @@
-import { detectPlatform, type CodexPaths, type ProjectPaths } from "@sane/platform";
+import { detectPlatform, type CodexPaths, type HostPlatform, type ProjectPaths } from "@sane/platform";
 
 import { uninstallAll } from "@sane/control-plane/bundles.js";
 import {
@@ -55,18 +55,25 @@ export interface RepairScreenModel {
 
 export function loadRepairScreen(
   paths: ProjectPaths,
-  codexPaths: CodexPaths
+  codexPaths: CodexPaths,
+  hostPlatform: HostPlatform = detectPlatform()
 ): RepairScreenModel {
-  return loadRepairScreenFromStatusBundle(paths, codexPaths, inspectStatusBundle(paths, codexPaths));
+  return loadRepairScreenFromStatusBundle(
+    paths,
+    codexPaths,
+    inspectStatusBundle(paths, codexPaths, hostPlatform),
+    hostPlatform
+  );
 }
 
 export function loadRepairScreenFromStatusBundle(
   paths: ProjectPaths,
   codexPaths: CodexPaths,
-  statusBundle: ReturnType<typeof inspectStatusBundle>
+  statusBundle: ReturnType<typeof inspectStatusBundle>,
+  hostPlatform: HostPlatform = detectPlatform()
 ): RepairScreenModel {
   const status = inspectRepairStatusFromStatusBundle(paths, codexPaths, statusBundle);
-  const actions = buildRepairActionRows(listSectionActions("repair", detectPlatform()), status.actionStatus);
+  const actions = buildRepairActionRows(listSectionActions("repair", hostPlatform), status.actionStatus);
 
   return {
     summary: "Repair",

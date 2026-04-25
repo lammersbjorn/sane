@@ -62,7 +62,8 @@ export function loadAppView(shell: TuiShell): SaneTuiAppView {
     shell.paths,
     shell.codexPaths,
     shell.statusSnapshot.statusBundle,
-    codexProfiles
+    codexProfiles,
+    shell.hostPlatform
   );
   const dashboard = loadDashboardView(shell, getStarted);
   const install = loadInstallScreenFromStatusBundle(
@@ -77,7 +78,8 @@ export function loadAppView(shell: TuiShell): SaneTuiAppView {
       shell.codexPaths,
       shell.statusSnapshot.statusBundle,
       codexProfiles,
-      shell.statusSnapshot.preferences
+      shell.statusSnapshot.preferences,
+      shell.hostPlatform
     )
   );
   const preferences = lazy(() =>
@@ -85,11 +87,17 @@ export function loadAppView(shell: TuiShell): SaneTuiAppView {
       shell.paths,
       shell.codexPaths,
       codexProfiles,
-      shell.statusSnapshot.preferences
+      shell.statusSnapshot.preferences,
+      shell.hostPlatform
     )
   );
   const repair = lazy(() =>
-    loadRepairScreenFromStatusBundle(shell.paths, shell.codexPaths, shell.statusSnapshot.statusBundle)
+    loadRepairScreenFromStatusBundle(
+      shell.paths,
+      shell.codexPaths,
+      shell.statusSnapshot.statusBundle,
+      shell.hostPlatform
+    )
   );
 
   return {
