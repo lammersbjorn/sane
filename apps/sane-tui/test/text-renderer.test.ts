@@ -100,8 +100,25 @@ describe("text renderer", () => {
     expect(output).toContain("Section: get_started | Mode: Browse");
     expect(output).toContain("rt missing");
     expect(output).toContain("mode browse | rt miss cx miss sk miss hk miss dr 1");
+    expect(output).toContain("Get Started Focus");
+    expect(output).toContain("Status: Ready.");
     expect(output).not.toContain("Project ");
     expect(output).not.toContain("Sections: [Start here]");
+    expect(output).not.toContain("Get Started Details");
+  });
+
+  it("shortens absolute runtime paths in compact focus status", () => {
+    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
+    runSelectedAction(shell);
+    shell.notice = null;
+
+    const output = renderTextAppView(loadAppView(shell), {
+      width: 56,
+      height: 20
+    });
+
+    expect(output).toContain("Status: installed runtime at .sane");
+    expect(output).not.toContain("Status: installed runtime at /");
   });
 
   it("renders overlay state when present", () => {

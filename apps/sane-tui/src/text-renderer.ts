@@ -148,7 +148,10 @@ function renderStackedBody(
   width: number,
   availableHeight?: number
 ): string[] {
-  if (availableHeight !== undefined && availableHeight <= 12) {
+  if (
+    availableHeight !== undefined
+    && (availableHeight <= 12 || (width < 64 && availableHeight <= 16))
+  ) {
     return resizeBox(
       renderBox(`${view.activeSection.docLabel} Focus`, compactFocusLines(view), width),
       width,
@@ -261,7 +264,7 @@ function compactFocusLines(view: SaneTuiAppView): string[] {
   return [
     `Selected: ${compactActionLabel(view.selectedAction.label)}`,
     nextAction ? `Next: ${compactActionLabel(nextAction.label)}` : `Next: none`,
-    `Status: ${view.latestStatusLines[0] ?? "ready"}`,
+    `Status: ${compactStatusSummary(view.latestStatusLines[0] ?? "ready")}`,
     "Use a wider terminal for the full rail and detail view."
   ];
 }
@@ -281,6 +284,10 @@ function compactActionLabel(label: string): string {
     .replace("Codex settings", "Codex")
     .replace("compatibility settings", "compatibility")
     .replace("statusline settings", "statusline");
+}
+
+function compactStatusSummary(summary: string): string {
+  return summary.replace(/\S+\/\.sane\b/g, ".sane");
 }
 
 function footerLine(view: SaneTuiAppView, width: number): string {

@@ -162,6 +162,7 @@ Implemented:
 - TS TUI footer now behaves like a compact statusline instead of repeating the full navigation hint, keeping the standard-width layout from wrapping at the bottom
 - TS TUI narrow fallback now switches the footer to abbreviated status labels when needed, keeping small terminals from splitting the statusline across multiple rows
 - TS TUI narrow header now switches to compact section/mode/status chrome, leaving more room for the focused action/detail panes on small terminals
+- TS TUI compact focus panes now shorten absolute `.sane` paths in status summaries so small terminals do not waste rows on local path prefixes
 - TypeScript TUI now also owns pure input/key handling plus internal non-interactive CLI parsing/execution for backend verbs, direct `settings` / `inspect` / `repair` section shortcuts, and `hook session-start`, and the public shipped entrypoint is now TypeScript-owned
 - TS runtime resolution now works for text preview, live terminal preview, and built public entry paths via workspace package `exports`, self-package app imports, terminal-loop wiring, `tsx` source preview, and the bundled `dist/bin/sane.cjs` path
 - internal TS preview launch is now unified through one smart `tsx` entrypoint that chooses live terminal on TTY launch commands and falls back to text for non-TTY or backend command flows
