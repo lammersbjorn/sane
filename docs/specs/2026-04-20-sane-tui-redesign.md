@@ -170,6 +170,7 @@ Content:
 - compact footer/statusline must stay on one row at standard width and abbreviate status labels on narrow terminals
 - favor narrow layouts first; stack action/help/result vertically before forcing a cramped wide split
 - narrow terminals use compact header chrome (`Section`, `Mode`, status) before stacking action/detail panes
+- very narrow/short terminals may collapse into a single focus pane and shorten local `.sane` paths
 - avoid triple-stack box layouts by default
 - no permanent "output dump" pane on every screen
 - keep a compact `Last Result` area in the dashboard
@@ -220,6 +221,7 @@ Not allowed:
 7. the header statusline uses compact bracketed chips for runtime, Codex config, skills, hooks, and drift state
 8. the footer is now a compact statusline and falls back to abbreviated labels on narrow terminals
 9. narrow terminals use compact header chrome to preserve room for the action/detail body
+10. very narrow/short terminals use a focused single-pane fallback with shortened `.sane` status paths
 
 ## Remaining Polish
 
