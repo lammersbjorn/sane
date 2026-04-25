@@ -405,6 +405,15 @@ function blockingQuestionsCheck(current: CurrentRunState | null): SelfHostingSha
 function verificationCheck(current: CurrentRunState | null): SelfHostingShadowCheck {
   const status = current?.verification.status.trim().toLowerCase() ?? "";
 
+  if (status.length === 0 || status === "unknown" || status === "pending") {
+    return {
+      id: "verification",
+      status: "block",
+      summary: "verification must pass before shadow readiness",
+      path: null
+    };
+  }
+
   if (status === "failed" || status === "failing" || status === "blocked") {
     return {
       id: "verification",
@@ -414,11 +423,11 @@ function verificationCheck(current: CurrentRunState | null): SelfHostingShadowCh
     };
   }
 
-  if (status.length === 0 || status === "unknown" || status === "pending") {
+  if (status !== "passed" && status !== "verified") {
     return {
       id: "verification",
-      status: "warn",
-      summary: `verification status is ${current?.verification.status ?? "missing"}`,
+      status: "block",
+      summary: `verification status is ${current?.verification.status}`,
       path: null
     };
   }

@@ -18,6 +18,7 @@ import {
 import { exportHooks } from "../src/hooks-custom-agents.js";
 import { inspectStatusBundle, showStatusFromStatusBundle } from "../src/inventory.js";
 import { saveConfig } from "../src/preferences.js";
+import { inspectRuntimeState } from "../src/runtime-state.js";
 
 const tempDirs: string[] = [];
 
@@ -43,6 +44,23 @@ describe("inspect snapshot", () => {
     config.packs.caveman = true;
 
     installRuntime(paths, codexPaths);
+    const current = inspectRuntimeState(paths).current;
+    expect(current).not.toBeNull();
+    writeFileSync(
+      paths.currentRunPath,
+      JSON.stringify(
+        {
+          ...current!,
+          verification: {
+            status: "passed",
+            summary: "inspect fixture verified"
+          }
+        },
+        null,
+        2
+      ),
+      "utf8"
+    );
     saveConfig(paths, config);
     applyCodexProfile(paths, codexPaths);
     exportHooks(codexPaths);

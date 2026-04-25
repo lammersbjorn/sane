@@ -245,6 +245,23 @@ describe("inspectSelfHostingShadowSnapshot", () => {
     );
 
     installRuntime(paths, codexPaths);
+    const current = inspectRuntimeState(paths).current;
+    expect(current).not.toBeNull();
+    writeFileSync(
+      paths.currentRunPath,
+      JSON.stringify(
+        {
+          ...current!,
+          verification: {
+            status: "passed",
+            summary: "bootstrap verified"
+          }
+        },
+        null,
+        2
+      ),
+      "utf8"
+    );
 
     expect(inspectSelfHostingShadowSnapshot(paths)).toMatchObject({
       mode: "shadow-inspect-only",
@@ -258,6 +275,25 @@ describe("inspectSelfHostingShadowSnapshot", () => {
         expect.objectContaining({
           id: "latest-policy-preview",
           status: "warn"
+        })
+      ])
+    });
+  });
+
+  it("keeps shadow readiness blocked until current-run verification has passed", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+
+    installRuntime(paths, createCodexPaths(homeDir));
+
+    expect(inspectSelfHostingShadowSnapshot(paths)).toMatchObject({
+      status: "blocked",
+      checks: expect.arrayContaining([
+        expect.objectContaining({
+          id: "verification",
+          status: "block",
+          summary: "verification must pass before shadow readiness"
         })
       ])
     });

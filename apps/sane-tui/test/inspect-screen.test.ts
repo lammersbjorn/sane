@@ -125,6 +125,7 @@ describe("inspect screen model", () => {
         status: "blocked",
         checks: [
           { status: "pass" },
+          { status: "warn" },
           { status: "block" }
         ]
       },
@@ -180,7 +181,7 @@ describe("inspect screen model", () => {
       "hooks: invalid (Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows.)"
     );
     expect(lines).toContain(
-      "self-hosting shadow (read-only): blocked, runner disabled, checks pass 1, warn 0, block 1"
+      "self-hosting shadow (read-only): blocked, runner disabled, checks pass 1, warn 1, block 1"
     );
     expect(lines).toContain(
       `optional pack provenance: caveman configured (sane-caveman; derived from caveman); rtk disabled (no skills; internal); frontend-craft disabled (${optionalPackSkillNames("frontend-craft").join(" + ")}; derived from taste-skill + impeccable)`
