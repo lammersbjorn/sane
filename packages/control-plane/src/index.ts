@@ -241,7 +241,7 @@ export function inspectSnapshotFromStatusBundle(
     localConfig: preferencesFamily
       ? showConfigFromPreferencesFamily(paths, preferencesFamily)
       : showConfig(paths, codexPaths),
-    codexConfig: showCodexConfig(codexPaths),
+    codexConfig: codexProfileFamily.codexConfig,
     integrationsAudit: codexProfileFamily.integrations.audit,
     integrationsApply: codexProfileFamily.integrations.apply,
     integrationsPreview: codexProfileFamily.integrations.preview,

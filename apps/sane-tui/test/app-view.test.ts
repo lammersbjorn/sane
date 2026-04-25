@@ -99,6 +99,7 @@ describe("app view", () => {
       const actual = await vi.importActual<typeof import("@sane/control-plane/codex-config.js")>("@sane/control-plane/codex-config.js");
       return {
         ...actual,
+        showCodexConfig: vi.fn(actual.showCodexConfig),
         inspectCodexProfileFamilySnapshot: vi.fn(actual.inspectCodexProfileFamilySnapshot)
       };
     });
@@ -162,6 +163,7 @@ describe("app view", () => {
     loadAppViewWithSpy(shell);
 
     expect(vi.mocked(codexConfig.inspectCodexProfileFamilySnapshot)).not.toHaveBeenCalled();
+    expect(vi.mocked(codexConfig.showCodexConfig)).not.toHaveBeenCalled();
     expect(vi.mocked(inspectScreen.loadInspectScreenFromStatusBundle).mock.calls[0]?.[3]).toBe(
       profileSnapshot
     );

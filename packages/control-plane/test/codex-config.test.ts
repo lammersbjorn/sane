@@ -480,6 +480,7 @@ describe("codex config control plane", () => {
     const codexPaths = createCodexPaths(homeDir);
 
     const missingFamily = inspectCodexProfileFamilySnapshot(codexPaths);
+    expect(missingFamily.codexConfig).toEqual(showCodexConfig(codexPaths));
     expect(missingFamily.core).toEqual(inspectCodexProfileSnapshot(codexPaths));
     expect(missingFamily.integrations).toEqual(inspectIntegrationsProfileSnapshot(codexPaths));
     expect(missingFamily.cloudflare).toEqual(inspectCloudflareProfileSnapshot(codexPaths));
@@ -493,6 +494,7 @@ describe("codex config control plane", () => {
     applyStatuslineProfile(projectPaths, codexPaths);
 
     const installedFamily = inspectCodexProfileFamilySnapshot(codexPaths);
+    expect(installedFamily.codexConfig).toEqual(showCodexConfig(codexPaths));
     expect(installedFamily.core).toEqual(inspectCodexProfileSnapshot(codexPaths));
     expect(installedFamily.integrations).toEqual(inspectIntegrationsProfileSnapshot(codexPaths));
     expect(installedFamily.cloudflare).toEqual(inspectCloudflareProfileSnapshot(codexPaths));
@@ -510,6 +512,9 @@ describe("codex config control plane", () => {
     const family = inspectCodexProfileFamilySnapshot(codexPaths);
 
     expect(family).toMatchObject({
+      codexConfig: {
+        summary: `codex-config: invalid at ${codexPaths.configToml}`
+      },
       core: {
         audit: { status: "invalid", recommendedChangeCount: 0 },
         apply: { status: "blocked_invalid", recommendedChangeCount: 0 },

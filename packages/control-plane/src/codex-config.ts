@@ -160,6 +160,7 @@ export interface StatuslineProfileSnapshot {
 }
 
 export interface CodexProfileFamilySnapshot {
+  codexConfig: OperationResult;
   core: CodexProfileSnapshot;
   integrations: IntegrationsProfileSnapshot;
   cloudflare: CloudflareProfileSnapshot;
@@ -200,15 +201,19 @@ const SANE_KNOWN_MCP_SERVERS = new Set([
 export function showCodexConfig(codexPaths: CodexPaths): OperationResult {
   const context = inspectCodexConfigContext(codexPaths);
 
+  return showCodexConfigFromContext(context);
+}
+
+function showCodexConfigFromContext(context: CodexConfigContext): OperationResult {
   if (context.inventory.status === InventoryStatus.Missing) {
     return new OperationResult({
       kind: OperationKind.ShowCodexConfig,
-      summary: `codex-config: missing at ${codexPaths.configToml}`,
+      summary: `codex-config: missing at ${context.codexPaths.configToml}`,
       details: [
         "no user Codex config exists yet",
         "use `apply codex-profile` or `apply integrations-profile` to create one"
       ],
-      pathsTouched: [codexPaths.configToml],
+      pathsTouched: [context.codexPaths.configToml],
       inventory: [context.inventory]
     });
   }
@@ -216,21 +221,21 @@ export function showCodexConfig(codexPaths: CodexPaths): OperationResult {
   if (context.inventory.status === InventoryStatus.Invalid) {
     return new OperationResult({
       kind: OperationKind.ShowCodexConfig,
-      summary: `codex-config: invalid at ${codexPaths.configToml}`,
+      summary: `codex-config: invalid at ${context.codexPaths.configToml}`,
       details: [
         "cannot read Codex config until ~/.codex/config.toml parses cleanly",
         "repair ~/.codex/config.toml first"
       ],
-      pathsTouched: [codexPaths.configToml],
+      pathsTouched: [context.codexPaths.configToml],
       inventory: [context.inventory]
     });
   }
 
   return new OperationResult({
     kind: OperationKind.ShowCodexConfig,
-    summary: `codex-config: ok at ${codexPaths.configToml}`,
+    summary: `codex-config: ok at ${context.codexPaths.configToml}`,
     details: codexConfigDetails(context.config ?? {}),
-    pathsTouched: [codexPaths.configToml],
+    pathsTouched: [context.codexPaths.configToml],
     inventory: [context.inventory]
   });
 }
@@ -662,6 +667,7 @@ export function inspectCodexProfileFamilySnapshot(
   const statuslineAudit = inspectStatuslineProfileAuditFromContext(context);
 
   return {
+    codexConfig: showCodexConfigFromContext(context),
     core: {
       audit: coreAudit,
       apply: inspectCodexProfileApplyResultFromContext(context),
