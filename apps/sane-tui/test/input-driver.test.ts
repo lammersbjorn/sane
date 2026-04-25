@@ -6,7 +6,8 @@ import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { handleTuiInput } from "@sane/sane-tui/input-driver.js";
-import { createTuiShell, currentAction } from "@sane/sane-tui/shell.js";
+import { loadAppView } from "@sane/sane-tui/app-view.js";
+import { createTuiShell, currentAction, selectSection } from "@sane/sane-tui/shell.js";
 
 const tempDirs: string[] = [];
 
@@ -113,7 +114,10 @@ describe("input driver", () => {
     handleTuiInput(shell, "right");
     expect(handleTuiInput(shell, "enter")?.summary).toContain("config: saved");
     expect(existsSync(paths.telemetryDir)).toBe(true);
+    selectSection(shell, "repair");
+    expect(loadAppView(shell).sectionOverviewLines.join("\n")).toContain("local telemetry data: present");
 
+    selectSection(shell, "preferences");
     handleTuiInput(shell, "escape");
     handleTuiInput(shell, "down");
     handleTuiInput(shell, "down");
@@ -121,5 +125,7 @@ describe("input driver", () => {
     expect(shell.activeEditor?.kind).toBe("privacy");
     expect(handleTuiInput(shell, "d")?.summary).toBe("telemetry reset: removed local telemetry data");
     expect(existsSync(paths.telemetryDir)).toBe(false);
+    selectSection(shell, "repair");
+    expect(loadAppView(shell).sectionOverviewLines.join("\n")).toContain("local telemetry data: missing");
   });
 });

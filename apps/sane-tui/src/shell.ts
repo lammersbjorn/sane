@@ -336,6 +336,7 @@ export function saveActiveEditor(shell: TuiShell): OperationResult | null {
 
 export function resetLocalTelemetry(shell: TuiShell): OperationResult {
   const result = executeOperation(shell.paths, () => resetTelemetryData(shell.paths));
+  refreshStatusSnapshot(shell);
   shell.lastResult = buildLastResultView(result, result.renderText());
   shell.notice = null;
   return result;

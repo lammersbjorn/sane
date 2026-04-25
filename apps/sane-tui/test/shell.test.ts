@@ -14,6 +14,7 @@ import * as inventory from "@sane/control-plane/inventory.js";
 import { saveConfig } from "@sane/control-plane/preferences.js";
 import { createDefaultLocalConfig } from "@sane/config";
 import * as runtimeState from "@sane/control-plane/runtime-state.js";
+import { loadAppView } from "@sane/sane-tui/app-view.js";
 import {
   confirmPendingAction,
   createTuiShell,
@@ -22,7 +23,8 @@ import {
   moveSelection,
   resetLocalTelemetry,
   runSelectedAction,
-  saveActiveEditor
+  saveActiveEditor,
+  selectSection
 } from "@sane/sane-tui/shell.js";
 
 const tempDirs: string[] = [];
@@ -374,8 +376,14 @@ describe("tui shell", () => {
     saveActiveEditor(shell);
 
     expect(existsSync(paths.telemetryDir)).toBe(true);
+    selectSection(shell, "repair");
+    expect(loadAppView(shell).sectionOverviewLines.join("\n")).toContain("local telemetry data: present");
+    const statusSpy = vi.spyOn(inventory, "inspectStatusBundle");
+    statusSpy.mockClear();
     expect(resetLocalTelemetry(shell).summary).toBe("telemetry reset: removed local telemetry data");
+    expect(statusSpy).toHaveBeenCalledWith(paths, codexPaths);
     expect(existsSync(paths.telemetryDir)).toBe(false);
+    expect(loadAppView(shell).sectionOverviewLines.join("\n")).toContain("local telemetry data: missing");
   });
 
   it("surfaces telemetry reset as a first-class confirmed repair action", () => {
