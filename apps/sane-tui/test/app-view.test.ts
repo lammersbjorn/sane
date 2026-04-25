@@ -116,11 +116,19 @@ describe("app view", () => {
         loadPreferencesScreen: vi.fn(actual.loadPreferencesScreen)
       };
     });
+    vi.doMock("@sane/sane-tui/inspect-screen.js", async () => {
+      const actual = await vi.importActual<typeof import("@sane/sane-tui/inspect-screen.js")>("@sane/sane-tui/inspect-screen.js");
+      return {
+        ...actual,
+        loadInspectScreenFromStatusBundle: vi.fn(actual.loadInspectScreenFromStatusBundle)
+      };
+    });
 
     const { loadAppView: loadAppViewWithSpy } = await import("@sane/sane-tui/app-view.js");
     const shellModule = await import("@sane/sane-tui/shell.js");
     const codexConfig = await import("@sane/control-plane/codex-config.js");
     const getStartedScreen = await import("@sane/sane-tui/get-started-screen.js");
+    const inspectScreen = await import("@sane/sane-tui/inspect-screen.js");
     const preferencesScreen = await import("@sane/sane-tui/preferences-screen.js");
     const shell = shellModule.createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
     shellModule.selectSection(shell, "preferences");
@@ -134,8 +142,20 @@ describe("app view", () => {
       profileSnapshot
     );
     expect(vi.mocked(preferencesScreen.loadPreferencesScreen).mock.calls[0]?.[2]).toBe(profileSnapshot);
+    shellModule.selectSection(shell, "inspect");
+    while (shellModule.currentAction(shell).id !== "preview_integrations_profile") {
+      shellModule.moveSelection(shell, "action", 1);
+    }
+
+    loadAppViewWithSpy(shell);
+
+    expect(vi.mocked(codexConfig.inspectCodexProfileFamilySnapshot)).not.toHaveBeenCalled();
+    expect(vi.mocked(inspectScreen.loadInspectScreenFromStatusBundle).mock.calls[0]?.[3]).toBe(
+      profileSnapshot
+    );
     vi.doUnmock("@sane/control-plane/codex-config.js");
     vi.doUnmock("@sane/sane-tui/get-started-screen.js");
+    vi.doUnmock("@sane/sane-tui/inspect-screen.js");
     vi.doUnmock("@sane/sane-tui/preferences-screen.js");
     vi.resetModules();
   });

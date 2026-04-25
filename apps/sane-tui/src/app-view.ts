@@ -72,7 +72,12 @@ export function loadAppView(shell: TuiShell): SaneTuiAppView {
     codexProfiles
   );
   const inspect = lazy(() =>
-    loadInspectScreenFromStatusBundle(shell.paths, shell.codexPaths, shell.statusSnapshot.statusBundle)
+    loadInspectScreenFromStatusBundle(
+      shell.paths,
+      shell.codexPaths,
+      shell.statusSnapshot.statusBundle,
+      codexProfiles
+    )
   );
   const preferences = lazy(() => loadPreferencesScreen(shell.paths, shell.codexPaths, codexProfiles));
   const repair = lazy(() =>

@@ -216,12 +216,12 @@ export function inspectSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): In
 export function inspectSnapshotFromStatusBundle(
   paths: ProjectPaths,
   codexPaths: CodexPaths,
-  statusBundle: ReturnType<typeof inspectStatusBundle>
+  statusBundle: ReturnType<typeof inspectStatusBundle>,
+  codexProfileFamily = inspectCodexProfileFamilySnapshot(codexPaths)
 ): InspectSnapshot {
   const runtimeState = statusBundle.runtimeState;
   const doctorResult = doctorForStatusBundle(paths, codexPaths, statusBundle);
   const doctorSnapshot = inspectDoctorSnapshot(paths, codexPaths, statusBundle);
-  const codexProfileFamily = inspectCodexProfileFamilySnapshot(codexPaths);
   const statusResult = showStatusFromStatusBundle(statusBundle);
 
   return {
