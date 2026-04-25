@@ -187,6 +187,18 @@ describe("install screen model", () => {
     expect(screen.recommendedActionId).toBe("export_all");
   });
 
+  it("uses the requested host platform for standalone status reads", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const statusSpy = vi.spyOn(inventory, "inspectStatusBundle");
+
+    loadInstallScreen(paths, codexPaths, "windows");
+
+    expect(statusSpy).toHaveBeenCalledWith(paths, codexPaths, "windows");
+  });
+
   it("drops hooks from export-all includes on native Windows", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();

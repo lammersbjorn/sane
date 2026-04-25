@@ -1,4 +1,4 @@
-import { detectPlatform, type CodexPaths, type ProjectPaths } from "@sane/platform";
+import { detectPlatform, type CodexPaths, type HostPlatform, type ProjectPaths } from "@sane/platform";
 
 import { exportAll } from "@sane/control-plane/bundles.js";
 import {
@@ -62,12 +62,13 @@ type CodexProfileFamilySnapshot = ReturnType<typeof inspectCodexProfileFamilySna
 
 export function loadInstallScreen(
   paths: ProjectPaths,
-  codexPaths: CodexPaths
+  codexPaths: CodexPaths,
+  hostPlatform: HostPlatform = detectPlatform()
 ): InstallScreenModel {
   return loadInstallScreenFromStatusBundle(
     paths,
     codexPaths,
-    inspectStatusBundle(paths, codexPaths),
+    inspectStatusBundle(paths, codexPaths, hostPlatform),
     inspectCodexProfileFamilySnapshot(codexPaths)
   );
 }
