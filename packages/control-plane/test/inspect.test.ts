@@ -307,4 +307,45 @@ describe("inspect snapshot", () => {
       inspectSnapshot(paths, codexPaths)
     );
   });
+
+  it("keeps self-hosting shadow inspect tied to the captured runtime snapshot", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    installRuntime(paths, codexPaths);
+    const bundle = inspectStatusBundle(paths, codexPaths);
+    const capturedCurrent = bundle.runtimeState.current;
+    expect(capturedCurrent).not.toBeNull();
+
+    writeFileSync(
+      paths.currentRunPath,
+      JSON.stringify(
+        {
+          ...capturedCurrent!,
+          verification: {
+            status: "passed",
+            summary: "changed after bundle capture"
+          }
+        },
+        null,
+        2
+      ),
+      "utf8"
+    );
+
+    const snapshot = inspectSnapshotFromStatusBundle(paths, codexPaths, bundle);
+
+    expect(snapshot.selfHostingShadow.runtime.current?.verification.status).toBe("pending");
+    expect(snapshot.selfHostingShadow.checks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "verification",
+          status: "block",
+          summary: "verification must pass before shadow readiness"
+        })
+      ])
+    );
+  });
 });

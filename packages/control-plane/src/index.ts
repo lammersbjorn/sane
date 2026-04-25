@@ -53,6 +53,7 @@ import {
 import {
   ensureRuntimeHandoffBaseline,
   inspectSelfHostingShadowSnapshot,
+  inspectSelfHostingShadowSnapshotFromRuntimeState,
   inspectRuntimeState,
   runtimeHistoryPaths,
   runtimeStatePaths
@@ -234,7 +235,7 @@ export function inspectSnapshotFromStatusBundle(
     runtimeSummary: buildRuntimeSummary(paths, runtimeState),
     runtimeHistory: runtimeState.historyCounts,
     runtimeHistoryPreview: runtimeState.historyPreview,
-    selfHostingShadow: inspectSelfHostingShadowSnapshot(paths),
+    selfHostingShadow: inspectSelfHostingShadowSnapshotFromRuntimeState(paths, runtimeState),
     latestPolicyPreview: runtimeState.latestPolicyPreview,
     localConfig: showConfig(paths, codexPaths),
     codexConfig: showCodexConfig(codexPaths),

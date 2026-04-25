@@ -222,7 +222,13 @@ export function inspectRuntimeState(paths: ProjectPaths): RuntimeInspectSnapshot
 }
 
 export function inspectSelfHostingShadowSnapshot(paths: ProjectPaths): SelfHostingShadowSnapshot {
-  const runtime = inspectRuntimeState(paths);
+  return inspectSelfHostingShadowSnapshotFromRuntimeState(paths, inspectRuntimeState(paths));
+}
+
+export function inspectSelfHostingShadowSnapshotFromRuntimeState(
+  paths: ProjectPaths,
+  runtime: RuntimeInspectSnapshot
+): SelfHostingShadowSnapshot {
   const checks: SelfHostingShadowCheck[] = [
     runtimeLayerCheck("current-run", runtime.layerStatus.currentRun, paths.currentRunPath),
     runtimeLayerCheck("summary", runtime.layerStatus.summary, paths.summaryPath),

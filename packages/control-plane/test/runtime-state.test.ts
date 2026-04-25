@@ -14,7 +14,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { installRuntime } from "../src/index.js";
 import {
   inspectRuntimeState,
-  inspectSelfHostingShadowSnapshot
+  inspectSelfHostingShadowSnapshot,
+  inspectSelfHostingShadowSnapshotFromRuntimeState
 } from "../src/runtime-state.js";
 
 const tempDirs: string[] = [];
@@ -199,6 +200,19 @@ describe("inspectRuntimeState", () => {
 });
 
 describe("inspectSelfHostingShadowSnapshot", () => {
+  it("matches the from-runtime helper when using a captured runtime snapshot", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+
+    installRuntime(paths, createCodexPaths(homeDir));
+    const runtime = inspectRuntimeState(paths);
+
+    expect(inspectSelfHostingShadowSnapshotFromRuntimeState(paths, runtime)).toEqual(
+      inspectSelfHostingShadowSnapshot(paths)
+    );
+  });
+
   it("blocks shadow readiness until canonical handoff layers exist", () => {
     const projectRoot = makeTempDir();
     const paths = createProjectPaths(projectRoot);
