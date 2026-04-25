@@ -398,7 +398,7 @@ function footerLine(
   chips: ReturnType<typeof loadDashboardView>["chips"],
   mode: SaneTuiAppView["mode"]
 ): string {
-  return `mode ${mode.label.toLowerCase()}  |  ${mode.hint}  |  ${compactStatusLine(chips)}`;
+  return `mode ${mode.label.toLowerCase()}  |  ${compactStatusLine(chips)}`;
 }
 
 function compactStatusLine(chips: ReturnType<typeof loadDashboardView>["chips"]): string {

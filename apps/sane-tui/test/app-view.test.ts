@@ -47,9 +47,7 @@ describe("app view", () => {
     expect(view.footer.navHint).toContain("q quits");
     expect(view.footer.status.runtime).toBe("missing");
     expect(view.footer.status.codex).toBe("missing");
-    expect(view.footerLines[0]).toContain("left/right or tab change section");
     expect(view.footerLines[0]).toContain("mode browse");
-    expect(view.footerLines[0]).toContain("q quits");
     expect(view.footerLines[0]).toContain("runtime");
     expect(view.footerLines[0]).toContain("drift");
   });

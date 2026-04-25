@@ -55,6 +55,23 @@ describe("text renderer", () => {
     expect(output).toContain("Drift [1 issue(s)]");
   });
 
+  it("keeps the standard footer statusline on one line", () => {
+    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
+
+    const output = renderTextAppView(loadAppView(shell), {
+      width: 112,
+      height: 32
+    });
+    const footerLines = output
+      .split("\n")
+      .filter((line) => line.startsWith("mode browse"));
+
+    expect(footerLines).toHaveLength(1);
+    expect(footerLines[0]!.length).toBeLessThanOrEqual(112);
+    expect(footerLines[0]).toContain("runtime");
+    expect(footerLines[0]).toContain("drift");
+  });
+
   it("renders overlay state when present", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()), "settings");
     shell.notice = {
