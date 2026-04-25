@@ -102,6 +102,7 @@ Implemented:
 - policy explanations now also include typed continuation guidance (`answer_directly`, `continue_until_verified`, `continue_until_blocked`, `self_repair_until_unblocked`, `close_when_verified`) with explicit stop conditions, still internal/inspect-only
 - `@sane/policy` now has a pure internal eval harness for fixture-based routing/orchestration/continuation checks, plus a B7 fixture suite for routing, compaction, self-repair, and closing-gate expectations; this is a foundation only, not a shipped self-improvement runner
 - `@sane/policy` now also has a B8 preflight fixture suite for later outcome-runner policy shape; this is guardrail coverage only and still does not ship a runner, wrapper, or command ritual
+- self-hosting shadow readiness is still read-only and now blocks until canonical handoff layers exist, blocking questions are clear, and current-run verification has passed
 - internal backend policy preview now carries typed scenario/orchestration/trace payloads in `OperationResult` and persists them into decision history without changing TUI copy
 - policy preview history now has typed shared context helpers, tail-first latest-preview lookup, and runtime-summary plumbing for the latest valid snapshot
 - inspect/app-view now surface the latest persisted current-run-derived policy-preview snapshot through a bounded typed read path instead of re-parsing runtime-summary copy, and this remains a read-only Inspect surface
