@@ -19,6 +19,7 @@ const sanePackageJsonPaths = [
 
 interface PackageJson {
   name: string;
+  bin?: Record<string, string>;
   private?: boolean;
   type?: string;
   exports?: Record<string, string>;
@@ -71,6 +72,35 @@ describe("workspace package boundaries", () => {
     );
     expect(Object.values(rootPackage.scripts ?? {}).join("\n")).not.toMatch(/\bcargo\b/i);
     expect(Object.values(saneTuiPackage.scripts ?? {}).join("\n")).not.toMatch(/\bcargo\b/i);
+  });
+
+  it("keeps B8 outcome-runner entrypoints out of workspace scripts and bins", () => {
+    const rootPackage = readPackageJson("package.json");
+    const saneTuiPackage = readPackageJson("apps/sane-tui/package.json");
+    const scriptAndBinNames = [
+      ...Object.keys(rootPackage.scripts ?? {}),
+      ...Object.keys(rootPackage.bin ?? {}),
+      ...Object.keys(saneTuiPackage.scripts ?? {}),
+      ...Object.keys(saneTuiPackage.bin ?? {})
+    ].sort();
+    const scriptAndBinCommands = [
+      ...Object.values(rootPackage.scripts ?? {}),
+      ...Object.values(rootPackage.bin ?? {}),
+      ...Object.values(saneTuiPackage.scripts ?? {}),
+      ...Object.values(saneTuiPackage.bin ?? {})
+    ].join("\n");
+
+    expect(scriptAndBinNames).not.toEqual(
+      expect.arrayContaining([
+        "outcome",
+        "outcome-runner",
+        "run-outcome",
+        "runner",
+        "sane-outcome"
+      ])
+    );
+    expect(scriptAndBinCommands).not.toMatch(/\b(outcome[- ]runner|run[- ]outcome|runner)\b/i);
+    expect(saneTuiPackage.bin).toEqual({ sane: "./bin/sane.mjs" });
   });
 
   it("does not reintroduce Rust workspace files into the active Sane tree", () => {

@@ -32,6 +32,8 @@ describe("built sane tui bin", () => {
     expect(packageJson.license).toBe("MIT OR Apache-2.0");
     expect(packageJson.description).toBe("Sane terminal onboarding and setup surface for Codex.");
     expect(packageJson.files).toEqual(["bin", "README.md"]);
+    expect(Object.keys(packageJson.bin ?? {})).toEqual(["sane"]);
+    expect(JSON.stringify(packageJson)).not.toMatch(/\b(outcome[- ]runner|run[- ]outcome|runner)\b/i);
     expect(saneBin).toBe("./bin/sane.cjs");
 
     const inspect = spawnSync(process.execPath, [join(distDir, saneBin!) , "inspect"], {
