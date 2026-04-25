@@ -84,7 +84,7 @@ describe("tui shell", () => {
     runtimeStateSpy.mockClear();
     runSelectedAction(shell);
 
-    expect(statusBundleSpy).toHaveBeenCalledWith(paths, codexPaths);
+    expect(statusBundleSpy).toHaveBeenCalledWith(paths, codexPaths, shell.hostPlatform);
     expect(codexProfilesSpy).toHaveBeenCalledWith(codexPaths);
     expect(preferencesSpy).toHaveBeenCalledWith(paths, codexPaths);
     expect(runtimeStateSpy).toHaveBeenCalledWith(paths);
@@ -395,7 +395,7 @@ describe("tui shell", () => {
     const statusSpy = vi.spyOn(inventory, "inspectStatusBundle");
     statusSpy.mockClear();
     expect(resetLocalTelemetry(shell).summary).toBe("telemetry reset: removed local telemetry data");
-    expect(statusSpy).toHaveBeenCalledWith(paths, codexPaths);
+    expect(statusSpy).toHaveBeenCalledWith(paths, codexPaths, shell.hostPlatform);
     expect(existsSync(paths.telemetryDir)).toBe(false);
     expect(loadAppView(shell).sectionOverviewLines.join("\n")).toContain("local telemetry data: missing");
   });

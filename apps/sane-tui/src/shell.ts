@@ -125,7 +125,7 @@ export function createTuiShell(
 ): TuiShell {
   const sectionId = COMMAND_METADATA_REGISTRY.shortcuts[launchShortcut];
   const hostPlatform = detectPlatform();
-  const statusSnapshot = buildStatusSnapshot(paths, codexPaths);
+  const statusSnapshot = buildStatusSnapshot(paths, codexPaths, hostPlatform);
   const lastSummary = statusSnapshot.statusBundle.runtimeState.historyPreview.latestEvent?.summary ?? null;
   return {
     paths,
@@ -489,16 +489,20 @@ export function executeUiCommand(
   }
 }
 
-function buildStatusSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): ShellStatusSnapshot {
+function buildStatusSnapshot(
+  paths: ProjectPaths,
+  codexPaths: CodexPaths,
+  hostPlatform: HostPlatform
+): ShellStatusSnapshot {
   return {
-    statusBundle: inspectStatusBundle(paths, codexPaths),
+    statusBundle: inspectStatusBundle(paths, codexPaths, hostPlatform),
     codexProfiles: inspectCodexProfileFamilySnapshot(codexPaths),
     preferences: inspectPreferencesFamilySnapshot(paths, codexPaths)
   };
 }
 
 function refreshStatusSnapshot(shell: TuiShell): void {
-  shell.statusSnapshot = buildStatusSnapshot(shell.paths, shell.codexPaths);
+  shell.statusSnapshot = buildStatusSnapshot(shell.paths, shell.codexPaths, shell.hostPlatform);
 }
 
 function buildPendingConfirmation(shell: TuiShell, action: SectionActionMetadata): PendingConfirmation {
