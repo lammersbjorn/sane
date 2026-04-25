@@ -69,6 +69,7 @@ Routing note:
 - Policy/docs routing classes are: `explorer`, `implementation`, `verifier`, and `realtime` (with coordinator authority kept at session level).
 - Candidate ordering inside those classes is a Sane operating heuristic from documented positioning plus runtime findings, not benchmark certainty.
 - Current runtime caveat matters too: documented model availability, picker visibility, and actually spawnable-here worker support are not always identical.
+- Preferences now shows detected Codex model availability, plan hints, supported reasoning efforts, and the capability line behind each selected routing default.
 
 ### 3. You can install Codex-native pieces without hand-wiring them
 
@@ -116,14 +117,15 @@ Important continuity boundary:
 - `Sane` does not depend on a third-party memory layer
 - `Sane` also does not currently depend on Codex native `memories` for default continuity
 - default continuity comes from thin local `.sane` state plus scoped Codex-native exports
+- self-hosting shadow readiness is read-only and requires present handoff layers, no blocking questions, and passed current-run verification before it reports ready
 
 ## What Users Actually Get Today
 
 | Need | What `Sane` gives you now |
 | --- | --- |
-| Better starting defaults | Task-shaped routing classes (`explorer` / `implementation` / `verifier` / `realtime`) with documented-vs-runtime support kept separate. |
+| Better starting defaults | Task-shaped routing classes (`explorer` / `implementation` / `verifier` / `realtime`) with detected model availability and capability constraints shown in Preferences. |
 | Safer changes | Preview, backup, apply, restore, uninstall, and local telemetry reset. |
-| Runtime handoff truth | Read-only Inspect view for `current-run`, `summary`, and `brief` state, plus latest current-run-derived policy-preview snapshot visibility. |
+| Runtime handoff truth | Read-only Inspect view for `current-run`, `summary`, and `brief` state, stricter shadow readiness, plus latest current-run-derived policy-preview snapshot visibility. |
 | Optional guidance packs | Fixed built-in set today: `core` + optional `caveman`, `rtk`, `frontend-craft`. `frontend-craft` exports every pinned upstream Taste skill plus `impeccable`; `rtk` is capability-only. |
 | Useful integrations | Separate recommended integrations profile for `Context7`, `Playwright`, and `grep.app`, with structured audit details shown before apply. |
 | Native Codex TUI polish | Optional native Codex statusline/title profile over `tui.status_line`, `tui.terminal_title`, and `tui.notification_condition`. |
