@@ -76,7 +76,8 @@ export function loadAppView(shell: TuiShell): SaneTuiAppView {
       shell.paths,
       shell.codexPaths,
       shell.statusSnapshot.statusBundle,
-      codexProfiles
+      codexProfiles,
+      shell.statusSnapshot.preferences
     )
   );
   const preferences = lazy(() =>

@@ -43,7 +43,7 @@ import {
 } from "./inventory.js";
 import { formatRuntimeSummaryPolicyPreviewLines } from "./policy-preview-presenter.js";
 import { previewPolicy, previewPolicyForCurrentRun } from "./policy-preview.js";
-import { showConfig } from "./preferences.js";
+import { showConfig, showConfigFromPreferencesFamily, type PreferencesFamilySnapshot } from "./preferences.js";
 import { inspectLocalConfigFamily } from "./local-config.js";
 import {
   formatLatestHistoryArtifactPreview,
@@ -217,7 +217,8 @@ export function inspectSnapshotFromStatusBundle(
   paths: ProjectPaths,
   codexPaths: CodexPaths,
   statusBundle: ReturnType<typeof inspectStatusBundle>,
-  codexProfileFamily = inspectCodexProfileFamilySnapshot(codexPaths)
+  codexProfileFamily = inspectCodexProfileFamilySnapshot(codexPaths),
+  preferencesFamily?: PreferencesFamilySnapshot
 ): InspectSnapshot {
   const runtimeState = statusBundle.runtimeState;
   const doctorResult = doctorForStatusBundle(paths, codexPaths, statusBundle);
@@ -237,7 +238,9 @@ export function inspectSnapshotFromStatusBundle(
     runtimeHistoryPreview: runtimeState.historyPreview,
     selfHostingShadow: inspectSelfHostingShadowSnapshotFromRuntimeState(paths, runtimeState),
     latestPolicyPreview: runtimeState.latestPolicyPreview,
-    localConfig: showConfig(paths, codexPaths),
+    localConfig: preferencesFamily
+      ? showConfigFromPreferencesFamily(paths, preferencesFamily)
+      : showConfig(paths, codexPaths),
     codexConfig: showCodexConfig(codexPaths),
     integrationsAudit: codexProfileFamily.integrations.audit,
     integrationsApply: codexProfileFamily.integrations.apply,

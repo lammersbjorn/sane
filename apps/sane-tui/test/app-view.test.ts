@@ -446,6 +446,51 @@ describe("app view", () => {
     expect(view.selectedHelpLines.join("\n")).toContain("realtime: gpt-5.3-codex-spark (low) (derived)");
   });
 
+  it("keeps Inspect show-config tied to the shell preferences snapshot", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    saveConfig(paths, createDefaultLocalConfig());
+    mkdirSync(codexPaths.codexHome, { recursive: true });
+    writeFileSync(
+      codexPaths.modelsCacheJson,
+      JSON.stringify({
+        models: [
+          { slug: "gpt-5.5", supported_reasoning_levels: ["medium", "high", "xhigh"] },
+          { slug: "gpt-5.4-mini", supported_reasoning_levels: ["low", "medium"] },
+          { slug: "gpt-5.3-codex", supported_reasoning_levels: ["medium", "high"] }
+        ]
+      }),
+      "utf8"
+    );
+
+    const shell = createTuiShell(paths, codexPaths);
+    writeFileSync(
+      codexPaths.modelsCacheJson,
+      JSON.stringify({
+        models: [
+          { slug: "gpt-5.4", supported_reasoning_levels: ["medium"] }
+        ]
+      }),
+      "utf8"
+    );
+    selectSection(shell, "inspect");
+    for (let index = 0; index < 3; index += 1) {
+      moveSelection(shell, "action", 1);
+    }
+
+    const view = loadAppView(shell);
+
+    expect(view.selectedAction.id).toBe("show_config");
+    expect(view.selectedHelpLines.join("\n")).toContain(
+      "model availability: detected 3 model(s) from Codex cache"
+    );
+    expect(view.selectedHelpLines.join("\n")).toContain(
+      "available models: gpt-5.5 [medium, high, xhigh], gpt-5.4-mini [low, medium], gpt-5.3-codex [medium, high]"
+    );
+  });
+
   it("surfaces codex config payload in Preferences guidance", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();

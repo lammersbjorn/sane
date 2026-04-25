@@ -82,6 +82,32 @@ export interface PrivacyTransparencySnapshot {
 
 export function showConfig(paths: ProjectPaths, codexPaths?: CodexPaths): OperationResult {
   const configState = inspectSavedLocalConfig(paths);
+  const preferences =
+    codexPaths && configState.kind === "loaded"
+      ? inspectPreferencesFamilySnapshotFromContext(
+          paths,
+          createPreferencesContext(paths, codexPaths, configState)
+        ).preferences
+      : null;
+  return showConfigFromState(paths, configState, preferences);
+}
+
+export function showConfigFromPreferencesFamily(
+  paths: ProjectPaths,
+  preferencesFamily: PreferencesFamilySnapshot
+): OperationResult {
+  return showConfigFromState(
+    paths,
+    inspectSavedLocalConfig(paths),
+    preferencesFamily.preferences
+  );
+}
+
+function showConfigFromState(
+  paths: ProjectPaths,
+  configState: SavedLocalConfigState,
+  preferences: PreferencesSnapshot | null
+): OperationResult {
   if (configState.kind !== "loaded") {
     return new OperationResult({
       kind: OperationKind.ShowConfig,
@@ -105,12 +131,6 @@ export function showConfig(paths: ProjectPaths, codexPaths?: CodexPaths): Operat
   }
 
   const config = configState.config;
-  const preferences = codexPaths
-    ? inspectPreferencesFamilySnapshotFromContext(
-        paths,
-        createPreferencesContext(paths, codexPaths, configState)
-      ).preferences
-    : null;
   return new OperationResult({
     kind: OperationKind.ShowConfig,
     summary: `config: ok at ${paths.configPath}`,

@@ -46,10 +46,11 @@ export function loadInspectScreenFromStatusBundle(
   paths: ProjectPaths,
   codexPaths: CodexPaths,
   statusBundle: ReturnType<typeof inspectStatusBundle>,
-  profiles?: Parameters<typeof inspectSnapshotFromStatusBundle>[3]
+  profiles?: Parameters<typeof inspectSnapshotFromStatusBundle>[3],
+  preferencesFamily?: Parameters<typeof inspectSnapshotFromStatusBundle>[4]
 ): InspectScreenModel {
-  const snapshot = profiles
-    ? inspectSnapshotFromStatusBundle(paths, codexPaths, statusBundle, profiles)
+  const snapshot = profiles || preferencesFamily
+    ? inspectSnapshotFromStatusBundle(paths, codexPaths, statusBundle, profiles, preferencesFamily)
     : inspectSnapshotFromStatusBundle(paths, codexPaths, statusBundle);
 
   return {

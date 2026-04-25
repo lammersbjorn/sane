@@ -13,6 +13,7 @@ import * as codexConfig from "@sane/control-plane/codex-config.js";
 import { executeOperation } from "@sane/control-plane/history.js";
 import * as inventory from "@sane/control-plane/inventory.js";
 import { saveConfig } from "@sane/control-plane/preferences.js";
+import * as preferencesControlPlane from "@sane/control-plane/preferences.js";
 import { createDefaultLocalConfig } from "@sane/config";
 import * as runtimeState from "@sane/control-plane/runtime-state.js";
 import { loadAppView } from "@sane/sane-tui/app-view.js";
@@ -66,25 +67,31 @@ describe("tui shell", () => {
     const codexPaths = createCodexPaths(homeDir);
     const statusBundleSpy = vi.spyOn(inventory, "inspectStatusBundle");
     const codexProfilesSpy = vi.spyOn(codexConfig, "inspectCodexProfileFamilySnapshot");
+    const preferencesSpy = vi.spyOn(preferencesControlPlane, "inspectPreferencesFamilySnapshot");
     const runtimeStateSpy = vi.spyOn(runtimeState, "inspectRuntimeState");
     const shell = createTuiShell(paths, codexPaths);
 
     expect(shell.statusSnapshot.statusBundle.primary.status.runtime).toBe("missing");
     expect(shell.statusSnapshot.statusBundle.runtimeState.current).toBeNull();
     expect(shell.statusSnapshot.codexProfiles.core.audit.status).toBe("missing");
+    expect(shell.statusSnapshot.preferences.preferences.source).toBe("recommended");
     expect(codexProfilesSpy).toHaveBeenCalledWith(codexPaths);
+    expect(preferencesSpy).toHaveBeenCalledWith(paths, codexPaths);
 
     statusBundleSpy.mockClear();
     codexProfilesSpy.mockClear();
+    preferencesSpy.mockClear();
     runtimeStateSpy.mockClear();
     runSelectedAction(shell);
 
     expect(statusBundleSpy).toHaveBeenCalledWith(paths, codexPaths);
     expect(codexProfilesSpy).toHaveBeenCalledWith(codexPaths);
+    expect(preferencesSpy).toHaveBeenCalledWith(paths, codexPaths);
     expect(runtimeStateSpy).toHaveBeenCalledWith(paths);
     expect(shell.statusSnapshot.statusBundle.primary.status.runtime).toBe("installed");
     expect(shell.statusSnapshot.statusBundle.runtimeState.current?.phase).toBe("setup");
     expect(shell.statusSnapshot.codexProfiles.core.audit.status).toBe("missing");
+    expect(shell.statusSnapshot.preferences.preferences.source).toBe("local");
   });
 
   it("hydrates the initial last-result copy from the canonical runtime snapshot", () => {
