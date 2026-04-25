@@ -215,13 +215,13 @@ Not allowed:
 4. wide two-pane layout is used only when there is room
 5. compact result feedback and popup notices replaced the old always-open dump feel
 6. risky writes require confirmation
+7. the header statusline uses compact bracketed chips for runtime, Codex config, skills, hooks, and drift state
 
 ## Remaining Polish
 
-1. compact status chips / cards can still improve
-2. attribution preview flow remains future work only
-3. theme polish can continue
-4. motion polish is still a later concern
+1. attribution preview flow remains future work only
+2. theme polish can continue
+3. motion polish is still a later concern
 
 ## Success Criteria
 

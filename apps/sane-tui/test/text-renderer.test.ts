@@ -35,7 +35,7 @@ describe("text renderer", () => {
     expect(output).toContain("Mode: Browse");
     expect(output).toContain("Set up preferences");
     expect(output).toContain("Install to Codex");
-    expect(output).toContain("Runtime: missing");
+    expect(output).toContain("Runtime [missing]");
     expect(output).toContain("| Actions");
     expect(output).toContain("| > 1. Create Sane's local");
     expect(output).toContain("Get Started Details");
@@ -48,11 +48,11 @@ describe("text renderer", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
     const output = renderTextAppView(loadAppView(shell));
 
-    expect(output).toContain("Runtime: missing");
-    expect(output).toContain("Codex config: missing");
-    expect(output).toContain("User skills: missing");
-    expect(output).toContain("Hooks: missing");
-    expect(output).toContain("Drift: 1 issue(s)");
+    expect(output).toContain("Runtime [missing]");
+    expect(output).toContain("Codex [missing]");
+    expect(output).toContain("Skills [missing]");
+    expect(output).toContain("Hooks [missing]");
+    expect(output).toContain("Drift [1 issue(s)]");
   });
 
   it("renders overlay state when present", () => {
@@ -122,7 +122,7 @@ describe("text renderer", () => {
     });
 
     expect(output).toContain("\u001b[1mSane | Codex-native onboarding and setup\u001b[0m");
-    expect(output).toContain("\u001b[33mRuntime: missing\u001b[0m");
+    expect(output).toContain("\u001b[33mRuntime [missing]\u001b[0m");
     expect(output).toContain("\u001b[7m[Start here]\u001b[0m");
     expect(output).toContain("\u001b[7m| > 1. Create Sane's local");
     expect(output).toContain("\u001b[1;36m| Actions");

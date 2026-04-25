@@ -320,8 +320,23 @@ function statusline(view: SaneTuiAppView): string {
   const ids = ["runtime", "codex-config", "user-skills", "hooks", "drift"];
   return view.chips
     .filter((chip) => ids.includes(chip.id))
-    .map((chip) => `${chip.label}: ${chip.value}`)
-    .join("  |  ");
+    .map(formatStatusChip)
+    .join("  ");
+}
+
+function formatStatusChip(chip: SaneTuiAppView["chips"][number]): string {
+  return `${compactStatusChipLabel(chip)} [${chip.value}]`;
+}
+
+function compactStatusChipLabel(chip: SaneTuiAppView["chips"][number]): string {
+  switch (chip.id) {
+    case "codex-config":
+      return "Codex";
+    case "user-skills":
+      return "Skills";
+    default:
+      return chip.label;
+  }
 }
 
 function formatTabs(view: SaneTuiAppView): string {
@@ -519,7 +534,7 @@ function styleLine(
 
 function styleStatusTokens(line: string, view: SaneTuiAppView): string {
   return view.chips.reduce((styled, chip) => {
-    const token = `${chip.label}: ${chip.value}`;
+    const token = formatStatusChip(chip);
     if (!styled.includes(token)) {
       return styled;
     }
