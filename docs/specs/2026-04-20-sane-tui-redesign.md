@@ -166,8 +166,10 @@ Content:
 
 - one dominant pane per screen
 - one secondary explanation pane
-- compact footer for keys
+- header carries navigation help; footer behaves as a statusline, not a repeated key-hint row
+- compact footer/statusline must stay on one row at standard width and abbreviate status labels on narrow terminals
 - favor narrow layouts first; stack action/help/result vertically before forcing a cramped wide split
+- narrow terminals use compact header chrome (`Section`, `Mode`, status) before stacking action/detail panes
 - avoid triple-stack box layouts by default
 - no permanent "output dump" pane on every screen
 - keep a compact `Last Result` area in the dashboard
@@ -216,6 +218,8 @@ Not allowed:
 5. compact result feedback and popup notices replaced the old always-open dump feel
 6. risky writes require confirmation
 7. the header statusline uses compact bracketed chips for runtime, Codex config, skills, hooks, and drift state
+8. the footer is now a compact statusline and falls back to abbreviated labels on narrow terminals
+9. narrow terminals use compact header chrome to preserve room for the action/detail body
 
 ## Remaining Polish
 
