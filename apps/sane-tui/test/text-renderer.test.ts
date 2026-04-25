@@ -72,6 +72,23 @@ describe("text renderer", () => {
     expect(footerLines[0]).toContain("drift");
   });
 
+  it("uses compact footer labels when narrow terminals would wrap", () => {
+    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
+
+    const output = renderTextAppView(loadAppView(shell), {
+      width: 56,
+      height: 20
+    });
+    const footerLines = output
+      .split("\n")
+      .filter((line) => line.startsWith("mode browse") || line.startsWith("browse |"));
+
+    expect(footerLines).toHaveLength(1);
+    expect(footerLines[0]!.length).toBeLessThanOrEqual(56);
+    expect(footerLines[0]).toContain("rt");
+    expect(footerLines[0]).toContain("dr");
+  });
+
   it("renders overlay state when present", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()), "settings");
     shell.notice = {

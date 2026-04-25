@@ -27,7 +27,7 @@ function renderBaseLayout(
   viewport: TextViewport
 ): string[] {
   const header = renderHeader(view, width, isCompactViewport(viewport.height));
-  const footer = wrapLines(view.footerLines[0] ?? view.footer.navHint, width);
+  const footer = wrapLines(footerLine(view, width), width);
   const availableBodyHeight = bodyHeightForViewport(viewport.height, header.length, footer.length);
 
   if (width >= WIDE_LAYOUT_MIN_WIDTH) {
@@ -55,7 +55,7 @@ function renderOverlayLayout(
   viewport: TextViewport
 ): string[] {
   const header = renderHeader(view, width, isCompactViewport(viewport.height));
-  const footer = wrapLines(view.footer.navHint, width);
+  const footer = wrapLines(footerLine(view, width), width);
   const modalWidth = Math.max(52, Math.min(width, width - 6));
   const overlay = view.overlay;
 
@@ -281,6 +281,22 @@ function compactActionLabel(label: string): string {
     .replace("Codex settings", "Codex")
     .replace("compatibility settings", "compatibility")
     .replace("statusline settings", "statusline");
+}
+
+function footerLine(view: SaneTuiAppView, width: number): string {
+  const full = view.footerLines[0] ?? view.footer.navHint;
+  if (full.length <= width) {
+    return full;
+  }
+
+  const compact = `mode ${view.mode.label.toLowerCase()} | rt ${view.footer.status.runtime} cx ${view.footer.status.codex} sk ${view.footer.status.user} hk ${view.footer.status.hooks} dr ${compactDrift(view)}`;
+  return compact.length <= width ? compact : compact.replace("mode ", "");
+}
+
+function compactDrift(view: SaneTuiAppView): string {
+  const drift = view.chips.find((chip) => chip.id === "drift")?.value ?? "unknown";
+  const issueCount = drift.match(/^(\d+) issue\(s\)$/);
+  return issueCount?.[1] ?? (drift === "none" ? "ok" : drift);
 }
 
 function presentActionLabel(label: string, compact: boolean): string {
