@@ -132,6 +132,8 @@ Implemented:
 - shell status refresh now reads one canonical status bundle and derives `show status` from it instead of rebuilding the same status inventory twice on every refresh
 - canonical status bundles now also carry the typed runtime snapshot they already depend on, so shell/inspect can reuse one runtime read instead of reopening `.sane` state separately
 - TUI shell status snapshots now also carry the Codex profile family snapshot, so app-view rendering reuses the captured profile read across get-started/install/preferences surfaces instead of reparsing Codex config during each render
+- Inspect action details now also reuse the shell-captured Codex profile family snapshot when rendering integrations/statusline profile state instead of triggering a fresh Codex config read during app-view rendering
+- TUI shell status snapshots now also carry the preferences family snapshot, so app-view Preferences rendering reuses one captured telemetry/model/pack read instead of rebuilding preferences during each render
 - runtime inspect/summary fields now derive from one `runtime-state.ts` helper that owns layered-state fallback, history preview, latest policy preview, and per-layer presence/invalid/missing truth
 - self-hosting shadow inspection can now render from an already-captured runtime snapshot, keeping bundle-based Inspect views aligned with the status snapshot instead of reopening `.sane` handoff files mid-render
 - policy preview current-run reads and operation-history summary promotion now also go through that same canonical runtime-state boundary instead of reopening handoff files directly
