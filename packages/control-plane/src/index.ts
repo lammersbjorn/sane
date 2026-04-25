@@ -52,6 +52,8 @@ import {
 } from "./runtime-history-presenter.js";
 import {
   ensureRuntimeHandoffBaseline,
+  advanceOutcomeState,
+  type AdvanceOutcomeInput,
   inspectSelfHostingShadowSnapshot,
   inspectSelfHostingShadowSnapshotFromRuntimeState,
   inspectOutcomeReadinessSnapshot,
@@ -264,6 +266,19 @@ export function inspectSnapshotFromStatusBundle(
 
 export function showOutcomeReadiness(paths: ProjectPaths): OperationResult {
   return showOutcomeReadinessFromRuntimeState(paths, inspectRuntimeState(paths));
+}
+
+export function advanceOutcome(
+  paths: ProjectPaths,
+  input: AdvanceOutcomeInput = {}
+): OperationResult {
+  const outcome = advanceOutcomeState(paths, input);
+  return new OperationResult({
+    kind: OperationKind.AdvanceOutcome,
+    summary: `outcome ${outcome.status}: ${outcome.current.phase}`,
+    details: outcome.details,
+    pathsTouched: outcome.pathsTouched
+  });
 }
 
 export function showOutcomeReadinessFromRuntimeState(

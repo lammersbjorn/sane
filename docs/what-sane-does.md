@@ -83,7 +83,7 @@ Today, `Sane` can manage:
 - the separate recommended integrations profile for Codex tools like `Context7`, `Playwright`, and `grep.app`
 - structured integrations audit output in install/apply/inspect flows so recommended adds are reviewable before write without summary-string guessing
 - warning-only conflict visibility for invalid Codex config, disabled `features.codex_hooks`, unmanaged `mcp_servers.*`, managed MCP drift, explicit model/reasoning drift, explicit statusline drift, native Codex memories enabled, and enabled `plugins.*` entries, so users can see possible interference without Sane auto-fixing their setup
-- read-only outcome readiness in Inspect and `sane outcome-readiness`, backed by local handoff checks and the B8 policy preflight suite, with the autonomous loop disabled
+- outcome readiness in Inspect and `sane outcome-readiness`, backed by local handoff checks and the B8 policy preflight suite, with writable framework state advancement through `sane outcome step` and the autonomous loop disabled
 - bounded latest current-run-derived policy-preview snapshot visibility in read-only Inspect/runtime surfaces so routing and continuation-stop posture stay inspectable without becoming a user-facing orchestration mode
 - bounded runtime-history previews for the latest `event`, `decision`, and `artifact`, plus counts for `.sane/state/events.jsonl`, `.sane/state/decisions.jsonl`, and `.sane/state/artifacts.jsonl`, in inspect/runtime surfaces
 - optional repo-local shared skills when a repo actually needs shared targeted behavior
@@ -157,7 +157,7 @@ This structure is what lets `Sane` stay framework-first without becoming a wrapp
 | Onboarding-first TUI | Public release packaging and distribution automation after `v1` |
 | Settings/configure flow | Post-`v1` pack expansion/contraction execution |
 | Preview/apply/restore for narrow Codex config | Broader adaptive orchestration |
-| Recommended integrations profile | Broader adaptive orchestration beyond read-only outcome readiness |
+| Recommended integrations profile | Broader adaptive orchestration beyond the current framework state transition |
 | Cloudflare provider profile | Additional future packaging channels |
 | Optional OpenCode-agent export | Additional future packaging channels |
 | Export, inspect, doctor, uninstall | More post-`v1` expansion work |

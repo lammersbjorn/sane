@@ -375,7 +375,8 @@ Rules:
 Shipped scope:
 - `show_outcome_readiness` / `sane outcome-readiness` read local `.sane` handoff state and B8 policy preflight status
 - Inspect renders outcome readiness next to self-hosting shadow state
-- readiness is read-only and keeps the autonomous loop disabled
+- `advance_outcome` / `sane outcome step` advance framework-owned `.sane` outcome state, including objective, phase, active tasks, blockers, verification posture, summary, brief, and history
+- outcome advancement is writable inside Sane's own runtime state, but the autonomous loop remains disabled
 - warning-only conflict detection covers invalid Codex config, disabled hooks, unmanaged plugins/MCPs, managed MCP drift, explicit core model/reasoning drift, explicit statusline drift, and native Codex memories enabled
 
 Not allowed yet:

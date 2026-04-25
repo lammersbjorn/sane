@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 
-import { type ProjectPaths } from "@sane/platform";
+import { ensureRuntimeDirs, type ProjectPaths } from "@sane/platform";
 import {
   evaluatePolicyFixtures,
   outcomeRunnerPreflightFixtures
@@ -12,6 +12,7 @@ import {
   createMissingLatestPolicyPreviewSnapshot,
   loadLayeredStateBundle,
   readCurrentRunState,
+  writeCurrentRunState,
   readRunSummary,
   stringifyCurrentRunState,
   writeCanonicalWithBackupResult,
@@ -91,6 +92,27 @@ export interface OutcomeReadinessSnapshot {
   runtime: RuntimeInspectSnapshot;
 }
 
+export interface AdvanceOutcomeInput {
+  objective?: string;
+  completedTask?: string;
+  nextTasks?: string[];
+  blockingQuestions?: string[];
+  verification?: {
+    status: string;
+    summary?: string | null;
+  };
+  milestone?: string;
+  filesTouched?: string[];
+}
+
+export interface AdvanceOutcomeResult {
+  status: "advanced" | "blocked" | "closing";
+  current: CurrentRunState;
+  summary: RunSummary;
+  pathsTouched: string[];
+  details: string[];
+}
+
 export function runtimeHandoffPaths(paths: ProjectPaths): string[] {
   return [paths.currentRunPath, paths.summaryPath, paths.briefPath];
 }
@@ -110,6 +132,35 @@ export function writeRuntimeSummaryAndBrief(
 ): void {
   writeRunSummary(paths.summaryPath, summary);
   writeAtomicTextFile(paths.briefPath, buildRunBrief(summary, current));
+}
+
+export function advanceOutcomeState(
+  paths: ProjectPaths,
+  input: AdvanceOutcomeInput = {}
+): AdvanceOutcomeResult {
+  ensureRuntimeDirs(paths);
+  const baseline = ensureRuntimeHandoffBaseline(paths);
+  const runtime = inspectRuntimeState(paths);
+  const current = runtime.current ?? baseline.current;
+  const summary = runtime.summary ?? baseline.summary;
+  const nextCurrent = buildNextOutcomeCurrentRun(current, input);
+  const nextSummary = buildNextOutcomeSummary(summary, nextCurrent, input);
+
+  writeCurrentRunState(paths.currentRunPath, nextCurrent);
+  writeRuntimeSummaryAndBrief(paths, nextSummary, nextCurrent);
+
+  return {
+    status: outcomeAdvanceStatus(nextCurrent),
+    current: nextCurrent,
+    summary: nextSummary,
+    pathsTouched: unique([
+      paths.currentRunPath,
+      paths.summaryPath,
+      paths.briefPath,
+      ...(input.filesTouched ?? [])
+    ]),
+    details: outcomeAdvanceDetails(nextCurrent)
+  };
 }
 
 export function createInstallCurrentRunState(): CurrentRunState {
@@ -331,6 +382,135 @@ function tryLoadRuntimeStateBundle(paths: ProjectPaths): LayeredStateBundle | nu
   } catch {
     return null;
   }
+}
+
+function buildNextOutcomeCurrentRun(
+  current: CurrentRunState,
+  input: AdvanceOutcomeInput
+): CurrentRunState {
+  const activeTasks = normalizeList(input.nextTasks ?? current.activeTasks)
+    .filter((task) => task !== input.completedTask);
+  const blockingQuestions = normalizeList(input.blockingQuestions ?? current.blockingQuestions);
+  const verification = input.verification
+    ? {
+        status: input.verification.status,
+        summary: input.verification.summary ?? null
+      }
+    : current.verification;
+  const next: CurrentRunState = {
+    ...current,
+    objective: normalizeText(input.objective) ?? current.objective,
+    activeTasks,
+    blockingQuestions,
+    verification,
+    extra: {
+      ...current.extra,
+      outcome: {
+        mode: "framework",
+        autonomousLoop: false,
+        lastAdvanceTsUnix: nowSeconds(),
+        stopCondition: outcomeStopCondition(activeTasks, blockingQuestions, verification.status)
+      }
+    }
+  };
+
+  return {
+    ...next,
+    phase: deriveOutcomePhase(next)
+  };
+}
+
+function buildNextOutcomeSummary(
+  summary: RunSummary,
+  current: CurrentRunState,
+  input: AdvanceOutcomeInput
+): RunSummary {
+  const completedMilestones = [...summary.completedMilestones];
+  const milestone = normalizeText(input.milestone);
+  if (milestone && !completedMilestones.includes(milestone)) {
+    completedMilestones.push(milestone);
+  }
+
+  const filesTouched = unique([...summary.filesTouched, ...(input.filesTouched ?? [])]);
+  const lastVerifiedOutputs = [...summary.lastVerifiedOutputs];
+  if (current.verification.status.toLowerCase() === "passed" && current.verification.summary) {
+    lastVerifiedOutputs.push(current.verification.summary);
+  }
+
+  return {
+    ...summary,
+    completedMilestones,
+    filesTouched,
+    lastVerifiedOutputs: unique(lastVerifiedOutputs)
+  };
+}
+
+function deriveOutcomePhase(current: CurrentRunState): string {
+  const blockers = current.blockingQuestions.filter(isRealBlockingQuestion);
+  const verificationStatus = current.verification.status.toLowerCase();
+
+  if (blockers.length > 0) {
+    return "blocked";
+  }
+  if (verificationStatus === "failed" || verificationStatus === "failing" || verificationStatus === "blocked") {
+    return "repairing";
+  }
+  if (current.activeTasks.length === 0 && (verificationStatus === "passed" || verificationStatus === "verified")) {
+    return "closing";
+  }
+  return "executing";
+}
+
+function outcomeAdvanceStatus(current: CurrentRunState): AdvanceOutcomeResult["status"] {
+  if (current.phase === "blocked") {
+    return "blocked";
+  }
+  if (current.phase === "closing") {
+    return "closing";
+  }
+  return "advanced";
+}
+
+function outcomeAdvanceDetails(current: CurrentRunState): string[] {
+  return [
+    `objective: ${current.objective}`,
+    `phase: ${current.phase}`,
+    `active tasks: ${current.activeTasks.length === 0 ? "none" : current.activeTasks.join(", ")}`,
+    `blocking questions: ${current.blockingQuestions.length === 0 ? "none" : current.blockingQuestions.join(", ")}`,
+    `verification: ${current.verification.status}${current.verification.summary ? ` (${current.verification.summary})` : ""}`,
+    "autonomous loop: disabled"
+  ];
+}
+
+function outcomeStopCondition(
+  activeTasks: string[],
+  blockingQuestions: string[],
+  verificationStatus: string
+): string {
+  if (blockingQuestions.some(isRealBlockingQuestion)) {
+    return "needs_input";
+  }
+  if (activeTasks.length === 0 && ["passed", "verified"].includes(verificationStatus.toLowerCase())) {
+    return "verified";
+  }
+  return "continue_until_verified";
+}
+
+function normalizeList(values: string[]): string[] {
+  return values.map((value) => value.trim()).filter((value) => value.length > 0);
+}
+
+function normalizeText(value: string | undefined): string | null {
+  const normalized = value?.trim() ?? "";
+  return normalized.length > 0 ? normalized : null;
+}
+
+function unique(values: string[]): string[] {
+  return [...new Set(values)].sort();
+}
+
+function nowSeconds(): number {
+  return Math.floor(Date.now() / 1000);
 }
 
 function safeRead<T>(reader: () => T): T | null {

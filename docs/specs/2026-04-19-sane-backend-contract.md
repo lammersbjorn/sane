@@ -192,6 +192,12 @@ These are the backend actions the TUI is allowed to call in the current phase.
   - keep the autonomous loop disabled and do not mutate repo or Codex config
   - remain secondary to plain-language continuation
 
+- `advance_outcome`
+  - advance framework-owned `.sane` outcome state for long-running Codex-native work
+  - update objective, phase, active tasks, blocking questions, verification posture, summary, brief, and operation history
+  - write only Sane runtime state and user-supplied touched paths; do not mutate Codex config or external project files directly
+  - keep the autonomous loop disabled while still allowing Codex agents to use Sane state transitions during normal work
+
 - `preview_policy`
   - internal/backend inspection only for now
   - render canonical adaptive-policy scenarios into typed output

@@ -10,6 +10,7 @@ export type BackendCommandId =
   | "show_codex_config"
   | "show_runtime_summary"
   | "show_outcome_readiness"
+  | "advance_outcome"
   | "reset_telemetry_data"
   | "preview_policy"
   | "backup_codex_config"
@@ -261,6 +262,29 @@ export const COMMAND_METADATA_REGISTRY = {
       confirmation: null,
       successNoticeTitle: null,
       repoMutation: false,
+      filesTouched: [
+        ".sane/state/current-run.json",
+        ".sane/state/summary.json",
+        ".sane/BRIEF.md",
+        ".sane/state/events.jsonl",
+        ".sane/state/decisions.jsonl",
+        ".sane/state/artifacts.jsonl"
+      ]
+    },
+    advance_outcome: {
+      id: "advance_outcome",
+      kind: "backend",
+      backendKind: OperationKind.AdvanceOutcome,
+      help: [
+        "Advance the current Sane outcome state inside `.sane`.",
+        "",
+        "This is a framework state transition for Codex-native long-running work.",
+        "It records the current objective, phase, active tasks, blockers, verification posture, and brief.",
+        "It does not make the TUI the normal prompting interface."
+      ],
+      confirmation: null,
+      successNoticeTitle: null,
+      repoMutation: true,
       filesTouched: [
         ".sane/state/current-run.json",
         ".sane/state/summary.json",

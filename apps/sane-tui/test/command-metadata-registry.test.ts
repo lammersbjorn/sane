@@ -122,6 +122,10 @@ describe("command metadata registry", () => {
     expect(getCommandSpec("show_outcome_readiness").help[2]).toBe(
       "This is read-only readiness for Codex-native work."
     );
+    expect(getCommandSpec("advance_outcome").backendKind).toBe(
+      OperationKind.AdvanceOutcome
+    );
+    expect(getCommandSpec("advance_outcome").repoMutation).toBe(true);
     expect(getCommandSpec("preview_policy").filesTouched).toEqual([
       ".sane/config.local.toml",
       ".sane/state/current-run.json",

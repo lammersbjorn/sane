@@ -144,6 +144,8 @@ function operationMilestone(kind: OperationKind): string | null {
   switch (kind) {
     case OperationKind.InstallRuntime:
       return "runtime installed";
+    case OperationKind.AdvanceOutcome:
+      return "outcome advanced";
     case OperationKind.ExportUserSkills:
       return "user skills exported";
     case OperationKind.ExportRepoSkills:
@@ -189,6 +191,10 @@ function operationKindLabel(kind: OperationKind): string {
       return "show_codex_config";
     case OperationKind.ShowRuntimeSummary:
       return "show_runtime_summary";
+    case OperationKind.ShowOutcomeReadiness:
+      return "show_outcome_readiness";
+    case OperationKind.AdvanceOutcome:
+      return "advance_outcome";
     case OperationKind.PreviewPolicy:
       return "preview_policy";
     case OperationKind.BackupCodexConfig:

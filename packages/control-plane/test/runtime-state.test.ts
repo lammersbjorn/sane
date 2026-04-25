@@ -7,13 +7,17 @@ import {
   appendJsonlRecord,
   createMissingLatestPolicyPreviewSnapshot,
   createDecisionRecord,
+  readCurrentRunState,
+  readRunSummary,
   stringifyDecisionRecord
 } from "@sane/state";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { installRuntime } from "../src/index.js";
 import {
+  advanceOutcomeState,
   inspectRuntimeState,
+  inspectOutcomeReadinessSnapshot,
   inspectSelfHostingShadowSnapshot,
   inspectSelfHostingShadowSnapshotFromRuntimeState
 } from "../src/runtime-state.js";
@@ -119,6 +123,76 @@ describe("inspectRuntimeState", () => {
         brief: "present"
       },
       latestPolicyPreview: createMissingLatestPolicyPreviewSnapshot()
+    });
+  });
+
+  it("advances outcome state through Sane handoff files without enabling an autonomous loop", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+
+    installRuntime(paths, createCodexPaths(homeDir));
+
+    const result = advanceOutcomeState(paths, {
+      objective: "ship B8 outcome orchestration",
+      nextTasks: ["write failing tests", "implement state machine"],
+      completedTask: "write failing tests",
+      verification: {
+        status: "pending",
+        summary: "implementation in progress"
+      },
+      milestone: "B8 outcome orchestration started",
+      filesTouched: ["packages/control-plane/src/runtime-state.ts"]
+    });
+
+    expect(result.status).toBe("advanced");
+    expect(result.current).toMatchObject({
+      objective: "ship B8 outcome orchestration",
+      phase: "executing",
+      activeTasks: ["implement state machine"],
+      blockingQuestions: [],
+      verification: {
+        status: "pending",
+        summary: "implementation in progress"
+      },
+      extra: {
+        outcome: expect.objectContaining({
+          mode: "framework",
+          autonomousLoop: false,
+          stopCondition: "continue_until_verified"
+        })
+      }
+    });
+    expect(readCurrentRunState(paths.currentRunPath)).toEqual(result.current);
+    expect(readRunSummary(paths.summaryPath).completedMilestones).toContain(
+      "B8 outcome orchestration started"
+    );
+    expect(inspectRuntimeState(paths).brief).toContain("- Phase: executing");
+  });
+
+  it("blocks outcome advancement when unresolved input exists", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+
+    installRuntime(paths, createCodexPaths(homeDir));
+
+    const result = advanceOutcomeState(paths, {
+      objective: "ship B8 outcome orchestration",
+      nextTasks: ["continue implementation"],
+      blockingQuestions: ["which repo should this mutate?"]
+    });
+
+    expect(result.status).toBe("blocked");
+    expect(result.current.phase).toBe("blocked");
+    expect(result.current.extra.outcome).toEqual(
+      expect.objectContaining({
+        autonomousLoop: false,
+        stopCondition: "needs_input"
+      })
+    );
+    expect(inspectOutcomeReadinessSnapshot(paths)).toMatchObject({
+      status: "needs_input"
     });
   });
 

@@ -101,7 +101,7 @@ Implemented:
 - policy explanations now include typed orchestration guidance and stable rule traces for canonical scenarios
 - policy explanations now also include typed continuation guidance (`answer_directly`, `continue_until_verified`, `continue_until_blocked`, `self_repair_until_unblocked`, `close_when_verified`) with explicit stop conditions, still internal/inspect-only
 - `@sane/policy` now has a pure internal eval harness for fixture-based routing/orchestration/continuation checks, plus a B7 fixture suite for routing, compaction, self-repair, and closing-gate expectations; this is a foundation only, not a shipped self-improvement runner
-- `@sane/policy` now also has a B8 preflight fixture suite, and Inspect / `sane outcome-readiness` expose read-only outcome readiness without starting an autonomous runner, wrapper, or command ritual
+- `@sane/policy` now also has a B8 preflight fixture suite; Inspect / `sane outcome-readiness` expose readiness, and `advance_outcome` / `sane outcome step` advance framework-owned `.sane` outcome state without starting an autonomous runner, wrapper, or command ritual
 - self-hosting shadow readiness is still read-only and now blocks until canonical handoff layers exist, blocking questions are clear, and current-run verification has passed
 - internal backend policy preview now carries typed scenario/orchestration/trace payloads in `OperationResult` and persists them into decision history without changing TUI copy
 - policy preview history now has typed shared context helpers, tail-first latest-preview lookup, and runtime-summary plumbing for the latest valid snapshot
@@ -251,7 +251,8 @@ pnpm check
 - [x] Self-hosting shadow mode
 - [x] Broaden eval harness coverage for routing, compaction, and self-improvement
 - [x] B8 outcome readiness and conflict detection:
-  - read-only readiness is visible in Inspect and through `sane outcome-readiness`
+  - readiness is visible in Inspect and through `sane outcome-readiness`
+  - writable framework state advancement is available through `advance_outcome` / `sane outcome step`
   - the autonomous runner loop remains disabled and out of scope
   - guardrail tests pin no `runner`, `outcome runner`, or `run outcome` command ritual
   - any future one-shot command for idea-to-finished-result work must stay secondary to plain-language invocation

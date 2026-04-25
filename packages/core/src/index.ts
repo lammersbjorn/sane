@@ -4,6 +4,7 @@ export class OperationKind {
   static readonly ShowCodexConfig = new OperationKind("ShowCodexConfig");
   static readonly ShowRuntimeSummary = new OperationKind("ShowRuntimeSummary");
   static readonly ShowOutcomeReadiness = new OperationKind("ShowOutcomeReadiness");
+  static readonly AdvanceOutcome = new OperationKind("AdvanceOutcome");
   static readonly PreviewPolicy = new OperationKind("PreviewPolicy");
   static readonly BackupCodexConfig = new OperationKind("BackupCodexConfig");
   static readonly PreviewCodexProfile = new OperationKind("PreviewCodexProfile");

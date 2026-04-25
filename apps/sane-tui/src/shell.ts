@@ -53,6 +53,7 @@ import {
   showConfig
 } from "@sane/control-plane/preferences.js";
 import {
+  advanceOutcome,
   installRuntime,
   showOutcomeReadiness,
   showOutcomeReadinessFromRuntimeState,
@@ -432,6 +433,8 @@ export function executeUiCommand(
       return executeOperation(paths, () => showRuntimeSummary(paths));
     case "show_outcome_readiness":
       return executeOperation(paths, () => showOutcomeReadiness(paths));
+    case "advance_outcome":
+      return executeOperation(paths, () => advanceOutcome(paths));
     case "reset_telemetry_data":
       return executeOperation(paths, () => resetTelemetryData(paths));
     case "preview_policy":
