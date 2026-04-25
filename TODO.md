@@ -131,7 +131,9 @@ Implemented:
 - Inspect can now derive from a preloaded typed status bundle too, and app-view threads shell status bundle through that path when the inspect section is opened instead of forcing another inspect status-bundle rebuild
 - shell status refresh now reads one canonical status bundle and derives `show status` from it instead of rebuilding the same status inventory twice on every refresh
 - canonical status bundles now also carry the typed runtime snapshot they already depend on, so shell/inspect can reuse one runtime read instead of reopening `.sane` state separately
+- TUI shell status snapshots now also carry the Codex profile family snapshot, so app-view rendering reuses the captured profile read across get-started/install/preferences surfaces instead of reparsing Codex config during each render
 - runtime inspect/summary fields now derive from one `runtime-state.ts` helper that owns layered-state fallback, history preview, latest policy preview, and per-layer presence/invalid/missing truth
+- self-hosting shadow inspection can now render from an already-captured runtime snapshot, keeping bundle-based Inspect views aligned with the status snapshot instead of reopening `.sane` handoff files mid-render
 - policy preview current-run reads and operation-history summary promotion now also go through that same canonical runtime-state boundary instead of reopening handoff files directly
 - operation-history writes now seed or repair the canonical `.sane` handoff baseline before persisting new events/decisions/artifacts, so non-install operations no longer leave `current-run` missing
 - no-args TUI boot now also derives its initial last-result line from the canonical runtime-state history preview instead of reopening events JSONL directly
@@ -144,6 +146,7 @@ Implemented:
 - Inspect overview presentation now lives in a shared control-plane presenter, with drift/provenance formatting pulled out of the TUI screen layer
 - TUI now requires confirmation for risky apply/restore/uninstall actions
 - TUI repair now exposes local telemetry reset as a first-class confirmed action instead of only a privacy-editor shortcut
+- privacy-editor telemetry reset now refreshes the TUI status snapshot immediately, so repair/overview state does not stay stale after local telemetry files are deleted
 - TUI inspect now exposes read-only runtime handoff state for `current-run`, `summary`, and `brief`
 - no-args TUI now opens into section-based onboarding instead of a flat settings/action wall
 - `sane settings` is the direct shortcut into configure mode
