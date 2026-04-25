@@ -11,6 +11,7 @@ import {
   applyOpencodeProfile,
   applyStatuslineProfile,
   backupCodexConfig,
+  inspectCodexProfileFamilySnapshot,
   previewCloudflareProfile,
   previewCodexProfile,
   previewIntegrationsProfile,
@@ -112,6 +113,7 @@ export interface TuiShell {
 
 export interface ShellStatusSnapshot {
   statusBundle: ReturnType<typeof inspectStatusBundle>;
+  codexProfiles: ReturnType<typeof inspectCodexProfileFamilySnapshot>;
 }
 
 export function createTuiShell(
@@ -487,7 +489,8 @@ export function executeUiCommand(
 
 function buildStatusSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): ShellStatusSnapshot {
   return {
-    statusBundle: inspectStatusBundle(paths, codexPaths)
+    statusBundle: inspectStatusBundle(paths, codexPaths),
+    codexProfiles: inspectCodexProfileFamilySnapshot(codexPaths)
   };
 }
 

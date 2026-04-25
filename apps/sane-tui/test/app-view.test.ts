@@ -93,7 +93,7 @@ describe("app view", () => {
     vi.resetModules();
   });
 
-  it("reuses one codex profile family snapshot per app-view render", async () => {
+  it("reuses the shell codex profile family snapshot during app-view render", async () => {
     vi.resetModules();
     vi.doMock("@sane/control-plane/codex-config.js", async () => {
       const actual = await vi.importActual<typeof import("@sane/control-plane/codex-config.js")>("@sane/control-plane/codex-config.js");
@@ -118,16 +118,18 @@ describe("app view", () => {
     });
 
     const { loadAppView: loadAppViewWithSpy } = await import("@sane/sane-tui/app-view.js");
+    const shellModule = await import("@sane/sane-tui/shell.js");
     const codexConfig = await import("@sane/control-plane/codex-config.js");
     const getStartedScreen = await import("@sane/sane-tui/get-started-screen.js");
     const preferencesScreen = await import("@sane/sane-tui/preferences-screen.js");
-    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
-    selectSection(shell, "preferences");
+    const shell = shellModule.createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
+    shellModule.selectSection(shell, "preferences");
+    vi.mocked(codexConfig.inspectCodexProfileFamilySnapshot).mockClear();
 
     loadAppViewWithSpy(shell);
 
-    expect(vi.mocked(codexConfig.inspectCodexProfileFamilySnapshot)).toHaveBeenCalledTimes(1);
-    const profileSnapshot = vi.mocked(codexConfig.inspectCodexProfileFamilySnapshot).mock.results[0]?.value;
+    expect(vi.mocked(codexConfig.inspectCodexProfileFamilySnapshot)).not.toHaveBeenCalled();
+    const profileSnapshot = shell.statusSnapshot.codexProfiles;
     expect(vi.mocked(getStartedScreen.loadGetStartedScreenFromStatusBundle).mock.calls[0]?.[3]).toBe(
       profileSnapshot
     );

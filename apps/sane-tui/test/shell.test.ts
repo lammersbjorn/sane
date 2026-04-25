@@ -9,6 +9,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import * as controlPlane from "@sane/control-plane";
 import { exportAll } from "@sane/control-plane/bundles.js";
+import * as codexConfig from "@sane/control-plane/codex-config.js";
 import { executeOperation } from "@sane/control-plane/history.js";
 import * as inventory from "@sane/control-plane/inventory.js";
 import { saveConfig } from "@sane/control-plane/preferences.js";
@@ -64,20 +65,26 @@ describe("tui shell", () => {
     const paths = createProjectPaths(projectRoot);
     const codexPaths = createCodexPaths(homeDir);
     const statusBundleSpy = vi.spyOn(inventory, "inspectStatusBundle");
+    const codexProfilesSpy = vi.spyOn(codexConfig, "inspectCodexProfileFamilySnapshot");
     const runtimeStateSpy = vi.spyOn(runtimeState, "inspectRuntimeState");
     const shell = createTuiShell(paths, codexPaths);
 
     expect(shell.statusSnapshot.statusBundle.primary.status.runtime).toBe("missing");
     expect(shell.statusSnapshot.statusBundle.runtimeState.current).toBeNull();
+    expect(shell.statusSnapshot.codexProfiles.core.audit.status).toBe("missing");
+    expect(codexProfilesSpy).toHaveBeenCalledWith(codexPaths);
 
     statusBundleSpy.mockClear();
+    codexProfilesSpy.mockClear();
     runtimeStateSpy.mockClear();
     runSelectedAction(shell);
 
     expect(statusBundleSpy).toHaveBeenCalledWith(paths, codexPaths);
+    expect(codexProfilesSpy).toHaveBeenCalledWith(codexPaths);
     expect(runtimeStateSpy).toHaveBeenCalledWith(paths);
     expect(shell.statusSnapshot.statusBundle.primary.status.runtime).toBe("installed");
     expect(shell.statusSnapshot.statusBundle.runtimeState.current?.phase).toBe("setup");
+    expect(shell.statusSnapshot.codexProfiles.core.audit.status).toBe("missing");
   });
 
   it("hydrates the initial last-result copy from the canonical runtime snapshot", () => {

@@ -1,5 +1,4 @@
 import { type TuiShell, currentAction } from "@sane/sane-tui/shell.js";
-import { inspectCodexProfileFamilySnapshot } from "@sane/control-plane/codex-config.js";
 import { loadDashboardView } from "@sane/sane-tui/dashboard.js";
 import { loadGetStartedScreenFromStatusBundle } from "@sane/sane-tui/get-started-screen.js";
 import { loadInstallScreenFromStatusBundle } from "@sane/sane-tui/install-screen.js";
@@ -58,7 +57,7 @@ const FOOTER_STATUS_SPECS = [
 ] as const;
 
 export function loadAppView(shell: TuiShell): SaneTuiAppView {
-  const codexProfiles = inspectCodexProfileFamilySnapshot(shell.codexPaths);
+  const codexProfiles = shell.statusSnapshot.codexProfiles;
   const getStarted = loadGetStartedScreenFromStatusBundle(
     shell.paths,
     shell.codexPaths,
