@@ -7,9 +7,12 @@ import {
   detectCodexEnvironment,
   enabledPackNames,
   stringifyLocalConfig,
+  type CodexEnvironment,
+  type DetectedAvailableModel,
   type LocalConfig,
   type ModelPreset,
   type ModelRoutingPresets,
+  type ReasoningEffort,
   type SubagentRoutingPresets,
   type TelemetryLevel
 } from "@sane/config";
@@ -35,9 +38,18 @@ export interface PreferencesSnapshot {
   models: ReturnType<typeof createRecommendedLocalConfig>["models"];
   derivedRouting: Pick<ModelRoutingPresets, "execution" | "realtime">;
   subagents: Pick<SubagentRoutingPresets, "explorer" | "implementation" | "realtime">;
+  modelCapabilities: ModelCapabilitySnapshot;
   telemetry: ReturnType<typeof createRecommendedLocalConfig>["privacy"]["telemetry"];
   telemetryFiles: TelemetrySnapshot;
   enabledPacks: string[];
+}
+
+export interface ModelCapabilitySnapshot {
+  source: "detected" | "fallback-defaults";
+  planType: string | null;
+  availableModelCount: number;
+  availableModels: DetectedAvailableModel[];
+  details: string[];
 }
 
 export interface EditablePreferencesConfigSnapshot {
@@ -215,6 +227,7 @@ export function inspectPrivacyTransparencySnapshot(
 }
 
 interface PreferencesContext {
+  environment: CodexEnvironment;
   localConfig: LocalConfigFamilySnapshot;
   derivedRouting: ReturnType<typeof createRecommendedModelRoutingPresets>;
   subagents: ReturnType<typeof createRecommendedSubagentRoutingPresets>;
@@ -238,6 +251,7 @@ function createPreferencesContext(
       : inspectLocalConfigFamily(paths, recommended);
 
   return {
+    environment,
     localConfig,
     derivedRouting: createRecommendedModelRoutingPresets(environment),
     subagents: createRecommendedSubagentRoutingPresets(environment)
@@ -267,12 +281,74 @@ function inspectPreferencesFamilySnapshotFromContext(
         implementation: context.subagents.implementation,
         realtime: context.subagents.realtime
       },
+      modelCapabilities: buildModelCapabilitySnapshot(
+        context.environment,
+        context.localConfig.current,
+        context.derivedRouting,
+        context.subagents
+      ),
       telemetry: context.localConfig.current.privacy.telemetry,
       telemetryFiles: telemetry,
       enabledPacks: enabledPackNames(context.localConfig.current.packs)
     },
     telemetry
   };
+}
+
+function buildModelCapabilitySnapshot(
+  environment: CodexEnvironment,
+  config: LocalConfig,
+  routing: ModelRoutingPresets,
+  subagents: SubagentRoutingPresets
+): ModelCapabilitySnapshot {
+  const source = environment.availableModels.length > 0 ? "detected" : "fallback-defaults";
+  const planType = environment.planType ?? null;
+  const details = [
+    source === "detected"
+      ? `model availability: detected ${environment.availableModels.length} model(s) from Codex cache (plan ${planType ?? "unknown"})`
+      : `model availability: no Codex model cache; using Sane defaults (plan ${planType ?? "unknown"})`,
+    environment.availableModels.length > 0
+      ? `available models: ${environment.availableModels.map(formatAvailableModel).join(", ")}`
+      : "available models: unknown"
+  ];
+
+  details.push(
+    capabilityLine("coordinator", config.models.coordinator, environment.availableModels),
+    capabilityLine("sidecar", config.models.sidecar, environment.availableModels),
+    capabilityLine("verifier", config.models.verifier, environment.availableModels),
+    capabilityLine("explorer", subagents.explorer, environment.availableModels),
+    capabilityLine("implementation", routing.execution, environment.availableModels),
+    capabilityLine("realtime", routing.realtime, environment.availableModels)
+  );
+
+  return {
+    source,
+    planType,
+    availableModelCount: environment.availableModels.length,
+    availableModels: environment.availableModels,
+    details
+  };
+}
+
+function formatAvailableModel(model: DetectedAvailableModel): string {
+  return `${model.slug} [${model.reasoningEfforts.join(", ")}]`;
+}
+
+function capabilityLine(
+  label: string,
+  preset: ModelPreset,
+  availableModels: readonly DetectedAvailableModel[]
+): string {
+  const detected = availableModels.find((model) => model.slug === preset.model);
+  if (!detected) {
+    return `${label} capability: ${preset.model} not in detected cache; selected ${preset.reasoningEffort}`;
+  }
+
+  return `${label} capability: ${preset.model} supports ${formatReasoningEfforts(detected.reasoningEfforts)}; selected ${preset.reasoningEffort}`;
+}
+
+function formatReasoningEfforts(reasoningEfforts: readonly ReasoningEffort[]): string {
+  return reasoningEfforts.join("/");
 }
 
 function configDetails(
@@ -300,6 +376,7 @@ function configDetails(
   lines.splice(
     4,
     0,
+    ...preferences.modelCapabilities.details,
     `explorer: ${formatPreset(preferences.subagents.explorer)} (derived)`,
     `execution: ${formatPreset(preferences.derivedRouting.execution)} (derived)`,
     `realtime: ${formatPreset(preferences.derivedRouting.realtime)} (derived)`,

@@ -33,6 +33,7 @@ export interface PreferencesScreenModel {
   models: PreferencesSnapshotModel["models"];
   derivedRouting: PreferencesSnapshotModel["derivedRouting"];
   subagents: PreferencesSnapshotModel["subagents"];
+  modelCapabilities: PreferencesSnapshotModel["modelCapabilities"];
   telemetry: PreferencesSnapshotModel["telemetry"];
   telemetryFiles: PreferencesSnapshotModel["telemetryFiles"];
   enabledPacks: string[];
@@ -73,6 +74,7 @@ export function loadPreferencesScreen(
     models: snapshot.models,
     derivedRouting: snapshot.derivedRouting,
     subagents: snapshot.subagents,
+    modelCapabilities: snapshot.modelCapabilities,
     telemetry: snapshot.telemetry,
     telemetryFiles: snapshot.telemetryFiles,
     enabledPacks: snapshot.enabledPacks,

@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -121,5 +121,37 @@ describe("preferences screen model", () => {
     expect(screen.statuslineAudit.status).toBe("missing");
     expect(screen.cloudflareAudit.status).toBe("missing");
     expect(screen.opencodeAudit.status).toBe("missing");
+  });
+
+  it("surfaces model availability and routing capability details", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    mkdirSync(codexPaths.codexHome, { recursive: true });
+    writeFileSync(
+      codexPaths.modelsCacheJson,
+      JSON.stringify({
+        models: [
+          { slug: "gpt-5.5", supported_reasoning_levels: ["medium", "high", "xhigh"] },
+          { slug: "gpt-5.4-mini", supported_reasoning_levels: ["low", "medium"] },
+          { slug: "gpt-5.3-codex", supported_reasoning_levels: ["medium", "high"] }
+        ]
+      }),
+      "utf8"
+    );
+
+    const screen = loadPreferencesScreen(paths, codexPaths);
+
+    expect(screen.modelCapabilities.details).toContain(
+      "model availability: detected 3 model(s) from Codex cache (plan unknown)"
+    );
+    expect(screen.modelCapabilities.details).toContain(
+      "implementation capability: gpt-5.3-codex supports medium/high; selected medium"
+    );
+    expect(screen.modelCapabilities.details).toContain(
+      "explorer capability: gpt-5.4-mini supports low/medium; selected low"
+    );
   });
 });

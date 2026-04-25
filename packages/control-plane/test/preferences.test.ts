@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -81,6 +81,14 @@ describe("preferences control plane", () => {
       "coordinator: gpt-5.4 (high)",
       "sidecar: gpt-5.4-mini (medium)",
       "verifier: gpt-5.4 (high)",
+      "model availability: no Codex model cache; using Sane defaults (plan unknown)",
+      "available models: unknown",
+      "coordinator capability: gpt-5.4 not in detected cache; selected high",
+      "sidecar capability: gpt-5.4-mini not in detected cache; selected medium",
+      "verifier capability: gpt-5.4 not in detected cache; selected high",
+      "explorer capability: gpt-5.4-mini not in detected cache; selected low",
+      "implementation capability: gpt-5.3-codex not in detected cache; selected medium",
+      "realtime capability: gpt-5.3-codex-spark not in detected cache; selected low",
       "explorer: gpt-5.4-mini (low) (derived)",
       "execution: gpt-5.3-codex (medium) (derived)",
       "realtime: gpt-5.3-codex-spark (low) (derived)",
@@ -283,6 +291,54 @@ describe("preferences control plane", () => {
         }
       }
     });
+  });
+
+  it("reports detected model capability constraints for routing decisions", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    mkdirSync(codexPaths.codexHome, { recursive: true });
+    writeFileSync(
+      codexPaths.modelsCacheJson,
+      JSON.stringify({
+        models: [
+          { slug: "gpt-5.5", supported_reasoning_levels: ["medium", "high", "xhigh"] },
+          { slug: "gpt-5.4-mini", supported_reasoning_levels: ["low", "medium"] },
+          { slug: "gpt-5.3-codex", supported_reasoning_levels: ["medium", "high"] }
+        ]
+      }),
+      "utf8"
+    );
+    writeFileSync(
+      codexPaths.authJson,
+      JSON.stringify({ chatgpt_plan_type: "pro" }),
+      "utf8"
+    );
+
+    const snapshot = inspectPreferencesSnapshot(paths, codexPaths);
+
+    expect(snapshot.modelCapabilities).toMatchObject({
+      source: "detected",
+      planType: "pro",
+      availableModelCount: 3,
+      availableModels: [
+        { slug: "gpt-5.5", reasoningEfforts: ["medium", "high", "xhigh"] },
+        { slug: "gpt-5.4-mini", reasoningEfforts: ["low", "medium"] },
+        { slug: "gpt-5.3-codex", reasoningEfforts: ["medium", "high"] }
+      ]
+    });
+    expect(snapshot.modelCapabilities.details).toEqual([
+      "model availability: detected 3 model(s) from Codex cache (plan pro)",
+      "available models: gpt-5.5 [medium, high, xhigh], gpt-5.4-mini [low, medium], gpt-5.3-codex [medium, high]",
+      "coordinator capability: gpt-5.5 supports medium/high/xhigh; selected medium",
+      "sidecar capability: gpt-5.4-mini supports low/medium; selected medium",
+      "verifier capability: gpt-5.5 supports medium/high/xhigh; selected high",
+      "explorer capability: gpt-5.4-mini supports low/medium; selected low",
+      "implementation capability: gpt-5.3-codex supports medium/high; selected medium",
+      "realtime capability: gpt-5.4-mini supports low/medium; selected low"
+    ]);
   });
 
   it("builds an editable preferences config snapshot with local current and recommended defaults", () => {

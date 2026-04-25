@@ -179,6 +179,7 @@ function sectionOverviewLines(
         `coordinator: ${preferences.models.coordinator.model}/${preferences.models.coordinator.reasoningEffort}`,
         `sidecar: ${preferences.models.sidecar.model}/${preferences.models.sidecar.reasoningEffort}`,
         `verifier: ${preferences.models.verifier.model}/${preferences.models.verifier.reasoningEffort}`,
+        ...preferences.modelCapabilities.details,
         `explorer: ${preferences.subagents.explorer.model}/${preferences.subagents.explorer.reasoningEffort}`,
         `execution: ${preferences.derivedRouting.execution.model}/${preferences.derivedRouting.execution.reasoningEffort}`,
         `realtime: ${preferences.derivedRouting.realtime.model}/${preferences.derivedRouting.realtime.reasoningEffort}`,

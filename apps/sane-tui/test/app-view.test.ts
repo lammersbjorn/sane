@@ -638,6 +638,33 @@ describe("app view", () => {
     expect(view.sectionOverviewLines.join("\n")).toContain("enabled packs:");
   });
 
+  it("surfaces capability-aware routing context in the preferences overview", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    mkdirSync(codexPaths.codexHome, { recursive: true });
+    writeFileSync(
+      codexPaths.modelsCacheJson,
+      JSON.stringify({
+        models: [
+          { slug: "gpt-5.5", supported_reasoning_levels: ["medium", "high", "xhigh"] },
+          { slug: "gpt-5.4-mini", supported_reasoning_levels: ["low", "medium"] },
+          { slug: "gpt-5.3-codex", supported_reasoning_levels: ["medium", "high"] }
+        ]
+      }),
+      "utf8"
+    );
+    const shell = createTuiShell(paths, codexPaths, "settings");
+
+    const view = loadAppView(shell);
+    const overview = view.sectionOverviewLines.join("\n");
+
+    expect(overview).toContain("model availability: detected 3 model(s) from Codex cache");
+    expect(overview).toContain("coordinator capability: gpt-5.5 supports medium/high/xhigh; selected medium");
+    expect(overview).toContain("implementation capability: gpt-5.3-codex supports medium/high; selected medium");
+  });
+
   it("surfaces rollback availability and removable installs in the repair overview", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
     selectSection(shell, "repair");
