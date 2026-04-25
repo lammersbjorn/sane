@@ -87,6 +87,11 @@ describe("inspect snapshot", () => {
       runnerEnabled: false,
       status: "ready"
     });
+    expect(snapshot.outcomeReadiness).toMatchObject({
+      mode: "codex-native-outcome-readiness",
+      autonomousLoopEnabled: false,
+      status: "ready"
+    });
     expect(snapshot.latestPolicyPreview).toEqual({
       status: "missing",
       scenarioCount: 0,
@@ -118,6 +123,9 @@ describe("inspect snapshot", () => {
     expect(overview).toContain("primary surfaces:");
     expect(overview).toContain(
       "self-hosting shadow (read-only): ready, runner disabled"
+    );
+    expect(overview).toContain(
+      "outcome readiness (read-only): ready, autonomous loop disabled"
     );
     expect(overview).toContain("statusline profile: missing");
     expect(overview).toContain("conflict warnings: none");
@@ -338,12 +346,26 @@ describe("inspect snapshot", () => {
     const snapshot = inspectSnapshotFromStatusBundle(paths, codexPaths, bundle);
 
     expect(snapshot.selfHostingShadow.runtime.current?.verification.status).toBe("pending");
+    expect(snapshot.outcomeReadiness.runtime.current?.verification.status).toBe("pending");
     expect(snapshot.selfHostingShadow.checks).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           id: "verification",
           status: "block",
           summary: "verification must pass before shadow readiness"
+        })
+      ])
+    );
+    expect(snapshot.outcomeReadiness.checks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "verification",
+          status: "warn",
+          summary: "verification is not complete yet; outcome work must verify before closing"
+        }),
+        expect.objectContaining({
+          id: "policy-preflight",
+          status: "pass"
         })
       ])
     );

@@ -101,7 +101,7 @@ Implemented:
 - policy explanations now include typed orchestration guidance and stable rule traces for canonical scenarios
 - policy explanations now also include typed continuation guidance (`answer_directly`, `continue_until_verified`, `continue_until_blocked`, `self_repair_until_unblocked`, `close_when_verified`) with explicit stop conditions, still internal/inspect-only
 - `@sane/policy` now has a pure internal eval harness for fixture-based routing/orchestration/continuation checks, plus a B7 fixture suite for routing, compaction, self-repair, and closing-gate expectations; this is a foundation only, not a shipped self-improvement runner
-- `@sane/policy` now also has a B8 preflight fixture suite for later outcome-runner policy shape; this is guardrail coverage only and still does not ship a runner, wrapper, or command ritual
+- `@sane/policy` now also has a B8 preflight fixture suite, and Inspect / `sane outcome-readiness` expose read-only outcome readiness without starting an autonomous runner, wrapper, or command ritual
 - self-hosting shadow readiness is still read-only and now blocks until canonical handoff layers exist, blocking questions are clear, and current-run verification has passed
 - internal backend policy preview now carries typed scenario/orchestration/trace payloads in `OperationResult` and persists them into decision history without changing TUI copy
 - policy preview history now has typed shared context helpers, tail-first latest-preview lookup, and runtime-summary plumbing for the latest valid snapshot
@@ -124,7 +124,7 @@ Implemented:
 - typed family snapshot helper now exists for Codex profile surfaces, and Preferences uses it for provider-profile state instead of separate provider snapshot reads
 - Codex profile family reads now derive from one shared parsed config context in `codex-config.ts`, so family/profile audit/apply/preview helpers stop reparsing the same file repeatedly
 - invalid Codex/integrations/cloudflare/opencode previews now say `blocked by invalid config` instead of pretending there are `0 recommended change(s)`
-- Canonical status bundles and Inspect overview now surface warning-only Codex config conflict detection for invalid config, disabled `features.codex_hooks`, unmanaged `mcp_servers.*`, and enabled `plugins.*` entries; this is detect-and-warn only and does not add auto-fix behavior
+- Canonical status bundles and Inspect overview now surface warning-only Codex config conflict detection for invalid config, disabled `features.codex_hooks`, unmanaged `mcp_servers.*`, managed MCP drift, explicit model/reasoning drift, explicit statusline drift, native Codex memories enabled, and enabled `plugins.*` entries; this is detect-and-warn only and does not add auto-fix behavior
 - Start Here onboarding can now derive from a preloaded typed status bundle, and app-view threads shell status bundle through that path instead of forcing a fresh onboarding status-bundle rebuild
 - Install can now derive from a preloaded typed status bundle too, and app-view threads shell status bundle through that path instead of forcing a second install status-bundle rebuild
 - Repair can now derive from a preloaded typed status bundle too, and app-view threads shell status bundle through that path when the repair section is opened instead of forcing another repair status-bundle rebuild
@@ -250,16 +250,15 @@ pnpm check
 
 - [x] Self-hosting shadow mode
 - [x] Broaden eval harness coverage for routing, compaction, and self-improvement
-- [ ] Later end-to-end outcome runner:
-  - future only, not part of the current user-facing product surface
-  - current allowed work is preflight/eval coverage and readiness docs only
-  - guardrail tests pin no runner operation, TUI command, or CLI alias until the B8 runtime actually ships
+- [x] B8 outcome readiness and conflict detection:
+  - read-only readiness is visible in Inspect and through `sane outcome-readiness`
+  - the autonomous runner loop remains disabled and out of scope
+  - guardrail tests pin no `runner`, `outcome runner`, or `run outcome` command ritual
   - any future one-shot command for idea-to-finished-result work must stay secondary to plain-language invocation
   - plain-language first
   - may ask targeted follow-up questions
   - may research / plan / implement / verify across a long run
   - should keep going until requested result is reached unless blocked
-  - optional shortcut name/command still open
 - [x] Windows/macOS/Linux path and install hardening passes
 - [ ] Packaging/distribution rollout after `v1`:
   - GitHub Releases

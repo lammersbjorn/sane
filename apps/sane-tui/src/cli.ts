@@ -35,6 +35,7 @@ const BACKEND_COMMAND_ALIASES: ReadonlyArray<{
   { args: ["config"], commandId: "show_config" },
   { args: ["codex-config"], commandId: "show_codex_config" },
   { args: ["summary"], commandId: "show_runtime_summary" },
+  { args: ["outcome-readiness"], commandId: "show_outcome_readiness" },
   { args: ["backup", "codex-config"], commandId: "backup_codex_config" },
   { args: ["preview", "policy"], commandId: "preview_policy" },
   { args: ["preview", "codex-profile"], commandId: "preview_codex_profile" },

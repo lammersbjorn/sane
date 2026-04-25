@@ -54,6 +54,8 @@ import {
 } from "@sane/control-plane/preferences.js";
 import {
   installRuntime,
+  showOutcomeReadiness,
+  showOutcomeReadinessFromRuntimeState,
   showRuntimeSummary,
   showRuntimeSummaryFromRuntimeState,
   uninstallRepoAgents,
@@ -392,6 +394,12 @@ function runCommand(shell: TuiShell, commandId: UiCommandId): OperationResult | 
                 shell.statusSnapshot.statusBundle.runtimeState,
                 () => previewPolicyForCurrentRun(shell.paths, shell.statusSnapshot.statusBundle.runtimeState.current)
               )
+          : commandId === "show_outcome_readiness"
+            ? executeOperationWithRuntimeState(
+                shell.paths,
+                shell.statusSnapshot.statusBundle.runtimeState,
+                () => showOutcomeReadinessFromRuntimeState(shell.paths, shell.statusSnapshot.statusBundle.runtimeState)
+              )
           : executeUiCommand(shell.paths, shell.codexPaths, commandId);
       refreshStatusSnapshot(shell);
       shell.activeEditor = null;
@@ -422,6 +430,8 @@ export function executeUiCommand(
       return executeOperation(paths, () => showCodexConfig(codexPaths));
     case "show_runtime_summary":
       return executeOperation(paths, () => showRuntimeSummary(paths));
+    case "show_outcome_readiness":
+      return executeOperation(paths, () => showOutcomeReadiness(paths));
     case "reset_telemetry_data":
       return executeOperation(paths, () => resetTelemetryData(paths));
     case "preview_policy":

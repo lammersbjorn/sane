@@ -70,6 +70,10 @@ describe("ts cli command parsing", () => {
       kind: "backend",
       commandId: "apply_statusline_profile"
     });
+    expect(parseCliArgs(["outcome-readiness"])).toEqual({
+      kind: "backend",
+      commandId: "show_outcome_readiness"
+    });
     expect(parseCliArgs(["hook", "session-start"])).toEqual({
       kind: "hook",
       event: "session-start"

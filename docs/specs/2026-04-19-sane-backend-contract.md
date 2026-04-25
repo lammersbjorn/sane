@@ -181,10 +181,16 @@ These are the backend actions the TUI is allowed to call in the current phase.
 - `show_status`
   - read structured inventory for all current managed targets
   - keep touched paths explicit for auditability
-  - canonical status bundles include warning-only conflict signals for invalid Codex config, disabled `features.codex_hooks`, unmanaged `mcp_servers.*`, and enabled `plugins.*` entries without changing inventory status or attempting repair
+  - canonical status bundles include warning-only conflict signals for invalid Codex config, disabled `features.codex_hooks`, unmanaged `mcp_servers.*`, managed MCP drift, explicit model/reasoning drift, explicit statusline drift, native Codex memories enabled, and enabled `plugins.*` entries without changing inventory status or attempting repair
   - current `show_status` output remains inventory-only; Inspect renders the conflict warnings
   - Inspect also exposes read-only self-hosting shadow readiness over `.sane` handoff layers, blocking questions, verification status, and latest policy-preview presence; readiness blocks until verification has passed, and the runner remains disabled
   - may remain a backend/dev escape hatch under the later TUI
+
+- `show_outcome_readiness`
+  - read `.sane` handoff layers and the B8 policy preflight suite
+  - summarize whether long-running outcome work is ready, blocked, or waiting on explicit input
+  - keep the autonomous loop disabled and do not mutate repo or Codex config
+  - remain secondary to plain-language continuation
 
 - `preview_policy`
   - internal/backend inspection only for now

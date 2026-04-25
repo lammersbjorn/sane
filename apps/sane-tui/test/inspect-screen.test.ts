@@ -129,6 +129,15 @@ describe("inspect screen model", () => {
           { status: "block" }
         ]
       },
+      outcomeReadiness: {
+        mode: "codex-native-outcome-readiness",
+        autonomousLoopEnabled: false,
+        status: "blocked",
+        checks: [
+          { status: "pass" },
+          { status: "block" }
+        ]
+      },
       latestPolicyPreview: {
         status: "missing",
         scenarioCount: 0,
@@ -213,7 +222,8 @@ describe("inspect screen model", () => {
       "show_codex_config",
       "preview_integrations_profile",
       "preview_statusline_profile",
-      "preview_policy"
+      "preview_policy",
+      "show_outcome_readiness"
     ]);
     expect(screen.actions.map((action) => action.id)).not.toContain("apply_integrations_profile");
     expect(screen.statusBundle.inventory).toHaveLength(screen.status.inventory.length);

@@ -119,6 +119,10 @@ export interface CodexConfigBackupSnapshot {
 export type CodexConfigConflictWarningKind =
   | "invalid_config"
   | "disabled_codex_hooks"
+  | "codex_profile_drift"
+  | "codex_native_memories_enabled"
+  | "managed_mcp_server_drift"
+  | "statusline_profile_drift"
   | "unmanaged_mcp_server"
   | "unmanaged_plugin";
 
@@ -760,8 +764,22 @@ export function inspectCodexConfigConflictWarnings(
     ];
   }
 
+  return [
+    ...collectUnmanagedMcpWarnings(config, codexPaths),
+    ...collectManagedMcpDriftWarnings(config, codexPaths),
+    ...collectCoreProfileDriftWarnings(config, codexPaths, recommendedLocalConfig(codexPaths)),
+    ...collectCodexAdjacentSetupWarnings(config, codexPaths),
+    ...collectStatuslineDriftWarnings(config, codexPaths),
+    ...collectPluginWarnings(config, codexPaths)
+  ];
+}
+
+function collectUnmanagedMcpWarnings(
+  config: TomlTable,
+  codexPaths: CodexPaths
+): CodexConfigConflictWarning[] {
   const mcpServers = sortedKeys(asTomlTable(config.mcp_servers));
-  const mcpWarnings = mcpServers
+  return mcpServers
     .filter((name) => !SANE_KNOWN_MCP_SERVERS.has(name))
     .map((name) => ({
       kind: "unmanaged_mcp_server" as const,
@@ -769,20 +787,155 @@ export function inspectCodexConfigConflictWarnings(
       path: codexPaths.configToml,
       message: `unmanaged Codex MCP server '${name}' is outside Sane's known profiles`
     }));
+}
+
+function collectManagedMcpDriftWarnings(
+  config: TomlTable,
+  codexPaths: CodexPaths
+): CodexConfigConflictWarning[] {
+  const mcpServers = asTomlTable(config.mcp_servers);
+  const expected: Record<string, TomlTable> = {
+    "cloudflare-api": { url: "https://mcp.cloudflare.com/mcp" },
+    context7: { url: "https://mcp.context7.com/mcp" },
+    grep_app: { url: "https://mcp.grep.app" },
+    opensrc: { url: "https://mcp.opensrc.dev" },
+    playwright: { command: "npx", args: ["@playwright/mcp@latest"] }
+  };
+
+  return Object.entries(expected).flatMap(([name, expectedValue]) => {
+    const actual = asTomlTable(mcpServers?.[name]);
+    if (!actual || tomlValueEqual(actual, expectedValue)) {
+      return [];
+    }
+
+    return [
+      {
+        kind: "managed_mcp_server_drift" as const,
+        target: `mcp_servers.${name}`,
+        path: codexPaths.configToml,
+        message: `managed Codex MCP server '${name}' differs from Sane's profile`
+      }
+    ];
+  });
+}
+
+function collectCoreProfileDriftWarnings(
+  config: TomlTable,
+  codexPaths: CodexPaths,
+  recommended: LocalConfig
+): CodexConfigConflictWarning[] {
+  const warnings: CodexConfigConflictWarning[] = [];
+  const currentModel = asString(config.model);
+  const currentReasoning = asString(config.model_reasoning_effort);
   const features = asTomlTable(config.features);
-  const hooksWarnings: CodexConfigConflictWarning[] = features?.codex_hooks === false
-    ? [
-        {
-          kind: "disabled_codex_hooks",
-          target: "features.codex_hooks",
-          path: codexPaths.configToml,
-          message:
-            "Codex hooks are disabled, so Sane-managed hook exports will not run until features.codex_hooks is enabled"
-        }
-      ]
-    : [];
+
+  if (currentModel !== null && currentModel !== recommended.models.coordinator.model) {
+    warnings.push({
+      kind: "codex_profile_drift",
+      target: "model",
+      path: codexPaths.configToml,
+      message: `Codex model '${currentModel}' differs from Sane's recommended coordinator model '${recommended.models.coordinator.model}'`
+    });
+  }
+
+  if (
+    currentReasoning !== null
+    && currentReasoning !== recommended.models.coordinator.reasoningEffort
+  ) {
+    warnings.push({
+      kind: "codex_profile_drift",
+      target: "model_reasoning_effort",
+      path: codexPaths.configToml,
+      message: `Codex reasoning '${currentReasoning}' differs from Sane's recommended coordinator reasoning '${recommended.models.coordinator.reasoningEffort}'`
+    });
+  }
+
+  if (features?.codex_hooks === false) {
+    warnings.push({
+      kind: "disabled_codex_hooks",
+      target: "features.codex_hooks",
+      path: codexPaths.configToml,
+      message:
+        "Codex hooks are disabled, so Sane-managed hook exports will not run until features.codex_hooks is enabled"
+    });
+  }
+
+  return warnings;
+}
+
+function collectCodexAdjacentSetupWarnings(
+  config: TomlTable,
+  codexPaths: CodexPaths
+): CodexConfigConflictWarning[] {
+  const features = asTomlTable(config.features);
+  if (features?.memories !== true) {
+    return [];
+  }
+
+  return [
+    {
+      kind: "codex_native_memories_enabled",
+      target: "features.memories",
+      path: codexPaths.configToml,
+      message:
+        "Codex native memories are enabled; Sane keeps default continuity in scoped exports plus .sane state instead"
+    }
+  ];
+}
+
+function collectStatuslineDriftWarnings(
+  config: TomlTable,
+  codexPaths: CodexPaths
+): CodexConfigConflictWarning[] {
+  const tui = asTomlTable(config.tui);
+  if (!tui) {
+    return [];
+  }
+
+  const warnings: CodexConfigConflictWarning[] = [];
+  const notificationCondition = asString(tui.notification_condition);
+  const statusLine = asStringArray(tui.status_line);
+  const terminalTitle = asStringArray(tui.terminal_title);
+
+  if (
+    notificationCondition !== null
+    && notificationCondition !== RECOMMENDED_TUI_NOTIFICATION_CONDITION
+  ) {
+    warnings.push({
+      kind: "statusline_profile_drift",
+      target: "tui.notification_condition",
+      path: codexPaths.configToml,
+      message: `Codex TUI notifications '${notificationCondition}' differ from Sane's statusline profile '${RECOMMENDED_TUI_NOTIFICATION_CONDITION}'`
+    });
+  }
+
+  if (statusLine !== null && !stringArraysEqual(statusLine, RECOMMENDED_STATUSLINE)) {
+    warnings.push({
+      kind: "statusline_profile_drift",
+      target: "tui.status_line",
+      path: codexPaths.configToml,
+      message: "Codex TUI status line differs from Sane's statusline profile"
+    });
+  }
+
+  if (terminalTitle !== null && !stringArraysEqual(terminalTitle, RECOMMENDED_TERMINAL_TITLE)) {
+    warnings.push({
+      kind: "statusline_profile_drift",
+      target: "tui.terminal_title",
+      path: codexPaths.configToml,
+      message: "Codex TUI terminal title differs from Sane's statusline profile"
+    });
+  }
+
+  return warnings;
+}
+
+function collectPluginWarnings(
+  config: TomlTable,
+  codexPaths: CodexPaths
+): CodexConfigConflictWarning[] {
   const plugins = asTomlTable(config.plugins);
-  const pluginWarnings = sortedKeys(plugins)
+  return sortedKeys(plugins)
     .filter((name) => asTomlTable(plugins?.[name])?.enabled === true)
     .map((name) => ({
       kind: "unmanaged_plugin" as const,
@@ -790,8 +943,6 @@ export function inspectCodexConfigConflictWarnings(
       path: codexPaths.configToml,
       message: `enabled Codex plugin '${name}' is outside Sane's managed profiles`
     }));
-
-  return [...mcpWarnings, ...hooksWarnings, ...pluginWarnings];
 }
 
 function recommendedLocalConfig(codexPaths: CodexPaths): LocalConfig {
@@ -1523,6 +1674,10 @@ function stringArraysEqual(
   }
 
   return left.every((entry, index) => entry === right[index]);
+}
+
+function tomlValueEqual(left: unknown, right: unknown): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
 }
 
 function integrationProfileAuditFromConfig(config: TomlTable): IntegrationsProfileAudit {

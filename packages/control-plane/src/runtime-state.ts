@@ -2,6 +2,10 @@ import { existsSync, readFileSync } from "node:fs";
 
 import { type ProjectPaths } from "@sane/platform";
 import {
+  evaluatePolicyFixtures,
+  outcomeRunnerPreflightFixtures
+} from "@sane/policy";
+import {
   buildRunBrief,
   type CanonicalRewriteResult,
   createCanonicalStatePaths,
@@ -67,6 +71,23 @@ export interface SelfHostingShadowSnapshot {
   runnerEnabled: false;
   status: SelfHostingShadowStatus;
   checks: SelfHostingShadowCheck[];
+  runtime: RuntimeInspectSnapshot;
+}
+
+export type OutcomeReadinessStatus = "ready" | "blocked" | "needs_input";
+
+export interface OutcomeReadinessCheck {
+  id: string;
+  status: SelfHostingShadowCheckStatus;
+  summary: string;
+  path: string | null;
+}
+
+export interface OutcomeReadinessSnapshot {
+  mode: "codex-native-outcome-readiness";
+  autonomousLoopEnabled: false;
+  status: OutcomeReadinessStatus;
+  checks: OutcomeReadinessCheck[];
   runtime: RuntimeInspectSnapshot;
 }
 
@@ -257,6 +278,38 @@ export function inspectSelfHostingShadowSnapshotFromRuntimeState(
     mode: "shadow-inspect-only",
     runnerEnabled: false,
     status: checks.some((check) => check.status === "block") ? "blocked" : "ready",
+    checks,
+    runtime
+  };
+}
+
+export function inspectOutcomeReadinessSnapshot(
+  paths: ProjectPaths
+): OutcomeReadinessSnapshot {
+  return inspectOutcomeReadinessSnapshotFromRuntimeState(paths, inspectRuntimeState(paths));
+}
+
+export function inspectOutcomeReadinessSnapshotFromRuntimeState(
+  paths: ProjectPaths,
+  runtime: RuntimeInspectSnapshot
+): OutcomeReadinessSnapshot {
+  const checks: OutcomeReadinessCheck[] = [
+    runtimeLayerCheck("current-run", runtime.layerStatus.currentRun, paths.currentRunPath),
+    runtimeLayerCheck("summary", runtime.layerStatus.summary, paths.summaryPath),
+    runtimeLayerCheck("brief", runtime.layerStatus.brief, paths.briefPath),
+    currentRunPayloadCheck(runtime.current),
+    summaryPayloadCheck(runtime.summary),
+    briefPayloadCheck(runtime.brief),
+    blockingQuestionsCheck(runtime.current),
+    outcomeVerificationCheck(runtime.current),
+    latestPolicyPreviewCheck(runtime.latestPolicyPreview),
+    outcomePolicyPreflightCheck()
+  ];
+
+  return {
+    mode: "codex-native-outcome-readiness",
+    autonomousLoopEnabled: false,
+    status: outcomeStatus(checks),
     checks,
     runtime
   };
@@ -464,6 +517,67 @@ function latestPolicyPreviewCheck(
     summary: "latest policy preview is missing; current-run inspection can still proceed",
     path: null
   };
+}
+
+function outcomeVerificationCheck(current: CurrentRunState | null): OutcomeReadinessCheck {
+  const status = current?.verification.status.trim().toLowerCase() ?? "";
+
+  if (status === "failed" || status === "failing" || status === "blocked") {
+    return {
+      id: "verification",
+      status: "block",
+      summary: `verification status is ${current?.verification.status}`,
+      path: null
+    };
+  }
+
+  if (status === "passed" || status === "verified") {
+    return {
+      id: "verification",
+      status: "pass",
+      summary: `verification status is ${current?.verification.status}`,
+      path: null
+    };
+  }
+
+  return {
+    id: "verification",
+    status: "warn",
+    summary: "verification is not complete yet; outcome work must verify before closing",
+    path: null
+  };
+}
+
+function outcomePolicyPreflightCheck(): OutcomeReadinessCheck {
+  const result = evaluatePolicyFixtures(outcomeRunnerPreflightFixtures());
+
+  if (result.passed) {
+    return {
+      id: "policy-preflight",
+      status: "pass",
+      summary: `B8 policy preflight passed (${result.caseCount} case(s))`,
+      path: null
+    };
+  }
+
+  return {
+    id: "policy-preflight",
+    status: "block",
+    summary: `B8 policy preflight failed (${result.failureCount} failure(s) across ${result.caseCount} case(s))`,
+    path: null
+  };
+}
+
+function outcomeStatus(checks: OutcomeReadinessCheck[]): OutcomeReadinessStatus {
+  const blockingIds = checks
+    .filter((check) => check.status === "block")
+    .map((check) => check.id);
+
+  if (blockingIds.length === 0) {
+    return "ready";
+  }
+
+  return blockingIds.includes("blocking-questions") ? "needs_input" : "blocked";
 }
 
 function isRealBlockingQuestion(question: string): boolean {

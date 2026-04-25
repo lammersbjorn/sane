@@ -54,6 +54,8 @@ import {
   ensureRuntimeHandoffBaseline,
   inspectSelfHostingShadowSnapshot,
   inspectSelfHostingShadowSnapshotFromRuntimeState,
+  inspectOutcomeReadinessSnapshot,
+  inspectOutcomeReadinessSnapshotFromRuntimeState,
   inspectRuntimeState,
   runtimeHistoryPaths,
   runtimeStatePaths
@@ -93,6 +95,7 @@ export interface InspectSnapshot {
   };
   runtimeHistoryPreview: LayeredStateHistoryPreview;
   selfHostingShadow: ReturnType<typeof inspectSelfHostingShadowSnapshot>;
+  outcomeReadiness: ReturnType<typeof inspectOutcomeReadinessSnapshot>;
   latestPolicyPreview: ReturnType<typeof inspectLatestPolicyPreview>;
   localConfig: ReturnType<typeof showConfig>;
   codexConfig: ReturnType<typeof showCodexConfig>;
@@ -237,6 +240,7 @@ export function inspectSnapshotFromStatusBundle(
     runtimeHistory: runtimeState.historyCounts,
     runtimeHistoryPreview: runtimeState.historyPreview,
     selfHostingShadow: inspectSelfHostingShadowSnapshotFromRuntimeState(paths, runtimeState),
+    outcomeReadiness: inspectOutcomeReadinessSnapshotFromRuntimeState(paths, runtimeState),
     latestPolicyPreview: runtimeState.latestPolicyPreview,
     localConfig: preferencesFamily
       ? showConfigFromPreferencesFamily(paths, preferencesFamily)
@@ -258,6 +262,28 @@ export function inspectSnapshotFromStatusBundle(
   };
 }
 
+export function showOutcomeReadiness(paths: ProjectPaths): OperationResult {
+  return showOutcomeReadinessFromRuntimeState(paths, inspectRuntimeState(paths));
+}
+
+export function showOutcomeReadinessFromRuntimeState(
+  paths: ProjectPaths,
+  runtimeState: ReturnType<typeof inspectRuntimeState>
+): OperationResult {
+  const snapshot = inspectOutcomeReadinessSnapshotFromRuntimeState(paths, runtimeState);
+  return new OperationResult({
+    kind: OperationKind.ShowOutcomeReadiness,
+    summary: `outcome readiness: ${snapshot.status}`,
+    details: [
+      `mode: ${snapshot.mode}`,
+      `autonomous loop: ${snapshot.autonomousLoopEnabled ? "enabled" : "disabled"}`,
+      `checks: ${formatOutcomeReadinessCheckCounts(snapshot.checks)}`,
+      ...snapshot.checks.map((check) => `${check.id}: ${check.status} - ${check.summary}`)
+    ],
+    pathsTouched: runtimeStatePaths(paths)
+  });
+}
+
 export function showRuntimeSummary(paths: ProjectPaths): OperationResult {
   return showRuntimeSummaryFromRuntimeState(paths, inspectRuntimeState(paths));
 }
@@ -267,6 +293,16 @@ export function showRuntimeSummaryFromRuntimeState(
   runtimeState: ReturnType<typeof inspectRuntimeState>
 ): OperationResult {
   return buildRuntimeSummary(paths, runtimeState);
+}
+
+function formatOutcomeReadinessCheckCounts(
+  checks: ReturnType<typeof inspectOutcomeReadinessSnapshot>["checks"]
+): string {
+  const pass = checks.filter((check) => check.status === "pass").length;
+  const warn = checks.filter((check) => check.status === "warn").length;
+  const block = checks.filter((check) => check.status === "block").length;
+
+  return `pass ${pass}, warn ${warn}, block ${block}`;
 }
 
 function buildRuntimeSummary(

@@ -80,7 +80,8 @@ describe("command metadata registry", () => {
       "show_codex_config",
       "preview_integrations_profile",
       "preview_statusline_profile",
-      "preview_policy"
+      "preview_policy",
+      "show_outcome_readiness"
     ]);
     expect(listSectionActions("repair").map((action) => action.id)).toEqual([
       "install_runtime",
@@ -115,6 +116,12 @@ describe("command metadata registry", () => {
       ".sane/state/decisions.jsonl",
       ".sane/state/artifacts.jsonl"
     ]);
+    expect(getCommandSpec("show_outcome_readiness").backendKind).toBe(
+      OperationKind.ShowOutcomeReadiness
+    );
+    expect(getCommandSpec("show_outcome_readiness").help[2]).toBe(
+      "This is read-only readiness for Codex-native work."
+    );
     expect(getCommandSpec("preview_policy").filesTouched).toEqual([
       ".sane/config.local.toml",
       ".sane/state/current-run.json",

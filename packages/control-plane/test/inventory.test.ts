@@ -250,7 +250,7 @@ describe("full inventory and doctor", () => {
       codexPaths.configToml,
       [
         "[mcp_servers.context7]",
-        'command = "context7"',
+        'url = "https://mcp.context7.com/mcp"',
         "",
         "[mcp_servers.experimental_sidecar]",
         'command = "experimental"',
@@ -280,6 +280,118 @@ describe("full inventory and doctor", () => {
         target: "plugins.local_lab",
         path: codexPaths.configToml,
         message: "enabled Codex plugin 'local_lab' is outside Sane's managed profiles"
+      }
+    ]);
+  });
+
+  it("surfaces managed Codex MCP drift as a warning-only config conflict", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+    writeFileSync(
+      codexPaths.configToml,
+      [
+        "[mcp_servers.context7]",
+        'command = "context7"'
+      ].join("\n")
+    );
+
+    const bundle = inspectStatusBundle(paths, codexPaths);
+
+    expect(bundle.primary.codexConfig?.status).toBe(InventoryStatus.Installed);
+    expect(bundle.driftItems.map((item) => item.name)).not.toContain("codex-config");
+    expect(bundle.conflictWarnings).toEqual([
+      {
+        kind: "managed_mcp_server_drift",
+        target: "mcp_servers.context7",
+        path: codexPaths.configToml,
+        message: "managed Codex MCP server 'context7' differs from Sane's profile"
+      }
+    ]);
+  });
+
+  it("surfaces explicit core profile drift without turning it into inventory drift", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+    writeFileSync(
+      codexPaths.configToml,
+      [
+        'model = "old-model"',
+        'model_reasoning_effort = "low"'
+      ].join("\n")
+    );
+
+    const bundle = inspectStatusBundle(paths, codexPaths);
+
+    expect(bundle.primary.codexConfig?.status).toBe(InventoryStatus.Installed);
+    expect(bundle.driftItems.map((item) => item.name)).not.toContain("codex-config");
+    expect(bundle.conflictWarnings.map((warning) => warning.kind)).toEqual([
+      "codex_profile_drift",
+      "codex_profile_drift"
+    ]);
+    expect(bundle.conflictWarnings.map((warning) => warning.target)).toEqual([
+      "model",
+      "model_reasoning_effort"
+    ]);
+  });
+
+  it("does not warn for absent optional statusline or memories settings", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+    writeFileSync(codexPaths.configToml, "");
+
+    const bundle = inspectStatusBundle(paths, codexPaths);
+
+    expect(bundle.conflictWarnings).toEqual([]);
+  });
+
+  it("surfaces Codex native memories and explicit statusline drift as warning-only conflicts", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+    writeFileSync(
+      codexPaths.configToml,
+      [
+        "[features]",
+        "memories = true",
+        "",
+        "[tui]",
+        'notification_condition = "mentions"'
+      ].join("\n")
+    );
+
+    const bundle = inspectStatusBundle(paths, codexPaths);
+
+    expect(bundle.primary.codexConfig?.status).toBe(InventoryStatus.Installed);
+    expect(bundle.driftItems.map((item) => item.name)).not.toContain("codex-config");
+    expect(bundle.conflictWarnings).toEqual([
+      {
+        kind: "codex_native_memories_enabled",
+        target: "features.memories",
+        path: codexPaths.configToml,
+        message:
+          "Codex native memories are enabled; Sane keeps default continuity in scoped exports plus .sane state instead"
+      },
+      {
+        kind: "statusline_profile_drift",
+        target: "tui.notification_condition",
+        path: codexPaths.configToml,
+        message:
+          "Codex TUI notifications 'mentions' differ from Sane's statusline profile 'always'"
       }
     ]);
   });

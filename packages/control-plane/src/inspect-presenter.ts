@@ -41,6 +41,14 @@ export interface InspectOverviewSnapshot {
       status: "pass" | "warn" | "block";
     }>;
   };
+  outcomeReadiness: {
+    mode: "codex-native-outcome-readiness";
+    autonomousLoopEnabled: false;
+    status: "ready" | "blocked" | "needs_input";
+    checks: Array<{
+      status: "pass" | "warn" | "block";
+    }>;
+  };
   latestPolicyPreview: LatestPolicyPreviewSnapshot;
   policyPreview: InspectCurrentPolicyPreview;
   localConfig: {
@@ -90,6 +98,7 @@ export function formatInspectOverviewLines(snapshot: InspectOverviewSnapshot): s
     `latest decision (read-only local visibility): ${formatLatestHistoryDecisionPreview(snapshot.runtimeHistoryPreview.latestDecision)}`,
     `latest artifact (read-only local visibility): ${formatLatestHistoryArtifactPreview(snapshot.runtimeHistoryPreview.latestArtifact)}`,
     `self-hosting shadow (read-only): ${snapshot.selfHostingShadow.status}, runner disabled, checks ${formatSelfHostingShadowCheckCounts(snapshot.selfHostingShadow.checks)}`,
+    `outcome readiness (read-only): ${snapshot.outcomeReadiness.status}, autonomous loop disabled, checks ${formatCheckCounts(snapshot.outcomeReadiness.checks)}`,
     "",
     ...formatInspectPolicyPreviewLines(snapshot.latestPolicyPreview, snapshot.policyPreview, {
       inputPrefix: "latest policy input"
@@ -114,6 +123,14 @@ export function formatInspectOverviewLines(snapshot: InspectOverviewSnapshot): s
 
 function formatSelfHostingShadowCheckCounts(
   checks: InspectOverviewSnapshot["selfHostingShadow"]["checks"]
+): string {
+  return formatCheckCounts(checks);
+}
+
+function formatCheckCounts(
+  checks: Array<{
+    status: "pass" | "warn" | "block";
+  }>
 ): string {
   const pass = checks.filter((check) => check.status === "pass").length;
   const warn = checks.filter((check) => check.status === "warn").length;

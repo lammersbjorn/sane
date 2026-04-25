@@ -158,6 +158,16 @@ describe("inspect presenter", () => {
           { status: "block" }
         ]
       },
+      outcomeReadiness: {
+        mode: "codex-native-outcome-readiness",
+        autonomousLoopEnabled: false,
+        status: "ready",
+        checks: [
+          { status: "pass" },
+          { status: "pass" },
+          { status: "warn" }
+        ]
+      },
       latestPolicyPreview: {
         status: "missing",
         scenarioCount: 0,
@@ -200,6 +210,9 @@ describe("inspect presenter", () => {
     expect(lines).toContain("latest policy snapshot: missing (current-run-derived read-only view)");
     expect(lines).toContain(
       "self-hosting shadow (read-only): blocked, runner disabled, checks pass 1, warn 1, block 1"
+    );
+    expect(lines).toContain(
+      "outcome readiness (read-only): ready, autonomous loop disabled, checks pass 2, warn 1, block 0"
     );
     expect(lines).toContain(
       "optional pack provenance: caveman configured (sane-caveman; derived from caveman)"

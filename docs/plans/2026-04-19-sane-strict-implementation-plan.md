@@ -360,40 +360,29 @@ Not allowed yet:
 - wire daily prompting through a command ritual
 - claim autonomous end-to-end execution before verification/state foundations are ready
 
-## B8. Later End-To-End Outcome Runner
+## B8. Outcome Readiness And Conflict Detection
 
 Goal:
-- support a later idea-to-done flow that can keep going until the requested result is reached
+- support idea-to-done continuation by exposing whether the current local handoff and policy state is ready for long-running outcome work
 
 Rules:
 - plain-language first
 - may ask only targeted questions when needed
 - may do research, planning, implementation, verification, and review in one long run
 - should persist toward the requested outcome instead of stopping at partial progress unless blocked
-- optional shortcut command/entrypoint may exist later, but must remain secondary to plain-language invocation
+- any shortcut command/entrypoint must remain secondary to plain-language invocation
 
-Prerequisites:
-- `B7` adaptive policy stable enough
-- compaction/handoff state proven
-- initial verification/eval harness in place, then broadened before any runner ships
-- bounded self-repair and issue-relay policy in place
-
-Current allowed work:
-- preflight fixtures and docs that prove the policy shape for long-running outcome work
-- test-only no-runner surface guardrails across core operations and TUI commands / aliases
-- guardrails that keep the runner future-only until the runtime, verification, compaction, and stop-condition boundaries are explicit
-- read-only inspection of readiness signals
+Shipped scope:
+- `show_outcome_readiness` / `sane outcome-readiness` read local `.sane` handoff state and B8 policy preflight status
+- Inspect renders outcome readiness next to self-hosting shadow state
+- readiness is read-only and keeps the autonomous loop disabled
+- warning-only conflict detection covers invalid Codex config, disabled hooks, unmanaged plugins/MCPs, managed MCP drift, explicit core model/reasoning drift, explicit statusline drift, and native Codex memories enabled
 
 Not allowed yet:
-- user-facing runner command
+- user-facing autonomous runner command
 - command ritual for daily prompting
 - autonomous mutation loop
-- presenting B8 as shipped product behavior
-
-Later phase follow-on:
-- broaden the detect-and-warn conflict checker for pre-existing user setup that could interfere with Sane-managed behavior
-- current conflict warnings cover invalid Codex config, disabled `features.codex_hooks`, unmanaged `mcp_servers.*`, and enabled `plugins.*`; later work should extend to config drift and related Codex-adjacent setup before making assumptions about a clean environment
-- treat this as detect-and-warn first, not auto-fix
+- presenting readiness as completed autonomous outcome execution
 
 ## Current Known Repo Mismatch
 

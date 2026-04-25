@@ -9,6 +9,7 @@ export type BackendCommandId =
   | "show_config"
   | "show_codex_config"
   | "show_runtime_summary"
+  | "show_outcome_readiness"
   | "reset_telemetry_data"
   | "preview_policy"
   | "backup_codex_config"
@@ -233,6 +234,29 @@ export const COMMAND_METADATA_REGISTRY = {
         "Visibility only for managed surfaces. No runtime orchestration runs.",
         "This reads current-run, summary, brief, and local runtime history counts.",
         "Use it when you want a compact view of what Sane has recorded locally."
+      ],
+      confirmation: null,
+      successNoticeTitle: null,
+      repoMutation: false,
+      filesTouched: [
+        ".sane/state/current-run.json",
+        ".sane/state/summary.json",
+        ".sane/BRIEF.md",
+        ".sane/state/events.jsonl",
+        ".sane/state/decisions.jsonl",
+        ".sane/state/artifacts.jsonl"
+      ]
+    },
+    show_outcome_readiness: {
+      id: "show_outcome_readiness",
+      kind: "backend",
+      backendKind: OperationKind.ShowOutcomeReadiness,
+      help: [
+        "Show whether the current Sane handoff state can support a long-running outcome flow.",
+        "",
+        "This is read-only readiness for Codex-native work.",
+        "It checks local handoff layers, unresolved blockers, verification posture, latest policy preview state, and the B8 policy preflight suite.",
+        "It does not start an autonomous loop or turn Sane into the normal prompting interface."
       ],
       confirmation: null,
       successNoticeTitle: null,
@@ -922,6 +946,7 @@ export const COMMAND_METADATA_REGISTRY = {
     { commandId: "preview_integrations_profile", section: "inspect", order: 6, label: "Preview optional recommended Codex tools" },
     { commandId: "preview_statusline_profile", section: "inspect", order: 7, label: "Preview optional native Codex statusline settings" },
     { commandId: "preview_policy", section: "inspect", order: 8, label: "Explain Sane's routing policy" },
+    { commandId: "show_outcome_readiness", section: "inspect", order: 9, label: "Show outcome readiness" },
     { commandId: "install_runtime", section: "repair", order: 1, label: "Repair Sane's local project files" },
     { commandId: "backup_codex_config", section: "repair", order: 2, label: "Back up your Codex settings" },
     { commandId: "restore_codex_config", section: "repair", order: 3, label: "Restore your last Codex backup" },
