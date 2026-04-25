@@ -48,6 +48,7 @@ import { showStatus } from "@sane/control-plane";
 import { previewPolicy, previewPolicyForCurrentRun } from "@sane/control-plane/policy-preview.js";
 import {
   inspectEditablePreferencesConfig,
+  inspectPreferencesFamilySnapshot,
   resetTelemetryData,
   showConfig
 } from "@sane/control-plane/preferences.js";
@@ -114,6 +115,7 @@ export interface TuiShell {
 export interface ShellStatusSnapshot {
   statusBundle: ReturnType<typeof inspectStatusBundle>;
   codexProfiles: ReturnType<typeof inspectCodexProfileFamilySnapshot>;
+  preferences: ReturnType<typeof inspectPreferencesFamilySnapshot>;
 }
 
 export function createTuiShell(
@@ -490,7 +492,8 @@ export function executeUiCommand(
 function buildStatusSnapshot(paths: ProjectPaths, codexPaths: CodexPaths): ShellStatusSnapshot {
   return {
     statusBundle: inspectStatusBundle(paths, codexPaths),
-    codexProfiles: inspectCodexProfileFamilySnapshot(codexPaths)
+    codexProfiles: inspectCodexProfileFamilySnapshot(codexPaths),
+    preferences: inspectPreferencesFamilySnapshot(paths, codexPaths)
   };
 }
 

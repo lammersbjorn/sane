@@ -123,6 +123,26 @@ describe("preferences screen model", () => {
     expect(screen.opencodeAudit.status).toBe("missing");
   });
 
+  it("can build from a preloaded preferences family snapshot", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const snapshot = preferencesControlPlane.inspectPreferencesFamilySnapshot(paths, codexPaths);
+    const preferencesFamilySpy = vi.spyOn(
+      preferencesControlPlane,
+      "inspectPreferencesFamilySnapshot"
+    );
+    preferencesFamilySpy.mockClear();
+
+    const screen = loadPreferencesScreen(paths, codexPaths, undefined, snapshot);
+
+    expect(preferencesFamilySpy).not.toHaveBeenCalled();
+    expect(screen.source).toBe(snapshot.preferences.source);
+    expect(screen.telemetry).toBe(snapshot.preferences.telemetry);
+    expect(screen.enabledPacks).toEqual(snapshot.preferences.enabledPacks);
+  });
+
   it("surfaces model availability and routing capability details", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
