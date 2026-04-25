@@ -138,6 +138,7 @@ Implemented:
 - native Windows no longer keeps unsupported hooks in onboarding attention items or `export all` touched-file lists once the supported install bundle is satisfied; onboarding now points users at WSL without treating hooks as a blocking bundle requirement
 - cross-platform path/install hardening now covers project root discovery, home/Codex/OpenCode path derivation, whitespace-only env fallbacks, native Windows hook exclusion, and preloaded Windows status inference through targeted platform/control-plane tests
 - preferences now have a typed family snapshot so show-config, preferences screen, and editable/default config helpers stop rebuilding the same saved-config/env/routing state separately
+- preferences/show-config now surface detected Codex model availability, plan hints, reasoning-effort support, and selected routing-capability lines from that same family snapshot, so routing defaults are explainable instead of just final values
 - TUI Inspect now shows read-only policy-preview snapshot visibility derived from the latest current run instead of command-only access
 - Inspect overview presentation now lives in a shared control-plane presenter, with drift/provenance formatting pulled out of the TUI screen layer
 - TUI now requires confirmation for risky apply/restore/uninstall actions

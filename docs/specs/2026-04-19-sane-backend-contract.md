@@ -85,6 +85,7 @@ These are the backend actions the TUI is allowed to call in the current phase.
 - `show_config`
   - read config from `.sane/config.local.toml`
   - display current routing defaults
+  - when Codex context is available, also display detected model availability, plan hint, supported reasoning efforts, and the capability line that explains each selected routing default
 
 - `show_codex_config`
   - read `~/.codex/config.toml` if present

@@ -105,6 +105,7 @@ Purpose:
 Content:
 
 - model roles
+- detected model availability and capability constraints behind the selected routing defaults
 - built-in packs
 - privacy / telemetry
 - optional provider profiles
