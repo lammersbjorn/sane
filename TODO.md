@@ -163,7 +163,7 @@ Implemented:
 - TS TUI narrow fallback now switches the footer to abbreviated status labels when needed, keeping small terminals from splitting the statusline across multiple rows
 - TS TUI narrow header now switches to compact section/mode/status chrome, leaving more room for the focused action/detail panes on small terminals
 - TypeScript TUI now also owns pure input/key handling plus internal non-interactive CLI parsing/execution for backend verbs, direct `settings` / `inspect` / `repair` section shortcuts, and `hook session-start`, and the public shipped entrypoint is now TypeScript-owned
-- TS runtime resolution now works for internal text and live terminal preview paths via workspace package `exports`, self-package app imports, terminal-loop wiring, and `tsx`; the remaining blockers are real terminal parity plus a deliberate packaged public entrypoint
+- TS runtime resolution now works for text preview, live terminal preview, and built public entry paths via workspace package `exports`, self-package app imports, terminal-loop wiring, `tsx` source preview, and the bundled `dist/bin/sane.cjs` path
 - internal TS preview launch is now unified through one smart `tsx` entrypoint that chooses live terminal on TTY launch commands and falls back to text for non-TTY or backend command flows
 - `@sane/sane-tui` now also exposes a local `sane` bin shim that routes through the smart preview entrypoint; in this workspace the internal root launcher uses `node apps/sane-tui/bin/sane.mjs` directly while the package `bin` metadata stays ready for later packaged cutover work
 - `@sane/sane-tui` now also has an internal bundled build lane via `tsup`, emitting `dist/bin/sane.cjs` that can run `inspect` and backend verbs without `tsx` at runtime

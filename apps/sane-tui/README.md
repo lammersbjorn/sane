@@ -12,9 +12,9 @@ Current role:
 - exposes internal smart/text/live preview paths through `tsx`
 - exposes an internal bundled build lane that emits `dist/bin/sane.cjs` without needing `tsx` at runtime
 - owns render-ready dashboard / overlay / app view models
-- owns internal text-frame rendering scaffolding for the future TS terminal driver
+- owns internal text-frame rendering for the TS terminal driver
 - owns internal text-driver glue that wires discovery, shell, input, and text rendering together
-- owns terminal-key decoding for the future real TS key loop
+- owns terminal-key decoding for the TS key loop
 - owns terminal-driver glue that maps raw terminal input into the TS runtime
 - now owns the shipped public terminal UI path through the built root `pnpm start` flow
 
