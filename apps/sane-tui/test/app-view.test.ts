@@ -378,6 +378,9 @@ describe("app view", () => {
     expect(view.selectedHelpLines.join("\n")).toContain(
       "Runtime handoff visibility is read-only and current-run-derived."
     );
+    expect(view.selectedHelpLines.join("\n")).toContain(
+      "runtime handoff layers: current-run missing, summary missing, brief missing"
+    );
     expect(view.selectedHelpLines.join("\n")).toContain("current-run:");
     expect(view.selectedHelpLines.join("\n")).toContain("summary:");
     expect(view.selectedHelpLines.join("\n")).toContain("brief:");

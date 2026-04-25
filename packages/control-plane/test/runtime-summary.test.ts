@@ -48,6 +48,9 @@ describe("showRuntimeSummary", () => {
     const result = showRuntimeSummary(paths);
 
     expect(result.summary).toBe(`runtime-summary: no local handoff state at ${paths.runtimeRoot}`);
+    expect(result.details).toContain(
+      "runtime handoff layers: current-run missing, summary missing, brief missing"
+    );
     expect(result.details).toContain(`current-run: missing at ${paths.currentRunPath}`);
     expect(result.details).toContain(`summary: missing at ${paths.summaryPath}`);
     expect(result.details).toContain(`brief: missing at ${paths.briefPath}`);
@@ -76,6 +79,9 @@ describe("showRuntimeSummary", () => {
     const result = showRuntimeSummary(paths);
 
     expect(result.summary).toBe(`runtime-summary: local handoff state at ${paths.runtimeRoot}`);
+    expect(result.details).toContain(
+      "runtime handoff layers: current-run present, summary present, brief present"
+    );
     expect(result.details).toContain(`current-run: present at ${paths.currentRunPath}`);
     expect(result.details).toContain(`summary: present at ${paths.summaryPath}`);
     expect(result.details).toContain(`brief: present at ${paths.briefPath}`);
@@ -316,6 +322,9 @@ describe("showRuntimeSummary", () => {
     });
 
     const result = showRuntimeSummary(paths);
+    expect(result.details).toContain(
+      "runtime handoff layers: current-run present, summary invalid, brief present"
+    );
     expect(result.details).toContain(`summary: invalid at ${paths.summaryPath}`);
     expect(result.details).toContain(`current-run: present at ${paths.currentRunPath}`);
   });

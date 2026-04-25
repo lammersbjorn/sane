@@ -282,6 +282,7 @@ function buildRuntimeSummary(
   const summaryStatus = inventoryStatusFromRuntimeLayer(runtimeState.layerStatus.summary);
   const briefStatus = inventoryStatusFromRuntimeLayer(runtimeState.layerStatus.brief);
   const details = [
+    `runtime handoff layers: current-run ${runtimeLayerLabelFromInventory(currentRunStatus)}, summary ${runtimeLayerLabelFromInventory(summaryStatus)}, brief ${runtimeLayerLabelFromInventory(briefStatus)}`,
     `current-run: ${runtimeLayerLabelFromInventory(currentRunStatus)} at ${paths.currentRunPath}`,
     `summary: ${runtimeLayerLabelFromInventory(summaryStatus)} at ${paths.summaryPath}`,
     `brief: ${runtimeLayerLabelFromInventory(briefStatus)} at ${paths.briefPath}`,
