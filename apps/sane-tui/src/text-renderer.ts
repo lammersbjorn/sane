@@ -26,7 +26,7 @@ function renderBaseLayout(
   width: number,
   viewport: TextViewport
 ): string[] {
-  const header = renderHeader(view, width, isCompactViewport(viewport.height));
+  const header = renderHeader(view, width, isCompactViewport(width, viewport.height));
   const footer = wrapLines(footerLine(view, width), width);
   const availableBodyHeight = bodyHeightForViewport(viewport.height, header.length, footer.length);
 
@@ -54,7 +54,7 @@ function renderOverlayLayout(
   width: number,
   viewport: TextViewport
 ): string[] {
-  const header = renderHeader(view, width, isCompactViewport(viewport.height));
+  const header = renderHeader(view, width, isCompactViewport(width, viewport.height));
   const footer = wrapLines(footerLine(view, width), width);
   const modalWidth = Math.max(52, Math.min(width, width - 6));
   const overlay = view.overlay;
@@ -101,7 +101,7 @@ function renderHeader(view: SaneTuiAppView, width: number, compact = false): str
     return [
       ...wrapLines(`${view.title} | ${view.subtitle}`, width),
       ...wrapLines(`Section: ${view.tabs.selected} | Mode: ${view.mode.label}`, width),
-      ...wrapLines(statusline(view), width)
+      ...wrapLines(statusline(view, width), width)
     ];
   }
 
@@ -113,7 +113,7 @@ function renderHeader(view: SaneTuiAppView, width: number, compact = false): str
     ),
     ...wrapLines(`Section: ${view.tabs.selected}`, width),
     ...wrapLines(`Sections: ${formatTabs(view)}`, width),
-    ...wrapLines(statusline(view), width),
+    ...wrapLines(statusline(view, width), width),
     ...wrapLines(`Mode: ${view.mode.label} | ${view.mode.hint}`, width)
   ];
 }
@@ -289,8 +289,21 @@ function footerLine(view: SaneTuiAppView, width: number): string {
     return full;
   }
 
-  const compact = `mode ${view.mode.label.toLowerCase()} | rt ${view.footer.status.runtime} cx ${view.footer.status.codex} sk ${view.footer.status.user} hk ${view.footer.status.hooks} dr ${compactDrift(view)}`;
+  const compact = `mode ${view.mode.label.toLowerCase()} | rt ${compactFooterStatus(view.footer.status.runtime)} cx ${compactFooterStatus(view.footer.status.codex)} sk ${compactFooterStatus(view.footer.status.user)} hk ${compactFooterStatus(view.footer.status.hooks)} dr ${compactDrift(view)}`;
   return compact.length <= width ? compact : compact.replace("mode ", "");
+}
+
+function compactFooterStatus(status: string): string {
+  switch (status) {
+    case "installed":
+      return "ok";
+    case "missing":
+      return "miss";
+    case "invalid":
+      return "bad";
+    default:
+      return status;
+  }
 }
 
 function compactDrift(view: SaneTuiAppView): string {
@@ -332,12 +345,18 @@ function windowLinesAroundSelection(
   return visible;
 }
 
-function statusline(view: SaneTuiAppView): string {
+function statusline(view: SaneTuiAppView, width: number): string {
   const ids = ["runtime", "codex-config", "user-skills", "hooks", "drift"];
-  return view.chips
+  const full = view.chips
     .filter((chip) => ids.includes(chip.id))
     .map(formatStatusChip)
     .join("  ");
+  return full.length <= width ? full : compactStatusline(view, width);
+}
+
+function compactStatusline(view: SaneTuiAppView, width: number): string {
+  const compact = `rt ${view.footer.status.runtime}  cx ${view.footer.status.codex}  sk ${view.footer.status.user}  hk ${view.footer.status.hooks}  dr ${compactDrift(view)}`;
+  return compact.length <= width ? compact : compact.replace(/\s{2,}/g, " ");
 }
 
 function formatStatusChip(chip: SaneTuiAppView["chips"][number]): string {
@@ -592,8 +611,8 @@ function availableOverlayBodyLines(
   return Math.max(8, height - headerLines - footerLines - 8);
 }
 
-function isCompactViewport(height: number | undefined): boolean {
-  return Boolean(height && height <= 18);
+function isCompactViewport(width: number, height: number | undefined): boolean {
+  return width < 72 || Boolean(height && height <= 18);
 }
 
 function padRight(text: string, width: number): string {

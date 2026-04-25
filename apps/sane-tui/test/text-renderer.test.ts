@@ -89,6 +89,21 @@ describe("text renderer", () => {
     expect(footerLines[0]).toContain("dr");
   });
 
+  it("uses compact header chrome on narrow terminals", () => {
+    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
+
+    const output = renderTextAppView(loadAppView(shell), {
+      width: 56,
+      height: 20
+    });
+
+    expect(output).toContain("Section: get_started | Mode: Browse");
+    expect(output).toContain("rt missing");
+    expect(output).toContain("mode browse | rt miss cx miss sk miss hk miss dr 1");
+    expect(output).not.toContain("Project ");
+    expect(output).not.toContain("Sections: [Start here]");
+  });
+
   it("renders overlay state when present", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()), "settings");
     shell.notice = {
@@ -129,7 +144,7 @@ describe("text renderer", () => {
       height: 24
     });
 
-    expect(output).toContain("Selected: Apply Cloudflare Codex");
+    expect(output).toContain("Selected step: Apply Cloudflare Codex");
     expect(output).toContain("...");
   });
 
