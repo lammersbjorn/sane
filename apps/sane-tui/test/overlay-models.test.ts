@@ -92,6 +92,7 @@ describe("overlay models", () => {
       throw new Error("expected privacy overlay");
     }
     expect(overlay.detailsLines.some((line: string) => line.includes("consent: local-only"))).toBe(true);
+    expect(overlay.detailsLines).toContain("policy: local-only keeps summary/events local and removes upload queue");
     expect(overlay.detailsLines.some((line: string) => line.includes("summary path:"))).toBe(true);
     expect(overlay.detailsLines.some((line: string) => line.includes("events path:"))).toBe(true);
   });

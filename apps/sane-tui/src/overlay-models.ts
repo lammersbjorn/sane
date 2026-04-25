@@ -153,6 +153,7 @@ function privacyLines(shell: TuiShell): string[] {
 
   return [
     `consent: ${transparency.consent}`,
+    `policy: ${privacyConsentPolicy(transparency.consent)}`,
     `dir: ${transparency.dir}`,
     `summary.json: ${transparency.telemetry.summaryPresent ? "present" : "missing"}`,
     `events.jsonl: ${transparency.telemetry.eventsPresent ? "present" : "missing"}`,
@@ -164,6 +165,17 @@ function privacyLines(shell: TuiShell): string[] {
     `events path: ${transparency.eventsPath}`,
     `queue path: ${transparency.queuePath}`
   ];
+}
+
+function privacyConsentPolicy(consent: PrivacyEditorState["config"]["privacy"]["telemetry"]): string {
+  switch (consent) {
+    case "off":
+      return "off removes optional telemetry files";
+    case "local-only":
+      return "local-only keeps summary/events local and removes upload queue";
+    case "product-improvement":
+      return "product-improvement keeps local files and prepares an upload queue";
+  }
 }
 
 function packLines(editor: PackEditorState): string[] {
