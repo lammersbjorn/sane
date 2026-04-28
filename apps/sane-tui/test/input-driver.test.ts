@@ -28,13 +28,13 @@ describe("input driver", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
 
     handleTuiInput(shell, "right");
-    expect(shell.activeSectionId).toBe("preferences");
+    expect(shell.activeSectionId).toBe("settings");
 
     handleTuiInput(shell, "down");
     expect(currentAction(shell).id).toBe("open_pack_editor");
 
     handleTuiInput(shell, "left");
-    expect(shell.activeSectionId).toBe("get_started");
+    expect(shell.activeSectionId).toBe("home");
     expect(currentAction(shell).id).toBe("install_runtime");
   });
 
@@ -42,10 +42,10 @@ describe("input driver", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
 
     handleTuiInput(shell, "tab");
-    expect(shell.activeSectionId).toBe("preferences");
+    expect(shell.activeSectionId).toBe("settings");
 
     handleTuiInput(shell, "backtab");
-    expect(shell.activeSectionId).toBe("get_started");
+    expect(shell.activeSectionId).toBe("home");
   });
 
   it("routes risky actions through confirmation keys", () => {
@@ -117,7 +117,7 @@ describe("input driver", () => {
     selectSection(shell, "repair");
     expect(loadAppView(shell).sectionOverviewLines.join("\n")).toContain("local telemetry data: present");
 
-    selectSection(shell, "preferences");
+    selectSection(shell, "settings");
     handleTuiInput(shell, "escape");
     handleTuiInput(shell, "down");
     handleTuiInput(shell, "down");

@@ -1,7 +1,6 @@
 import type {
-  InstallActionStatus,
-  InstallActionStatusId,
-  InstallActionStatusMap
+  InstallActionStatus as AddToCodexActionStatus,
+  InstallActionStatusMap as AddToCodexActionStatusMap
 } from "@sane/control-plane/install-status.js";
 import type {
   RepairActionStatus,
@@ -11,10 +10,10 @@ import type {
 
 import type { SectionActionMetadata } from "@sane/sane-tui/command-registry.js";
 
-export interface InstallActionRow {
-  id: InstallActionStatusId;
+export interface AddToCodexActionRow {
+  id: SectionActionMetadata["id"];
   title: string;
-  status: InstallActionStatus;
+  status: AddToCodexActionStatus;
   repoMutation: boolean;
   includes?: string[];
 }
@@ -26,14 +25,16 @@ export interface RepairActionRow {
   confirmation: string | null;
 }
 
-export function buildInstallActionRows(
+export function buildAddToCodexActionRows(
   actions: SectionActionMetadata[],
-  actionStatus: InstallActionStatusMap
-): InstallActionRow[] {
+  actionStatus: AddToCodexActionStatusMap
+): AddToCodexActionRow[] {
   return actions.map((action) => ({
-    id: action.id as InstallActionStatusId,
+    id: action.id,
     title: action.label,
-    status: actionStatus[action.id as InstallActionStatusId],
+    status: action.id in actionStatus
+      ? actionStatus[action.id as keyof AddToCodexActionStatusMap]
+      : { kind: "missing", label: "not tracked by Codex install audit" },
     repoMutation: action.repoMutation,
     includes: action.includes
   }));

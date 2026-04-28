@@ -11,7 +11,7 @@ import * as inventory from "@sane/control-plane/inventory.js";
 import { exportAll } from "@sane/control-plane";
 import { installRuntime } from "@sane/control-plane";
 import { saveConfig } from "@sane/control-plane/preferences.js";
-import { loadGetStartedScreen, loadGetStartedScreenFromStatusBundle } from "@sane/sane-tui/get-started-screen.js";
+import { loadHomeScreen, loadHomeScreenFromStatusBundle } from "@sane/sane-tui/home-screen.js";
 
 const tempDirs: string[] = [];
 
@@ -34,11 +34,11 @@ describe("get started screen model", () => {
     const paths = createProjectPaths(projectRoot);
     const codexPaths = createCodexPaths(homeDir);
 
-    const screen = loadGetStartedScreen(paths, codexPaths);
+    const screen = loadHomeScreen(paths, codexPaths);
 
-    expect(screen.summary).toBe("Get Started");
+    expect(screen.summary).toBe("Home");
     expect(screen.recommendedActionId).toBe("install_runtime");
-    expect(screen.recommendedNextStep).toBe("Create Sane's local project files first.");
+    expect(screen.recommendedNextStep).toBe("Set up Sane's local files first.");
     expect(screen.codexProfileAudit.status).toBe("missing");
     expect(screen.codexProfileApply.status).toBe("ready");
     expect(screen.statusLine).toBe(
@@ -54,7 +54,7 @@ describe("get started screen model", () => {
     ]);
     expect(screen.steps.map((step) => step.id)).toEqual([
       "install_runtime",
-      "show_codex_config",
+      "open_config_editor",
       "preview_codex_profile",
       "backup_codex_config",
       "apply_codex_profile",
@@ -63,6 +63,9 @@ describe("get started screen model", () => {
     expect(screen.steps[0]?.filesTouched).toEqual([".sane/"]);
     expect(screen.steps[5]?.filesTouched).toEqual([
       "~/.agents/skills/sane-router",
+      "~/.agents/skills/sane-bootstrap-research",
+      "~/.agents/skills/sane-agent-lanes",
+      "~/.agents/skills/sane-outcome-continuation",
       "~/.agents/skills/continue",
       "~/.codex/AGENTS.md",
       "~/.codex/hooks.json",
@@ -86,11 +89,11 @@ describe("get started screen model", () => {
 
     installRuntime(paths, codexPaths);
 
-    const screen = loadGetStartedScreen(paths, codexPaths);
+    const screen = loadHomeScreen(paths, codexPaths);
 
-    expect(screen.recommendedActionId).toBe("show_codex_config");
+    expect(screen.recommendedActionId).toBe("preview_codex_profile");
     expect(screen.recommendedNextStep).toBe(
-      "Inspect Codex config, then preview the core Codex profile."
+      "Review the Codex changes before applying them."
     );
     expect(screen.codexProfilePreview.summary).toBe("codex-profile preview: 3 recommended change(s)");
   });
@@ -106,12 +109,10 @@ describe("get started screen model", () => {
     saveConfig(paths, config);
     applyCodexProfile(paths, codexPaths);
 
-    const screen = loadGetStartedScreen(paths, codexPaths);
+    const screen = loadHomeScreen(paths, codexPaths);
 
     expect(screen.recommendedActionId).toBe("export_all");
-    expect(screen.recommendedNextStep).toBe(
-      "Install Sane into Codex so Codex can use Sane's guidance."
-    );
+    expect(screen.recommendedNextStep).toBe("Add or refresh Sane in Codex.");
     expect(screen.codexProfileApply.status).toBe("already_satisfied");
   });
 
@@ -127,12 +128,10 @@ describe("get started screen model", () => {
     applyCodexProfile(paths, codexPaths);
     exportAll(paths, codexPaths);
 
-    const screen = loadGetStartedScreen(paths, codexPaths);
+    const screen = loadHomeScreen(paths, codexPaths);
 
     expect(screen.recommendedActionId).toBe(null);
-    expect(screen.recommendedNextStep).toBe(
-      "Review configure or inspect sections and change only what you actually want."
-    );
+    expect(screen.recommendedNextStep).toBe("Setup is complete. Choose a tune-up action or open Status.");
   });
 
   it("builds from a preloaded status bundle when requested", () => {
@@ -142,7 +141,7 @@ describe("get started screen model", () => {
     const codexPaths = createCodexPaths(homeDir);
     const bundle = inventory.inspectStatusBundle(paths, codexPaths);
     const fromBundleSpy = vi.spyOn(inventory, "inspectOnboardingSnapshotFromStatusBundle");
-    const screen = loadGetStartedScreenFromStatusBundle(paths, codexPaths, bundle);
+    const screen = loadHomeScreenFromStatusBundle(paths, codexPaths, bundle);
 
     expect(fromBundleSpy).toHaveBeenCalledTimes(1);
     expect(fromBundleSpy).toHaveBeenCalledWith(paths, bundle);
@@ -160,13 +159,16 @@ describe("get started screen model", () => {
     exportAll(paths, codexPaths, "windows");
 
     const bundle = inventory.inspectStatusBundle(paths, codexPaths, "windows");
-    const screen = loadGetStartedScreenFromStatusBundle(paths, codexPaths, bundle);
+    const screen = loadHomeScreenFromStatusBundle(paths, codexPaths, bundle, undefined, "windows");
 
     expect(screen.recommendedActionId).toBeNull();
     expect(screen.attentionItems).not.toContain("hooks: invalid");
     expect(screen.statusLine).toContain("hooks unsupported (use WSL)");
     expect(screen.steps[5]?.filesTouched).toEqual([
       "~/.agents/skills/sane-router",
+      "~/.agents/skills/sane-bootstrap-research",
+      "~/.agents/skills/sane-agent-lanes",
+      "~/.agents/skills/sane-outcome-continuation",
       "~/.agents/skills/continue",
       "~/.codex/AGENTS.md",
       "~/.codex/agents/"

@@ -5,7 +5,7 @@ This package is the TypeScript-side TUI app model for `Sane`.
 Current role:
 
 - owns TUI-facing section/action metadata
-- owns screen loaders for `Get Started`, `Preferences`, `Install`, `Inspect`, and `Repair`
+- owns screen loaders for `Home`, `Settings`, `Add to Codex`, `Status`, `Repair`, and `Uninstall`
 - owns shell state for section selection, confirmations, notices, and editor flows
 - owns pure input/key handling on top of the shell state machine
 - owns internal non-interactive TS CLI parsing/execution for backend verbs, section shortcuts, and hook output
@@ -17,6 +17,13 @@ Current role:
 - owns terminal-key decoding for the TS key loop
 - owns terminal-driver glue that maps raw terminal input into the TS runtime
 - now owns the shipped public terminal UI path through the built root `pnpm start` flow
+
+Public API barrel:
+
+- package barrel is `@sane/sane-tui/index.js` (`src/index.ts`)
+- barrel exports are intentionally explicit and review-gated
+- for stable imports, prefer the barrel; subpath exports are explicit compatibility entries, not a wildcard API
+- internal-only modules are not in the barrel even when a compatibility subpath exists (for example `cli`, `input-driver`, `ink-terminal`, `section-action-rows`, `shell-layer`)
 
 Important files:
 
@@ -42,12 +49,14 @@ Important files:
   - internal text-frame renderer for the TS app view
 - `src/text-driver.ts`
   - internal runtime glue for discovery + shell + input driver + text rendering
+- `src/ink-terminal.ts`
+  - Ink live terminal renderer for the interactive TTY path
 - `src/terminal-keys.ts`
   - terminal escape-sequence decoding into TS TUI input keys
 - `src/terminal-driver.ts`
   - raw terminal input -> TS runtime step glue
 - `src/terminal-loop.ts`
-  - internal live terminal loop for alt-screen preview over the TS runtime
+  - legacy text-loop test harness kept for deterministic terminal input coverage
 
 Boundary rules:
 
@@ -59,7 +68,7 @@ Boundary rules:
 
 Current package story:
 
-- public repo entrypoint now goes through the built root `pnpm start` / `pnpm run start:settings` scripts
+- public repo entrypoint now goes through the built root `pnpm start` / `pnpm run start:settings` / `pnpm run start:status` scripts
 - internal source preview path is `apps/sane-tui/bin/sane.mjs`, which shells through `tsx`
 - internal built preview path is `apps/sane-tui/dist/bin/sane.cjs`, emitted by `pnpm --filter @sane/sane-tui run build`
 - generated distribution metadata now lives in `apps/sane-tui/dist/package.json`, which points the package CLI at the built output
@@ -67,15 +76,20 @@ Current package story:
 Verification:
 
 ```bash
+node apps/sane-tui/bin/sane.mjs install
 node apps/sane-tui/bin/sane.mjs settings
-node apps/sane-tui/bin/sane.mjs inspect
+node apps/sane-tui/bin/sane.mjs status
 node apps/sane-tui/bin/sane.mjs repair
+node apps/sane-tui/bin/sane.mjs uninstall
+node apps/sane-tui/bin/sane.mjs install-runtime # advanced non-interactive runtime install
 pnpm --filter @sane/sane-tui run preview settings
-pnpm --filter @sane/sane-tui run preview inspect
+pnpm --filter @sane/sane-tui run preview status
 pnpm --filter @sane/sane-tui run preview:terminal settings
 pnpm --filter @sane/sane-tui run preview:text settings
 pnpm --filter @sane/sane-tui run build
-node apps/sane-tui/dist/bin/sane.cjs inspect
+node apps/sane-tui/dist/bin/sane.cjs status
 pnpm --filter @sane/sane-tui test
 pnpm --filter @sane/sane-tui typecheck
 ```
+
+Compatibility note: `inspect` remains a script/backcompat alias for the `Status` tab, but docs and user-facing copy should prefer `status`.

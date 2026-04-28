@@ -11,32 +11,31 @@ import {
   exportRepoSkills,
   exportUserSkills
 } from "@sane/control-plane/codex-native.js";
+import { exportPlugin } from "@sane/control-plane/codex-plugin.js";
 import {
   exportCustomAgents,
   exportHooks
 } from "@sane/control-plane/hooks-custom-agents.js";
 import { executeOperation } from "@sane/control-plane/history.js";
 import {
-  type InstallActionStatus,
+  type InstallActionStatus as AddToCodexActionStatus,
   inspectInstallStatusFromStatusBundle,
   inspectInstallStatus,
-  type InstallActionStatusId,
   inferHostPlatformFromStatusBundle
 } from "@sane/control-plane/install-status.js";
 import { inspectStatusBundle } from "@sane/control-plane/inventory.js";
-import { exportOpencodeAgents } from "@sane/control-plane/opencode-native.js";
 import { listSectionActions } from "@sane/sane-tui/command-registry.js";
-import { buildInstallActionRows } from "@sane/sane-tui/section-action-rows.js";
+import { buildAddToCodexActionRows } from "@sane/sane-tui/section-action-rows.js";
 
-export interface InstallScreenModel {
-  summary: "Install";
+export interface AddToCodexScreenModel {
+  summary: "Add to Codex";
   inventory: ReturnType<typeof inspectInstallStatus>["inventory"];
   bundleStatus: ReturnType<typeof inspectInstallStatus>["bundleStatus"];
   missingTargets: string[];
   integrationsStatus: ReturnType<typeof inspectInstallStatus>["integrationsStatus"];
   integrationsRecommendedChangeCount: ReturnType<typeof inspectInstallStatus>["integrationsRecommendedChangeCount"];
   recommendedActionId: ReturnType<typeof inspectInstallStatus>["recommendedActionId"];
-  actions: InstallAction[];
+  actions: AddToCodexAction[];
   handlers: {
     installUserSkills: () => ReturnType<typeof exportUserSkills>;
     installRepoSkills: () => ReturnType<typeof exportRepoSkills>;
@@ -45,27 +44,27 @@ export interface InstallScreenModel {
     applyIntegrationsProfile: () => ReturnType<typeof applyIntegrationsProfile>;
     installHooks: () => ReturnType<typeof exportHooks>;
     installCustomAgents: () => ReturnType<typeof exportCustomAgents>;
-    installOpencodeAgents: () => ReturnType<typeof exportOpencodeAgents>;
+    installPlugin: () => ReturnType<typeof exportPlugin>;
     installAll: () => ReturnType<typeof exportAll>;
   };
 }
 
-export interface InstallAction {
-  id: InstallActionStatusId;
+export interface AddToCodexAction {
+  id: ReturnType<typeof listSectionActions>[number]["id"];
   title: string;
-  status: InstallActionStatus;
+  status: AddToCodexActionStatus;
   repoMutation: boolean;
   includes?: string[];
 }
 
 type CodexProfileFamilySnapshot = ReturnType<typeof inspectCodexProfileFamilySnapshot>;
 
-export function loadInstallScreen(
+export function loadAddToCodexScreen(
   paths: ProjectPaths,
   codexPaths: CodexPaths,
   hostPlatform: HostPlatform = detectPlatform()
-): InstallScreenModel {
-  return loadInstallScreenFromStatusBundle(
+): AddToCodexScreenModel {
+  return loadAddToCodexScreenFromStatusBundle(
     paths,
     codexPaths,
     inspectStatusBundle(paths, codexPaths, hostPlatform),
@@ -73,23 +72,23 @@ export function loadInstallScreen(
   );
 }
 
-export function loadInstallScreenFromStatusBundle(
+export function loadAddToCodexScreenFromStatusBundle(
   paths: ProjectPaths,
   codexPaths: CodexPaths,
   statusBundle: ReturnType<typeof inspectStatusBundle>,
   profiles: CodexProfileFamilySnapshot = inspectCodexProfileFamilySnapshot(codexPaths)
-): InstallScreenModel {
+): AddToCodexScreenModel {
   const hostPlatform = inferHostPlatformFromStatusBundle(statusBundle);
   const status = inspectInstallStatusFromStatusBundle(paths, codexPaths, statusBundle, hostPlatform, profiles);
   const inventory = status.inventory;
-  const actions = buildInstallActionRows(listSectionActions("install", hostPlatform), status.actionStatus).map((action) =>
+  const actions = buildAddToCodexActionRows(listSectionActions("add_to_codex", hostPlatform), status.actionStatus).map((action) =>
     action.id === "export_all"
       ? { ...action, includes: exportAllIncludes(inventory) }
       : action
   );
 
   return {
-    summary: "Install",
+    summary: "Add to Codex",
     inventory,
     bundleStatus: status.bundleStatus,
     missingTargets: status.missingTargets,
@@ -103,9 +102,9 @@ export function loadInstallScreenFromStatusBundle(
       installRepoAgents: () => executeOperation(paths, () => exportRepoAgents(paths, codexPaths)),
       installGlobalAgents: () => executeOperation(paths, () => exportGlobalAgents(paths, codexPaths)),
       applyIntegrationsProfile: () => executeOperation(paths, () => applyIntegrationsProfile(paths, codexPaths)),
-      installHooks: () => executeOperation(paths, () => exportHooks(codexPaths)),
+      installHooks: () => executeOperation(paths, () => exportHooks(paths, codexPaths)),
       installCustomAgents: () => executeOperation(paths, () => exportCustomAgents(paths, codexPaths)),
-      installOpencodeAgents: () => executeOperation(paths, () => exportOpencodeAgents(paths, codexPaths)),
+      installPlugin: () => executeOperation(paths, () => exportPlugin(codexPaths)),
       installAll: () => executeOperation(paths, () => exportAll(paths, codexPaths))
     }
   };
@@ -113,7 +112,7 @@ export function loadInstallScreenFromStatusBundle(
 
 function exportAllIncludes(
   inventory: ReturnType<typeof inspectInstallStatus>["inventory"]
-): InstallAction["includes"] {
+): AddToCodexAction["includes"] {
   const hookInventory = inventory.find((item) => item.name === "hooks");
   return hookInventory?.status.asString() === "invalid"
     && hookInventory.repairHint?.includes("native Windows")

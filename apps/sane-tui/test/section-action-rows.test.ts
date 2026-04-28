@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { SectionActionMetadata } from "@sane/sane-tui/command-registry.js";
 import {
-  buildInstallActionRows,
+  buildAddToCodexActionRows,
   buildRepairActionRows
 } from "@sane/sane-tui/section-action-rows.js";
 
@@ -42,7 +42,7 @@ describe("section action rows", () => {
     ];
 
     expect(
-      buildInstallActionRows(actions, {
+      buildAddToCodexActionRows(actions, {
         export_user_skills: { kind: "installed", label: "installed" },
         export_repo_skills: { kind: "missing", label: "missing" },
         export_repo_agents: { kind: "missing", label: "missing" },
@@ -50,7 +50,7 @@ describe("section action rows", () => {
         apply_integrations_profile: { kind: "missing", label: "missing" },
         export_hooks: { kind: "missing", label: "missing" },
         export_custom_agents: { kind: "missing", label: "missing" },
-        export_opencode_agents: { kind: "missing", label: "missing" },
+        export_plugin: { kind: "missing", label: "missing" },
         export_all: { kind: "missing", label: "missing" }
       })
     ).toEqual([
@@ -107,7 +107,6 @@ describe("section action rows", () => {
         uninstall_repo_agents: { kind: "missing", label: "missing" },
         uninstall_hooks: { kind: "missing", label: "missing" },
         uninstall_custom_agents: { kind: "missing", label: "missing" },
-        uninstall_opencode_agents: { kind: "missing", label: "missing" },
         uninstall_all: { kind: "missing", label: "missing" }
       })
     ).toEqual([

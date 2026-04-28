@@ -12,7 +12,7 @@ import {
 import { inspectStatusBundle } from "@sane/control-plane/inventory.js";
 import { listSectionActions, type UiCommandId } from "@sane/sane-tui/command-registry.js";
 
-export interface InspectScreenAction {
+export interface StatusScreenAction {
   id: Extract<
     UiCommandId,
     | "show_status"
@@ -27,20 +27,20 @@ export interface InspectScreenAction {
   title: string;
 }
 
-type InspectScreenSnapshot = ReturnType<typeof inspectSnapshot>;
+type StatusScreenSnapshot = ReturnType<typeof inspectSnapshot>;
 
-export interface InspectScreenModel extends InspectScreenSnapshot {
-  summary: "Inspect";
-  actions: InspectScreenAction[];
+export interface StatusScreenModel extends StatusScreenSnapshot {
+  summary: "Status";
+  actions: StatusScreenAction[];
   overviewLines: string[];
 }
 
-export function loadInspectScreen(
+export function loadStatusScreen(
   paths: ProjectPaths,
   codexPaths: CodexPaths,
   hostPlatform: HostPlatform = detectPlatform()
-): InspectScreenModel {
-  return loadInspectScreenFromStatusBundle(
+): StatusScreenModel {
+  return loadStatusScreenFromStatusBundle(
     paths,
     codexPaths,
     inspectStatusBundle(paths, codexPaths, hostPlatform),
@@ -50,35 +50,35 @@ export function loadInspectScreen(
   );
 }
 
-export function loadInspectScreenFromStatusBundle(
+export function loadStatusScreenFromStatusBundle(
   paths: ProjectPaths,
   codexPaths: CodexPaths,
   statusBundle: ReturnType<typeof inspectStatusBundle>,
   profiles?: Parameters<typeof inspectSnapshotFromStatusBundle>[3],
   preferencesFamily?: Parameters<typeof inspectSnapshotFromStatusBundle>[4],
   hostPlatform: HostPlatform = detectPlatform()
-): InspectScreenModel {
+): StatusScreenModel {
   const snapshot = profiles || preferencesFamily
     ? inspectSnapshotFromStatusBundle(paths, codexPaths, statusBundle, profiles, preferencesFamily)
     : inspectSnapshotFromStatusBundle(paths, codexPaths, statusBundle);
 
   return {
-    summary: "Inspect",
-    actions: listSectionActions("inspect", hostPlatform).map((action) => ({
-      id: action.id as InspectScreenAction["id"],
+    summary: "Status",
+    actions: listSectionActions("status", hostPlatform).map((action) => ({
+      id: action.id as StatusScreenAction["id"],
       title: action.label
     })),
-    overviewLines: inspectOverviewLines(snapshot),
+    overviewLines: statusOverviewLines(snapshot),
     ...snapshot
   };
 }
 
-export function inspectOverviewLines(snapshot: InspectOverviewSnapshot): string[] {
+export function statusOverviewLines(snapshot: InspectOverviewSnapshot): string[] {
   return formatSharedInspectOverviewLines(snapshot);
 }
 
 export function formatLatestPolicyPreviewLine(
-  preview: InspectScreenSnapshot["latestPolicyPreview"],
+  preview: StatusScreenSnapshot["latestPolicyPreview"],
   prefix = "latest policy snapshot"
 ): string {
   return formatSharedLatestPolicyPreviewLines(preview, {
@@ -87,14 +87,14 @@ export function formatLatestPolicyPreviewLine(
 }
 
 export function formatLatestPolicyPreviewInputLines(
-  preview: InspectScreenSnapshot["latestPolicyPreview"],
+  preview: StatusScreenSnapshot["latestPolicyPreview"],
   prefix = "latest policy input"
 ): string[] {
   return formatSharedLatestPolicyPreviewInputLines(preview, prefix);
 }
 
 export function formatLatestPolicyPreviewLines(
-  preview: InspectScreenSnapshot["latestPolicyPreview"],
+  preview: StatusScreenSnapshot["latestPolicyPreview"],
   prefixes: {
     snapshot?: string;
     input?: string;
@@ -106,8 +106,8 @@ export function formatLatestPolicyPreviewLines(
   });
 }
 
-export function formatInspectPolicyPreviewLines(
-  snapshot: Pick<InspectScreenSnapshot, "latestPolicyPreview" | "policyPreview">,
+export function formatStatusPolicyPreviewLines(
+  snapshot: Pick<StatusScreenSnapshot, "latestPolicyPreview" | "policyPreview">,
   options: {
     mode?: "overview" | "action";
     snapshot?: string;

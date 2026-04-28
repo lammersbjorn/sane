@@ -6,6 +6,7 @@
   "scripts": {
     "start": "pnpm --filter @sane/sane-tui run build:package && node ./apps/sane-tui/dist/bin/sane.cjs",
     "start:settings": "pnpm --filter @sane/sane-tui run build:package && node ./apps/sane-tui/dist/bin/sane.cjs settings",
+    "start:status": "pnpm --filter @sane/sane-tui run build:package && node ./apps/sane-tui/dist/bin/sane.cjs status",
     "start:inspect": "pnpm --filter @sane/sane-tui run build:package && node ./apps/sane-tui/dist/bin/sane.cjs inspect",
     "start:repair": "pnpm --filter @sane/sane-tui run build:package && node ./apps/sane-tui/dist/bin/sane.cjs repair",
     "pack:sane-tui": "pnpm --filter @sane/sane-tui run build:package && cd apps/sane-tui/dist && pnpm pack",
@@ -15,6 +16,7 @@
     "start:ts-preview:settings": "node ./apps/sane-tui/bin/sane.mjs settings",
     "start:ts-built-preview": "pnpm --filter @sane/sane-tui run build && node ./apps/sane-tui/dist/bin/sane.cjs",
     "start:ts-built-preview:settings": "pnpm --filter @sane/sane-tui run build && node ./apps/sane-tui/dist/bin/sane.cjs settings",
+    "start:ts-built-preview:status": "pnpm --filter @sane/sane-tui run build && node ./apps/sane-tui/dist/bin/sane.cjs status",
     "start:ts-built-preview:inspect": "pnpm --filter @sane/sane-tui run build && node ./apps/sane-tui/dist/bin/sane.cjs inspect",
     "check": "pnpm typecheck && pnpm test",
     "test": "turbo run test",

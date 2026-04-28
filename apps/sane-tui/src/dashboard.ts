@@ -3,7 +3,7 @@ import {
   presentManagedStatus,
   type ManagedStatusKind
 } from "@sane/control-plane/status-presenter.js";
-import * as getStartedScreen from "@sane/sane-tui/get-started-screen.js";
+import * as homeScreen from "@sane/sane-tui/home-screen.js";
 import { currentAction, currentActions, currentSection, projectLabel, type TuiShell } from "@sane/sane-tui/shell.js";
 
 export interface DashboardChip {
@@ -18,7 +18,7 @@ export interface DashboardView {
   subtitle: "Codex-native onboarding and setup";
   projectLabel: string;
   recommendedNextStep: string;
-  recommendedActionId: ReturnType<typeof getStartedScreen.loadGetStartedScreen>["recommendedActionId"];
+  recommendedActionId: ReturnType<typeof homeScreen.loadHomeScreen>["recommendedActionId"];
   attentionItems: string[];
   sections: TuiShell["sections"];
   activeSection: ReturnType<typeof currentSection>;
@@ -63,7 +63,7 @@ const VALUE_TONE_OVERRIDES: Partial<Record<string, DashboardChip["tone"]>> = {
 
 export function loadDashboardView(
   shell: TuiShell,
-  getStarted: ReturnType<typeof getStartedScreen.loadGetStartedScreen> = getStartedScreen.loadGetStartedScreen(
+  home: ReturnType<typeof homeScreen.loadHomeScreen> = homeScreen.loadHomeScreen(
     shell.paths,
     shell.codexPaths
   )
@@ -73,9 +73,9 @@ export function loadDashboardView(
     title: "Sane",
     subtitle: "Codex-native onboarding and setup",
     projectLabel: projectLabel(shell),
-    recommendedNextStep: getStarted.recommendedNextStep,
-    recommendedActionId: getStarted.recommendedActionId,
-    attentionItems: getStarted.attentionItems,
+    recommendedNextStep: home.recommendedNextStep,
+    recommendedActionId: home.recommendedActionId,
+    attentionItems: home.attentionItems,
     sections: shell.sections,
     activeSection: currentSection(shell),
     actions: currentActions(shell),

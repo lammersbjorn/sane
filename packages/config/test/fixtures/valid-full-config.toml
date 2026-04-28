@@ -20,3 +20,8 @@ core = true
 caveman = true
 rtk = true
 frontend-craft = true
+
+[lifecycle-hooks]
+tokscale-submit = true
+tokscale-dry-run = false
+rate-limit-resume = true

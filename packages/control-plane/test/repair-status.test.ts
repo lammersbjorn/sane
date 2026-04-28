@@ -7,6 +7,7 @@ import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { applyCodexProfile, backupCodexConfig } from "../src/codex-config.js";
+import { exportPlugin } from "../src/codex-plugin.js";
 import { CORE_INSTALL_BUNDLE_TARGETS } from "../src/core-install-bundle-targets.js";
 import { exportAll } from "../src/index.js";
 import {
@@ -66,9 +67,24 @@ describe("repair status snapshot", () => {
             { kind: "missing", label: "missing" }
           ])
         ),
-        uninstall_opencode_agents: { kind: "missing", label: "missing" },
         uninstall_all: { kind: "missing", label: "missing" }
       })
+    });
+  });
+
+  it("treats an installed optional plugin artifact as removable by uninstall-all", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    exportPlugin(codexPaths);
+
+    expect(inspectRepairStatus(paths, codexPaths)).toMatchObject({
+      removableInstalls: ["plugin"],
+      actionStatus: {
+        uninstall_all: { kind: "installed", label: "installed" }
+      }
     });
   });
 
@@ -110,7 +126,6 @@ describe("repair status snapshot", () => {
             { kind: "installed", label: "installed" }
           ])
         ),
-        uninstall_opencode_agents: { kind: "missing", label: "missing" },
         uninstall_all: { kind: "installed", label: "installed" }
       })
     });

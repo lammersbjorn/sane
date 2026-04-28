@@ -1,21 +1,19 @@
 import { basename } from "node:path";
 
-import { type OperationResult } from "@sane/core";
+import { OperationResult } from "@sane/core";
 import { detectPlatform, type CodexPaths, type HostPlatform, type ProjectPaths } from "@sane/platform";
 
-import { exportAll, uninstallAll } from "@sane/control-plane/bundles.js";
+import { exportAll, exportOpencodeCore, uninstallAll } from "@sane/control-plane/bundles.js";
 import {
   applyCloudflareProfile,
   applyCodexProfile,
   applyIntegrationsProfile,
-  applyOpencodeProfile,
   applyStatuslineProfile,
   backupCodexConfig,
   inspectCodexProfileFamilySnapshot,
   previewCloudflareProfile,
   previewCodexProfile,
   previewIntegrationsProfile,
-  previewOpencodeProfile,
   previewStatuslineProfile,
   restoreCodexConfig,
   showCodexConfig
@@ -28,13 +26,13 @@ import {
   uninstallGlobalAgents,
   uninstallUserSkills
 } from "@sane/control-plane/codex-native.js";
+import { exportPlugin, uninstallPlugin } from "@sane/control-plane/codex-plugin.js";
 import {
   uninstallCustomAgents,
   uninstallHooks,
   exportCustomAgents,
   exportHooks
 } from "@sane/control-plane/hooks-custom-agents.js";
-import { exportOpencodeAgents, uninstallOpencodeAgents } from "@sane/control-plane/opencode-native.js";
 import { executeConfigSave, executeOperation, executeOperationWithRuntimeState } from "@sane/control-plane/history.js";
 import {
   doctor,
@@ -89,7 +87,7 @@ import {
   type PackEditorState,
   type PrivacyEditorState
 } from "@sane/sane-tui/preferences-editor-state.js";
-import { buildLastResultView, buildNotice, type LastResultView, type NoticeView } from "@sane/sane-tui/result-panel.js";
+import { buildLastResultView, buildNotice, buildResultNotice, type LastResultView, type NoticeView } from "@sane/sane-tui/result-panel.js";
 
 export interface PendingConfirmation {
   title: "Confirm";
@@ -126,9 +124,9 @@ export function createTuiShell(
   codexPaths: CodexPaths,
   launchShortcut: keyof typeof COMMAND_METADATA_REGISTRY.shortcuts = "default"
 ): TuiShell {
-  const sectionId = COMMAND_METADATA_REGISTRY.shortcuts[launchShortcut];
   const hostPlatform = detectPlatform();
   const statusSnapshot = buildStatusSnapshot(paths, codexPaths, hostPlatform);
+  const sectionId = initialSectionId(launchShortcut, statusSnapshot, paths);
   const lastSummary = statusSnapshot.statusBundle.runtimeState.historyPreview.latestEvent?.summary ?? null;
   return {
     paths,
@@ -144,7 +142,7 @@ export function createTuiShell(
     lastResult: buildLastResultView(
       null,
       lastSummary
-        ?? "Ready. Start in `Start here`. Left/right changes section. Up/down changes option. Enter runs the selected step."
+        ?? "Ready. Start in `Home`. Left/right changes section. Up/down changes option. Enter runs the selected step."
     )
   };
 }
@@ -203,18 +201,28 @@ function defaultActionIndex(
 ): number {
   const actions = listSectionActions(sectionId, hostPlatform);
   const recommendedActionId =
-    sectionId === "get_started"
-      ? inspectOnboardingSnapshotFromStatusBundle(paths, statusSnapshot.statusBundle).recommendedActionId
-      : sectionId === "install"
+    sectionId === "home"
+      ? homeRecommendedActionId(inspectOnboardingSnapshotFromStatusBundle(paths, statusSnapshot.statusBundle).recommendedActionId)
+      : sectionId === "add_to_codex"
         ? inspectInstallStatusFromStatusBundle(paths, codexPaths, statusSnapshot.statusBundle, hostPlatform).recommendedActionId
         : null;
 
   if (!recommendedActionId) {
+    if (sectionId === "home") {
+      const refreshIndex = actions.findIndex((action) => action.id === "export_all");
+      return refreshIndex >= 0 ? refreshIndex : 0;
+    }
     return 0;
   }
 
   const recommendedIndex = actions.findIndex((action) => action.id === recommendedActionId);
   return recommendedIndex >= 0 ? recommendedIndex : 0;
+}
+
+function homeRecommendedActionId(
+  actionId: ReturnType<typeof inspectOnboardingSnapshotFromStatusBundle>["recommendedActionId"]
+): UiCommandId | null {
+  return actionId === "show_codex_config" ? "preview_codex_profile" : actionId;
 }
 
 export function runSelectedAction(shell: TuiShell): OperationResult | null {
@@ -335,7 +343,7 @@ export function saveActiveEditor(shell: TuiShell): OperationResult | null {
     title: "Saved",
     body: result.renderText(),
     footer: "Enter, Space, or Esc closes this message.",
-    section: "preferences"
+    section: shell.activeSectionId
   };
   shell.activeEditor = null;
   return result;
@@ -405,13 +413,14 @@ function runCommand(shell: TuiShell, commandId: UiCommandId): OperationResult | 
       refreshStatusSnapshot(shell);
       shell.activeEditor = null;
       shell.lastResult = buildLastResultView(result, result.renderText());
+      if (commandId === "install_runtime" || commandId === "export_all") {
+        selectSection(shell, "status");
+      }
       const notice = buildNotice(commandId, result);
-      shell.notice = notice
-        ? {
-            ...notice,
-            section: shell.activeSectionId
-          }
-        : null;
+      shell.notice = {
+        ...(notice ?? buildResultNotice(actionLabelForCommand(shell, commandId), result)),
+        section: shell.activeSectionId
+      };
       return result;
     }
   }
@@ -447,8 +456,6 @@ export function executeUiCommand(
       return executeOperation(paths, () => previewIntegrationsProfile(codexPaths));
     case "preview_cloudflare_profile":
       return executeOperation(paths, () => previewCloudflareProfile(codexPaths));
-    case "preview_opencode_profile":
-      return executeOperation(paths, () => previewOpencodeProfile(codexPaths));
     case "preview_statusline_profile":
       return executeOperation(paths, () => previewStatuslineProfile(codexPaths));
     case "apply_codex_profile":
@@ -457,8 +464,6 @@ export function executeUiCommand(
       return executeOperation(paths, () => applyIntegrationsProfile(paths, codexPaths));
     case "apply_cloudflare_profile":
       return executeOperation(paths, () => applyCloudflareProfile(paths, codexPaths));
-    case "apply_opencode_profile":
-      return executeOperation(paths, () => applyOpencodeProfile(paths, codexPaths));
     case "apply_statusline_profile":
       return executeOperation(paths, () => applyStatuslineProfile(paths, codexPaths));
     case "restore_codex_config":
@@ -476,11 +481,13 @@ export function executeUiCommand(
     case "export_global_agents":
       return executeOperation(paths, () => exportGlobalAgents(paths, codexPaths));
     case "export_hooks":
-      return executeOperation(paths, () => exportHooks(codexPaths));
+      return executeOperation(paths, () => exportHooks(paths, codexPaths));
     case "export_custom_agents":
       return executeOperation(paths, () => exportCustomAgents(paths, codexPaths));
-    case "export_opencode_agents":
-      return executeOperation(paths, () => exportOpencodeAgents(paths, codexPaths));
+    case "export_plugin":
+      return executeOperation(paths, () => exportPlugin(codexPaths));
+    case "export_opencode_all":
+      return executeOperation(paths, () => exportOpencodeCore(paths, codexPaths));
     case "export_all":
       return executeOperation(paths, () => exportAll(paths, codexPaths));
     case "uninstall_user_skills":
@@ -495,8 +502,8 @@ export function executeUiCommand(
       return executeOperation(paths, () => uninstallHooks(codexPaths));
     case "uninstall_custom_agents":
       return executeOperation(paths, () => uninstallCustomAgents(codexPaths));
-    case "uninstall_opencode_agents":
-      return executeOperation(paths, () => uninstallOpencodeAgents(codexPaths));
+    case "uninstall_plugin":
+      return executeOperation(paths, () => uninstallPlugin(codexPaths));
     case "uninstall_all":
       return executeOperation(paths, () => uninstallAll(codexPaths));
   }
@@ -514,8 +521,29 @@ function buildStatusSnapshot(
   };
 }
 
+function initialSectionId(
+  launchShortcut: keyof typeof COMMAND_METADATA_REGISTRY.shortcuts,
+  statusSnapshot: ShellStatusSnapshot,
+  paths: ProjectPaths
+): TuiSectionId {
+  const sectionId = COMMAND_METADATA_REGISTRY.shortcuts[launchShortcut];
+  if (launchShortcut !== "default") {
+    return sectionId;
+  }
+
+  const onboarding = inspectOnboardingSnapshotFromStatusBundle(paths, statusSnapshot.statusBundle);
+  return onboarding.primaryStatuses.runtime === "missing" ? "home" : "status";
+}
+
 function refreshStatusSnapshot(shell: TuiShell): void {
   shell.statusSnapshot = buildStatusSnapshot(shell.paths, shell.codexPaths, shell.hostPlatform);
+}
+
+function actionLabelForCommand(shell: TuiShell, commandId: UiCommandId): string {
+  return listSections(shell.hostPlatform)
+    .flatMap((section) => listSectionActions(section.id, shell.hostPlatform))
+    .find((action) => action.id === commandId)?.label
+    ?? getCommandSpec(commandId, shell.hostPlatform).id;
 }
 
 function buildPendingConfirmation(shell: TuiShell, action: SectionActionMetadata): PendingConfirmation {

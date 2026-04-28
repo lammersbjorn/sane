@@ -4,7 +4,23 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./*.js": "./src/*.ts"
+    "./bundles.js": "./src/bundles.ts",
+    "./codex-config.js": "./src/codex-config.ts",
+    "./codex-native.js": "./src/codex-native.ts",
+    "./codex-plugin.js": "./src/codex-plugin.ts",
+    "./history.js": "./src/history.ts",
+    "./hooks-custom-agents.js": "./src/hooks-custom-agents.ts",
+    "./index.js": "./src/index.ts",
+    "./install-status.js": "./src/install-status.ts",
+    "./inventory.js": "./src/inventory.ts",
+    "./opencode.js": "./src/opencode.ts",
+    "./policy-preview.js": "./src/policy-preview.ts",
+    "./preferences.js": "./src/preferences.ts",
+    "./repair-status.js": "./src/repair-status.ts",
+    "./runtime-state.js": "./src/runtime-state.ts",
+    "./session-start-hook.js": "./src/session-start-hook.ts",
+    "./status-presenter.js": "./src/status-presenter.ts",
+    "./tokscale-submit-hook.js": "./src/tokscale-submit-hook.ts"
   },
   "scripts": {
     "test": "vitest run",

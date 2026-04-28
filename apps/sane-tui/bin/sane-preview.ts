@@ -1,6 +1,6 @@
 import { runCliCommandFromDiscovery } from "../src/cli.js";
+import { startInkTerminalLoop } from "../src/ink-terminal.js";
 import { planPreviewLaunch } from "../src/preview-launch.js";
-import { startTerminalLoop } from "../src/terminal-loop.js";
 import { createTextTuiRuntimeFromDiscovery } from "../src/text-driver.js";
 
 const args = process.argv.slice(2);
@@ -9,35 +9,40 @@ const plan = planPreviewLaunch(args, {
   stdoutIsTty: Boolean(process.stdout.isTTY)
 });
 
-if (plan.kind === "terminal") {
-  const runtime = createTextTuiRuntimeFromDiscovery(process.cwd(), process.env, {
-    launchShortcut: plan.launchShortcut
-  });
+void main();
 
-  const controller = startTerminalLoop(runtime, {
-    stdin: process.stdin,
-    stdout: process.stdout
-  });
+async function main(): Promise<void> {
+  if (plan.kind === "terminal") {
+    const runtime = createTextTuiRuntimeFromDiscovery(process.cwd(), process.env, {
+      launchShortcut: plan.launchShortcut
+    });
 
-  const stop = () => {
-    controller.stop();
-  };
+    const controller = await startInkTerminalLoop(runtime, {
+      stdin: process.stdin,
+      stdout: process.stdout
+    });
 
-  process.once("SIGINT", () => {
-    stop();
-    process.exit(0);
-  });
+    const stop = () => {
+      controller.unmount();
+    };
 
-  process.once("SIGTERM", () => {
-    stop();
-    process.exit(0);
-  });
+    process.once("SIGINT", () => {
+      stop();
+      process.exit(0);
+    });
 
-  process.once("SIGHUP", () => {
-    stop();
-    process.exit(0);
-  });
-} else {
+    process.once("SIGTERM", () => {
+      stop();
+      process.exit(0);
+    });
+
+    process.once("SIGHUP", () => {
+      stop();
+      process.exit(0);
+    });
+    return;
+  }
+
   const result = runCliCommandFromDiscovery(plan.args, process.cwd(), process.env);
   process.stdout.write(result.output.endsWith("\n") ? result.output : `${result.output}\n`);
   process.exitCode = result.exitCode;

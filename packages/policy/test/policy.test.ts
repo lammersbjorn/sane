@@ -53,7 +53,10 @@ describe("evaluate", () => {
       runState: RunState.Executing
     });
 
-    expect(decision.obligations).toEqual([Obligation.VerifyLight]);
+    expect(decision.obligations).toEqual([
+      Obligation.VerifyLight,
+      Obligation.SubagentEligible
+    ]);
   });
 
   it("adds debug rigor and verification for debug work", () => {
@@ -69,7 +72,8 @@ describe("evaluate", () => {
 
     expect(decision.obligations).toEqual([
       Obligation.DebugRigor,
-      Obligation.VerifyLight
+      Obligation.VerifyLight,
+      Obligation.SubagentEligible
     ]);
   });
 
@@ -106,6 +110,7 @@ describe("evaluate", () => {
     expect(decision.obligations).toEqual([
       Obligation.Planning,
       Obligation.Review,
+      Obligation.SubagentEligible,
       Obligation.ContextCompaction
     ]);
   });
@@ -123,6 +128,7 @@ describe("evaluate", () => {
 
     expect(decision.obligations).toEqual([
       Obligation.VerifyLight,
+      Obligation.SubagentEligible,
       Obligation.SelfRepair
     ]);
   });
@@ -171,7 +177,7 @@ describe("recommendRoles", () => {
 });
 
 describe("recommendOrchestration", () => {
-  it("keeps local edits single-agent with light review after the change set", () => {
+  it("uses a bounded subagent lane for local edits with light review after the change set", () => {
     const input = {
       intent: Intent.Edit,
       taskShape: TaskShape.Local,
@@ -183,14 +189,14 @@ describe("recommendOrchestration", () => {
     };
 
     expect(recommendOrchestration(input, evaluate(input))).toEqual({
-      subagents: SubagentStrategy.SoloOnly,
-      subagentReadiness: SubagentReadinessReason.TaskTooSmall,
+      subagents: SubagentStrategy.AllowIndependentSlices,
+      subagentReadiness: SubagentReadinessReason.IndependentSlicesReady,
       reviewPosture: ReviewPosture.Light,
       verifierTiming: VerifierTiming.AfterChangeSet
     });
   });
 
-  it("waits for clear slices before parallelizing", () => {
+  it("allows a bounded lane while the coordinator keeps slicing", () => {
     const input = {
       intent: Intent.Orchestrate,
       taskShape: TaskShape.LongRunning,
@@ -202,14 +208,14 @@ describe("recommendOrchestration", () => {
     };
 
     expect(recommendOrchestration(input, evaluate(input))).toEqual({
-      subagents: SubagentStrategy.WaitForIndependentSlices,
-      subagentReadiness: SubagentReadinessReason.IndependentSlicesNotClear,
+      subagents: SubagentStrategy.AllowIndependentSlices,
+      subagentReadiness: SubagentReadinessReason.IndependentSlicesReady,
       reviewPosture: ReviewPosture.Independent,
       verifierTiming: VerifierTiming.ClosingGate
     });
   });
 
-  it("blocks subagents during validating even when slices are otherwise clear", () => {
+  it("keeps a verifier lane available during validating", () => {
     const input = {
       intent: Intent.Edit,
       taskShape: TaskShape.Architectural,
@@ -221,14 +227,14 @@ describe("recommendOrchestration", () => {
     };
 
     expect(recommendOrchestration(input, evaluate(input))).toEqual({
-      subagents: SubagentStrategy.SoloOnly,
-      subagentReadiness: SubagentReadinessReason.RunStateDisallowsDelegation,
+      subagents: SubagentStrategy.AllowIndependentSlices,
+      subagentReadiness: SubagentReadinessReason.IndependentSlicesReady,
       reviewPosture: ReviewPosture.Independent,
       verifierTiming: VerifierTiming.ThroughoutExecution
     });
   });
 
-  it("keeps blocked clear-parallel work single-agent", () => {
+  it("keeps blocked clear-parallel work subagent-assisted", () => {
     const input = {
       intent: Intent.Orchestrate,
       taskShape: TaskShape.LongRunning,
@@ -240,14 +246,14 @@ describe("recommendOrchestration", () => {
     };
 
     expect(recommendOrchestration(input, evaluate(input))).toEqual({
-      subagents: SubagentStrategy.SoloOnly,
-      subagentReadiness: SubagentReadinessReason.RunStateDisallowsDelegation,
+      subagents: SubagentStrategy.AllowIndependentSlices,
+      subagentReadiness: SubagentReadinessReason.IndependentSlicesReady,
       reviewPosture: ReviewPosture.Independent,
       verifierTiming: VerifierTiming.ThroughoutExecution
     });
   });
 
-  it("reports no independent slices when parallelism is absent", () => {
+  it("still allows a bounded lane when declared parallelism is absent", () => {
     const input = {
       intent: Intent.Orchestrate,
       taskShape: TaskShape.LongRunning,
@@ -259,8 +265,8 @@ describe("recommendOrchestration", () => {
     };
 
     expect(recommendOrchestration(input, evaluate(input))).toEqual({
-      subagents: SubagentStrategy.SoloOnly,
-      subagentReadiness: SubagentReadinessReason.NoIndependentSlicesIdentified,
+      subagents: SubagentStrategy.AllowIndependentSlices,
+      subagentReadiness: SubagentReadinessReason.IndependentSlicesReady,
       reviewPosture: ReviewPosture.Independent,
       verifierTiming: VerifierTiming.ClosingGate
     });
@@ -461,6 +467,7 @@ describe("helpers", () => {
     expect(evaluate(scenarios[4]!.input).obligations).toEqual([
       Obligation.Planning,
       Obligation.Review,
+      Obligation.SubagentEligible,
       Obligation.ContextCompaction,
       Obligation.SelfRepair
     ]);

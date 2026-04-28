@@ -29,19 +29,16 @@ describe("text renderer", () => {
 
     const output = renderTextAppView(loadAppView(shell));
 
-    expect(output).toContain("Sane | Codex-native onboarding and setup");
-    expect(output).toContain("Section: get_started");
-    expect(output).toContain("Sections: [Start here]");
-    expect(output).toContain("Mode: Browse");
-    expect(output).toContain("Set up preferences");
-    expect(output).toContain("Install to Codex");
+    expect(output).toContain("Sane  Home");
+    expect(output).toContain("[Home]");
+    expect(output).toContain("Settings");
+    expect(output).toContain("Add to Codex");
     expect(output).toContain("Runtime [missing]");
     expect(output).toContain("| Actions");
-    expect(output).toContain("| > 1. Create Sane's local");
-    expect(output).toContain("Get Started Details");
-    expect(output).toContain("Section overview");
-    expect(output).toContain("Selected step");
-    expect(output).toContain("Latest Status");
+    expect(output).toContain("| > 1. Set up Sane files");
+    expect(output).toContain("Home Focus");
+    expect(output).toContain("Snapshot");
+    expect(output).not.toContain("Latest Status");
   });
 
   it("renders a compact statusline with the primary surfaces", () => {
@@ -97,14 +94,15 @@ describe("text renderer", () => {
       height: 20
     });
 
-    expect(output).toContain("Section: get_started | Mode: Browse");
+    expect(output).toContain("Sane  Home");
+    expect(output).toContain("[Home]");
     expect(output).toContain("rt missing");
     expect(output).toContain("mode browse | rt miss cx miss sk miss hk miss dr 1");
-    expect(output).toContain("Get Started Focus");
+    expect(output).toContain("Home Focus");
     expect(output).toContain("Status: Ready.");
     expect(output).not.toContain("Project ");
-    expect(output).not.toContain("Sections: [Start here]");
-    expect(output).not.toContain("Get Started Details");
+    expect(output).not.toContain("Project ");
+    expect(output).not.toContain("Home Details");
   });
 
   it("shortens absolute runtime paths in compact focus status", () => {
@@ -127,7 +125,7 @@ describe("text renderer", () => {
       title: "Saved",
       body: "saved body",
       footer: "Enter, Space, or Esc closes this message.",
-      section: "preferences"
+      section: "settings"
     };
 
     const output = renderTextAppView(loadAppView(shell));
@@ -135,7 +133,7 @@ describe("text renderer", () => {
     expect(output).toContain("[Overlay: Saved]");
     expect(output).toContain("| saved body");
     expect(output).toContain("Enter, Space, or Esc closes this message.");
-    expect(output).toContain("Mode: Notice");
+    expect(output).toContain("mode notice");
   });
 
   it("shows selection changes in the rendered action list", () => {
@@ -144,8 +142,8 @@ describe("text renderer", () => {
 
     const output = renderTextAppView(loadAppView(shell));
 
-    expect(output).toContain("[recommended]");
-    expect(output).toContain("| > 2. View your current Codex");
+    expect(output).toContain("*");
+    expect(output).toContain("| > 2. Choose defaults");
   });
 
   it("keeps the selected action visible when the rail is windowed", () => {
@@ -161,7 +159,7 @@ describe("text renderer", () => {
       height: 24
     });
 
-    expect(output).toContain("Selected step: Apply Cloudflare Codex");
+    expect(output).toContain("Apply optional Cloudflare Codex settings");
     expect(output).toContain("...");
   });
 
@@ -177,7 +175,7 @@ describe("text renderer", () => {
     expect(lines).toHaveLength(16);
     expect(lines.every((line) => line.length <= 48)).toBe(true);
     expect(output).toContain("Selected:");
-    expect(output).toContain("Sane | Codex-native onboarding");
+    expect(output).toContain("Sane  Settings");
   });
 
   it("adds ansi styling only when requested", () => {
@@ -187,10 +185,10 @@ describe("text renderer", () => {
       ansi: true
     });
 
-    expect(output).toContain("\u001b[1mSane | Codex-native onboarding and setup\u001b[0m");
+    expect(output).toContain("\u001b[1mSane  Home");
     expect(output).toContain("\u001b[33mRuntime [missing]\u001b[0m");
-    expect(output).toContain("\u001b[7m[Start here]\u001b[0m");
-    expect(output).toContain("\u001b[7m| > 1. Create Sane's local");
+    expect(output).toContain("\u001b[1;46;30m[Home]\u001b[0m");
+    expect(output).toContain("\u001b[7m| > 1. Set up Sane files");
     expect(output).toContain("\u001b[1;36m| Actions");
   });
 
@@ -201,8 +199,8 @@ describe("text renderer", () => {
     const output = renderTextAppView(loadAppView(shell));
 
     expect(output).toContain("[Overlay: Model Defaults]");
-    expect(output).toContain("Mode: Edit Models");
-    expect(output).toContain("Last Result");
+    expect(output).toContain("mode edit models");
+    expect(output).toContain("Fields");
     expect(output).toContain("Field Help");
   });
 });

@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 import {
   createRecommendedLocalConfig,
@@ -9,67 +9,338 @@ import {
   InventoryScope,
   InventoryStatus,
   OperationKind,
-  OperationResult
+  OperationResult,
+  removeManagedBlock,
+  upsertManagedBlock
 } from "@sane/core";
 import {
   SANE_AGENT_NAME,
+  SANE_AGENT_LANES_SKILL_NAME,
+  SANE_BOOTSTRAP_RESEARCH_SKILL_NAME,
+  SANE_CONTINUE_SKILL_NAME,
   SANE_EXPLORER_AGENT_NAME,
+  SANE_GLOBAL_AGENTS_BEGIN,
+  SANE_GLOBAL_AGENTS_END,
+  SANE_IMPLEMENTATION_AGENT_NAME,
+  SANE_OUTCOME_CONTINUATION_SKILL_NAME,
+  SANE_REALTIME_AGENT_NAME,
   SANE_REVIEWER_AGENT_NAME,
-  createSaneOpencodeAgentTemplate,
-  createSaneOpencodeExplorerAgentTemplate,
-  createSaneOpencodeReviewerAgentTemplate,
-  type ModelRoleGuidance
+  SANE_ROUTER_SKILL_NAME,
+  createCoreSkills,
+  createOptionalPackSkills,
+  createSaneGlobalAgentsOverlay,
+  enabledOptionalPackNames,
+  optionalPackNames,
+  optionalPackSkillNames,
+  type GuidancePacks,
+  type ModelRoutingGuidance
 } from "@sane/framework-assets";
 import { type CodexPaths, type ProjectPaths } from "@sane/platform";
 import { writeAtomicTextFile } from "@sane/state";
 
 import { recommendedLocalConfigFromEnvironment } from "./local-config.js";
 
-export function exportOpencodeAgents(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
-  const roles = activeModelRoutingGuidance(paths, codexPaths);
-  mkdirSync(codexPaths.opencodeGlobalAgentsDir, { recursive: true });
+const SKILL_OWNERSHIP_MARKER_FILE = ".sane-owned";
+const SKILL_OWNERSHIP_MARKER_CONTENT = "managed-by: sane\n";
+// Keep Kimi K2.6 as a researched escalation candidate, not a default, while its OpenCode Go usage cost is high.
+const OPENCODE_GO_MODEL_ROUTING: ModelRoutingGuidance = {
+  coordinatorModel: "opencode-go/glm-5.1",
+  coordinatorReasoning: "high",
+  executionModel: "opencode-go/glm-5.1",
+  executionReasoning: "medium",
+  sidecarModel: "opencode-go/qwen3.6-plus",
+  sidecarReasoning: "low",
+  verifierModel: "opencode-go/deepseek-v4-pro",
+  verifierReasoning: "high",
+  realtimeModel: "opencode-go/deepseek-v4-flash",
+  realtimeReasoning: "low"
+};
 
-  const agentPath = join(codexPaths.opencodeGlobalAgentsDir, `${SANE_AGENT_NAME}.md`);
-  const reviewerPath = join(codexPaths.opencodeGlobalAgentsDir, `${SANE_REVIEWER_AGENT_NAME}.md`);
-  const explorerPath = join(codexPaths.opencodeGlobalAgentsDir, `${SANE_EXPLORER_AGENT_NAME}.md`);
+export function exportOpencodeCoreBundle(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult[] {
+  return [
+    exportOpencodeSkills(paths, codexPaths),
+    exportOpencodeGlobalAgents(paths, codexPaths),
+    exportOpencodeAgents(paths, codexPaths)
+  ];
+}
 
-  writeAtomicTextFile(agentPath, createSaneOpencodeAgentTemplate(roles));
-  writeAtomicTextFile(reviewerPath, createSaneOpencodeReviewerAgentTemplate(roles));
-  writeAtomicTextFile(explorerPath, createSaneOpencodeExplorerAgentTemplate(roles));
+export function uninstallOpencodeCoreBundle(
+  codexPaths: CodexPaths
+): OperationResult[] {
+  return [
+    uninstallOpencodeSkills(codexPaths),
+    uninstallOpencodeGlobalAgents(codexPaths),
+    uninstallOpencodeAgents(codexPaths)
+  ];
+}
+
+export function exportOpencodeSkills(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
+  const { packs, roles } = activeGuidance(paths, codexPaths);
+  const skillsRoot = opencodeSkillsDir(codexPaths);
+  const coreSkills = createCoreSkills(packs, roles);
+  const enabledOptionalSkills = enabledOptionalPackNames(packs).flatMap((name) => createOptionalPackSkills(name));
+  const managedSkillNames = [
+    ...coreSkills.map((skill) => skill.name),
+    ...enabledOptionalSkills.map((skill) => skill.name)
+  ];
+  const disabledSkillNames = optionalPackNames()
+    .filter((name) => !enabledOptionalPackNames(packs).includes(name))
+    .flatMap((name) => optionalPackSkillNames(name));
+  const skillPath = join(skillsRoot, SANE_ROUTER_SKILL_NAME, "SKILL.md");
+  const blocked = collectUnownedSkillDirs(skillsRoot, [...managedSkillNames, ...disabledSkillNames]);
+  if (blocked.length > 0) {
+    return new OperationResult({
+      kind: OperationKind.ExportUserSkills,
+      summary: "export opencode-skills: blocked by non-Sane skill directories",
+      details: [
+        "refusing to overwrite or delete skill directories without Sane ownership marker",
+        ...blocked.map((path) => `blocked: ${path}`)
+      ],
+      pathsTouched: blocked,
+      inventory: [
+        {
+          name: "opencode-skills",
+          scope: InventoryScope.Compatibility,
+          status: InventoryStatus.Invalid,
+          path: skillPath,
+          repairHint: "resolve blocked directories, then rerun `export opencode`"
+        }
+      ]
+    });
+  }
+
+  const pathsTouched: string[] = [];
+  for (const skill of coreSkills) {
+    const skillDir = join(skillsRoot, skill.name);
+    const targetPath = join(skillDir, "SKILL.md");
+    mkdirSync(skillDir, { recursive: true });
+    writeAtomicTextFile(targetPath, skill.content);
+    writeAtomicTextFile(join(skillDir, SKILL_OWNERSHIP_MARKER_FILE), SKILL_OWNERSHIP_MARKER_CONTENT);
+    pathsTouched.push(targetPath);
+  }
+
+  for (const skill of enabledOptionalSkills) {
+    const skillDir = join(skillsRoot, skill.name);
+    const targetPath = join(skillDir, "SKILL.md");
+    mkdirSync(skillDir, { recursive: true });
+    writeAtomicTextFile(targetPath, skill.content);
+    writeAtomicTextFile(join(skillDir, SKILL_OWNERSHIP_MARKER_FILE), SKILL_OWNERSHIP_MARKER_CONTENT);
+    pathsTouched.push(targetPath);
+
+    for (const resource of skill.resources) {
+      const resourcePath = join(skillDir, resource.path);
+      mkdirSync(dirname(resourcePath), { recursive: true });
+      writeAtomicTextFile(resourcePath, resource.content);
+      pathsTouched.push(resourcePath);
+    }
+  }
+
+  for (const skillName of disabledSkillNames) {
+    const skillDir = join(skillsRoot, skillName);
+    if (existsSync(skillDir) && isSaneOwnedSkillDir(skillDir)) {
+      rmSync(skillDir, { recursive: true, force: true });
+      pathsTouched.push(skillDir);
+    }
+  }
 
   return new OperationResult({
-    kind: OperationKind.ExportOpencodeAgents,
-    summary: "export opencode-agents: installed sane-agent, sane-reviewer, and sane-explorer",
-    details: [
-      `path: ${agentPath}`,
-      `path: ${reviewerPath}`,
-      `path: ${explorerPath}`,
-      "optional compatibility surface only; not part of Sane's default Codex install bundle"
-    ],
-    pathsTouched: [agentPath, reviewerPath, explorerPath],
+    kind: OperationKind.ExportUserSkills,
+    summary: "export opencode-skills: installed core skills",
+    details: [`path: ${skillPath}`],
+    pathsTouched,
+    inventory: [inspectOpencodeSkillsInventory(paths, codexPaths)]
+  });
+}
+
+export function uninstallOpencodeSkills(codexPaths: CodexPaths): OperationResult {
+  const skillsRoot = opencodeSkillsDir(codexPaths);
+  const managedSkillDirs = [
+    SANE_ROUTER_SKILL_NAME,
+    SANE_BOOTSTRAP_RESEARCH_SKILL_NAME,
+    SANE_AGENT_LANES_SKILL_NAME,
+    SANE_OUTCOME_CONTINUATION_SKILL_NAME,
+    SANE_CONTINUE_SKILL_NAME,
+    ...optionalPackNames().flatMap((pack) => optionalPackSkillNames(pack))
+  ].map((skillName) => join(skillsRoot, skillName));
+  const present = managedSkillDirs.filter((dir) => existsSync(dir));
+  const managed = present.filter((dir) => isSaneOwnedSkillDir(dir));
+  const preserved = present.filter((dir) => !isSaneOwnedSkillDir(dir));
+  const skillPath = join(skillsRoot, SANE_ROUTER_SKILL_NAME, "SKILL.md");
+
+  if (present.length === 0) {
+    return new OperationResult({
+      kind: OperationKind.UninstallUserSkills,
+      summary: "uninstall opencode-skills: not installed",
+      details: [],
+      pathsTouched: [skillsRoot],
+      inventory: [
+        {
+          name: "opencode-skills",
+          scope: InventoryScope.Compatibility,
+          status: InventoryStatus.Missing,
+          path: skillPath,
+          repairHint: null
+        }
+      ]
+    });
+  }
+
+  const pathsTouched: string[] = [];
+  for (const dir of managed) {
+    rmSync(dir, { recursive: true, force: true });
+    pathsTouched.push(dir);
+  }
+
+  return new OperationResult({
+    kind: OperationKind.UninstallUserSkills,
+    summary:
+      preserved.length > 0
+        ? "uninstall opencode-skills: removed managed skills; preserved non-Sane directories"
+        : "uninstall opencode-skills: removed managed skills",
+    details: preserved.map((path) => `preserved: ${path}`),
+    pathsTouched: pathsTouched.length > 0 ? pathsTouched : [skillsRoot],
+    inventory: [
+      {
+        name: "opencode-skills",
+        scope: InventoryScope.Compatibility,
+        status: preserved.length > 0 ? InventoryStatus.Invalid : InventoryStatus.Removed,
+        path: skillPath,
+        repairHint: null
+      }
+    ]
+  });
+}
+
+export function exportOpencodeGlobalAgents(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
+  const { packs, roles } = activeGuidance(paths, codexPaths);
+  const agentsPath = opencodeGlobalAgentsMd(codexPaths);
+  mkdirSync(dirname(agentsPath), { recursive: true });
+  const existing = existsSync(agentsPath) ? readFileSync(agentsPath, "utf8") : "";
+  const updated = upsertManagedBlock(
+    existing,
+    SANE_GLOBAL_AGENTS_BEGIN,
+    SANE_GLOBAL_AGENTS_END,
+    createSaneGlobalAgentsOverlay(packs, roles)
+  );
+  writeAtomicTextFile(agentsPath, updated);
+
+  return new OperationResult({
+    kind: OperationKind.ExportGlobalAgents,
+    summary: "export opencode-global-agents: installed managed block",
+    details: [`path: ${agentsPath}`],
+    pathsTouched: [agentsPath],
+    inventory: [inspectOpencodeGlobalAgentsInventory(paths, codexPaths)]
+  });
+}
+
+export function uninstallOpencodeGlobalAgents(codexPaths: CodexPaths): OperationResult {
+  const agentsPath = opencodeGlobalAgentsMd(codexPaths);
+  if (!existsSync(agentsPath)) {
+    return new OperationResult({
+      kind: OperationKind.UninstallGlobalAgents,
+      summary: "uninstall opencode-global-agents: not installed",
+      details: [],
+      pathsTouched: [agentsPath],
+      inventory: [
+        {
+          name: "opencode-global-agents",
+          scope: InventoryScope.Compatibility,
+          status: InventoryStatus.Missing,
+          path: agentsPath,
+          repairHint: null
+        }
+      ]
+    });
+  }
+
+  const existing = readFileSync(agentsPath, "utf8");
+  const updated = removeManagedBlock(existing, SANE_GLOBAL_AGENTS_BEGIN, SANE_GLOBAL_AGENTS_END);
+  if (updated === existing) {
+    return new OperationResult({
+      kind: OperationKind.UninstallGlobalAgents,
+      summary: "uninstall opencode-global-agents: not installed",
+      details: [],
+      pathsTouched: [agentsPath],
+      inventory: [
+        {
+          name: "opencode-global-agents",
+          scope: InventoryScope.Compatibility,
+          status: InventoryStatus.PresentWithoutSaneBlock,
+          path: agentsPath,
+          repairHint: null
+        }
+      ]
+    });
+  }
+
+  if (updated.trim().length === 0) {
+    rmSync(agentsPath, { force: true });
+  } else {
+    writeAtomicTextFile(agentsPath, updated);
+  }
+
+  return new OperationResult({
+    kind: OperationKind.UninstallGlobalAgents,
+    summary: "uninstall opencode-global-agents: removed managed block",
+    details: [],
+    pathsTouched: [agentsPath],
+    inventory: [
+      {
+        name: "opencode-global-agents",
+        scope: InventoryScope.Compatibility,
+        status: InventoryStatus.Removed,
+        path: agentsPath,
+        repairHint: null
+      }
+    ]
+  });
+}
+
+export function exportOpencodeAgents(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
+  const { packs, roles } = activeGuidance(paths, codexPaths);
+  const agentsDir = opencodeAgentsDir(codexPaths);
+  mkdirSync(agentsDir, { recursive: true });
+  const rendered = expectedOpencodeAgentBodies(packs, roles);
+
+  const pathsTouched: string[] = [];
+  for (const [name, body] of rendered) {
+    const path = join(agentsDir, `${name}.md`);
+    writeAtomicTextFile(path, body);
+    pathsTouched.push(path);
+  }
+
+  return new OperationResult({
+    kind: OperationKind.ExportCustomAgents,
+    summary: "export opencode-agents: installed Sane OpenCode agents",
+    details: rendered.map(([name]) => `${name}: ${join(agentsDir, `${name}.md`)}`),
+    pathsTouched,
     inventory: [inspectOpencodeAgentsInventory(paths, codexPaths)]
   });
 }
 
 export function uninstallOpencodeAgents(codexPaths: CodexPaths): OperationResult {
-  const agentPath = join(codexPaths.opencodeGlobalAgentsDir, `${SANE_AGENT_NAME}.md`);
-  const reviewerPath = join(codexPaths.opencodeGlobalAgentsDir, `${SANE_REVIEWER_AGENT_NAME}.md`);
-  const explorerPath = join(codexPaths.opencodeGlobalAgentsDir, `${SANE_EXPLORER_AGENT_NAME}.md`);
-  const managedPaths = [agentPath, reviewerPath, explorerPath];
-  const hadAny = managedPaths.some(fileExists);
+  const agentsDir = opencodeAgentsDir(codexPaths);
+  const managedPaths = [
+    SANE_AGENT_NAME,
+    SANE_REVIEWER_AGENT_NAME,
+    SANE_EXPLORER_AGENT_NAME,
+    SANE_IMPLEMENTATION_AGENT_NAME,
+    SANE_REALTIME_AGENT_NAME
+  ].map((name) => join(agentsDir, `${name}.md`));
+  const hadAny = managedPaths.some((path) => existsSync(path));
 
   if (!hadAny) {
     return new OperationResult({
-      kind: OperationKind.UninstallOpencodeAgents,
+      kind: OperationKind.UninstallCustomAgents,
       summary: "uninstall opencode-agents: not installed",
       details: [],
-      pathsTouched: [codexPaths.opencodeGlobalAgentsDir],
+      pathsTouched: [agentsDir],
       inventory: [
         {
           name: "opencode-agents",
           scope: InventoryScope.Compatibility,
           status: InventoryStatus.Missing,
-          path: codexPaths.opencodeGlobalAgentsDir,
+          path: agentsDir,
           repairHint: null
         }
       ]
@@ -77,18 +348,18 @@ export function uninstallOpencodeAgents(codexPaths: CodexPaths): OperationResult
   }
 
   for (const path of managedPaths) {
-    if (fileExists(path)) {
+    if (existsSync(path)) {
       rmSync(path, { force: true });
     }
   }
 
-  if (fileExists(codexPaths.opencodeGlobalAgentsDir) && readdirSync(codexPaths.opencodeGlobalAgentsDir).length === 0) {
-    rmSync(codexPaths.opencodeGlobalAgentsDir, { recursive: true, force: true });
+  if (existsSync(agentsDir) && readdirSync(agentsDir).length === 0) {
+    rmSync(agentsDir, { recursive: true, force: true });
   }
 
   return new OperationResult({
-    kind: OperationKind.UninstallOpencodeAgents,
-    summary: "uninstall opencode-agents: removed sane-agent, sane-reviewer, and sane-explorer",
+    kind: OperationKind.UninstallCustomAgents,
+    summary: "uninstall opencode-agents: removed Sane OpenCode agents",
     details: [],
     pathsTouched: managedPaths,
     inventory: [
@@ -96,30 +367,103 @@ export function uninstallOpencodeAgents(codexPaths: CodexPaths): OperationResult
         name: "opencode-agents",
         scope: InventoryScope.Compatibility,
         status: InventoryStatus.Removed,
-        path: codexPaths.opencodeGlobalAgentsDir,
+        path: agentsDir,
         repairHint: null
       }
     ]
   });
 }
 
-export function inspectOpencodeAgentsInventory(paths: ProjectPaths, codexPaths: CodexPaths) {
-  const roles = activeModelRoutingGuidance(paths, codexPaths);
-  const expected = [
-    [join(codexPaths.opencodeGlobalAgentsDir, `${SANE_AGENT_NAME}.md`), createSaneOpencodeAgentTemplate(roles)],
-    [
-      join(codexPaths.opencodeGlobalAgentsDir, `${SANE_REVIEWER_AGENT_NAME}.md`),
-      createSaneOpencodeReviewerAgentTemplate(roles)
-    ],
-    [
-      join(codexPaths.opencodeGlobalAgentsDir, `${SANE_EXPLORER_AGENT_NAME}.md`),
-      createSaneOpencodeExplorerAgentTemplate(roles)
-    ]
-  ] as const;
+export function inspectOpencodeCoreInventory(paths: ProjectPaths, codexPaths: CodexPaths) {
+  return [
+    inspectOpencodeSkillsInventory(paths, codexPaths),
+    inspectOpencodeGlobalAgentsInventory(paths, codexPaths),
+    inspectOpencodeAgentsInventory(paths, codexPaths)
+  ];
+}
 
-  const missingCount = expected.filter(([path]) => !fileExists(path)).length;
+export function inspectOpencodeSkillsInventory(paths: ProjectPaths, codexPaths: CodexPaths) {
+  const { packs, roles } = activeGuidance(paths, codexPaths);
+  const skillsRoot = opencodeSkillsDir(codexPaths);
+  const coreSkills = createCoreSkills(packs, roles);
+  const corePresentCount = coreSkills.filter((skill) =>
+    existsSync(join(skillsRoot, skill.name, "SKILL.md"))
+  ).length;
   const status =
-    missingCount === 3
+    corePresentCount === 0
+      ? InventoryStatus.Missing
+      : corePresentCount === coreSkills.length
+        ? coreSkills.every(
+            (skill) => readFileSync(join(skillsRoot, skill.name, "SKILL.md"), "utf8") === skill.content
+          )
+          ? InventoryStatus.Installed
+          : InventoryStatus.Invalid
+        : InventoryStatus.Invalid;
+
+  return {
+    name: "opencode-skills",
+    scope: InventoryScope.Compatibility,
+    status,
+    path: join(skillsRoot, SANE_ROUTER_SKILL_NAME, "SKILL.md"),
+    repairHint:
+      status === InventoryStatus.Installed
+        ? null
+        : status === InventoryStatus.Missing
+          ? "run `export opencode`"
+          : "rerun `export opencode`"
+  };
+}
+
+export function inspectOpencodeGlobalAgentsInventory(paths: ProjectPaths, codexPaths: CodexPaths) {
+  const { packs, roles } = activeGuidance(paths, codexPaths);
+  const agentsPath = opencodeGlobalAgentsMd(codexPaths);
+  if (!existsSync(agentsPath)) {
+    return {
+      name: "opencode-global-agents",
+      scope: InventoryScope.Compatibility,
+      status: InventoryStatus.Missing,
+      path: agentsPath,
+      repairHint: "run `export opencode`"
+    };
+  }
+
+  const body = readFileSync(agentsPath, "utf8");
+  if (body.includes(SANE_GLOBAL_AGENTS_BEGIN) && body.includes(SANE_GLOBAL_AGENTS_END)) {
+    const rendered = upsertManagedBlock(
+      body,
+      SANE_GLOBAL_AGENTS_BEGIN,
+      SANE_GLOBAL_AGENTS_END,
+      createSaneGlobalAgentsOverlay(packs, roles)
+    );
+    const status = rendered === body ? InventoryStatus.Installed : InventoryStatus.Invalid;
+    return {
+      name: "opencode-global-agents",
+      scope: InventoryScope.Compatibility,
+      status,
+      path: agentsPath,
+      repairHint: status === InventoryStatus.Invalid ? "rerun `export opencode`" : null
+    };
+  }
+
+  return {
+    name: "opencode-global-agents",
+    scope: InventoryScope.Compatibility,
+    status: InventoryStatus.PresentWithoutSaneBlock,
+    path: agentsPath,
+    repairHint: "run `export opencode`"
+  };
+}
+
+export function inspectOpencodeAgentsInventory(paths: ProjectPaths, codexPaths: CodexPaths) {
+  const { packs, roles } = activeGuidance(paths, codexPaths);
+  const agentsDir = opencodeAgentsDir(codexPaths);
+  const expected = expectedOpencodeAgentBodies(packs, roles).map(([name, body]) => [
+    join(agentsDir, `${name}.md`),
+    body
+  ] as const);
+  const missingCount = expected.filter(([path]) => !existsSync(path)).length;
+  const status =
+    missingCount === expected.length
       ? InventoryStatus.Missing
       : missingCount === 0
         ? expected.every(([path, body]) => readFileSync(path, "utf8") === body)
@@ -131,40 +475,187 @@ export function inspectOpencodeAgentsInventory(paths: ProjectPaths, codexPaths: 
     name: "opencode-agents",
     scope: InventoryScope.Compatibility,
     status,
-    path: codexPaths.opencodeGlobalAgentsDir,
+    path: agentsDir,
     repairHint:
       status === InventoryStatus.Installed
         ? null
         : status === InventoryStatus.Missing
-          ? "run `export opencode-agents`"
-          : "rerun `export opencode-agents`"
+          ? "run `export opencode`"
+          : "rerun `export opencode`"
   };
 }
 
-function activeModelRoutingGuidance(paths: ProjectPaths, codexPaths: CodexPaths): ModelRoleGuidance {
+function expectedOpencodeAgentBodies(
+  packs: GuidancePacks,
+  roles: ModelRoutingGuidance
+): Array<[string, string]> {
+  const packNotes = opencodePackNotes(packs);
+  return [
+    [
+      SANE_AGENT_NAME,
+      createOpencodeAgentTemplate({
+        description: "Primary Sane subagent for OpenCode execution lane.",
+        model: roles.coordinatorModel,
+        readOnly: false,
+        body: [
+          "Work with Sane philosophy:",
+          "- read repo AGENTS.md and repo-local skills first",
+          "- route broad work into lanes with disjoint write ownership",
+          "- keep context tight and verify meaningful behavior changes",
+          ...packNotes
+        ]
+      })
+    ],
+    [
+      SANE_REVIEWER_AGENT_NAME,
+      createOpencodeAgentTemplate({
+        description: "Read-only reviewer for Sane in OpenCode.",
+        model: roles.verifierModel,
+        readOnly: true,
+        body: [
+          "Review with Sane philosophy:",
+          "- findings first: bugs, regressions, risk, missing tests",
+          "- cite concrete file anchors and behavior",
+          "- avoid speculative churn",
+          ...packNotes
+        ]
+      })
+    ],
+    [
+      SANE_EXPLORER_AGENT_NAME,
+      createOpencodeAgentTemplate({
+        description: "Read-only explorer for Sane in OpenCode.",
+        model: roles.sidecarModel,
+        readOnly: true,
+        body: [
+          "Explore with Sane philosophy:",
+          "- map only relevant files and validators",
+          "- return concrete evidence and open questions",
+          "- keep context pressure low",
+          ...packNotes
+        ]
+      })
+    ],
+    [
+      SANE_IMPLEMENTATION_AGENT_NAME,
+      createOpencodeAgentTemplate({
+        description: "Implementation lane for Sane in OpenCode.",
+        model: roles.executionModel,
+        readOnly: false,
+        body: [
+          "Implement with Sane philosophy:",
+          "- own disjoint write scope and avoid collateral edits",
+          "- read local patterns before patching",
+          "- verify focused behavior after edits",
+          ...packNotes
+        ]
+      })
+    ],
+    [
+      SANE_REALTIME_AGENT_NAME,
+      createOpencodeAgentTemplate({
+        description: "Realtime helper lane for Sane in OpenCode.",
+        model: roles.realtimeModel,
+        readOnly: false,
+        body: [
+          "Run realtime Sane support:",
+          "- fast feedback loops, low-latency checks, tight context",
+          "- escalate to coordinator lane when risk or scope grows",
+          ...packNotes
+        ]
+      })
+    ]
+  ];
+}
+
+function createOpencodeAgentTemplate(input: {
+  description: string;
+  model: string;
+  readOnly: boolean;
+  body: string[];
+}): string {
+  const permissionBlock = input.readOnly
+    ? [
+        "permission:",
+        "  edit: deny",
+        "  bash: deny"
+      ]
+    : [];
+  return [
+    "---",
+    `description: ${input.description}`,
+    "mode: subagent",
+    `model: ${input.model}`,
+    "temperature: 0.1",
+    ...permissionBlock,
+    "---",
+    "",
+    ...input.body
+  ].join("\n");
+}
+
+function opencodePackNotes(packs: GuidancePacks): string[] {
+  const lines: string[] = [];
+  if (packs.caveman) {
+    lines.push("- caveman prose active when enabled");
+  }
+  if (packs.rtk) {
+    lines.push("- RTK-first shell/search/test route");
+  }
+  if (packs.frontendCraft) {
+    lines.push("- frontend craft/review/asset skills required for UI work");
+  }
+  return lines;
+}
+
+function activeGuidance(paths: ProjectPaths, codexPaths: CodexPaths): {
+  packs: GuidancePacks;
+  roles: ModelRoutingGuidance;
+} {
   const environment = detectCodexEnvironment(codexPaths.modelsCacheJson, codexPaths.authJson);
-  const config = loadOrDefaultConfig(paths, environment);
-
-  return {
-    coordinatorModel: config.models.coordinator.model,
-    coordinatorReasoning: config.models.coordinator.reasoningEffort,
-    sidecarModel: config.models.sidecar.model,
-    sidecarReasoning: config.models.sidecar.reasoningEffort,
-    verifierModel: config.models.verifier.model,
-    verifierReasoning: config.models.verifier.reasoningEffort
-  };
-}
-
-function loadOrDefaultConfig(
-  paths: ProjectPaths,
-  environment: ReturnType<typeof detectCodexEnvironment>
-) {
-  return recommendedLocalConfigFromEnvironment(
+  const config = recommendedLocalConfigFromEnvironment(
     paths,
     createRecommendedLocalConfig(environment)
   );
+  return {
+    packs: {
+      caveman: config.packs.caveman,
+      rtk: config.packs.rtk,
+      frontendCraft: config.packs.frontendCraft
+    },
+    roles: {
+      ...OPENCODE_GO_MODEL_ROUTING
+    }
+  };
 }
 
-function fileExists(path: string): boolean {
-  return existsSync(path);
+function opencodeRoot(codexPaths: CodexPaths): string {
+  return join(codexPaths.homeDir, ".config", "opencode");
+}
+
+function opencodeAgentsDir(codexPaths: CodexPaths): string {
+  return join(opencodeRoot(codexPaths), "agents");
+}
+
+function opencodeSkillsDir(codexPaths: CodexPaths): string {
+  return join(opencodeRoot(codexPaths), "skills");
+}
+
+function opencodeGlobalAgentsMd(codexPaths: CodexPaths): string {
+  return join(opencodeRoot(codexPaths), "AGENTS.md");
+}
+
+function isSaneOwnedSkillDir(path: string): boolean {
+  return existsSync(join(path, SKILL_OWNERSHIP_MARKER_FILE));
+}
+
+function collectUnownedSkillDirs(skillsRoot: string, skillNames: string[]): string[] {
+  const blocked = new Set<string>();
+  for (const name of skillNames) {
+    const path = join(skillsRoot, name);
+    if (existsSync(path) && !isSaneOwnedSkillDir(path)) {
+      blocked.add(path);
+    }
+  }
+  return [...blocked];
 }

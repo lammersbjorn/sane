@@ -37,8 +37,8 @@ describe("terminal driver", () => {
     const enter = stepTerminalDriver(runtime, "\r");
     expect(enter.key).toBe("enter");
     expect(enter.keys).toEqual(["enter"]);
-    expect(enter.result?.summary).toContain("codex-config: missing");
-    expect(enter.frame).toContain("Latest Status");
+    expect(enter.result).toBeNull();
+    expect(enter.frame).toContain("[Overlay: Model Defaults]");
     expect(enter.shouldExit).toBe(false);
   });
 
@@ -54,7 +54,7 @@ describe("terminal driver", () => {
     expect(step.keys).toEqual(["quit"]);
     expect(step.result).toBeNull();
     expect(step.shouldExit).toBe(true);
-    expect(step.frame).toContain("Section: get_started");
+    expect(step.frame).toContain("[Home]");
   });
 
   it("ignores unknown terminal input and keeps rendering", () => {
@@ -69,7 +69,7 @@ describe("terminal driver", () => {
     expect(step.keys).toEqual([]);
     expect(step.result).toBeNull();
     expect(step.shouldExit).toBe(false);
-    expect(step.frame).toContain("Section: get_started");
+    expect(step.frame).toContain("[Home]");
   });
 
   it("handles batched terminal chunks in order and still exits on quit", () => {
@@ -84,6 +84,6 @@ describe("terminal driver", () => {
     expect(step.keys).toEqual(["tab", "quit"]);
     expect(step.key).toBe("quit");
     expect(step.shouldExit).toBe(true);
-    expect(step.frame).toContain("Section: install");
+    expect(step.frame).toContain("[Add to Codex]");
   });
 });

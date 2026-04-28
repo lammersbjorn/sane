@@ -10,12 +10,10 @@ export class OperationKind {
   static readonly PreviewCodexProfile = new OperationKind("PreviewCodexProfile");
   static readonly PreviewIntegrationsProfile = new OperationKind("PreviewIntegrationsProfile");
   static readonly PreviewCloudflareProfile = new OperationKind("PreviewCloudflareProfile");
-  static readonly PreviewOpencodeProfile = new OperationKind("PreviewOpencodeProfile");
   static readonly PreviewStatuslineProfile = new OperationKind("PreviewStatuslineProfile");
   static readonly ApplyCodexProfile = new OperationKind("ApplyCodexProfile");
   static readonly ApplyIntegrationsProfile = new OperationKind("ApplyIntegrationsProfile");
   static readonly ApplyCloudflareProfile = new OperationKind("ApplyCloudflareProfile");
-  static readonly ApplyOpencodeProfile = new OperationKind("ApplyOpencodeProfile");
   static readonly ApplyStatuslineProfile = new OperationKind("ApplyStatuslineProfile");
   static readonly RestoreCodexConfig = new OperationKind("RestoreCodexConfig");
   static readonly ResetTelemetryData = new OperationKind("ResetTelemetryData");
@@ -27,7 +25,7 @@ export class OperationKind {
   static readonly ExportGlobalAgents = new OperationKind("ExportGlobalAgents");
   static readonly ExportHooks = new OperationKind("ExportHooks");
   static readonly ExportCustomAgents = new OperationKind("ExportCustomAgents");
-  static readonly ExportOpencodeAgents = new OperationKind("ExportOpencodeAgents");
+  static readonly ExportPlugin = new OperationKind("ExportPlugin");
   static readonly ExportAll = new OperationKind("ExportAll");
   static readonly UninstallUserSkills = new OperationKind("UninstallUserSkills");
   static readonly UninstallRepoSkills = new OperationKind("UninstallRepoSkills");
@@ -35,7 +33,7 @@ export class OperationKind {
   static readonly UninstallGlobalAgents = new OperationKind("UninstallGlobalAgents");
   static readonly UninstallHooks = new OperationKind("UninstallHooks");
   static readonly UninstallCustomAgents = new OperationKind("UninstallCustomAgents");
-  static readonly UninstallOpencodeAgents = new OperationKind("UninstallOpencodeAgents");
+  static readonly UninstallPlugin = new OperationKind("UninstallPlugin");
   static readonly UninstallAll = new OperationKind("UninstallAll");
 
   private constructor(readonly value: string) {}

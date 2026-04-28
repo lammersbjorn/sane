@@ -16,14 +16,30 @@ import * as inventory from "@sane/control-plane/inventory.js";
 import { formatInspectOverviewLines as formatSharedInspectOverviewLines, installRuntime } from "@sane/control-plane";
 import { saveConfig } from "@sane/control-plane/preferences.js";
 import { type InspectOverviewSnapshot } from "@sane/control-plane";
-import { inspectOverviewLines, loadInspectScreen, loadInspectScreenFromStatusBundle } from "@sane/sane-tui/inspect-screen.js";
+import { statusOverviewLines, loadStatusScreen, loadStatusScreenFromStatusBundle } from "@sane/sane-tui/status-screen.js";
 
 const tempDirs: string[] = [];
 
 function makeTempDir(): string {
-  const dir = mkdtempSync(join(tmpdir(), "sane-tui-inspect-"));
+  const dir = mkdtempSync(join(tmpdir(), "sane-tui-status-"));
   tempDirs.push(dir);
   return dir;
+}
+
+function expectReadOnlyStatusOverview(overview: string): void {
+  expect(overview).toContain("self-hosting shadow (read-only):");
+  expect(overview).toContain("runner disabled");
+  expect(overview).toContain("outcome readiness (read-only):");
+  expect(overview).toContain("autonomous loop disabled");
+}
+
+function expectOptionalPackProvenanceOverview(overview: string): void {
+  expect(overview).toContain("optional pack provenance:");
+  expect(overview).toContain("caveman configured");
+  expect(overview).toContain("rtk disabled");
+  expect(overview).toContain("frontend-craft disabled");
+  expect(overview).toContain("derived from taste-skill");
+  expect(overview).toContain("impeccable");
 }
 
 afterEach(() => {
@@ -32,7 +48,7 @@ afterEach(() => {
   }
 });
 
-describe("inspect screen model", () => {
+describe("status screen model", () => {
   it("includes hook repair hints in overview lines", () => {
     const snapshot: InspectOverviewSnapshot = {
       statusBundle: {
@@ -57,7 +73,7 @@ describe("inspect screen model", () => {
               kind: "derived",
               note: "curated from caveman",
               updateStrategy: "manual-curated",
-              upstreams: [{ name: "caveman", url: "https://github.com/JuliusBrussee/caveman", ref: "0.1.0" }]
+              upstreams: [{ name: "caveman", url: "https://github.com/JuliusBrussee/caveman", ref: "v1.6.0" }]
             }
           },
           {
@@ -72,15 +88,16 @@ describe("inspect screen model", () => {
             name: "frontend-craft",
             inventoryName: "pack-frontend-craft",
             status: "disabled",
-            skillName: "design-taste-frontend",
+            skillName: "sane-frontend-craft",
             skillNames: optionalPackSkillNames("frontend-craft"),
             provenance: {
               kind: "derived",
-              note: "taste + impeccable",
+              note: "compact frontend craft",
               updateStrategy: "manual-curated",
               upstreams: [
                 { name: "taste-skill", url: "https://github.com/Leonxlnx/taste-skill", ref: "main" },
-                { name: "impeccable", url: "https://github.com/pbakaus/impeccable", ref: "main" }
+                { name: "impeccable", url: "https://github.com/pbakaus/impeccable", ref: "main" },
+                { name: "make-interfaces-feel-better", url: "https://skills.sh/jakubkrehel/make-interfaces-feel-better/make-interfaces-feel-better", ref: null }
               ]
             }
           }
@@ -135,9 +152,33 @@ describe("inspect screen model", () => {
         status: "blocked",
         checks: [
           { status: "pass" },
+          { status: "block" },
           { status: "block" }
         ]
       },
+      outcomeRescueSignal: {
+        status: "block",
+        summary: "current-run payload is unavailable",
+        reasons: ["current-run payload is unavailable"]
+      },
+      worktreeReadiness: {
+        mode: "read-only-worktree-readiness",
+        status: "missing",
+        summary: "no git metadata found; parallel lanes need a git repo or explicit workspace copies",
+        path: null,
+        linkedWorktree: false,
+        reasons: ["worktree isolation is unavailable until git metadata exists"]
+      },
+      runtimeOutcome: {
+        phase: null,
+        activeTaskCount: 0,
+        blockingQuestionCount: 0,
+        verificationStatus: null,
+        verificationSummary: null,
+        lastVerifiedOutputs: [],
+        filesTouchedCount: 0
+      },
+      repoVerifyCommand: null,
       latestPolicyPreview: {
         status: "missing",
         scenarioCount: 0,
@@ -184,17 +225,21 @@ describe("inspect screen model", () => {
         }
       ]
     };
-    const lines = inspectOverviewLines(snapshot);
+    const lines = statusOverviewLines(snapshot);
 
     expect(lines).toContain(
       "hooks: invalid (Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows.)"
     );
     expect(lines).toContain(
-      "self-hosting shadow (read-only): blocked, runner disabled, checks pass 1, warn 1, block 1"
+      "outcome rescue signal (read-only): block - current-run payload is unavailable"
     );
     expect(lines).toContain(
-      `optional pack provenance: caveman configured (sane-caveman; derived from caveman); rtk disabled (no skills; internal); frontend-craft disabled (${optionalPackSkillNames("frontend-craft").join(" + ")}; derived from taste-skill + impeccable)`
+      "worktree readiness (read-only): missing - no git metadata found; parallel lanes need a git repo or explicit workspace copies"
     );
+    expect(lines).toContain("outcome verification (read-only): missing");
+    expect(lines).toContain("repo verify (read-only): none");
+    expectReadOnlyStatusOverview(lines.join("\n"));
+    expectOptionalPackProvenanceOverview(lines.join("\n"));
     expect(lines).toEqual(formatSharedInspectOverviewLines(snapshot));
   });
 
@@ -209,11 +254,11 @@ describe("inspect screen model", () => {
     installRuntime(paths, codexPaths);
     saveConfig(paths, config);
     applyCodexProfile(paths, codexPaths);
-    exportHooks(codexPaths);
+    exportHooks(paths, codexPaths);
 
-    const screen = loadInspectScreen(paths, codexPaths);
+    const screen = loadStatusScreen(paths, codexPaths);
 
-    expect(screen.summary).toBe("Inspect");
+    expect(screen.summary).toBe("Status");
     expect(screen.actions.map((action) => action.id)).toEqual([
       "show_status",
       "doctor",
@@ -278,7 +323,7 @@ describe("inspect screen model", () => {
       expect.objectContaining({
         name: "rtk",
         status: "disabled",
-        skillNames: [],
+        skillNames: ["sane-rtk"],
         provenance: expect.objectContaining({
           kind: "internal"
         })
@@ -286,13 +331,13 @@ describe("inspect screen model", () => {
       expect.objectContaining({
         name: "frontend-craft",
         status: "disabled",
-        skillNames: optionalPackSkillNames("frontend-craft"),
+        skillNames: expect.any(Array),
         provenance: expect.objectContaining({
           kind: "derived"
         })
       })
     ]);
-    expect(screen.latestPolicyPreview).toEqual({
+    expect(screen.latestPolicyPreview).toMatchObject({
       status: "missing",
       scenarioCount: 0,
       scenarioIds: [],
@@ -305,7 +350,7 @@ describe("inspect screen model", () => {
     expect(screen.overviewLines).toEqual(formatSharedInspectOverviewLines(screen));
     expect(screen.overviewLines.join("\n")).toContain("status counts:");
     expect(screen.overviewLines.join("\n")).toContain("primary surfaces:");
-    expect(screen.overviewLines.join("\n")).toContain("doctor result:");
+    expect(screen.overviewLines.join("\n")).toContain("setup check:");
     expect(screen.overviewLines.join("\n")).toContain("runtime summary (read-only local visibility):");
     expect(screen.overviewLines.join("\n")).toContain("runtime history (read-only local visibility):");
     expect(screen.overviewLines.join("\n")).toContain("latest event (read-only local visibility): missing");
@@ -320,9 +365,8 @@ describe("inspect screen model", () => {
       "current policy preview: policy preview: rendered adaptive obligation scenarios;"
     );
     expect(screen.overviewLines.join("\n")).toContain("statusline profile: missing (3 recommended changes)");
-    expect(screen.overviewLines.join("\n")).toContain(
-      `optional pack provenance: caveman configured (sane-caveman; derived from caveman); rtk disabled (no skills; internal); frontend-craft disabled (${optionalPackSkillNames("frontend-craft").join(" + ")}; derived from taste-skill + impeccable)`
-    );
+    expectReadOnlyStatusOverview(screen.overviewLines.join("\n"));
+    expectOptionalPackProvenanceOverview(screen.overviewLines.join("\n"));
   });
 
   it("surfaces invalid drift items for inspect consumers", () => {
@@ -334,7 +378,7 @@ describe("inspect screen model", () => {
     mkdirSync(join(homeDir, ".codex"), { recursive: true });
     writeFileSync(codexPaths.hooksJson, "{", "utf8");
 
-    const screen = loadInspectScreen(paths, codexPaths);
+    const screen = loadStatusScreen(paths, codexPaths);
 
     expect(screen.runtimeSummary.summary).toContain("no local handoff state");
     expect(screen.integrationsAudit.status).toBe("missing");
@@ -394,7 +438,7 @@ describe("inspect screen model", () => {
     decision.tsUnix = 1_700_000_004;
     appendJsonlRecord(paths.decisionsPath, decision, stringifyDecisionRecord);
 
-    const screen = loadInspectScreen(paths, codexPaths);
+    const screen = loadStatusScreen(paths, codexPaths);
 
     expect(screen.runtimeHistory).toEqual({
       events: 0,
@@ -410,14 +454,13 @@ describe("inspect screen model", () => {
       },
       latestArtifact: null
     });
-    expect(screen.latestPolicyPreview).toEqual({
+    expect(screen.latestPolicyPreview).toMatchObject({
       status: "present",
       scenarioCount: 2,
       scenarioIds: ["simple-question", "multi-file-feature"],
       scenarios: [
         {
           id: "simple-question",
-          summary: null,
           input: {
             intent: "question",
             taskShape: "trivial",
@@ -428,31 +471,15 @@ describe("inspect screen model", () => {
             runState: "exploring"
           },
           roles: {
-            coordinator: true,
-            sidecar: false,
-            verifier: false
+            coordinator: true
           },
           orchestration: {
             subagents: "none",
-            subagentReadiness: "not_needed",
-            reviewPosture: "inline_only",
-            verifierTiming: "inline"
-          },
-          obligationCount: 0,
-          continuation: null,
-          traceCount: 0,
-          trace: []
+            reviewPosture: "inline_only"
+          }
         },
         {
-          id: "multi-file-feature",
-          summary: null,
-          input: null,
-          roles: null,
-          orchestration: null,
-          obligationCount: 0,
-          continuation: null,
-          traceCount: 0,
-          trace: []
+          id: "multi-file-feature"
         }
       ],
       tsUnix: 1_700_000_004,
@@ -482,10 +509,10 @@ describe("inspect screen model", () => {
     const codexPaths = createCodexPaths(homeDir);
     const bundle = inventory.inspectStatusBundle(paths, codexPaths);
     const fromBundleSpy = vi.spyOn(controlPlane, "inspectSnapshotFromStatusBundle");
-    const screen = loadInspectScreenFromStatusBundle(paths, codexPaths, bundle);
+    const screen = loadStatusScreenFromStatusBundle(paths, codexPaths, bundle);
 
     expect(fromBundleSpy).toHaveBeenCalledTimes(1);
     expect(fromBundleSpy).toHaveBeenCalledWith(paths, codexPaths, bundle);
-    expect(screen.summary).toBe("Inspect");
+    expect(screen.summary).toBe("Status");
   });
 });

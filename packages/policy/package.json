@@ -4,7 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./*.js": "./src/*.ts"
+    "./index.js": "./src/index.ts"
   },
   "scripts": {
     "test": "vitest run",

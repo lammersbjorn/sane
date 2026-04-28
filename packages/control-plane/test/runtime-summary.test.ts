@@ -94,6 +94,7 @@ describe("showRuntimeSummary", () => {
     expect(result.details).toContain("objective: initialize sane runtime");
     expect(result.details).toContain("phase: setup");
     expect(result.details).toContain("verification: pending (runtime scaffolding created)");
+    expect(result.details).toContain("rescue signal: pass (no rescue signals detected)");
     expect(result.details).toContain("active tasks: install sane runtime");
     expect(result.details).toContain("completed milestones: none");
     expect(result.details).toContain("brief preview:");

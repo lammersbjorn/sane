@@ -49,6 +49,29 @@ export interface InspectOverviewSnapshot {
       status: "pass" | "warn" | "block";
     }>;
   };
+  outcomeRescueSignal: {
+    status: "pass" | "warn" | "block";
+    summary: string;
+    reasons: string[];
+  };
+  worktreeReadiness: {
+    mode: "read-only-worktree-readiness";
+    status: "ready" | "limited" | "missing";
+    summary: string;
+    path: string | null;
+    linkedWorktree: boolean;
+    reasons: string[];
+  };
+  runtimeOutcome: {
+    phase: string | null;
+    activeTaskCount: number;
+    blockingQuestionCount: number;
+    verificationStatus: string | null;
+    verificationSummary: string | null;
+    lastVerifiedOutputs: string[];
+    filesTouchedCount: number;
+  };
+  repoVerifyCommand: string | null;
   latestPolicyPreview: LatestPolicyPreviewSnapshot;
   policyPreview: InspectCurrentPolicyPreview;
   localConfig: {
@@ -91,7 +114,7 @@ export function formatInspectOverviewLines(snapshot: InspectOverviewSnapshot): s
     `status counts: installed ${counts.installed}, configured ${counts.configured}, disabled ${counts.disabled}, missing ${counts.missing}, invalid ${counts.invalid}, drift ${snapshot.statusBundle.driftItems.length}`,
     `primary surfaces: runtime ${primary.runtime}, codex ${primary.codexConfig}, user ${primary.userSkills}, hooks ${hooksLabel}, custom-agents ${primary.customAgents}`,
     `install bundle: ${snapshot.statusBundle.primary.installBundle}`,
-    `doctor result: ${snapshot.doctorHeadline}`,
+    `setup check: ${snapshot.doctorHeadline}`,
     `runtime summary (read-only local visibility): ${snapshot.runtimeSummary.summary}`,
     `runtime history (read-only local visibility): events ${snapshot.runtimeHistory.events}, decisions ${snapshot.runtimeHistory.decisions}, artifacts ${snapshot.runtimeHistory.artifacts}`,
     `latest event (read-only local visibility): ${formatLatestHistoryEventPreview(snapshot.runtimeHistoryPreview.latestEvent)}`,
@@ -99,6 +122,12 @@ export function formatInspectOverviewLines(snapshot: InspectOverviewSnapshot): s
     `latest artifact (read-only local visibility): ${formatLatestHistoryArtifactPreview(snapshot.runtimeHistoryPreview.latestArtifact)}`,
     `self-hosting shadow (read-only): ${snapshot.selfHostingShadow.status}, runner disabled, checks ${formatSelfHostingShadowCheckCounts(snapshot.selfHostingShadow.checks)}`,
     `outcome readiness (read-only): ${snapshot.outcomeReadiness.status}, autonomous loop disabled, checks ${formatCheckCounts(snapshot.outcomeReadiness.checks)}`,
+    `outcome rescue signal (read-only): ${snapshot.outcomeRescueSignal.status} - ${snapshot.outcomeRescueSignal.summary}`,
+    `worktree readiness (read-only): ${snapshot.worktreeReadiness.status} - ${snapshot.worktreeReadiness.summary}`,
+    `outcome verification (read-only): ${formatInspectOutcomeVerificationLine(snapshot.runtimeOutcome)}`,
+    `outcome progress (read-only): ${formatInspectOutcomeProgressLine(snapshot.runtimeOutcome)}`,
+    `last verified outputs (read-only): ${joinInspectSummaryList(snapshot.runtimeOutcome.lastVerifiedOutputs)}`,
+    `repo verify (read-only): ${snapshot.repoVerifyCommand ?? "none"}`,
     "",
     ...formatInspectPolicyPreviewLines(snapshot.latestPolicyPreview, snapshot.policyPreview, {
       inputPrefix: "latest policy input"
@@ -137,6 +166,30 @@ function formatCheckCounts(
   const block = checks.filter((check) => check.status === "block").length;
 
   return `pass ${pass}, warn ${warn}, block ${block}`;
+}
+
+function formatInspectOutcomeVerificationLine(
+  runtimeOutcome: InspectOverviewSnapshot["runtimeOutcome"]
+): string {
+  if (!runtimeOutcome.verificationStatus) {
+    return "missing";
+  }
+
+  return runtimeOutcome.verificationSummary
+    ? `${runtimeOutcome.verificationStatus} (${runtimeOutcome.verificationSummary})`
+    : runtimeOutcome.verificationStatus;
+}
+
+function formatInspectOutcomeProgressLine(
+  runtimeOutcome: InspectOverviewSnapshot["runtimeOutcome"]
+): string {
+  const phase = runtimeOutcome.phase ?? "missing";
+
+  return `phase ${phase}, active tasks ${runtimeOutcome.activeTaskCount}, blocking questions ${runtimeOutcome.blockingQuestionCount}, files touched ${runtimeOutcome.filesTouchedCount}`;
+}
+
+function joinInspectSummaryList(values: string[]): string {
+  return values.length === 0 ? "none" : values.join(", ");
 }
 
 export function formatInspectConflictSummaryLine(

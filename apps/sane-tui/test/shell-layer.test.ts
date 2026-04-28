@@ -32,7 +32,7 @@ describe("shell layer", () => {
 
     const state = shell.createShellState();
 
-    expect(state.sectionId).toBe("get_started");
+    expect(state.sectionId).toBe("home");
     expect(state.actionIndex).toBe(0);
   });
 
@@ -41,16 +41,16 @@ describe("shell layer", () => {
 
     const state = shell.createShellState({ launchShortcut: "settings" });
 
-    expect(state.sectionId).toBe("preferences");
+    expect(state.sectionId).toBe("settings");
     expect(state.actionIndex).toBe(0);
   });
 
   it("supports inspect shortcut launch into inspect", async () => {
     const shell = await loadShellLayer();
 
-    const state = shell.createShellState({ launchShortcut: "inspect" });
+    const state = shell.createShellState({ launchShortcut: "status" });
 
-    expect(state.sectionId).toBe("inspect");
+    expect(state.sectionId).toBe("status");
     expect(state.actionIndex).toBe(0);
   });
 
@@ -59,11 +59,11 @@ describe("shell layer", () => {
 
     let state = shell.createShellState();
     state = shell.moveSectionSelection(state, -1);
-    expect(state.sectionId).toBe("repair");
+    expect(state.sectionId).toBe("uninstall");
     expect(state.actionIndex).toBe(0);
 
     state = shell.moveActionSelection(state, -1);
-    expect(state.actionIndex).toBe(listSectionActions("repair").length - 1);
+    expect(state.actionIndex).toBe(listSectionActions("uninstall").length - 1);
 
     state = shell.moveActionSelection(state, 1);
     expect(state.actionIndex).toBe(0);
@@ -71,7 +71,7 @@ describe("shell layer", () => {
 
   it("routes risky actions through a confirmation gate before execution", async () => {
     const shell = await loadShellLayer();
-    const riskyIndex = listSectionActions("get_started").findIndex(
+    const riskyIndex = listSectionActions("home").findIndex(
       (action) => action.id === "apply_codex_profile"
     );
     expect(riskyIndex).toBeGreaterThanOrEqual(0);

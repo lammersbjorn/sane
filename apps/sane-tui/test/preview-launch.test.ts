@@ -15,6 +15,16 @@ describe("preview launch planning", () => {
     });
 
     expect(
+      planPreviewLaunch(["install"], {
+        stdinIsTty: true,
+        stdoutIsTty: true
+      })
+    ).toEqual({
+      kind: "terminal",
+      launchShortcut: "install"
+    });
+
+    expect(
       planPreviewLaunch(["settings"], {
         stdinIsTty: true,
         stdoutIsTty: true
@@ -25,13 +35,23 @@ describe("preview launch planning", () => {
     });
 
     expect(
+      planPreviewLaunch(["status"], {
+        stdinIsTty: true,
+        stdoutIsTty: true
+      })
+    ).toEqual({
+      kind: "terminal",
+      launchShortcut: "status"
+    });
+
+    expect(
       planPreviewLaunch(["inspect"], {
         stdinIsTty: true,
         stdoutIsTty: true
       })
     ).toEqual({
       kind: "terminal",
-      launchShortcut: "inspect"
+      launchShortcut: "status"
     });
   });
 
@@ -47,15 +67,15 @@ describe("preview launch planning", () => {
     });
   });
 
-  it("keeps backend commands on the text path even on a tty", () => {
+  it("keeps advanced backend commands on the text path even on a tty", () => {
     expect(
-      planPreviewLaunch(["install"], {
+      planPreviewLaunch(["install-runtime"], {
         stdinIsTty: true,
         stdoutIsTty: true
       })
     ).toEqual({
       kind: "text",
-      args: ["install"]
+      args: ["install-runtime"]
     });
   });
 });

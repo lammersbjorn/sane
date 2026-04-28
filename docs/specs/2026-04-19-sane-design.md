@@ -1,5 +1,8 @@
 # Sane Design Spec
 
+> [!WARNING]
+> Historical planning snapshot (dated 2026-04-19). Use this document for archived design intent only. Current product surface and naming live in `README.md`, `docs/what-sane-does.md`, and newer dated specs.
+
 ## Vision
 
 `Sane` is a QoL agent framework for Codex. It should improve the quality, speed, and ergonomics of working with Codex without forcing users into a command language, rigid workflow, or repo-bound setup. It must remain useful in ordinary repos, in long multi-hour sessions, and for users with minimal prior customization.
@@ -181,8 +184,12 @@ The state model should separate stable policy, thin operational state, and human
 
 ### Subagent Policy
 
-- single-agent by default
-- subagents only when work decomposes cleanly
+- subagent-first for all non-tiny work
+- stay single-agent only for tiny direct answers
+- broad work needs a lane plan and successful subagent handoff before deep work
+- broad review needs explorer/reviewer lanes; if higher-priority tool rules require explicit subagent authorization and it is missing, ask and pause
+- broad editing needs an implementation lane with a disjoint write scope
+- keep subagent lanes bounded and independently owned so coordinator can merge safely
 - choose model and reasoning settings per subtask using task-shaped presets:
   - `explorer`
   - `implementation`

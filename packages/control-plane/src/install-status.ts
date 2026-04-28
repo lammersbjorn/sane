@@ -18,7 +18,7 @@ export type InstallActionStatusId =
   | "apply_integrations_profile"
   | "export_hooks"
   | "export_custom_agents"
-  | "export_opencode_agents"
+  | "export_plugin"
   | "export_all";
 
 export type InstallActionStatusKind = ManagedStatusKind;
@@ -87,7 +87,7 @@ export function inspectInstallStatusFromStatusBundle(
       apply_integrations_profile: integrationsStatusSnapshot,
       export_hooks: inventoryStatus(inventory, "hooks"),
       export_custom_agents: inventoryStatus(inventory, "custom-agents"),
-      export_opencode_agents: compatibilityStatus(statusBundle, "opencode-agents"),
+      export_plugin: inventoryStatus(inventory, "plugin"),
       export_all: installBundleStatus(bundleStatus)
     }
   };
@@ -126,13 +126,6 @@ export function inferHostPlatformFromStatusBundle(
     && hooksInventory.repairHint?.includes("native Windows")
     ? "windows"
     : detectPlatform();
-}
-
-function compatibilityStatus(
-  statusBundle: ReturnType<typeof inspectStatusBundle>,
-  name: string
-): InstallActionStatus {
-  return fromInventoryStatus(statusBundle.compatibility.find((item) => item.name === name)?.status);
 }
 
 function integrationsStatus(status: "installed" | "missing" | "invalid"): InstallActionStatus {

@@ -39,26 +39,29 @@ Keep the current mainline moving until there is a real blocker. Delegate side ta
 ## How To Run
 
 1. Re-read current repo state before guessing from memory or old chat.
-2. If `continue` is truly ambiguous, ask one short question once at the start. Otherwise do not ask.
-3. Pick the highest-value next slice that is small enough to verify and meaningful enough to move the project forward.
-4. Use repo-local agents, tools, skills, local state, and routing defaults when present.
-5. Preserve the repo's own terminology and current surface names. If the user points at a file, command, path, screen, or label, inspect it before arguing from memory.
-6. Use parallel read/research lanes aggressively when safe. Keep one write lane when edits would conflict.
-7. Delegate side tasks and bounded side lanes by default when possible so mainline progress does not stall.
-8. If the user injects a side task:
+2. Obey the repo shell policy before every shell tool call. If RTK is required, prefer RTK-native commands such as `rtk grep`, `rtk read`, `rtk diff`, `rtk test`, `rtk pnpm`, and `rtk git`; use `rtk run '<command>'` only when no native RTK command fits.
+3. If `continue` is truly ambiguous, ask one short question once at the start. Otherwise do not ask.
+4. Pick the highest-value next slice that is small enough to verify and meaningful enough to move the project forward.
+5. Use repo-local agents, tools, skills, local state, and routing defaults when present.
+6. Preserve the repo's own terminology and current surface names. If the user points at a file, command, path, screen, or label, inspect it before arguing from memory.
+7. Use parallel read/research lanes aggressively when safe.
+8. For broad or multi-file work, load `sane-agent-lanes`, make a lane plan, and get a successful subagent handoff before deep work. Broad reviews need explorer/reviewer lanes; broad edits need at least one implementation lane with a disjoint write scope. If higher-priority rules require explicit subagent authorization and it is missing, ask and pause instead of doing a tiny solo substitute.
+9. Delegate side tasks and bounded side lanes by default when possible so mainline progress does not stall.
+10. If the user injects a side task:
    - delegate it when possible
    - do it directly only when delegation does not make sense
    - then resume the mainline automatically
-9. When a repo exposes local subagents, tools, or skills, prefer using them instead of ad hoc habits so the workflow can self-improve later.
-10. Keep model and reasoning choice task-shaped instead of reusing one default everywhere.
-11. Use the lightest process that still works:
+11. When a repo exposes local subagents, tools, or skills, prefer using them instead of ad hoc habits so the workflow can self-improve later.
+12. When committing, copy the repo's commit message style; if none exists or it is poor, default to Conventional Commits.
+13. Keep model and reasoning choice task-shaped instead of reusing one default everywhere.
+14. Use the lightest process that still works:
    - no mandatory mega-plan unless ambiguity or risk is real
    - no per-tool narration
    - brief milestone updates only
    - answer from context directly when no extra tooling is needed
-12. If you reread or re-edit the same area twice without real progress, switch approach instead of looping.
-13. After any side answer, research result, checkpoint, or verify pass, keep going on the mainline unless the user explicitly paused or a real blocker exists.
-14. Stop only for a real blocker:
+15. If you reread or re-edit the same area twice without real progress, switch approach instead of looping.
+16. After any side answer, research result, checkpoint, or verify pass, keep going on the mainline unless the user explicitly paused or a real blocker exists.
+17. Stop only for a real blocker:
    - missing required decision the repo/context does not answer
    - missing credential or dependency with no workaround
    - destructive risk requiring approval

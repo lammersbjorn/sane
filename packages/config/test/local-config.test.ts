@@ -55,13 +55,24 @@ describe('local config parity', () => {
   it('contains default model role presets', () => {
     const config = createDefaultLocalConfig();
 
-    expect(config.models.coordinator.model).toBe('gpt-5.4');
-    expect(config.models.coordinator.reasoningEffort).toBe('high');
+    expect(config.models.coordinator.model).toBe('gpt-5.5');
+    expect(config.models.coordinator.reasoningEffort).toBe('medium');
     expect(config.models.sidecar.model).toBe('gpt-5.4-mini');
-    expect(config.models.verifier.model).toBe('gpt-5.4');
+    expect(config.models.verifier.model).toBe('gpt-5.5');
     expect(config.models.verifier.reasoningEffort).toBe('high');
+    expect(config.subagents.explorer.model).toBe('gpt-5.4-mini');
+    expect(config.subagents.implementation.model).toBe('gpt-5.3-codex');
+    expect(config.subagents.verifier.model).toBe('gpt-5.5');
+    expect(config.subagents.realtime.model).toBe('gpt-5.3-codex-spark');
+    expect(config.subagents.frontendCraft.model).toBe('gpt-5.5');
+    expect(config.subagents.frontendCraft.reasoningEffort).toBe('high');
     expect(config.privacy.telemetry).toBe('off');
     expect(enabledPackNames(config.packs)).toEqual(['core']);
+    expect(config.lifecycleHooks).toEqual({
+      tokscaleSubmit: false,
+      tokscaleDryRun: true,
+      rateLimitResume: false,
+    });
   });
 
   it('rejects unknown models', () => {
@@ -81,11 +92,43 @@ describe('local config parity', () => {
       'rtk',
       'frontend-craft',
     ]);
+    expect(config.lifecycleHooks).toEqual({
+      tokscaleSubmit: true,
+      tokscaleDryRun: false,
+      rateLimitResume: true,
+    });
   });
 
   it('rejects disabling the core pack', () => {
     expect(() => parseLocalConfigToml(readFixture('invalid-core-disabled.toml'))).toThrow(
       /core pack must stay enabled/,
     );
+  });
+
+  it('fills frontend-craft subagent defaults for legacy subagent blocks', () => {
+    const config = parseLocalConfigToml(`
+version = 1
+
+[subagents.explorer]
+model = "gpt-5.4-mini"
+reasoning_effort = "low"
+
+[subagents.implementation]
+model = "gpt-5.3-codex"
+reasoning_effort = "medium"
+
+[subagents.verifier]
+model = "gpt-5.5"
+reasoning_effort = "high"
+
+[subagents.realtime]
+model = "gpt-5.3-codex-spark"
+reasoning_effort = "low"
+`);
+
+    expect(config.subagents.frontendCraft).toEqual({
+      model: 'gpt-5.5',
+      reasoningEffort: 'high',
+    });
   });
 });

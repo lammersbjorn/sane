@@ -5,11 +5,11 @@ import {
 import { inspectPreferencesFamilySnapshot } from "@sane/control-plane/preferences.js";
 import { listSectionActions, type UiCommandId } from "@sane/sane-tui/command-registry.js";
 
-type PreferencesSnapshotModel = ReturnType<typeof inspectPreferencesFamilySnapshot>["preferences"];
+type SettingsSnapshotModel = ReturnType<typeof inspectPreferencesFamilySnapshot>["preferences"];
 type CodexProfileFamily = ReturnType<typeof inspectCodexProfileFamilySnapshot>;
-type PreferencesFamily = ReturnType<typeof inspectPreferencesFamilySnapshot>;
+type SettingsFamily = ReturnType<typeof inspectPreferencesFamilySnapshot>;
 
-export interface PreferencesScreenAction {
+export interface SettingsScreenAction {
   id: Extract<
     UiCommandId,
     | "open_config_editor"
@@ -21,22 +21,20 @@ export interface PreferencesScreenAction {
     | "apply_statusline_profile"
     | "preview_cloudflare_profile"
     | "apply_cloudflare_profile"
-    | "preview_opencode_profile"
-    | "apply_opencode_profile"
   >;
   title: string;
   kind: "config-editor" | "pack-editor" | "privacy-editor" | "backend";
 }
 
-export interface PreferencesScreenModel {
-  summary: "Preferences";
-  source: PreferencesSnapshotModel["source"];
-  models: PreferencesSnapshotModel["models"];
-  derivedRouting: PreferencesSnapshotModel["derivedRouting"];
-  subagents: PreferencesSnapshotModel["subagents"];
-  modelCapabilities: PreferencesSnapshotModel["modelCapabilities"];
-  telemetry: PreferencesSnapshotModel["telemetry"];
-  telemetryFiles: PreferencesSnapshotModel["telemetryFiles"];
+export interface SettingsScreenModel {
+  summary: "Settings";
+  source: SettingsSnapshotModel["source"];
+  models: SettingsSnapshotModel["models"];
+  derivedRouting: SettingsSnapshotModel["derivedRouting"];
+  subagents: SettingsSnapshotModel["subagents"];
+  modelCapabilities: SettingsSnapshotModel["modelCapabilities"];
+  telemetry: SettingsSnapshotModel["telemetry"];
+  telemetryFiles: SettingsSnapshotModel["telemetryFiles"];
   enabledPacks: string[];
   statuslineAudit: ReturnType<typeof inspectCodexProfileFamilySnapshot>["statusline"]["audit"];
   statuslineApply: ReturnType<typeof inspectCodexProfileFamilySnapshot>["statusline"]["apply"];
@@ -44,21 +42,18 @@ export interface PreferencesScreenModel {
   cloudflareAudit: ReturnType<typeof inspectCodexProfileFamilySnapshot>["cloudflare"]["audit"];
   cloudflareApply: ReturnType<typeof inspectCodexProfileFamilySnapshot>["cloudflare"]["apply"];
   cloudflarePreview: ReturnType<typeof inspectCodexProfileFamilySnapshot>["cloudflare"]["preview"];
-  opencodeAudit: ReturnType<typeof inspectCodexProfileFamilySnapshot>["opencode"]["audit"];
-  opencodeApply: ReturnType<typeof inspectCodexProfileFamilySnapshot>["opencode"]["apply"];
-  opencodePreview: ReturnType<typeof inspectCodexProfileFamilySnapshot>["opencode"]["preview"];
-  actions: PreferencesScreenAction[];
+  actions: SettingsScreenAction[];
 }
 
-export function loadPreferencesScreen(
+export function loadSettingsScreen(
   paths: ProjectPaths,
   codexPaths: CodexPaths,
   profiles: CodexProfileFamily = inspectCodexProfileFamilySnapshot(codexPaths),
-  preferencesFamily: PreferencesFamily = inspectPreferencesFamilySnapshot(paths, codexPaths),
+  preferencesFamily: SettingsFamily = inspectPreferencesFamilySnapshot(paths, codexPaths),
   hostPlatform: HostPlatform = detectPlatform()
-): PreferencesScreenModel {
-  const actions: PreferencesScreenAction[] = listSectionActions("preferences", hostPlatform).map((action) => ({
-    id: action.id as PreferencesScreenAction["id"],
+): SettingsScreenModel {
+  const actions: SettingsScreenAction[] = listSectionActions("settings", hostPlatform).map((action) => ({
+    id: action.id as SettingsScreenAction["id"],
     title: action.label,
     kind:
       action.id === "open_pack_editor"
@@ -71,7 +66,7 @@ export function loadPreferencesScreen(
   }));
   const snapshot = preferencesFamily.preferences;
   return {
-    summary: "Preferences",
+    summary: "Settings",
     source: snapshot.source,
     models: snapshot.models,
     derivedRouting: snapshot.derivedRouting,
@@ -86,9 +81,6 @@ export function loadPreferencesScreen(
     cloudflareAudit: profiles.cloudflare.audit,
     cloudflareApply: profiles.cloudflare.apply,
     cloudflarePreview: profiles.cloudflare.preview,
-    opencodeAudit: profiles.opencode.audit,
-    opencodeApply: profiles.opencode.apply,
-    opencodePreview: profiles.opencode.preview,
     actions
   };
 }

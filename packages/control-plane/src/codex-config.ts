@@ -74,23 +74,6 @@ export interface CloudflareProfileApplyResult {
   details: string[];
 }
 
-export interface OpencodeProfileAudit {
-  status: "installed" | "missing" | "invalid";
-  recommendedChangeCount: number;
-  target: "opensrc";
-  details: string[];
-}
-
-export type OpencodeProfileStatus = OpencodeProfileAudit["status"];
-export type OpencodeProfileApplyResultStatus = "blocked_invalid" | "already_satisfied" | "ready";
-export type OpencodeProfileAppliedKey = "mcp_servers.opensrc";
-export interface OpencodeProfileApplyResult {
-  status: OpencodeProfileApplyResultStatus;
-  recommendedChangeCount: number;
-  appliedKeys: OpencodeProfileAppliedKey[];
-  details: string[];
-}
-
 export interface StatuslineProfileAudit {
   status: "installed" | "missing" | "invalid";
   recommendedChangeCount: number;
@@ -121,6 +104,7 @@ export type CodexConfigConflictWarningKind =
   | "disabled_codex_hooks"
   | "codex_profile_drift"
   | "codex_native_memories_enabled"
+  | "oversized_guidance_file"
   | "managed_mcp_server_drift"
   | "statusline_profile_drift"
   | "unmanaged_mcp_server"
@@ -151,12 +135,6 @@ export interface CloudflareProfileSnapshot {
   preview: OperationResult;
 }
 
-export interface OpencodeProfileSnapshot {
-  audit: OpencodeProfileAudit;
-  apply: OpencodeProfileApplyResult;
-  preview: OperationResult;
-}
-
 export interface StatuslineProfileSnapshot {
   audit: StatuslineProfileAudit;
   apply: StatuslineProfileApplyResult;
@@ -168,7 +146,6 @@ export interface CodexProfileFamilySnapshot {
   core: CodexProfileSnapshot;
   integrations: IntegrationsProfileSnapshot;
   cloudflare: CloudflareProfileSnapshot;
-  opencode: OpencodeProfileSnapshot;
   statusline: StatuslineProfileSnapshot;
 }
 
@@ -198,7 +175,6 @@ const SANE_KNOWN_MCP_SERVERS = new Set([
   "context7",
   "grep",
   "grep_app",
-  "opensrc",
   "playwright"
 ]);
 
@@ -300,12 +276,6 @@ export function previewCloudflareProfile(codexPaths: CodexPaths): OperationResul
   return previewCloudflareProfileFromAudit(codexPaths, audit);
 }
 
-export function previewOpencodeProfile(codexPaths: CodexPaths): OperationResult {
-  const context = inspectCodexConfigContext(codexPaths);
-  const audit = inspectOpencodeProfileAuditFromContext(context);
-  return previewOpencodeProfileFromAudit(codexPaths, audit);
-}
-
 export function previewStatuslineProfile(codexPaths: CodexPaths): OperationResult {
   const context = inspectCodexConfigContext(codexPaths);
   const audit = inspectStatuslineProfileAuditFromContext(context);
@@ -384,7 +354,6 @@ export function applyIntegrationsProfile(paths: ProjectPaths, codexPaths: CodexP
   writeCodexConfig(codexPaths.configToml, updatedConfig);
 
   details.push(`applied keys: ${applyResult.appliedKeys.join(", ")}`);
-  details.push("opensrc left untouched");
   details.push(backupPath ? `backup: ${backupPath}` : "backup: skipped (no prior config existed)");
 
   return new OperationResult({
@@ -432,18 +401,6 @@ export function inspectCloudflareProfileStatus(codexPaths: CodexPaths): Cloudfla
 
 export function inspectCloudflareProfileApplyResult(codexPaths: CodexPaths): CloudflareProfileApplyResult {
   return inspectCloudflareProfileApplyResultFromContext(inspectCodexConfigContext(codexPaths));
-}
-
-export function inspectOpencodeProfileAudit(codexPaths: CodexPaths): OpencodeProfileAudit {
-  return inspectOpencodeProfileAuditFromContext(inspectCodexConfigContext(codexPaths));
-}
-
-export function inspectOpencodeProfileStatus(codexPaths: CodexPaths): OpencodeProfileStatus {
-  return inspectOpencodeProfileAudit(codexPaths).status;
-}
-
-export function inspectOpencodeProfileApplyResult(codexPaths: CodexPaths): OpencodeProfileApplyResult {
-  return inspectOpencodeProfileApplyResultFromContext(inspectCodexConfigContext(codexPaths));
 }
 
 export function inspectStatuslineProfileAudit(codexPaths: CodexPaths): StatuslineProfileAudit {
@@ -499,53 +456,6 @@ export function applyCloudflareProfile(paths: ProjectPaths, codexPaths: CodexPat
   return new OperationResult({
     kind: OperationKind.ApplyCloudflareProfile,
     summary: "cloudflare-profile apply: wrote optional provider profile",
-    details,
-    pathsTouched: unique([codexPaths.configToml, backupPath]),
-    inventory: [installedCodexConfigInventory(codexPaths)]
-  });
-}
-
-export function applyOpencodeProfile(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
-  ensureRuntimeDirs(paths);
-  const context = inspectCodexConfigContext(codexPaths);
-  const applyResult = inspectOpencodeProfileApplyResultFromContext(context);
-
-  if (applyResult.status === "blocked_invalid") {
-    return new OperationResult({
-      kind: OperationKind.ApplyOpencodeProfile,
-      summary: "opencode-profile apply: blocked by invalid config",
-      details: applyResult.details,
-      pathsTouched: [codexPaths.configToml],
-      inventory: [context.inventory]
-    });
-  }
-
-  const details = [...applyResult.details];
-  const updatedConfig = cloneTable(context.config ?? {});
-  if (applyResult.status === "already_satisfied") {
-    return new OperationResult({
-      kind: OperationKind.ApplyOpencodeProfile,
-      summary: "opencode-profile apply: already satisfied",
-      details,
-      pathsTouched: [codexPaths.configToml],
-      inventory: [context.inventory]
-    });
-  }
-  applyOpencodeProfileToValue(updatedConfig);
-
-  const backupPath =
-    context.inventory.status === InventoryStatus.Installed
-      ? writeCodexConfigBackup(paths, codexPaths)
-      : null;
-  writeCodexConfig(codexPaths.configToml, updatedConfig);
-
-  details.push(`applied keys: ${applyResult.appliedKeys.join(", ")}`);
-  details.push("opensrc stays outside Sane's default recommended integrations");
-  details.push(backupPath ? `backup: ${backupPath}` : "backup: skipped (no prior config existed)");
-
-  return new OperationResult({
-    kind: OperationKind.ApplyOpencodeProfile,
-    summary: "opencode-profile apply: wrote optional compatibility profile",
     details,
     pathsTouched: unique([codexPaths.configToml, backupPath]),
     inventory: [installedCodexConfigInventory(codexPaths)]
@@ -640,16 +550,6 @@ export function inspectCloudflareProfileSnapshot(codexPaths: CodexPaths): Cloudf
   };
 }
 
-export function inspectOpencodeProfileSnapshot(codexPaths: CodexPaths): OpencodeProfileSnapshot {
-  const context = inspectCodexConfigContext(codexPaths);
-  const audit = inspectOpencodeProfileAuditFromContext(context);
-  return {
-    audit,
-    apply: inspectOpencodeProfileApplyResultFromContext(context),
-    preview: previewOpencodeProfileFromAudit(codexPaths, audit)
-  };
-}
-
 export function inspectStatuslineProfileSnapshot(codexPaths: CodexPaths): StatuslineProfileSnapshot {
   const context = inspectCodexConfigContext(codexPaths);
   const audit = inspectStatuslineProfileAuditFromContext(context);
@@ -667,7 +567,6 @@ export function inspectCodexProfileFamilySnapshot(
   const coreAudit = inspectCodexProfileAuditFromContext(context);
   const integrationsAudit = inspectIntegrationsProfileAuditFromContext(context);
   const cloudflareAudit = inspectCloudflareProfileAuditFromContext(context);
-  const opencodeAudit = inspectOpencodeProfileAuditFromContext(context);
   const statuslineAudit = inspectStatuslineProfileAuditFromContext(context);
 
   return {
@@ -686,11 +585,6 @@ export function inspectCodexProfileFamilySnapshot(
       audit: cloudflareAudit,
       apply: inspectCloudflareProfileApplyResultFromContext(context),
       preview: previewCloudflareProfileFromAudit(codexPaths, cloudflareAudit)
-    },
-    opencode: {
-      audit: opencodeAudit,
-      apply: inspectOpencodeProfileApplyResultFromContext(context),
-      preview: previewOpencodeProfileFromAudit(codexPaths, opencodeAudit)
     },
     statusline: {
       audit: statuslineAudit,
@@ -785,7 +679,7 @@ function collectUnmanagedMcpWarnings(
       kind: "unmanaged_mcp_server" as const,
       target: `mcp_servers.${name}`,
       path: codexPaths.configToml,
-      message: `unmanaged Codex MCP server '${name}' is outside Sane's known profiles`
+      message: `unmanaged Codex MCP server '${name}' is outside Sane's known profiles; warning-only, no auto-install or auto-remove`
     }));
 }
 
@@ -798,7 +692,6 @@ function collectManagedMcpDriftWarnings(
     "cloudflare-api": { url: "https://mcp.cloudflare.com/mcp" },
     context7: { url: "https://mcp.context7.com/mcp" },
     grep_app: { url: "https://mcp.grep.app" },
-    opensrc: { url: "https://mcp.opensrc.dev" },
     playwright: { command: "npx", args: ["@playwright/mcp@latest"] }
   };
 
@@ -813,7 +706,7 @@ function collectManagedMcpDriftWarnings(
         kind: "managed_mcp_server_drift" as const,
         target: `mcp_servers.${name}`,
         path: codexPaths.configToml,
-        message: `managed Codex MCP server '${name}' differs from Sane's profile`
+        message: `managed Codex MCP server '${name}' differs from Sane's profile; warning-only until you explicitly apply a profile`
       }
     ];
   });
@@ -941,7 +834,7 @@ function collectPluginWarnings(
       kind: "unmanaged_plugin" as const,
       target: `plugins.${name}`,
       path: codexPaths.configToml,
-      message: `enabled Codex plugin '${name}' is outside Sane's managed profiles`
+      message: `enabled Codex plugin '${name}' is outside Sane's managed profiles; warning-only, no auto-install or auto-remove`
     }));
 }
 
@@ -1108,24 +1001,6 @@ function previewCloudflareProfileFromAudit(
   });
 }
 
-function previewOpencodeProfileFromAudit(
-  codexPaths: CodexPaths,
-  audit: OpencodeProfileAudit
-): OperationResult {
-  const summary =
-    audit.status === "invalid"
-      ? "opencode-profile preview: blocked by invalid config"
-      : `opencode-profile preview: ${audit.recommendedChangeCount} recommended change(s)`;
-
-  return new OperationResult({
-    kind: OperationKind.PreviewOpencodeProfile,
-    summary,
-    details: audit.details,
-    pathsTouched: [codexPaths.configToml],
-    inventory: [inspectCodexConfigInventory(codexPaths)]
-  });
-}
-
 function previewStatuslineProfileFromAudit(
   codexPaths: CodexPaths,
   audit: StatuslineProfileAudit
@@ -1152,7 +1027,7 @@ function inspectIntegrationsProfileAuditFromContext(
       status: "invalid",
       recommendedChangeCount: 0,
       recommendedTargets: [],
-      optionalTargets: ["opensrc"],
+      optionalTargets: [],
       details: [
         "cannot preview integrations profile until ~/.codex/config.toml parses cleanly",
         "repair current config first"
@@ -1165,12 +1040,11 @@ function inspectIntegrationsProfileAuditFromContext(
       status: "missing",
       recommendedChangeCount: 3,
       recommendedTargets: ["context7", "playwright", "grep.app"],
-      optionalTargets: ["opensrc"],
+      optionalTargets: [],
       details: [
         "context7: missing -> recommended",
         "playwright: missing -> recommended",
-        "grep.app: missing -> recommended",
-        "opensrc: optional, not in default recommended profile"
+        "grep.app: missing -> recommended"
       ]
     };
   }
@@ -1318,60 +1192,6 @@ function inspectCloudflareProfileApplyResultFromContext(
   };
 }
 
-function inspectOpencodeProfileAuditFromContext(context: CodexConfigContext): OpencodeProfileAudit {
-  if (context.inventory.status === InventoryStatus.Invalid) {
-    return {
-      status: "invalid",
-      recommendedChangeCount: 0,
-      target: "opensrc",
-      details: [
-        "cannot preview opencode compatibility profile until ~/.codex/config.toml parses cleanly",
-        "repair current config first"
-      ]
-    };
-  }
-
-  if (context.inventory.status === InventoryStatus.Missing) {
-    return {
-      status: "missing",
-      recommendedChangeCount: 1,
-      target: "opensrc",
-      details: [
-        "opensrc: missing -> optional Opencode compatibility profile",
-        "note: not part of Sane's default recommended integrations",
-        "note: this keeps Codex config additive and leaves broader Opencode setup separate"
-      ]
-    };
-  }
-
-  return opencodeProfileAuditFromConfig(context.config ?? {});
-}
-
-function inspectOpencodeProfileApplyResultFromContext(
-  context: CodexConfigContext
-): OpencodeProfileApplyResult {
-  if (context.inventory.status === InventoryStatus.Invalid) {
-    return {
-      status: "blocked_invalid",
-      recommendedChangeCount: 0,
-      appliedKeys: [],
-      details: [
-        "repair ~/.codex/config.toml first",
-        "Sane only writes after a clean parse"
-      ]
-    };
-  }
-
-  const appliedKeys = applyOpencodeProfileToValue(cloneTable(context.config ?? {}));
-  const audit = inspectOpencodeProfileAuditFromContext(context);
-  return {
-    status: appliedKeys.length === 0 ? "already_satisfied" : "ready",
-    recommendedChangeCount: audit.recommendedChangeCount,
-    appliedKeys,
-    details: [...audit.details]
-  };
-}
-
 function inspectStatuslineProfileAuditFromContext(
   context: CodexConfigContext
 ): StatuslineProfileAudit {
@@ -1460,18 +1280,6 @@ function applyCloudflareProfileToValue(config: TomlTable): CloudflareProfileAppl
   return appliedKeys;
 }
 
-function applyOpencodeProfileToValue(config: TomlTable): OpencodeProfileAppliedKey[] {
-  const mcpServers = ensureChildTable(config, "mcp_servers", "[mcp_servers] must be a table");
-  const appliedKeys: OpencodeProfileAppliedKey[] = [];
-  if (Object.hasOwn(mcpServers, "opensrc")) {
-    return appliedKeys;
-  }
-
-  mcpServers.opensrc = { url: "https://mcp.opensrc.dev" };
-  appliedKeys.push("mcp_servers.opensrc");
-  return appliedKeys;
-}
-
 function applyStatuslineProfileToValue(config: TomlTable): StatuslineProfileAppliedKey[] {
   const tui = ensureChildTable(config, "tui", "[tui] must be a table");
   const appliedKeys: StatuslineProfileAppliedKey[] = [];
@@ -1522,19 +1330,6 @@ function codexConfigDetails(config: TomlTable): string[] {
     `tui notifications: ${asString(tui?.notification_condition) ?? "unset"}`,
     `tui theme: ${asString(tui?.theme) ?? "unset"}`
   ];
-}
-
-function codexProfilePreviewDetails(config: TomlTable, recommended: LocalConfig): string[] {
-  const features = asTomlTable(config.features);
-  return codexProfileAuditFromCurrentValues(
-    recommended,
-    {
-      model: asString(config.model),
-      modelReasoningEffort: asString(config.model_reasoning_effort),
-      codexHooks: displayHooks(features?.codex_hooks)
-    },
-    "installed"
-  ).details;
 }
 
 function codexProfileApplyDetails(audit: CodexProfileAudit): string[] {
@@ -1684,7 +1479,6 @@ function integrationProfileAuditFromConfig(config: TomlTable): IntegrationsProfi
   const mcpServers = asTomlTable(config.mcp_servers);
   const hasContext7 = hasTableKey(mcpServers, "context7");
   const hasPlaywright = hasTableKey(mcpServers, "playwright");
-  const hasOpenSrc = hasTableKey(mcpServers, "opensrc");
   const hasGrep = hasTableKey(mcpServers, "grep") || hasTableKey(mcpServers, "grep_app");
   const recommendedTargets = [
     hasContext7 ? null : "context7",
@@ -1696,14 +1490,11 @@ function integrationProfileAuditFromConfig(config: TomlTable): IntegrationsProfi
     status: recommendedTargets.length === 0 ? "installed" : "missing",
     recommendedChangeCount: recommendedTargets.length,
     recommendedTargets,
-    optionalTargets: ["opensrc"],
+    optionalTargets: [],
     details: [
       hasContext7 ? "context7: keep installed" : "context7: missing -> recommended",
       hasPlaywright ? "playwright: keep installed" : "playwright: missing -> recommended",
-      hasGrep ? "grep.app: keep installed" : "grep.app: missing -> recommended",
-      hasOpenSrc
-        ? "opensrc: installed but stays outside default recommended profile"
-        : "opensrc: optional, not in default recommended profile"
+      hasGrep ? "grep.app: keep installed" : "grep.app: missing -> recommended"
     ]
   };
 }
@@ -1721,23 +1512,6 @@ function cloudflareProfileAuditFromConfig(config: TomlTable): CloudflareProfileA
         : "cloudflare-api: missing -> optional provider profile",
       "oauth and permissions stay explicit at connect time",
       "note: not part of the broad recommended integrations profile"
-    ]
-  };
-}
-
-function opencodeProfileAuditFromConfig(config: TomlTable): OpencodeProfileAudit {
-  const mcpServers = asTomlTable(config.mcp_servers);
-  const hasOpenSrc = hasTableKey(mcpServers, "opensrc");
-  return {
-    status: hasOpenSrc ? "installed" : "missing",
-    recommendedChangeCount: hasOpenSrc ? 0 : 1,
-    target: "opensrc",
-    details: [
-      hasOpenSrc
-        ? "opensrc: keep installed"
-        : "opensrc: missing -> optional Opencode compatibility profile",
-      "note: not part of Sane's default recommended integrations",
-      "note: this keeps Codex config additive and leaves broader Opencode setup separate"
     ]
   };
 }

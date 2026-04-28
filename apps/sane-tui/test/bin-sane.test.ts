@@ -37,7 +37,7 @@ describe("sane bin shim", () => {
     });
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain("Section: preferences");
+    expect(result.stdout).toContain("[Settings]");
   });
 
   it("runs section shortcuts through the smart preview shim", () => {
@@ -45,7 +45,7 @@ describe("sane bin shim", () => {
     const homeDir = makeTempDir();
     writeFileSync(join(projectRoot, "pnpm-workspace.yaml"), 'packages:\n  - "apps/*"\n');
 
-    const result = spawnSync(process.execPath, [BIN_PATH, "inspect"], {
+    const result = spawnSync(process.execPath, [BIN_PATH, "status"], {
       cwd: projectRoot,
       env: {
         ...process.env,
@@ -55,10 +55,10 @@ describe("sane bin shim", () => {
     });
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain("Section: inspect");
+    expect(result.stdout).toContain("[Status]");
   });
 
-  it("routes backend commands through the same shim", () => {
+  it("opens the install wizard through the same shim", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     writeFileSync(join(projectRoot, "pnpm-workspace.yaml"), 'packages:\n  - "apps/*"\n');
@@ -73,7 +73,7 @@ describe("sane bin shim", () => {
     });
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain("installed runtime at");
-    expect(result.stdout).toContain(".sane/state/current-run.json");
+    expect(result.stdout).toContain("[Home]");
+    expect(result.stdout).toContain("Set up Sane files");
   });
 });

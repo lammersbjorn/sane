@@ -47,7 +47,6 @@ describe("install status snapshot", () => {
           export_global_agents: { kind: "missing", label: "missing" },
           export_hooks: { kind: "missing", label: "missing" },
           export_custom_agents: { kind: "missing", label: "missing" },
-          export_opencode_agents: { kind: "missing", label: "missing" },
           apply_integrations_profile: { kind: "missing", label: "missing" },
           export_all: { kind: "missing", label: "missing" }
         })
@@ -72,7 +71,6 @@ describe("install status snapshot", () => {
         recommendedActionId: "apply_integrations_profile",
         actionStatus: expect.objectContaining({
           export_all: { kind: "installed", label: "installed" },
-          export_opencode_agents: { kind: "missing", label: "missing" },
           apply_integrations_profile: { kind: "missing", label: "missing" }
         })
       })

@@ -46,24 +46,26 @@ Work on `Sane` itself without turning this repo's self-hosting setup into a gene
 ## How To Run
 
 1. Start from repo truth and local state, not memory alone.
-2. Keep root `AGENTS.md` small. Put recurring procedure detail here or in docs, not in always-on startup context.
-3. Treat `Sane` as an agent framework for Codex, not a daily wrapper. The TUI remains install/config/update/export/inspect/repair/doctor.
-4. When self-hosting on the Sane repo itself, use the repo's own local-state-defined agents, tools, skills, and routing where they exist.
-5. Prefer Sane-owned routing/export changes before editing vendored upstream mirrors.
-6. For repo-local skills and instruction surfaces, follow `docs/research/2026-04-23-codex-instruction-surface-rules.md`:
+2. RTK is mandatory in this repo. Prefer RTK-native commands (`rtk grep`, `rtk read`, `rtk diff`, `rtk test`, `rtk pnpm`, `rtk git`); use `rtk run '<command>'` only when no native command fits.
+3. Keep root `AGENTS.md` small. Put recurring procedure detail here or in docs, not in always-on startup context.
+4. Treat `Sane` as an agent framework for Codex, not a daily wrapper. The TUI remains install/config/update/export/inspect/repair/doctor.
+5. When self-hosting on the Sane repo itself, use the repo's own local-state-defined agents, tools, skills, and routing where they exist.
+6. Prefer Sane-owned routing/export changes before editing vendored upstream mirrors.
+7. For repo-local skills and instruction surfaces, follow `docs/research/2026-04-23-codex-instruction-surface-rules.md`:
    - one job per skill
    - explicit `Use when` and `Don't use when`
    - exact outputs and verification
    - progressive disclosure instead of giant bodies
    - no duplicated policy across root guidance, skills, overlays, and agents
-7. When the user says `continue`, `keep going`, or `resume`, also load `.agents/skills/continue/SKILL.md`.
-8. Do not present future work as shipped behavior.
-9. Keep managed Codex-native surfaces additive and reversible.
+8. When the user says `continue`, `keep going`, or `resume`, also load `.agents/skills/continue/SKILL.md`.
+9. Do not present future work as shipped behavior.
+10. When committing, copy the repo's commit message style; if none exists or it is poor, default to Conventional Commits.
+11. Keep managed Codex-native surfaces additive and reversible.
 
 ## Verification
 
 - docs or instruction-surface-only changes: inspect diff for the touched files
-- TS or exported-template changes: `rtk run 'pnpm test && pnpm typecheck'`
+- TS or exported-template changes: `rtk pnpm test` and `rtk pnpm typecheck`
 
 ## Gotchas / Safety
 

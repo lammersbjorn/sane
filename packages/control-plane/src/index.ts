@@ -1,15 +1,12 @@
-import { statSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 
 import {
   createRecommendedLocalConfig,
   detectCodexEnvironment,
-  readLocalConfig,
   stringifyLocalConfig,
   type LocalConfig
 } from "@sane/config";
 import {
-  InventoryScope,
-  InventoryStatus,
   OperationKind,
   OperationResult,
   type OperationRewriteMetadata
@@ -23,11 +20,9 @@ import {
   type CanonicalRewriteResult,
   listCanonicalBackupSiblings,
   writeCanonicalWithBackupResult,
-  type CurrentRunState,
   type LayeredStateHistoryCounts,
   type LayeredStateHistoryPreview,
   type LatestPolicyPreviewSnapshot,
-  type RunSummary
 } from "@sane/state";
 
 import {
@@ -44,6 +39,7 @@ import {
 import { formatRuntimeSummaryPolicyPreviewLines } from "./policy-preview-presenter.js";
 import { previewPolicy, previewPolicyForCurrentRun } from "./policy-preview.js";
 import { showConfig, showConfigFromPreferencesFamily, type PreferencesFamilySnapshot } from "./preferences.js";
+import { inspectWorktreeReadiness } from "./worktree-readiness.js";
 import { inspectLocalConfigFamily } from "./local-config.js";
 import {
   formatLatestHistoryArtifactPreview,
@@ -54,6 +50,7 @@ import {
   ensureRuntimeHandoffBaseline,
   advanceOutcomeState,
   type AdvanceOutcomeInput,
+  inspectOutcomeRescueSignalFromRuntimeState,
   inspectSelfHostingShadowSnapshot,
   inspectSelfHostingShadowSnapshotFromRuntimeState,
   inspectOutcomeReadinessSnapshot,
@@ -98,6 +95,18 @@ export interface InspectSnapshot {
   runtimeHistoryPreview: LayeredStateHistoryPreview;
   selfHostingShadow: ReturnType<typeof inspectSelfHostingShadowSnapshot>;
   outcomeReadiness: ReturnType<typeof inspectOutcomeReadinessSnapshot>;
+  outcomeRescueSignal: ReturnType<typeof inspectOutcomeRescueSignalFromRuntimeState>;
+  worktreeReadiness: ReturnType<typeof inspectWorktreeReadiness>;
+  runtimeOutcome: {
+    phase: string | null;
+    activeTaskCount: number;
+    blockingQuestionCount: number;
+    verificationStatus: string | null;
+    verificationSummary: string | null;
+    lastVerifiedOutputs: string[];
+    filesTouchedCount: number;
+  };
+  repoVerifyCommand: string | null;
   latestPolicyPreview: ReturnType<typeof inspectLatestPolicyPreview>;
   localConfig: ReturnType<typeof showConfig>;
   codexConfig: ReturnType<typeof showCodexConfig>;
@@ -243,6 +252,19 @@ export function inspectSnapshotFromStatusBundle(
     runtimeHistoryPreview: runtimeState.historyPreview,
     selfHostingShadow: inspectSelfHostingShadowSnapshotFromRuntimeState(paths, runtimeState),
     outcomeReadiness: inspectOutcomeReadinessSnapshotFromRuntimeState(paths, runtimeState),
+    outcomeRescueSignal: inspectOutcomeRescueSignalFromRuntimeState(runtimeState),
+    worktreeReadiness: inspectWorktreeReadiness(paths),
+    runtimeOutcome: {
+      phase: runtimeState.current?.phase ?? null,
+      activeTaskCount: runtimeState.current?.activeTasks.length ?? 0,
+      blockingQuestionCount:
+        runtimeState.current?.blockingQuestions.filter((question) => question.trim().length > 0).length ?? 0,
+      verificationStatus: runtimeState.current?.verification.status ?? null,
+      verificationSummary: runtimeState.current?.verification.summary ?? null,
+      lastVerifiedOutputs: runtimeState.summary?.lastVerifiedOutputs ?? [],
+      filesTouchedCount: runtimeState.summary?.filesTouched.length ?? 0
+    },
+    repoVerifyCommand: inspectRepoVerifyCommand(paths),
     latestPolicyPreview: runtimeState.latestPolicyPreview,
     localConfig: preferencesFamily
       ? showConfigFromPreferencesFamily(paths, preferencesFamily)
@@ -286,6 +308,7 @@ export function showOutcomeReadinessFromRuntimeState(
   runtimeState: ReturnType<typeof inspectRuntimeState>
 ): OperationResult {
   const snapshot = inspectOutcomeReadinessSnapshotFromRuntimeState(paths, runtimeState);
+  const rescueSignal = inspectOutcomeRescueSignalFromRuntimeState(runtimeState);
   return new OperationResult({
     kind: OperationKind.ShowOutcomeReadiness,
     summary: `outcome readiness: ${snapshot.status}`,
@@ -293,6 +316,7 @@ export function showOutcomeReadinessFromRuntimeState(
       `mode: ${snapshot.mode}`,
       `autonomous loop: ${snapshot.autonomousLoopEnabled ? "enabled" : "disabled"}`,
       `checks: ${formatOutcomeReadinessCheckCounts(snapshot.checks)}`,
+      `rescue signal: ${rescueSignal.status} (${rescueSignal.summary})`,
       ...snapshot.checks.map((check) => `${check.id}: ${check.status} - ${check.summary}`)
     ],
     pathsTouched: runtimeStatePaths(paths)
@@ -332,6 +356,7 @@ function buildRuntimeSummary(
     historyCounts,
     historyPreview
   } = runtimeState;
+  const rescueSignal = inspectOutcomeRescueSignalFromRuntimeState(runtimeState);
   const currentPolicyPreview = previewPolicyForCurrentRun(paths, current);
   const currentRunStatus = inventoryStatusFromRuntimeLayer(runtimeState.layerStatus.currentRun);
   const summaryStatus = inventoryStatusFromRuntimeLayer(runtimeState.layerStatus.summary);
@@ -357,8 +382,14 @@ function buildRuntimeSummary(
         ? `verification: ${current.verification.status} (${current.verification.summary})`
         : `verification: ${current.verification.status}`
     );
+    details.push(`rescue signal: ${rescueSignal.status} (${rescueSignal.summary})`);
     details.push(`active tasks: ${joinSummaryList(current.activeTasks)}`);
     details.push(`blocking questions: ${joinSummaryList(current.blockingQuestions)}`);
+  }
+
+  const repoVerifyCommand = inspectRepoVerifyCommand(paths);
+  if (repoVerifyCommand) {
+    details.push(`repo verify: ${repoVerifyCommand}`);
   }
 
   if (summary) {
@@ -390,16 +421,20 @@ export function inspectLatestPolicyPreview(paths: ProjectPaths): LatestPolicyPre
   return inspectRuntimeState(paths).latestPolicyPreview;
 }
 
-export * from "./codex-config.js";
-export * from "./bundles.js";
-export * from "./history.js";
-export * from "./inventory.js";
-export * from "./inspect-presenter.js";
-export * from "./opencode-native.js";
-export * from "./policy-preview.js";
-export * from "./policy-preview-presenter.js";
-export * from "./preferences.js";
-export * from "./runtime-history-presenter.js";
+// Barrel exports intentionally stay narrow: expose top-level control-plane
+// entry points without promoting every implementation module to root API.
+export { applyCodexProfile } from "./codex-config.js";
+export { exportAll, exportOpencodeCore, uninstallAll, uninstallOpencodeCore } from "./bundles.js";
+export { showStatus, doctor } from "./inventory.js";
+export {
+  formatInspectOverviewLines,
+  type InspectOverviewSnapshot
+} from "./inspect-presenter.js";
+export {
+  formatInspectPolicyPreviewLines,
+  formatLatestPolicyPreviewInputLines,
+  formatLatestPolicyPreviewLines
+} from "./policy-preview-presenter.js";
 
 function ensureInstallRuntimeBaseline(
   paths: ProjectPaths,
@@ -519,6 +554,38 @@ function operationRewriteMetadata(metadata: CanonicalRewriteResult): OperationRe
   };
 }
 
+function inspectRepoVerifyCommand(paths: ProjectPaths): string | null {
+  if (!existsSync(paths.repoAgentsMd)) {
+    return null;
+  }
+
+  const body = readFileSync(paths.repoAgentsMd, "utf8");
+  const directMatch = body.match(/Default verify:\s*`([^`]+)`/);
+  if (directMatch) {
+    return directMatch[1] ?? null;
+  }
+
+  let inVerifySection = false;
+  for (const rawLine of body.split("\n")) {
+    const line = rawLine.trim();
+    if (line.startsWith("## ")) {
+      inVerifySection = line === "## Verify";
+      continue;
+    }
+
+    if (!inVerifySection) {
+      continue;
+    }
+
+    const codeMatch = line.match(/`([^`]+)`/);
+    if (codeMatch) {
+      return codeMatch[1] ?? null;
+    }
+  }
+
+  return null;
+}
+
 function unique(items: string[]): string[] {
   return [...new Set(items)];
 }
@@ -535,6 +602,21 @@ function findInventory<T extends { name: string }>(inventory: T[], name: string)
   return inventory.find((item) => item.name === name);
 }
 
-export * from "./codex-native.js";
-export * from "./hooks-custom-agents.js";
-export * from "./session-start-hook.js";
+// Repo-local remove helpers stay in root API because Repair uses them as
+// first-class control-plane operations. Other native/plugin helpers live behind
+// explicit compatibility subpaths.
+export { uninstallRepoAgents, uninstallRepoSkills } from "./codex-native.js";
+export {
+  exportOpencodeAgents,
+  exportOpencodeCoreBundle,
+  exportOpencodeGlobalAgents,
+  exportOpencodeSkills,
+  inspectOpencodeAgentsInventory,
+  inspectOpencodeCoreInventory,
+  inspectOpencodeGlobalAgentsInventory,
+  inspectOpencodeSkillsInventory,
+  uninstallOpencodeAgents,
+  uninstallOpencodeCoreBundle,
+  uninstallOpencodeGlobalAgents,
+  uninstallOpencodeSkills
+} from "./opencode-native.js";

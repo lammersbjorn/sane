@@ -1,66 +1,88 @@
 ---
 name: sane-router
-description: Use when work touches Sane-managed installs, exports, or config-backed routing defaults. It routes to managed assets and concrete pack skills without turning Sane into a daily wrapper.
+description: Use as Sane routing switchboard for concrete skills, lane classes, and managed Sane operations when a task is not a tiny direct answer.
 ---
 
 # Sane Router
 
 ## Goal
 
-Route work to the correct Sane-managed surface or concrete pack skill.
+Choose the concrete skill, lane class, or Sane-managed command path without becoming a second workflow manual.
 
 ## Use When
 
-- installing, updating, or removing Sane-managed skills, overlays, hooks, or custom agents
-- previewing or applying Sane config-backed routing defaults
-- deciding which concrete Sane-managed skill or agent should own a task
+- selecting a concrete Sane skill by trigger
+- choosing explorer, implementation, verifier, or realtime lane class
+- selecting concrete skills by trigger
+- running Sane-managed install/export/config/routing-default operations
 
 ## Don't Use When
 
-- normal coding, review, or research work already covered by a concrete repo or pack skill
-- general repo work with no Sane-managed install/export/config impact
+- handling a tiny direct answer that needs no Sane surface
+- bypassing a concrete skill that already clearly matches the task
 
 ## Inputs
 
 - current task
-- current Sane config
-- installed pack state and managed asset state
+- exported model/reasoning defaults
+- active pack state and concrete skill routes
+- current Sane config when managed operations are in scope
 
 ## Outputs
 
-- one concrete next action:
-  - preview
-  - apply
-  - remove
-  - inspect
-  - route to a specific skill or agent
+- one routing decision:
+  - main session only (tiny/indivisible)
+  - load `sane-agent-lanes` for broad work
+  - explorer, implementation, verifier, or realtime subagent lane
+  - concrete skill to load
+  - Sane command lane action when managed operations are needed
 
 ## How To Run
 
-Prefer task-specific skills first, not this selector:
+Use `sane-router` to choose the next Sane surface. Do not restate the full workflow when a concrete skill owns it.
+
+Broad work route:
+- Broad work means multi-file cleanup, refactor, feature work, product pass, research pass, repair loop, or ambiguous repo work.
+- Load `sane-agent-lanes`; that skill owns lane planning, subagent handoff, edit-lane boundaries, and explicit authorization gates.
+- The coordinator/main session owns final judgment and verification.
+
+Route subagent classes with current exported defaults:
+- coordinator/main session: {{COORDINATOR_MODEL}} ({{COORDINATOR_REASONING}})
+- explorer lane: {{SIDECAR_MODEL}} ({{SIDECAR_REASONING}})
+- implementation lane: {{EXECUTION_MODEL}} ({{EXECUTION_REASONING}})
+- verifier lane: {{VERIFIER_MODEL}} ({{VERIFIER_REASONING}})
+- realtime lane: {{REALTIME_MODEL}} ({{REALTIME_REASONING}})
+
+Frontend/UI route override:
+- Any subagent doing UI generation, redesign, visual polish, screenshot-to-code, Figma-to-code, game/canvas UI, or final visual QA should use `gpt-5.5` with `high` reasoning when available.
+- Use `gpt-5.5` with `xhigh` for first-pass visual systems, high-polish redesigns, ambiguous product taste work, complex responsive layouts, canvas/WebGL/game surfaces, and final visual approval loops.
+- Load the matching frontend skill for UI work; `sane-frontend-review` owns visual evidence requirements.
+
+Load skills by trigger only:
+- `continue`: continue/resume/keep going requests on an active workstream
+- `sane-outcome-continuation`: plain-language outcome loops that need plan/implement/verify/repair/resume
+- `sane-agent-lanes`: broad lane decomposition with owned parallel lanes
+- `sane-bootstrap-research`: new stack/tool/project choices that need current research
+- `sane-router`: route model class, lane class, skill choice, and Sane-managed command lanes
+
+Pack-specific trigger routes:
 {{ENABLED_PACK_SKILL_SELECTIONS}}
 
-Use `sane-router` only for:
-- installing, updating, or removing Sane-managed skills, overlays, hooks, and custom agents
-- previewing or applying config-backed routing defaults
-- keeping Sane-managed exports additive and easy to undo
-
-Current managed role defaults:
-- coordinator: {{COORDINATOR_MODEL}} ({{COORDINATOR_REASONING}})
-- execution: {{EXECUTION_MODEL}} ({{EXECUTION_REASONING}})
-- sidecar: {{SIDECAR_MODEL}} ({{SIDECAR_REASONING}})
-- verifier: {{VERIFIER_MODEL}} ({{VERIFIER_REASONING}})
-- realtime iteration: {{REALTIME_MODEL}} ({{REALTIME_REASONING}})
+Command lane for Sane-managed operations:
+- run Sane CLI first: `sane status`, `sane preview ...`, `sane export ...`, `sane uninstall ...`
+- if `sane` is unavailable in PATH, use `node apps/sane-tui/bin/sane.mjs ...`
+- avoid direct manual edits to managed exports unless you are fixing Sane internals
 
 {{ENABLED_PACK_ROUTER_NOTES}}
 
 ## Verification
 
-- preview before apply when possible
-- confirm the touched managed paths and concrete skill/agent selected
+- confirm selected subagent class and concrete skill route
+- for broad work, confirm `sane-agent-lanes` was loaded and followed
+- for managed operations, preview before apply when possible and confirm touched managed paths
 
 ## Gotchas / Safety
 
-- do not turn this into a daily wrapper ritual
-- do not recommend vague pack umbrellas when a concrete skill exists
+- do not pre-load `continue` or `sane-outcome-continuation` on every task
+- do not route by vague pack umbrella when a concrete skill exists
 - keep managed exports additive and reversible

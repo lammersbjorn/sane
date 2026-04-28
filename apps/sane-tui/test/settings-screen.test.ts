@@ -8,12 +8,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import * as codexConfig from "@sane/control-plane/codex-config.js";
 import * as preferencesControlPlane from "@sane/control-plane/preferences.js";
-import { loadPreferencesScreen } from "@sane/sane-tui/preferences-screen.js";
+import { loadSettingsScreen } from "@sane/sane-tui/settings-screen.js";
 
 const tempDirs: string[] = [];
 
 function makeTempDir(): string {
-  const dir = mkdtempSync(join(tmpdir(), "sane-tui-preferences-"));
+  const dir = mkdtempSync(join(tmpdir(), "sane-tui-settings-"));
   tempDirs.push(dir);
   return dir;
 }
@@ -24,24 +24,26 @@ afterEach(() => {
   }
 });
 
-describe("preferences screen model", () => {
+describe("settings screen model", () => {
   it("falls back to recommended config defaults when local config is missing", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const paths = createProjectPaths(projectRoot);
     const codexPaths = createCodexPaths(homeDir);
 
-    const screen = loadPreferencesScreen(paths, codexPaths);
+    const screen = loadSettingsScreen(paths, codexPaths);
 
-    expect(screen.summary).toBe("Preferences");
+    expect(screen.summary).toBe("Settings");
     expect(screen.source).toBe("recommended");
-    expect(screen.models.coordinator.model).toBe("gpt-5.4");
+    expect(screen.models.coordinator.model).toBe("gpt-5.5");
     expect(screen.models.sidecar.model).toBe("gpt-5.4-mini");
     expect(screen.derivedRouting.execution.model).toBe("gpt-5.3-codex");
     expect(screen.derivedRouting.realtime.model).toBe("gpt-5.3-codex-spark");
     expect(screen.subagents.explorer.model).toBe("gpt-5.4-mini");
     expect(screen.subagents.implementation.model).toBe("gpt-5.3-codex");
     expect(screen.subagents.realtime.model).toBe("gpt-5.3-codex-spark");
+    expect(screen.subagents.frontendCraft.model).toBe("gpt-5.5");
+    expect(screen.subagents.frontendCraft.reasoningEffort).toBe("high");
     expect(screen.telemetry).toBe("off");
     expect(screen.telemetryFiles).toEqual({
       dirPresent: false,
@@ -54,8 +56,6 @@ describe("preferences screen model", () => {
     expect(screen.statuslineApply.status).toBe("ready");
     expect(screen.cloudflareAudit.status).toBe("missing");
     expect(screen.cloudflareApply.status).toBe("ready");
-    expect(screen.opencodeAudit.status).toBe("missing");
-    expect(screen.opencodeApply.status).toBe("ready");
     expect(screen.actions.map((action) => action.id)).toEqual([
       "open_config_editor",
       "open_pack_editor",
@@ -65,9 +65,7 @@ describe("preferences screen model", () => {
       "preview_statusline_profile",
       "apply_statusline_profile",
       "preview_cloudflare_profile",
-      "apply_cloudflare_profile",
-      "preview_opencode_profile",
-      "apply_opencode_profile"
+      "apply_cloudflare_profile"
     ]);
   });
 
@@ -82,13 +80,14 @@ describe("preferences screen model", () => {
     config.privacy.telemetry = "product-improvement";
 
     preferencesControlPlane.saveConfig(paths, config);
-    const screen = loadPreferencesScreen(paths, codexPaths);
+    const screen = loadSettingsScreen(paths, codexPaths);
 
     expect(screen.source).toBe("local");
     expect(screen.models.coordinator.model).toBe("gpt-5.2");
     expect(screen.derivedRouting.execution.model).toBe("gpt-5.3-codex");
     expect(screen.derivedRouting.realtime.model).toBe("gpt-5.3-codex-spark");
     expect(screen.subagents.explorer.model).toBe("gpt-5.4-mini");
+    expect(screen.subagents.frontendCraft.model).toBe("gpt-5.5");
     expect(screen.telemetryFiles).toEqual({
       dirPresent: true,
       summaryPresent: true,
@@ -98,7 +97,6 @@ describe("preferences screen model", () => {
     expect(screen.enabledPacks).toEqual(["core", "caveman"]);
     expect(screen.statuslinePreview.summary).toBe("statusline-profile preview: 3 recommended change(s)");
     expect(screen.cloudflarePreview.summary).toBe("cloudflare-profile preview: 1 recommended change(s)");
-    expect(screen.opencodePreview.summary).toBe("opencode-profile preview: 1 recommended change(s)");
   });
 
   it("reads preferences and provider profile data through family snapshot helpers", () => {
@@ -112,7 +110,7 @@ describe("preferences screen model", () => {
     );
     const familySpy = vi.spyOn(codexConfig, "inspectCodexProfileFamilySnapshot");
 
-    const screen = loadPreferencesScreen(paths, codexPaths);
+    const screen = loadSettingsScreen(paths, codexPaths);
 
     expect(preferencesFamilySpy).toHaveBeenCalledTimes(1);
     expect(preferencesFamilySpy).toHaveBeenCalledWith(paths, codexPaths);
@@ -120,7 +118,6 @@ describe("preferences screen model", () => {
     expect(familySpy).toHaveBeenCalledWith(codexPaths);
     expect(screen.statuslineAudit.status).toBe("missing");
     expect(screen.cloudflareAudit.status).toBe("missing");
-    expect(screen.opencodeAudit.status).toBe("missing");
   });
 
   it("can build from a preloaded preferences family snapshot", () => {
@@ -135,7 +132,7 @@ describe("preferences screen model", () => {
     );
     preferencesFamilySpy.mockClear();
 
-    const screen = loadPreferencesScreen(paths, codexPaths, undefined, snapshot);
+    const screen = loadSettingsScreen(paths, codexPaths, undefined, snapshot);
 
     expect(preferencesFamilySpy).not.toHaveBeenCalled();
     expect(screen.source).toBe(snapshot.preferences.source);
@@ -162,7 +159,7 @@ describe("preferences screen model", () => {
       "utf8"
     );
 
-    const screen = loadPreferencesScreen(paths, codexPaths);
+    const screen = loadSettingsScreen(paths, codexPaths);
 
     expect(screen.modelCapabilities.details).toContain(
       "model availability: detected 3 model(s) from Codex cache (plan unknown)"
@@ -172,6 +169,9 @@ describe("preferences screen model", () => {
     );
     expect(screen.modelCapabilities.details).toContain(
       "explorer capability: gpt-5.4-mini supports low/medium; selected low"
+    );
+    expect(screen.modelCapabilities.details).toContain(
+      "frontend-craft capability: gpt-5.5 supports medium/high/xhigh; selected high"
     );
   });
 });

@@ -24,7 +24,6 @@ export type RepairActionStatusId =
   | "uninstall_repo_agents"
   | "uninstall_hooks"
   | "uninstall_custom_agents"
-  | "uninstall_opencode_agents"
   | "uninstall_all";
 
 export type RepairActionStatusKind =
@@ -81,7 +80,6 @@ export function inspectRepairStatusFromStatusBundle(
       uninstall_repo_agents: statusFor(statusBundle.inventory, "repo-agents"),
       uninstall_hooks: statusFor(statusBundle.inventory, "hooks"),
       uninstall_custom_agents: statusFor(statusBundle.inventory, "custom-agents"),
-      uninstall_opencode_agents: statusFor(statusBundle.inventory, "opencode-agents"),
       uninstall_all: uninstallAllStatus(statusBundle.inventory)
     }
   };
@@ -109,7 +107,7 @@ function uninstallAllStatus(
 ): RepairActionStatus {
   return CORE_INSTALL_BUNDLE_TARGETS.some(
     (name) => inventory.find((item) => item.name === name)?.status === InventoryStatus.Installed
-  )
+  ) || inventory.find((item) => item.name === "plugin")?.status === InventoryStatus.Installed
     ? statusDto("installed")
     : statusDto("missing");
 }
@@ -123,7 +121,11 @@ function removableInstalls(statusBundle: ReturnType<typeof inspectStatusBundle>)
     .filter((item) => item.status === InventoryStatus.Installed)
     .map((item) => item.name);
 
-  return [...installedCoreTargets, ...installedCompatibilityTargets];
+  const installedPluginTargets = statusBundle.codexNative
+    .filter((item) => item.name === "plugin" && item.status === InventoryStatus.Installed)
+    .map((item) => item.name);
+
+  return [...installedCoreTargets, ...installedPluginTargets, ...installedCompatibilityTargets];
 }
 
 function fromInventoryStatus(status: InventoryStatus | undefined): RepairActionStatus {

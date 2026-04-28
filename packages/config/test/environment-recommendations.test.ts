@@ -103,6 +103,10 @@ describe('environment-aware recommendations', () => {
         model: 'gpt-5.3-codex-spark',
         reasoningEffort: 'low',
       },
+      frontendCraft: {
+        model: 'gpt-5.5',
+        reasoningEffort: 'high',
+      },
     });
   });
 
@@ -279,6 +283,10 @@ describe('environment-aware recommendations', () => {
         model: 'gpt-5.3-codex-spark',
         reasoningEffort: 'low',
       },
+      frontendCraft: {
+        model: 'gpt-5.4',
+        reasoningEffort: 'high',
+      },
     });
   });
 
@@ -406,6 +414,26 @@ describe('environment-aware recommendations', () => {
     };
 
     expect(createRecommendedLocalConfig(environment)).toEqual(createDefaultLocalConfig());
+  });
+
+  it('derives fallback defaults from the same preferred-model ranking as recommendations', () => {
+    const config = createDefaultLocalConfig();
+
+    expect(config.models).toEqual(
+      createRecommendedLocalConfig({
+        availableModels: [
+          { slug: 'gpt-5.5', reasoningEfforts: ['medium', 'high', 'xhigh', 'low'] },
+          { slug: 'gpt-5.4', reasoningEfforts: ['medium', 'high', 'xhigh', 'low'] },
+          { slug: 'gpt-5.4-mini', reasoningEfforts: ['medium', 'high', 'xhigh', 'low'] },
+          { slug: 'gpt-5.3-codex', reasoningEfforts: ['medium', 'high', 'xhigh', 'low'] },
+          { slug: 'gpt-5.3-codex-spark', reasoningEfforts: ['medium', 'high', 'xhigh', 'low'] },
+          { slug: 'gpt-5.2', reasoningEfforts: ['medium', 'high', 'xhigh', 'low'] },
+          { slug: 'gpt-5-codex', reasoningEfforts: ['medium', 'high', 'xhigh', 'low'] },
+          { slug: 'gpt-5.1-codex', reasoningEfforts: ['medium', 'high', 'xhigh', 'low'] },
+          { slug: 'gpt-5.1-codex-mini', reasoningEfforts: ['medium', 'high', 'xhigh', 'low'] },
+        ],
+      }).models,
+    );
   });
 
   it('uses premium plan defaults when stronger premium models are available', () => {
@@ -554,6 +582,10 @@ describe('environment-aware recommendations', () => {
       model: 'gpt-5.3-codex-spark',
       reasoningEffort: 'low',
     });
+    expect(createRecommendedSubagentPreset(environment, 'frontendCraft')).toEqual({
+      model: 'gpt-5.4',
+      reasoningEffort: 'high',
+    });
   });
 
   it('falls back cleanly when explorer low reasoning is unavailable', () => {
@@ -569,6 +601,34 @@ describe('environment-aware recommendations', () => {
     expect(createRecommendedSubagentPreset(environment, 'explorer')).toEqual({
       model: 'gpt-5.4-mini',
       reasoningEffort: 'medium',
+    });
+  });
+
+  it('uses high frontend-craft reasoning by default and escalates to xhigh when high is absent', () => {
+    const defaultEnvironment: CodexEnvironment = {
+      availableModels: [
+        {
+          slug: 'gpt-5.5',
+          reasoningEfforts: ['medium', 'high', 'xhigh'],
+        },
+      ],
+    };
+    const xhighOnlyEnvironment: CodexEnvironment = {
+      availableModels: [
+        {
+          slug: 'gpt-5.5',
+          reasoningEfforts: ['xhigh'],
+        },
+      ],
+    };
+
+    expect(createRecommendedSubagentPreset(defaultEnvironment, 'frontendCraft')).toEqual({
+      model: 'gpt-5.5',
+      reasoningEffort: 'high',
+    });
+    expect(createRecommendedSubagentPreset(xhighOnlyEnvironment, 'frontendCraft')).toEqual({
+      model: 'gpt-5.5',
+      reasoningEffort: 'xhigh',
     });
   });
 

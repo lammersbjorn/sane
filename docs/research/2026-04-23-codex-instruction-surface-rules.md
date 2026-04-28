@@ -29,9 +29,6 @@ Adjacent standards and competitors:
 - https://docs.github.com/en/copilot/concepts/agents/copilot-cli/about-custom-agents
 - https://code.claude.com/docs/en/memory
 - https://code.claude.com/docs/en/sub-agents
-- https://opencode.ai/docs/rules
-- https://opencode.ai/docs/skills
-- https://opencode.ai/docs/agents
 
 Research and video context:
 

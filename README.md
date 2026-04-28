@@ -35,14 +35,14 @@
 
 `Sane` is not another chat app and not a daily wrapper you have to prompt through.
 
-It is a setup, configuration, inspection, and recovery layer for Codex. You use `Sane` when you want Codex to start from better defaults, manage a few Codex-native installs for you, or recover cleanly when your setup drifts.
+It is a setup, configuration, status, and recovery layer for Codex. You use `Sane` when you want Codex to start from better defaults, manage a few Codex-native installs for you, or recover cleanly when your setup drifts.
 
 At a high level, `Sane` gives you:
 
-- a guided TUI for onboarding, settings, install, inspection, and repair
+- a guided TUI for Home, Settings, Add to Codex, Status, Repair, and Uninstall
 - a thin local `.sane/` runtime for config, state, and backups
 - managed Codex-native surfaces such as skills, `AGENTS.md` overlays, hooks, custom agents, and narrow config diffs
-- read-only Inspect visibility for runtime state, including the latest current-run-derived policy-preview snapshot
+- read-only Status visibility for runtime and managed-surface state
 
 > [!TIP]
 > The goal is simple: use `Sane` to set things up, then keep using Codex normally.
@@ -57,7 +57,7 @@ Good fit:
 - you want preview, backup, restore, and uninstall paths
 - you want optional guidance packs, hooks, or shared repo installs
 - you want Codex-native behavior changes, not a new mandatory workflow
-- you want long sessions to leave behind a small, inspectable local record
+- you want long sessions to leave behind a small, readable local record
 
 Not the point:
 
@@ -72,17 +72,17 @@ Not the point:
 | --- | --- |
 | You hand-edit Codex settings and hope you remember what changed. | You can preview, back up, apply, restore, and uninstall managed changes. |
 | Good defaults live in scattered notes or muscle memory. | `Sane` saves local settings and can export them into Codex-native surfaces. |
-| Skills, hooks, and custom agents drift over time. | `Sane` can install, refresh, inspect, and remove the pieces it manages. |
-| Something breaks and recovery is manual. | `status`, `doctor`, backups, and uninstall give you a clear repair path. |
-| Long runs leave little local context behind. | `.sane/` keeps a thin operational record for inspection, repair, and handoff. |
+| Skills, hooks, and custom agents drift over time. | `Sane` can install, refresh, check, and remove the pieces it manages. |
+| Something breaks and recovery is manual. | Status, setup checks, backups, and uninstall give you a clear repair path. |
+| Long runs leave little local context behind. | `.sane/` keeps a thin operational record for status, repair, and handoff. |
 
 ## What You Get Today
 
 ### User-facing control surface
 
-- no-args onboarding TUI
+- no-args control-center TUI, with guided setup on first launch
 - `sane settings` shortcut into the settings/configure area
-- install, inspect, repair, export, and uninstall flows
+- Home, Settings, Add to Codex, Status, Repair, and Uninstall flows
 
 ### Better Codex defaults
 
@@ -96,9 +96,8 @@ When no saved local config exists yet, `Sane` derives recommended defaults from 
 
 Routing note:
 - `Sane` uses task-shaped model routing, not one static fallback chain.
-- Documented OpenAI baseline: start with `gpt-5.5` in Codex when it appears in the picker, keep `gpt-5.4` as the stable API/current fallback, use `gpt-5.4-mini` for lighter subagent-style work, keep `gpt-5.3-codex` as the coding-specialized execution option, and treat `gpt-5.3-codex-spark` as near-instant research-preview iteration.
-- Local runtime caveat: `gpt-5.2` is kept for compatibility when a runtime exposes it, but the current Pro Codex picker reported on 2026-04-23 does not show it.
-- `Sane` therefore separates documented model availability from spawnable-here runtime support.
+- Sane separates documented model availability, local picker visibility, and actually spawnable runtime support.
+- Dated model availability findings live in `docs/research/2026-04-19-model-subagent-matrix.md`; product docs should stay at the stable routing-class level.
 
 ### Recommended integrations
 
@@ -109,8 +108,6 @@ Routing note:
 - `grep.app`
 
 There is also a separate opt-in Cloudflare profile.
-
-And a separate opt-in Opencode compatibility profile.
 
 And a separate opt-in native Codex statusline/title profile.
 
@@ -124,19 +121,20 @@ Built-in packs currently exposed in `Sane`:
 - `frontend-craft`
 
 These packs change guidance and behavior. They are not meant to turn the product into a command ritual.
-Some packs export concrete skills (`caveman`, `frontend-craft` today). Others are capability-only and currently change routing/overlay behavior without exporting a dedicated skill (`rtk` today).
+Optional packs export concrete skills where that keeps routing sharp (`sane-caveman`, `sane-rtk`, and the `frontend-craft` skill set today). Packs can also change router, overlay, hook, or agent guidance.
 
 ### Codex-native installs
 
 `Sane` can currently manage:
 
-- the user-level core skills `sane-router` and `continue`
+- the user-level core skills `sane-router`, `sane-bootstrap-research`, `sane-agent-lanes`, `sane-outcome-continuation`, and `continue`
 - optional repo-local shared skills in `.agents/skills/`
 - optional additive repo-local guidance in `AGENTS.md`
 - an additive global guidance block in `~/.codex/AGENTS.md`
 - Sane-managed entries in `~/.codex/hooks.json`
 - Sane-managed custom agents in `~/.codex/agents/`
-- optional Sane-managed OpenCode agents in `~/.config/opencode/agents/`
+- optional Sane-managed Codex plugin artifact in `~/.codex/plugins/sane/` with marketplace entry in `~/.agents/plugins/marketplace.json`
+- optional full OpenCode export in `~/.config/opencode/`, including Sane skills, a global guidance block, and Sane agents using cost-aware OpenCode Go model IDs
 
 ### Local runtime and repair tools
 
@@ -162,8 +160,8 @@ Under the hood, `Sane` has three layers:
 
 | Layer | Why users should care |
 | --- | --- |
-| TUI | Gives you one place to understand, preview, install, inspect, and repair. |
-| Local `.sane/` runtime | Keeps a thin, inspectable local record instead of hiding state in your head. |
+| TUI | Gives you one place to understand, preview, add to Codex, check status, repair, and uninstall. |
+| Local `.sane/` runtime | Keeps a thin, readable local record instead of hiding state in your head. |
 | Codex-native surfaces | These are the actual behavior changes: skills, overlays, hooks, custom agents, and narrow config updates. |
 
 This split matters because it keeps `Sane` useful without making it a wrapper you must live inside.
@@ -179,7 +177,9 @@ pnpm install
 pnpm start
 ```
 
-That opens the onboarding TUI.
+That opens the TUI. On first launch, Home walks you through setup. After setup, normal launch opens as the control center.
+
+When using the installed CLI, `sane install` always opens the guided install/tune-up wizard.
 
 If you already know you want the settings/configure area, run:
 
@@ -187,10 +187,10 @@ If you already know you want the settings/configure area, run:
 pnpm run start:settings
 ```
 
-Read-only shortcuts also exist:
+Direct shortcuts also exist:
 
 ```bash
-pnpm run start:inspect
+pnpm run start:status
 pnpm run start:repair
 ```
 
@@ -200,7 +200,7 @@ If you want the longer user-story version, read [docs/what-sane-does.md](./docs/
 
 | Status | Scope |
 | --- | --- |
-| In place today | Onboarding-first TUI, local `.sane/` runtime, read-only Inspect visibility (including latest current-run-derived policy-preview snapshot), config preview/apply/restore, recommended integrations profile, opt-in Cloudflare profile, opt-in Opencode compatibility profile, managed skills, additive `AGENTS.md` overlays, hooks, custom agents, optional OpenCode agent export, status/doctor, uninstall. |
+| In place today | Control-center TUI with first-launch setup, local `.sane/` runtime, read-only Status visibility, config preview/apply/restore, recommended integrations profile, opt-in Cloudflare profile, managed skills, additive `AGENTS.md` overlays, hooks, custom agents, optional Codex plugin artifact export, setup checks, and uninstall. |
 | Planned later | Public release packaging/distribution automation (GitHub Releases, npm publish, Homebrew, winget, Scoop), broader adaptive orchestration, post-`v1` pack expansion/contraction, and a later end-to-end outcome runner / one-shot flow. |
 
 > [!IMPORTANT]
@@ -214,7 +214,8 @@ If you want the longer user-story version, read [docs/what-sane-does.md](./docs/
 | --- | --- |
 | Project-local runtime | `.sane/config.local.toml`, `.sane/state/*`, `.sane/BRIEF.md`, `.sane/backups/` |
 | Optional repo-local exports | `.agents/skills/`, `AGENTS.md` |
-| User-level Codex surfaces | `~/.agents/skills/`, `~/.codex/AGENTS.md`, `~/.codex/hooks.json`, `~/.codex/agents/`, `~/.codex/config.toml` |
+| User-level Codex surfaces | `~/.agents/skills/`, `~/.codex/AGENTS.md`, `~/.codex/hooks.json`, `~/.codex/agents/`, `~/.codex/plugins/sane/`, `~/.agents/plugins/marketplace.json`, `~/.codex/config.toml` |
+| Optional OpenCode surfaces | `~/.config/opencode/skills/`, `~/.config/opencode/AGENTS.md`, `~/.config/opencode/agents/` |
 
 Design rules:
 
@@ -225,7 +226,7 @@ Design rules:
 
 ## Safety And Reversibility
 
-`Sane` should be easy to trust because it is easy to inspect.
+`Sane` should be easy to trust because it is easy to check.
 
 | Action | What it is for |
 | --- | --- |
@@ -233,7 +234,7 @@ Design rules:
 | `backup` | Save your current Codex config before a risky write. |
 | `apply` | Write the narrow profile or integration changes you chose. |
 | `export` | Install or refresh managed Codex-native pieces. |
-| `status` / `doctor` | Show what is installed, missing, stale, or invalid. |
+| `status` / setup check | Show what is installed, missing, stale, or invalid. |
 | `restore` | Roll back to the latest local backup. |
 | `uninstall` | Remove only Sane-managed content while leaving unrelated content alone. |
 

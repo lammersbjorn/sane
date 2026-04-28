@@ -57,10 +57,10 @@ describe("preferences control plane", () => {
     expect(result.summary).toBe(`config: ok at ${paths.configPath}`);
     expect(result.details).toEqual([
       "version: 1",
-      "coordinator: gpt-5.4 (high)",
+      "coordinator: gpt-5.5 (medium)",
       "sidecar: gpt-5.4-mini (medium)",
-      "verifier: gpt-5.4 (high)",
-      "derived routing: inspect Preferences for explorer, execution, and realtime defaults from detected model availability",
+      "verifier: gpt-5.5 (high)",
+      "derived routing: inspect Preferences for explorer, execution, realtime, and frontend-craft defaults from detected model availability",
       "telemetry: off",
       "packs: core, caveman"
     ]);
@@ -78,20 +78,23 @@ describe("preferences control plane", () => {
 
     expect(result.details).toEqual([
       "version: 1",
-      "coordinator: gpt-5.4 (high)",
+      "coordinator: gpt-5.5 (medium)",
       "sidecar: gpt-5.4-mini (medium)",
-      "verifier: gpt-5.4 (high)",
+      "verifier: gpt-5.5 (high)",
       "model availability: no Codex model cache; using Sane defaults (plan unknown)",
       "available models: unknown",
-      "coordinator capability: gpt-5.4 not in detected cache; selected high",
+      "coordinator capability: gpt-5.5 not in detected cache; selected medium",
       "sidecar capability: gpt-5.4-mini not in detected cache; selected medium",
-      "verifier capability: gpt-5.4 not in detected cache; selected high",
+      "verifier capability: gpt-5.5 not in detected cache; selected high",
       "explorer capability: gpt-5.4-mini not in detected cache; selected low",
       "implementation capability: gpt-5.3-codex not in detected cache; selected medium",
       "realtime capability: gpt-5.3-codex-spark not in detected cache; selected low",
+      "frontend-craft capability: gpt-5.5 not in detected cache; selected high",
       "explorer: gpt-5.4-mini (low) (derived)",
       "execution: gpt-5.3-codex (medium) (derived)",
+      "reviewer: gpt-5.5 (high) (derived)",
       "realtime: gpt-5.3-codex-spark (low) (derived)",
+      "frontend-craft: gpt-5.5 (high) (derived)",
       "telemetry files: summary missing, events missing, queue missing",
       "telemetry: off",
       "packs: core"
@@ -239,6 +242,10 @@ describe("preferences control plane", () => {
         realtime: {
           model: "gpt-5.3-codex-spark",
           reasoningEffort: "low"
+        },
+        frontendCraft: {
+          model: "gpt-5.5",
+          reasoningEffort: "high"
         }
       },
       telemetry: "off",
@@ -283,6 +290,9 @@ describe("preferences control plane", () => {
         },
         realtime: {
           model: "gpt-5.3-codex-spark"
+        },
+        frontendCraft: {
+          model: "gpt-5.5"
         }
       },
       models: {
@@ -337,7 +347,8 @@ describe("preferences control plane", () => {
       "verifier capability: gpt-5.5 supports medium/high/xhigh; selected high",
       "explorer capability: gpt-5.4-mini supports low/medium; selected low",
       "implementation capability: gpt-5.3-codex supports medium/high; selected medium",
-      "realtime capability: gpt-5.4-mini supports low/medium; selected low"
+      "realtime capability: gpt-5.4-mini supports low/medium; selected low",
+      "frontend-craft capability: gpt-5.5 supports medium/high/xhigh; selected high"
     ]);
   });
 
@@ -352,14 +363,14 @@ describe("preferences control plane", () => {
       current: {
         models: {
           coordinator: {
-            model: "gpt-5.4"
+            model: "gpt-5.5"
           }
         }
       },
       recommended: {
         models: {
           coordinator: {
-            model: "gpt-5.4"
+            model: "gpt-5.5"
           }
         }
       }
@@ -381,7 +392,7 @@ describe("preferences control plane", () => {
       recommended: {
         models: {
           coordinator: {
-            model: "gpt-5.4"
+            model: "gpt-5.5"
           }
         }
       }

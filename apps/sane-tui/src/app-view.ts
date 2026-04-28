@@ -1,14 +1,14 @@
 import { type TuiShell, currentAction } from "@sane/sane-tui/shell.js";
 import { loadDashboardView } from "@sane/sane-tui/dashboard.js";
-import { loadGetStartedScreenFromStatusBundle } from "@sane/sane-tui/get-started-screen.js";
-import { loadInstallScreenFromStatusBundle } from "@sane/sane-tui/install-screen.js";
+import { loadHomeScreenFromStatusBundle } from "@sane/sane-tui/home-screen.js";
+import { loadAddToCodexScreenFromStatusBundle } from "@sane/sane-tui/add-to-codex-screen.js";
 import {
-  formatInspectPolicyPreviewLines,
-  inspectOverviewLines,
-  loadInspectScreenFromStatusBundle
-} from "@sane/sane-tui/inspect-screen.js";
+  formatStatusPolicyPreviewLines,
+  statusOverviewLines,
+  loadStatusScreenFromStatusBundle
+} from "@sane/sane-tui/status-screen.js";
 import { loadOverlayModel, type OverlayModel } from "@sane/sane-tui/overlay-models.js";
-import { loadPreferencesScreen } from "@sane/sane-tui/preferences-screen.js";
+import { loadSettingsScreen } from "@sane/sane-tui/settings-screen.js";
 import { loadRepairScreenFromStatusBundle } from "@sane/sane-tui/repair-screen.js";
 import { type UiCommandId } from "@sane/sane-tui/command-registry.js";
 
@@ -58,22 +58,22 @@ const FOOTER_STATUS_SPECS = [
 
 export function loadAppView(shell: TuiShell): SaneTuiAppView {
   const codexProfiles = shell.statusSnapshot.codexProfiles;
-  const getStarted = loadGetStartedScreenFromStatusBundle(
+  const home = loadHomeScreenFromStatusBundle(
     shell.paths,
     shell.codexPaths,
     shell.statusSnapshot.statusBundle,
     codexProfiles,
     shell.hostPlatform
   );
-  const dashboard = loadDashboardView(shell, getStarted);
-  const install = loadInstallScreenFromStatusBundle(
+  const dashboard = loadDashboardView(shell, home);
+  const install = loadAddToCodexScreenFromStatusBundle(
     shell.paths,
     shell.codexPaths,
     shell.statusSnapshot.statusBundle,
     codexProfiles
   );
   const inspect = lazy(() =>
-    loadInspectScreenFromStatusBundle(
+    loadStatusScreenFromStatusBundle(
       shell.paths,
       shell.codexPaths,
       shell.statusSnapshot.statusBundle,
@@ -83,7 +83,7 @@ export function loadAppView(shell: TuiShell): SaneTuiAppView {
     )
   );
   const preferences = lazy(() =>
-    loadPreferencesScreen(
+    loadSettingsScreen(
       shell.paths,
       shell.codexPaths,
       codexProfiles,
@@ -112,14 +112,14 @@ export function loadAppView(shell: TuiShell): SaneTuiAppView {
     },
     sectionOverviewTitle: "Section Overview",
     sectionOverviewLines: sectionOverviewLines(dashboard, {
-      getStarted,
+      home,
       install,
       inspect,
       preferences,
       repair
     }),
     selectedHelpTitle: "Selected Step Details",
-    selectedHelpLines: selectedActionHelpLines(shell, getStarted, inspect, preferences),
+    selectedHelpLines: selectedActionHelpLines(shell, home, inspect, preferences),
     latestStatusTitle: dashboard.lastResult.title,
     latestStatusLines: dashboard.lastResult.lines,
     mode: currentMode(shell),
@@ -136,23 +136,32 @@ export function loadAppView(shell: TuiShell): SaneTuiAppView {
 function sectionOverviewLines(
   dashboard: ReturnType<typeof loadDashboardView>,
   models: {
-    getStarted: ReturnType<typeof loadGetStartedScreenFromStatusBundle>;
-    install: ReturnType<typeof loadInstallScreenFromStatusBundle>;
-    inspect: () => ReturnType<typeof loadInspectScreenFromStatusBundle>;
-    preferences: () => ReturnType<typeof loadPreferencesScreen>;
+    home: ReturnType<typeof loadHomeScreenFromStatusBundle>;
+    install: ReturnType<typeof loadAddToCodexScreenFromStatusBundle>;
+    inspect: () => ReturnType<typeof loadStatusScreenFromStatusBundle>;
+    preferences: () => ReturnType<typeof loadSettingsScreen>;
     repair: () => ReturnType<typeof loadRepairScreenFromStatusBundle>;
   }
 ): string[] {
 
   switch (dashboard.activeSection.id) {
-    case "get_started": {
+    case "home": {
       const lines = [
-        `Recommended now: ${dashboard.recommendedNextStep}`,
-        `Status now: ${models.getStarted.statusLine}`,
+        homeOverviewTitle(models.home),
+        `Next step: ${dashboard.recommendedNextStep}`,
         "",
-        "Guided flow"
+        "Current setup",
+        ...models.home.statusLine.split(" | "),
+        "",
+        "Setup path",
+        "1. Set up local Sane files",
+        "2. Choose defaults",
+        "3. Review and back up Codex settings",
+        "4. Apply Codex defaults",
+        "5. Add or refresh Sane in Codex",
+        "",
+        "Normal `sane` opens Status after setup."
       ];
-      lines.push(...models.getStarted.steps.map((step) => `${step.title}: ${step.impact}`));
       if (dashboard.recommendedActionId) {
         const action = dashboard.actions.find((item) => item.id === dashboard.recommendedActionId);
         if (action) {
@@ -165,15 +174,14 @@ function sectionOverviewLines(
         lines.push("Attention items found in current setup.");
         lines.push(...dashboard.attentionItems);
       }
-      lines.push(
-        `core codex profile: ${models.getStarted.codexProfileAudit.status} (${models.getStarted.codexProfileAudit.recommendedChangeCount} recommended changes; apply ${models.getStarted.codexProfileApply.status})`
-      );
+      lines.push("");
+      lines.push(`Codex defaults: ${models.home.codexProfileAudit.status} (${models.home.codexProfileAudit.recommendedChangeCount} change(s))`);
       return lines;
     }
-    case "inspect": {
-      return inspectOverviewLines(models.inspect());
+    case "status": {
+      return statusOverviewLines(models.inspect());
     }
-    case "install": {
+    case "add_to_codex": {
       const install = models.install;
       const lines = [
         ...dashboard.activeSection.description,
@@ -190,26 +198,25 @@ function sectionOverviewLines(
       }
       return lines;
     }
-    case "preferences": {
+    case "settings": {
       const preferences = models.preferences();
       return [
         ...dashboard.activeSection.description,
         "",
         `defaults source: ${preferences.source}`,
-        `coordinator: ${preferences.models.coordinator.model}/${preferences.models.coordinator.reasoningEffort}`,
-        `sidecar: ${preferences.models.sidecar.model}/${preferences.models.sidecar.reasoningEffort}`,
-        `verifier: ${preferences.models.verifier.model}/${preferences.models.verifier.reasoningEffort}`,
+        `main session: ${preferences.models.coordinator.model}/${preferences.models.coordinator.reasoningEffort}`,
+        `explorer agent: ${preferences.subagents.explorer.model}/${preferences.subagents.explorer.reasoningEffort}`,
+        `implementation agent: ${preferences.subagents.implementation.model}/${preferences.subagents.implementation.reasoningEffort}`,
+        `verifier agent: ${preferences.subagents.verifier.model}/${preferences.subagents.verifier.reasoningEffort}`,
         ...preferences.modelCapabilities.details,
-        `explorer: ${preferences.subagents.explorer.model}/${preferences.subagents.explorer.reasoningEffort}`,
-        `execution: ${preferences.derivedRouting.execution.model}/${preferences.derivedRouting.execution.reasoningEffort}`,
-        `realtime: ${preferences.derivedRouting.realtime.model}/${preferences.derivedRouting.realtime.reasoningEffort}`,
+        `realtime helper: ${preferences.subagents.realtime.model}/${preferences.subagents.realtime.reasoningEffort}`,
+        `frontend craft agent: ${preferences.subagents.frontendCraft.model}/${preferences.subagents.frontendCraft.reasoningEffort}`,
         `telemetry: ${preferences.telemetry}`,
         `local telemetry data: ${presentFlag(preferences.telemetryFiles.dirPresent)}`,
         `telemetry files: summary ${presentFlag(preferences.telemetryFiles.summaryPresent)}, events ${presentFlag(preferences.telemetryFiles.eventsPresent)}, queue ${presentFlag(preferences.telemetryFiles.queuePresent)}`,
         `enabled packs: ${preferences.enabledPacks.join(", ")}`,
         `statusline profile: ${preferences.statuslineAudit.status} (${preferences.statuslineAudit.recommendedChangeCount} recommended changes; apply ${preferences.statuslineApply.status})`,
-        `cloudflare profile: ${preferences.cloudflareAudit.status} (${preferences.cloudflareAudit.recommendedChangeCount} recommended changes; apply ${preferences.cloudflareApply.status})`,
-        `opencode profile: ${preferences.opencodeAudit.status} (${preferences.opencodeAudit.recommendedChangeCount} recommended changes; apply ${preferences.opencodeApply.status})`
+        `cloudflare profile: ${preferences.cloudflareAudit.status} (${preferences.cloudflareAudit.recommendedChangeCount} recommended changes; apply ${preferences.cloudflareApply.status})`
       ];
     }
     case "repair": {
@@ -234,13 +241,13 @@ function sectionOverviewLines(
 
 function selectedActionHelpLines(
   shell: TuiShell,
-  getStarted: ReturnType<typeof loadGetStartedScreenFromStatusBundle>,
-  inspect: () => ReturnType<typeof loadInspectScreenFromStatusBundle>,
-  preferences: () => ReturnType<typeof loadPreferencesScreen>
+  home: ReturnType<typeof loadHomeScreenFromStatusBundle>,
+  inspect: () => ReturnType<typeof loadStatusScreenFromStatusBundle>,
+  preferences: () => ReturnType<typeof loadSettingsScreen>
 ): string[] {
   const action = currentAction(shell);
   return (
-    selectedActionHelpBuilders(getStarted, inspect, preferences)[action.id]?.(action) ??
+    selectedActionHelpBuilders(home, inspect, preferences)[action.id]?.(action) ??
     baseSelectedActionHelp(action)
   );
 }
@@ -270,18 +277,18 @@ type SelectedActionHelpBuilder = (action: SelectedAction) => string[];
 type ProfileActionHelpModel = Parameters<typeof formatProfileActionHelp>[1];
 
 function selectedActionHelpBuilders(
-  getStarted: ReturnType<typeof loadGetStartedScreenFromStatusBundle>,
-  inspect: () => ReturnType<typeof loadInspectScreenFromStatusBundle>,
-  preferences: () => ReturnType<typeof loadPreferencesScreen>
+  home: ReturnType<typeof loadHomeScreenFromStatusBundle>,
+  inspect: () => ReturnType<typeof loadStatusScreenFromStatusBundle>,
+  preferences: () => ReturnType<typeof loadSettingsScreen>
 ): Partial<Record<UiCommandId, SelectedActionHelpBuilder>> {
   return {
     ...profileActionHelpBuilders(["preview_codex_profile", "apply_codex_profile"], () => ({
-      auditStatus: getStarted.codexProfileAudit.status,
-      recommendedChangeCount: getStarted.codexProfileAudit.recommendedChangeCount,
-      applyStatus: getStarted.codexProfileApply.status,
-      appliedKeyCount: getStarted.codexProfileApply.appliedKeys.length,
+      auditStatus: home.codexProfileAudit.status,
+      recommendedChangeCount: home.codexProfileAudit.recommendedChangeCount,
+      applyStatus: home.codexProfileApply.status,
+      appliedKeyCount: home.codexProfileApply.appliedKeys.length,
       appliedKeyLabel: "changes",
-      details: getStarted.codexProfilePreview.details
+      details: home.codexProfilePreview.details
     })),
     ...profileActionHelpBuilders(["preview_integrations_profile", "apply_integrations_profile"], () => {
       const model = inspect();
@@ -308,7 +315,7 @@ function selectedActionHelpBuilders(
     show_runtime_summary: (action) => {
       const model = inspect();
       return detailSelectedActionHelp(action, [
-        "Runtime handoff visibility is read-only and current-run-derived.",
+        "Opens saved `.sane` handoff notes.",
         ...model.runtimeSummary.details
       ]);
     },
@@ -317,7 +324,7 @@ function selectedActionHelpBuilders(
     preview_policy: (action) =>
       detailSelectedActionHelp(
         action,
-        formatInspectPolicyPreviewLines(inspect(), {
+        formatStatusPolicyPreviewLines(inspect(), {
           mode: "action",
           snapshot: "latest snapshot",
           input: "latest snapshot input",
@@ -333,17 +340,6 @@ function selectedActionHelpBuilders(
         appliedKeyCount: model.cloudflareApply.appliedKeys.length,
         appliedKeyLabel: "keys",
         details: model.cloudflarePreview.details
-      };
-    }),
-    ...profileActionHelpBuilders(["preview_opencode_profile", "apply_opencode_profile"], () => {
-      const model = preferences();
-      return {
-        auditStatus: model.opencodeAudit.status,
-        recommendedChangeCount: model.opencodeAudit.recommendedChangeCount,
-        applyStatus: model.opencodeApply.status,
-        appliedKeyCount: model.opencodeApply.appliedKeys.length,
-        appliedKeyLabel: "keys",
-        details: model.opencodePreview.details
       };
     })
   };
@@ -385,13 +381,27 @@ function impactLine(action: SelectedAction): string {
     return "Impact: changes Sane defaults only after you save.";
   }
 
-  if (!action.repoMutation) {
+  if (isReadOnlyAction(action)) {
     return action.id.startsWith("apply_") || action.id.startsWith("backup_") || action.id.startsWith("restore_")
       ? "Impact: changes user-level Codex files, not this repo."
-      : "Impact: read-only visibility.";
+      : "Impact: opens details without changing files.";
   }
 
-  return "Impact: writes repo-local or exported Sane-managed files.";
+  return action.repoMutation
+    ? "Impact: changes this repo or Sane project files."
+    : "Impact: changes your Codex setup.";
+}
+
+function isReadOnlyAction(action: SelectedAction): boolean {
+  return (
+    action.id === "show_status"
+    || action.id === "doctor"
+    || action.id === "show_runtime_summary"
+    || action.id === "show_config"
+    || action.id === "show_codex_config"
+    || action.id === "show_outcome_readiness"
+    || action.id.startsWith("preview_")
+  );
 }
 
 function footerLine(
@@ -431,6 +441,12 @@ function compactStatus(value: string): string {
 
 function presentFlag(value: boolean): string {
   return value ? "present" : "missing";
+}
+
+function homeOverviewTitle(home: ReturnType<typeof loadHomeScreenFromStatusBundle>): string {
+  return home.recommendedActionId === "install_runtime"
+    ? "Guided setup"
+    : "Setup tune-up";
 }
 
 function currentMode(shell: TuiShell): SaneTuiAppView["mode"] {

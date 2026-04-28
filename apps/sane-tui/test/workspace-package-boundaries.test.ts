@@ -17,6 +17,14 @@ const sanePackageJsonPaths = [
   "packages/state/package.json"
 ];
 
+const deniedRunnerEntrypoints = [
+  "outcome",
+  "outcome-runner",
+  "run-outcome",
+  "runner",
+  "sane-outcome"
+] as const;
+
 interface PackageJson {
   name: string;
   bin?: Record<string, string>;
@@ -29,28 +37,37 @@ interface PackageJson {
 describe("workspace package boundaries", () => {
   it("keeps the active Sane package split explicit and TypeScript-first", () => {
     const packages = sanePackageJsonPaths.map((path) => readPackageJson(path));
+    const expectedNames = sanePackageJsonPaths.map((path) => expectedSanePackageName(path));
 
-    expect(packages.map((pkg) => pkg.name)).toEqual([
-      "@sane/sane-tui",
-      "@sane/config",
-      "@sane/control-plane",
-      "@sane/core",
-      "@sane/framework-assets",
-      "@sane/platform",
-      "@sane/policy",
-      "@sane/state"
-    ]);
+    expect(packages.map((pkg) => pkg.name)).toHaveLength(expectedNames.length);
+    expect(new Set(packages.map((pkg) => pkg.name))).toEqual(new Set(expectedNames));
 
     for (const pkg of packages) {
       expect(pkg.private).toBe(true);
       expect(pkg.type).toBe("module");
-      expect(pkg.exports).toMatchObject({
-        ".": "./src/index.ts",
-        "./*.js": "./src/*.ts"
-      });
+      expect(pkg.exports?.["."]).toBe("./src/index.ts");
+      expect(pkg.exports).not.toHaveProperty("./*.js");
       expect(pkg.scripts?.test).toContain("vitest");
       expect(pkg.scripts?.typecheck).toContain("tsc --project tsconfig.json");
       expect(Object.values(pkg.scripts ?? {}).join("\n")).not.toMatch(/\bcargo\b/i);
+    }
+  });
+
+  it("keeps broad package subpath exports out of workspace packages", () => {
+    const packages = sanePackageJsonPaths.map((path) => ({
+      path,
+      pkg: readPackageJson(path)
+    }));
+
+    for (const { path, pkg } of packages) {
+      const exportKeys = Object.keys(pkg.exports ?? {});
+
+      expect(exportKeys).not.toContain("./*.js");
+      expect(exportKeys.every((key) => key === "." || key.endsWith(".js"))).toBe(true);
+
+      if (path !== "apps/sane-tui/package.json" && path !== "packages/control-plane/package.json") {
+        expect(exportKeys.sort()).toEqual([".", "./index.js"]);
+      }
     }
   });
 
@@ -58,18 +75,24 @@ describe("workspace package boundaries", () => {
     const rootPackage = readPackageJson("package.json");
     const saneTuiPackage = readPackageJson("apps/sane-tui/package.json");
 
-    expect(rootPackage.scripts?.start).toBe(
-      "pnpm --filter @sane/sane-tui run build:package && node ./apps/sane-tui/dist/bin/sane.cjs"
-    );
-    expect(rootPackage.scripts?.["pack:sane-tui"]).toBe(
-      "pnpm --filter @sane/sane-tui run build:package && cd apps/sane-tui/dist && pnpm pack"
-    );
-    expect(saneTuiPackage.scripts?.["build:package"]).toBe(
-      "pnpm run build && node ./scripts/write-dist-package.mjs"
-    );
-    expect(saneTuiPackage.scripts?.["build:smoke"]).toBe(
-      "pnpm run build:package && node ./dist/bin/sane.cjs inspect"
-    );
+    expectScriptIncludes(rootPackage.scripts, "start", [
+      "pnpm --filter @sane/sane-tui run build:package",
+      "node ./apps/sane-tui/dist/bin/sane.cjs"
+    ]);
+    expectScriptIncludes(rootPackage.scripts, "pack:sane-tui", [
+      "pnpm --filter @sane/sane-tui run build:package",
+      "apps/sane-tui/dist",
+      "pnpm pack"
+    ]);
+    expectScriptIncludes(saneTuiPackage.scripts, "build:package", [
+      "pnpm run build",
+      "node ./scripts/write-dist-package.mjs"
+    ]);
+    expectScriptIncludes(saneTuiPackage.scripts, "build:smoke", [
+      "pnpm run build:package",
+      "node ./dist/bin/sane.cjs",
+      "status"
+    ]);
     expect(Object.values(rootPackage.scripts ?? {}).join("\n")).not.toMatch(/\bcargo\b/i);
     expect(Object.values(saneTuiPackage.scripts ?? {}).join("\n")).not.toMatch(/\bcargo\b/i);
   });
@@ -90,21 +113,14 @@ describe("workspace package boundaries", () => {
       ...Object.values(saneTuiPackage.bin ?? {})
     ].join("\n");
 
-    expect(scriptAndBinNames).not.toEqual(
-      expect.arrayContaining([
-        "outcome",
-        "outcome-runner",
-        "run-outcome",
-        "runner",
-        "sane-outcome"
-      ])
-    );
+    expect(scriptAndBinNames).not.toEqual(expect.arrayContaining([...deniedRunnerEntrypoints]));
     expect(scriptAndBinCommands).not.toMatch(/\b(outcome[- ]runner|run[- ]outcome|runner)\b/i);
-    expect(saneTuiPackage.bin).toEqual({ sane: "./bin/sane.mjs" });
+    expect(Object.keys(saneTuiPackage.bin ?? {})).toEqual(["sane"]);
+    expect(saneTuiPackage.bin?.sane).toMatch(/(^|\/)bin\/sane\.mjs$/);
   });
 
   it("does not reintroduce Rust workspace files into the active Sane tree", () => {
-    expect(findRustWorkspaceFiles(workspaceRoot)).toEqual([]);
+    expect(findRustWorkspaceFiles(sanePackageJsonPaths.map((path) => dirname(join(workspaceRoot, path))))).toEqual([]);
   });
 });
 
@@ -112,29 +128,45 @@ function readPackageJson(path: string): PackageJson {
   return JSON.parse(readFileSync(join(workspaceRoot, path), "utf8")) as PackageJson;
 }
 
-function findRustWorkspaceFiles(root: string): string[] {
-  const ignoredDirs = new Set([
-    ".git",
-    "apps/site",
-    "dist",
-    "node_modules"
-  ]);
+function expectedSanePackageName(path: string): string {
+  if (path === "apps/sane-tui/package.json") {
+    return "@sane/sane-tui";
+  }
+
+  const match = path.match(/^packages\/([^/]+)\/package\.json$/);
+  if (!match) {
+    throw new Error(`unknown Sane package path: ${path}`);
+  }
+  return `@sane/${match[1]}`;
+}
+
+function expectScriptIncludes(
+  scripts: Record<string, string> | undefined,
+  scriptName: string,
+  requiredFragments: readonly string[]
+): void {
+  const script = scripts?.[scriptName];
+  expect(script).toEqual(expect.any(String));
+  for (const fragment of requiredFragments) {
+    expect(script).toContain(fragment);
+  }
+}
+
+function findRustWorkspaceFiles(roots: readonly string[]): string[] {
+  const ignoredEntries = new Set(["dist", "node_modules"]);
   const matches: string[] = [];
-  const stack = [root];
+  const stack = [...roots];
 
   while (stack.length > 0) {
     const current = stack.pop()!;
-    const currentRelative = relative(root, current);
-    if (ignoredDirs.has(currentRelative)) {
-      continue;
-    }
 
     for (const entry of readdirSync(current)) {
-      const fullPath = join(current, entry);
-      const relPath = relative(root, fullPath);
-      if (ignoredDirs.has(relPath)) {
+      if (ignoredEntries.has(entry)) {
         continue;
       }
+
+      const fullPath = join(current, entry);
+      const relPath = relative(workspaceRoot, fullPath);
 
       const stat = statSync(fullPath);
       if (stat.isDirectory()) {

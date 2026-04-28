@@ -10,7 +10,7 @@ import * as inventory from "@sane/control-plane/inventory.js";
 import { installRuntime } from "@sane/control-plane";
 import { exportAll } from "@sane/control-plane";
 import { loadDashboardView } from "@sane/sane-tui/dashboard.js";
-import * as getStarted from "@sane/sane-tui/get-started-screen.js";
+import * as home from "@sane/sane-tui/home-screen.js";
 import { createTuiShell } from "@sane/sane-tui/shell.js";
 
 const tempDirs: string[] = [];
@@ -38,11 +38,11 @@ describe("dashboard view", () => {
 
     expect(view.title).toBe("Sane");
     expect(view.projectLabel).toBe(projectRoot.split("/").at(-1));
-    expect(view.recommendedNextStep).toBe("Create Sane's local project files first.");
-    expect(view.activeSection.docLabel).toBe("Get Started");
+    expect(view.recommendedNextStep).toBe("Set up Sane's local files first.");
+    expect(view.activeSection.docLabel).toBe("Home");
     expect(view.actions.map((action) => action.id)).toEqual([
       "install_runtime",
-      "show_codex_config",
+      "open_config_editor",
       "preview_codex_profile",
       "backup_codex_config",
       "apply_codex_profile",
@@ -70,7 +70,7 @@ describe("dashboard view", () => {
     const shell = createTuiShell(createProjectPaths(projectRoot), createCodexPaths(homeDir));
 
     const view = loadDashboardView(shell);
-    const installSection = view.sections.find((section) => section.id === "install");
+    const installSection = view.sections.find((section) => section.id === "add_to_codex");
 
     expect(installSection?.description.join("\n")).toContain("Current install bundle:");
     expect(installSection?.description.join("\n")).toContain("user skill");
@@ -123,10 +123,10 @@ describe("dashboard view", () => {
     const codexPaths = createCodexPaths(homeDir);
     const shell = createTuiShell(paths, codexPaths);
 
-    vi.spyOn(getStarted, "loadGetStartedScreen").mockReturnValue({
-      summary: "Get Started",
+    vi.spyOn(home, "loadHomeScreen").mockReturnValue({
+      summary: "Home",
       recommendedActionId: "install_runtime",
-      recommendedNextStep: "Create Sane's local project files first.",
+      recommendedNextStep: "Set up Sane's local files first.",
       attentionItems: [],
       statusLine:
         "runtime missing | codex-config missing | user-skills missing | hooks missing | install bundle missing",
@@ -165,10 +165,10 @@ describe("dashboard view", () => {
     const homeDir = makeTempDir();
     const shell = createTuiShell(createProjectPaths(projectRoot), createCodexPaths(homeDir));
 
-    vi.spyOn(getStarted, "loadGetStartedScreen").mockReturnValue({
-      summary: "Get Started",
+    vi.spyOn(home, "loadHomeScreen").mockReturnValue({
+      summary: "Home",
       recommendedActionId: "install_runtime",
-      recommendedNextStep: "Create Sane's local project files first.",
+      recommendedNextStep: "Set up Sane's local files first.",
       attentionItems: [],
       statusLine:
         "runtime missing | codex-config missing | user-skills missing | hooks missing | install bundle missing",

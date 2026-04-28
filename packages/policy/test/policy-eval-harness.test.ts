@@ -13,7 +13,9 @@ import {
   TaskShape,
   ContinuationStrategy,
   VerifierTiming,
+  agentFlowReleasePolicyFixtures,
   b7PolicyEvalFixtures,
+  bootstrapResearchPolicyFixtures,
   canonicalPolicyEvalFixtures,
   evaluatePolicyFixtures,
   outcomeRunnerPreflightFixtures,
@@ -60,6 +62,7 @@ describe("policy eval harness", () => {
           obligations: [
             Obligation.Planning,
             Obligation.Review,
+            Obligation.SubagentEligible,
             Obligation.ContextCompaction,
             Obligation.SelfRepair
           ],
@@ -68,7 +71,7 @@ describe("policy eval harness", () => {
             stopCondition: StopCondition.UnblockedOrNeedsInput
           },
           orchestration: {
-            subagents: SubagentStrategy.WaitForIndependentSlices
+            subagents: SubagentStrategy.AllowIndependentSlices
           },
           trace: [
             {
@@ -78,6 +81,10 @@ describe("policy eval harness", () => {
             {
               obligation: Obligation.Review,
               rule: PolicyRule.NeedsIndependentReview
+            },
+            {
+              obligation: Obligation.SubagentEligible,
+              rule: PolicyRule.ParallelWorkCanUseSubagents
             },
             {
               obligation: Obligation.ContextCompaction,
@@ -136,6 +143,7 @@ describe("policy eval harness", () => {
         obligations: [
           Obligation.Planning,
           Obligation.Review,
+          Obligation.SubagentEligible,
           Obligation.ContextCompaction,
           Obligation.SelfRepair
         ],
@@ -150,19 +158,13 @@ describe("policy eval harness", () => {
   it("evaluates the B7 routing, compaction, and self-repair fixture suite", () => {
     const fixtures = b7PolicyEvalFixtures();
 
-    expect(fixtures.map((fixture) => fixture.caseId)).toEqual([
+    expectFixtureSuiteToPass(fixtures, [
       "parallel-multifile-routing",
       "long-run-compaction-before-drift",
-      "blocked-run-self-repair-without-sidecar",
+      "blocked-run-self-repair-with-sidecar",
       "closing-review-gate"
     ]);
-    expect(evaluatePolicyFixtures(fixtures)).toEqual({
-      passed: true,
-      caseCount: 4,
-      failureCount: 0,
-      failures: []
-    });
-    expect(fixtures.find((fixture) => fixture.caseId === "parallel-multifile-routing")?.expected).toEqual(
+    expect(findFixture(fixtures, "parallel-multifile-routing").expected).toEqual(
       expect.objectContaining({
         roles: {
           coordinator: true,
@@ -176,11 +178,12 @@ describe("policy eval harness", () => {
         })
       })
     );
-    expect(fixtures.find((fixture) => fixture.caseId === "long-run-compaction-before-drift")?.expected).toEqual(
+    expect(findFixture(fixtures, "long-run-compaction-before-drift").expected).toEqual(
       expect.objectContaining({
         obligations: [
           Obligation.Planning,
           Obligation.Review,
+          Obligation.SubagentEligible,
           Obligation.ContextCompaction
         ],
         continuation: {
@@ -189,16 +192,16 @@ describe("policy eval harness", () => {
         }
       })
     );
-    expect(fixtures.find((fixture) => fixture.caseId === "blocked-run-self-repair-without-sidecar")?.expected).toEqual(
+    expect(findFixture(fixtures, "blocked-run-self-repair-with-sidecar").expected).toEqual(
       expect.objectContaining({
         roles: {
           coordinator: true,
-          sidecar: false,
+          sidecar: true,
           verifier: true
         },
         orchestration: expect.objectContaining({
-          subagents: SubagentStrategy.SoloOnly,
-          subagentReadiness: SubagentReadinessReason.RunStateDisallowsDelegation
+          subagents: SubagentStrategy.AllowIndependentSlices,
+          subagentReadiness: SubagentReadinessReason.IndependentSlicesReady
         }),
         continuation: {
           strategy: ContinuationStrategy.SelfRepairUntilUnblocked,
@@ -206,16 +209,16 @@ describe("policy eval harness", () => {
         }
       })
     );
-    expect(fixtures.find((fixture) => fixture.caseId === "closing-review-gate")?.expected).toEqual(
+    expect(findFixture(fixtures, "closing-review-gate").expected).toEqual(
       expect.objectContaining({
         roles: {
           coordinator: true,
-          sidecar: false,
+          sidecar: true,
           verifier: true
         },
         orchestration: expect.objectContaining({
-          subagents: SubagentStrategy.SoloOnly,
-          subagentReadiness: SubagentReadinessReason.TaskTooSmall,
+          subagents: SubagentStrategy.AllowIndependentSlices,
+          subagentReadiness: SubagentReadinessReason.IndependentSlicesReady,
           verifierTiming: VerifierTiming.ClosingGate
         }),
         continuation: {
@@ -229,18 +232,12 @@ describe("policy eval harness", () => {
   it("evaluates the B8 outcome-runner preflight policy suite without shipping a runner", () => {
     const fixtures = outcomeRunnerPreflightFixtures();
 
-    expect(fixtures.map((fixture) => fixture.caseId)).toEqual([
+    expectFixtureSuiteToPass(fixtures, [
       "b8-long-run-preflight",
       "b8-blocked-self-repair-boundary",
       "b8-intake-stop-boundary"
     ]);
-    expect(evaluatePolicyFixtures(fixtures)).toEqual({
-      passed: true,
-      caseCount: 3,
-      failureCount: 0,
-      failures: []
-    });
-    expect(fixtures.find((fixture) => fixture.caseId === "b8-long-run-preflight")?.expected).toEqual(
+    expect(findFixture(fixtures, "b8-long-run-preflight").expected).toEqual(
       expect.objectContaining({
         obligations: [
           Obligation.Planning,
@@ -258,22 +255,23 @@ describe("policy eval harness", () => {
         }
       })
     );
-    expect(fixtures.find((fixture) => fixture.caseId === "b8-blocked-self-repair-boundary")?.expected).toEqual(
+    expect(findFixture(fixtures, "b8-blocked-self-repair-boundary").expected).toEqual(
       expect.objectContaining({
         obligations: [
           Obligation.Planning,
           Obligation.Review,
+          Obligation.SubagentEligible,
           Obligation.ContextCompaction,
           Obligation.SelfRepair
         ],
         roles: {
           coordinator: true,
-          sidecar: false,
+          sidecar: true,
           verifier: true
         },
         orchestration: expect.objectContaining({
-          subagents: SubagentStrategy.SoloOnly,
-          subagentReadiness: SubagentReadinessReason.RunStateDisallowsDelegation,
+          subagents: SubagentStrategy.AllowIndependentSlices,
+          subagentReadiness: SubagentReadinessReason.IndependentSlicesReady,
           verifierTiming: VerifierTiming.ThroughoutExecution
         }),
         continuation: {
@@ -282,19 +280,20 @@ describe("policy eval harness", () => {
         }
       })
     );
-    expect(fixtures.find((fixture) => fixture.caseId === "b8-intake-stop-boundary")?.expected).toEqual(
+    expect(findFixture(fixtures, "b8-intake-stop-boundary").expected).toEqual(
       expect.objectContaining({
         obligations: [
-          Obligation.Planning
+          Obligation.Planning,
+          Obligation.SubagentEligible
         ],
         roles: {
           coordinator: true,
-          sidecar: false,
+          sidecar: true,
           verifier: false
         },
         orchestration: expect.objectContaining({
-          subagents: SubagentStrategy.SoloOnly,
-          subagentReadiness: SubagentReadinessReason.TaskTooSmall,
+          subagents: SubagentStrategy.AllowIndependentSlices,
+          subagentReadiness: SubagentReadinessReason.IndependentSlicesReady,
           verifierTiming: VerifierTiming.None
         }),
         continuation: {
@@ -478,4 +477,93 @@ describe("policy eval harness", () => {
       ]
     });
   });
+
+  it("evaluates the B12 bootstrap research policy suite", () => {
+    const fixtures = bootstrapResearchPolicyFixtures();
+
+    expectFixtureSuiteToPass(fixtures, [
+      "b12-new-project-stack-research",
+      "b12-small-existing-change-skips-bootstrap-research"
+    ]);
+    expect(findFixture(fixtures, "b12-new-project-stack-research").expected).toEqual(
+      expect.objectContaining({
+        obligations: [
+          Obligation.BootstrapResearch,
+          Obligation.Planning,
+          Obligation.Review,
+          Obligation.SubagentEligible
+        ],
+        trace: expect.arrayContaining([
+          {
+            obligation: Obligation.BootstrapResearch,
+            rule: PolicyRule.NewProjectNeedsBootstrapResearch
+          }
+        ])
+      })
+    );
+    expect(findFixture(fixtures, "b12-small-existing-change-skips-bootstrap-research").expected).toEqual(
+      expect.objectContaining({
+        obligations: [
+          Obligation.VerifyLight,
+          Obligation.SubagentEligible
+        ]
+      })
+    );
+  });
+
+  it("evaluates the B14 agent-flow release policy suite", () => {
+    const fixtures = agentFlowReleasePolicyFixtures();
+
+    expectFixtureSuiteToPass(fixtures, [
+      "b14-frontend-review-closing-gate",
+      "b14-plugin-packaging-parallel-slices",
+      "b14-lifecycle-hooks-risk-gate",
+      "b14-continuation-blocked-self-repair",
+      "b14-stop-condition-direct-answer",
+      "b14-new-project-current-research-with-sidecars"
+    ]);
+    expect(findFixture(fixtures, "b14-new-project-current-research-with-sidecars").expected).toEqual(
+      expect.objectContaining({
+        obligations: [
+          Obligation.BootstrapResearch,
+          Obligation.Planning,
+          Obligation.Review,
+          Obligation.SubagentEligible
+        ],
+        roles: {
+          coordinator: true,
+          sidecar: true,
+          verifier: true
+        }
+      })
+    );
+  });
 });
+
+function expectFixtureSuiteToPass(
+  fixtures: readonly PolicyEvalFixture[],
+  expectedCaseIds: readonly string[]
+): void {
+  const caseIds = fixtures.map((fixture) => fixture.caseId);
+
+  expect(new Set(caseIds).size).toBe(caseIds.length);
+  expect(caseIds).toHaveLength(expectedCaseIds.length);
+  expect(caseIds).toEqual(expect.arrayContaining([...expectedCaseIds]));
+  expect(evaluatePolicyFixtures(fixtures)).toEqual({
+    passed: true,
+    caseCount: expectedCaseIds.length,
+    failureCount: 0,
+    failures: []
+  });
+}
+
+function findFixture(
+  fixtures: readonly PolicyEvalFixture[],
+  caseId: string
+): PolicyEvalFixture {
+  const fixture = fixtures.find((candidate) => candidate.caseId === caseId);
+
+  expect(fixture, `missing policy eval fixture ${caseId}`).toBeDefined();
+
+  return fixture as PolicyEvalFixture;
+}

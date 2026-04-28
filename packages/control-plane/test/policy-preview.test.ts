@@ -45,6 +45,7 @@ describe("policy preview", () => {
     expect(result.details[0]).toContain("explorer=");
     expect(result.details[0]).toContain("execution=");
     expect(result.details[0]).toContain("realtime=");
+    expect(result.details[0]).toContain("frontend-craft=");
     expect(result.policyPreview?.scenarios).toHaveLength(5);
     expect(result.policyPreview?.scenarios[0]?.id).toBe("simple-question");
     expect(result.policyPreview?.scenarios[0]?.input).toEqual({
@@ -81,11 +82,12 @@ describe("policy preview", () => {
     const result = previewPolicy(paths);
     const featureLine = result.details.find((line) => line.startsWith("multi-file-feature:")) ?? "";
 
-    expect(featureLine).toContain("coordinator=gpt-5.2/high");
+    expect(featureLine).toContain("coordinator=gpt-5.2/medium");
     expect(featureLine).toContain("explorer=gpt-5.4-mini/low");
     expect(featureLine).toContain("verifier=gpt-5.1-codex-mini/high");
     expect(featureLine).toContain("execution=gpt-5.3-codex/medium");
     expect(featureLine).toContain("realtime=gpt-5.3-codex-spark/low");
+    expect(featureLine).toContain("frontend-craft=gpt-5.5/high");
   });
 
   it("reads codex environment through platform discovery instead of homedir", () => {
@@ -99,6 +101,7 @@ describe("policy preview", () => {
 
     expect(featureLine).toContain("execution=gpt-5.3-codex/medium");
     expect(featureLine).toContain("realtime=gpt-5.3-codex-spark/low");
+    expect(featureLine).toContain("frontend-craft=gpt-5.5/high");
   });
 
   it("adds a derived inspect-only current-run scenario when current-run exists", () => {
@@ -129,7 +132,7 @@ describe("policy preview", () => {
     expect(result.details).toHaveLength(6);
     expect(result.policyPreview?.scenarios).toHaveLength(6);
     expect(currentRunLine).toContain("verify_light");
-    expect(currentRunScenario?.obligations).toEqual(["verify_light"]);
+    expect(currentRunScenario?.obligations).toEqual(["verify_light", "subagent_eligible"]);
     expect(currentRunScenario?.input).toEqual({
       intent: "inspect",
       taskShape: "local",
@@ -235,6 +238,7 @@ describe("policy preview", () => {
       "planning",
       "tdd",
       "review",
+      "subagent_eligible",
       "context_compaction",
       "self_repair"
     ]);
@@ -274,6 +278,7 @@ describe("policy preview", () => {
       "planning",
       "tdd",
       "review",
+      "subagent_eligible",
       "context_compaction",
       "self_repair"
     ]);
@@ -303,7 +308,7 @@ describe("policy preview", () => {
       contextPressure: "medium",
       runState: "executing"
     });
-    expect(scenario.obligations).toEqual(["planning", "review"]);
+    expect(scenario.obligations).toEqual(["planning", "review", "subagent_eligible"]);
   });
 
   it("derives edit multi-file executing heuristics from current-run state", () => {
@@ -330,7 +335,7 @@ describe("policy preview", () => {
       contextPressure: "medium",
       runState: "executing"
     });
-    expect(scenario.obligations).toEqual(["tdd", "review"]);
+    expect(scenario.obligations).toEqual(["tdd", "review", "subagent_eligible"]);
   });
 
   it("derives orchestrate long-running executing heuristics from current-run state", () => {
@@ -564,6 +569,7 @@ describe("policy preview", () => {
       "verify_light",
       "planning",
       "review",
+      "subagent_eligible",
       "self_repair"
     ]);
   });

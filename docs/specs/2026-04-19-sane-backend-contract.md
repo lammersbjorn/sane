@@ -12,7 +12,7 @@ The backend contract exists so:
 
 - the TUI has a stable action layer
 - tests can target real operations without terminal UI coupling
-- managed Codex-native assets can be installed, removed, inspected, and repaired consistently
+- managed Codex-native assets can be installed, removed, status-checked, and repaired consistently
 
 ## Scope
 
@@ -44,32 +44,33 @@ Current internal exception:
 Current managed targets are:
 
 1. local operational runtime under project `.sane`
-2. user core skill pack at `~/.agents/skills/` (currently `sane-router` and `continue`)
+2. user core skill pack at `~/.agents/skills/` (currently `sane-router`, `sane-bootstrap-research`, `sane-agent-lanes`, `sane-outcome-continuation`, and `continue`)
 3. optional repo-local shared core skill pack at `<repo>/.agents/skills/` (same current core skill names)
 4. optional additive repo-local overlay block in `<repo>/AGENTS.md`
 5. optional additive global overlay block in `~/.codex/AGENTS.md`
 6. additive user-level hooks entry in `~/.codex/hooks.json`
 7. additive user-level custom agents in `~/.codex/agents/`
-8. optional additive OpenCode agent export in `~/.config/opencode/agents/`
+8. optional Sane Codex plugin artifact export at `~/.codex/plugins/sane/` with marketplace entry in `~/.agents/plugins/marketplace.json`
 9. narrow explicit opt-in profile management for user-level Codex config at `~/.codex/config.toml`
 
 Current managed export behavior also depends on local config:
 - built-in pack set is fixed today: always-on `core` plus optional `caveman`, `rtk`, and `frontend-craft`
-- exported core skills currently include `sane-router` plus `continue`
+- exported core skills currently include `sane-router`, `sane-bootstrap-research`, `sane-agent-lanes`, `sane-outcome-continuation`, and `continue`
 - exported `sane-router` skill content can reflect enabled guidance packs and current routing defaults
 - exported global and repo `AGENTS.md` overlays can reflect enabled guidance packs and current routing defaults
 - status/doctor should flag those assets as invalid when current exports drift from enabled guidance-pack or routing config
-- enabled optional packs may materialize as additional managed user skills during `export_user_skills` (currently `sane-caveman`, the full pinned upstream `Leonxlnx/taste-skill` skill suite, and `impeccable`)
+- enabled optional packs may materialize as additional managed user skills during `export_user_skills` (currently `sane-caveman`, `sane-frontend-craft`, `sane-frontend-visual-assets`, and `sane-frontend-review`)
 - enabled optional packs may materialize as additional managed repo skills during `export_repo_skills` (same exported skill names as user scope)
-- `frontend-craft` currently exports every upstream `Leonxlnx/taste-skill` skill plus `impeccable`, so agents can select task-specific Taste variants such as `gpt-taste` and `image-taste-frontend`
-- capability-only packs (`rtk`) do not export dedicated skill directories, but they still change and can be enforced through router/overlay/custom-agent output
-- installed `caveman` pack guidance is enforced through exported router guidance, overlays, and custom-agent templates; it is not just an advisory inspect note
+- `frontend-craft` currently exports compact Sane-owned frontend skills instead of the full upstream Taste/Impeccable mirrors; Taste Skill, `impeccable`, and `make-interfaces-feel-better` remain provenance/reference inputs
+- `sane-frontend-review` must direct agents to use browser, Playwright, screenshot/local image, and terminal tooling according to what evidence the UI review needs
+- `rtk` exports the `sane-rtk` skill and also changes router/overlay/custom-agent output
+- installed `caveman` pack guidance is enforced through exported router guidance, overlays, and custom-agent templates; it is not just an advisory status note
 - default continuity should still come from scoped Codex-native exports plus thin local `.sane` state, not Codex native `memories`
 - repo-local `AGENTS.md` overlay export should stay distinct from the global overlay while reusing the same underlying routing state
 - built-in pack manifests may also carry read-only provenance metadata for bundled upstream-derived skills or MCP references
 - that provenance is inspectable metadata only, not a live fetch/update contract
-- inspect/runtime-summary reads may surface bounded latest history previews for the most recent `event`, `decision`, and `artifact` alongside the underlying counts, but that stays read-only and does not add a log-browsing surface
-- runtime handoff inspection should preserve canonical `present` vs `missing` vs `invalid` layer truth for `current-run`, `summary`, and `brief` instead of collapsing everything into value-truthiness
+- status/runtime-summary reads may surface bounded latest history previews for the most recent `event`, `decision`, and `artifact` alongside the underlying counts, but that stays read-only and does not add a log-browsing surface
+- runtime handoff status checks should preserve canonical `present` vs `missing` vs `invalid` layer truth for `current-run`, `summary`, and `brief` instead of collapsing everything into value-truthiness
 
 ## Required Operations
 
@@ -110,15 +111,12 @@ These are the backend actions the TUI is allowed to call in the current phase.
     - `context7`
     - `playwright`
     - `grep.app`
-  - do not treat `opensrc` as default recommended profile
-
 - `apply_integrations_profile`
   - backup current `~/.codex/config.toml` first when it exists
   - write only missing recommended integrations:
     - `mcp_servers.context7`
     - `mcp_servers.playwright`
     - `mcp_servers.grep_app`
-  - leave `opensrc` outside the default recommended profile
   - preserve all unrelated user config
   - emit post-apply structured audit details that match preview categories
 
@@ -134,13 +132,6 @@ These are the backend actions the TUI is allowed to call in the current phase.
     - `mcp_servers.cloudflare-api`
   - preserve all unrelated user config
 
-- `preview_opencode_profile`
-  - compute read-only optional compatibility-profile changes for Opencode-adjacent tooling
-  - current compatibility target:
-    - `opensrc`
-  - keep it separate from the broad recommended integrations profile
-  - keep OpenCode compatibility optional and additive; do not widen it into an OpenCode wrapper or default install path
-
 - `preview_statusline_profile`
   - compute read-only optional native Codex TUI changes
   - current target keys:
@@ -148,13 +139,6 @@ These are the backend actions the TUI is allowed to call in the current phase.
     - `tui.status_line`
     - `tui.terminal_title`
   - keep this additive and native-config-only; no Sane-owned custom statusline product surface
-
-- `apply_opencode_profile`
-  - backup current `~/.codex/config.toml` first when it exists
-  - write only:
-    - `mcp_servers.opensrc`
-  - preserve all unrelated user config
-  - any future OpenCode config/profile expansion must keep preview/apply/backup/restore behavior
 
 - `apply_statusline_profile`
   - backup current `~/.codex/config.toml` first when it exists
@@ -182,13 +166,14 @@ These are the backend actions the TUI is allowed to call in the current phase.
   - read structured inventory for all current managed targets
   - keep touched paths explicit for auditability
   - canonical status bundles include warning-only conflict signals for invalid Codex config, disabled `features.codex_hooks`, unmanaged `mcp_servers.*`, managed MCP drift, explicit model/reasoning drift, explicit statusline drift, native Codex memories enabled, and enabled `plugins.*` entries without changing inventory status or attempting repair
-  - current `show_status` output remains inventory-only; Inspect renders the conflict warnings
-  - Inspect also exposes read-only self-hosting shadow readiness over `.sane` handoff layers, blocking questions, verification status, and latest policy-preview presence; readiness blocks until verification has passed, and the runner remains disabled
+  - current `show_status` output remains inventory-only; Status renders the conflict warnings
+  - Status also exposes read-only self-hosting shadow readiness over `.sane` handoff layers, blocking questions, verification status, and latest policy-preview presence; readiness blocks until verification has passed, and the runner remains disabled
   - may remain a backend/dev escape hatch under the later TUI
 
 - `show_outcome_readiness`
   - read `.sane` handoff layers and the B8 policy preflight suite
   - summarize whether long-running outcome work is ready, blocked, or waiting on explicit input
+  - include a read-only progress/rescue signal derived from persisted outcome timestamps only; warn on likely stall, do not pretend to detect arbitrary loops
   - keep the autonomous loop disabled and do not mutate repo or Codex config
   - remain secondary to plain-language continuation
 
@@ -202,8 +187,8 @@ These are the backend actions the TUI is allowed to call in the current phase.
   - internal/backend inspection only for now
   - render canonical adaptive-policy scenarios into typed output
   - include editable role defaults plus derived routing classes for each scenario
-  - persist the latest preview snapshot so Inspect can show read-only, current-run-derived policy visibility
-  - latest persisted snapshot may include typed input classification per scenario for Inspect/runtime-summary visibility
+  - persist the latest preview snapshot so Status can show read-only, current-run-derived policy visibility
+  - latest persisted snapshot may include typed input classification per scenario for Status/runtime-summary visibility
   - keep typed scenario/orchestration/continuation/trace payloads available for internal history/state plumbing even if current user-facing render stays compact
   - continuation guidance may express internal stop posture such as answer directly, continue until verified, continue until blocked, self-repair until unblocked, or close when verified
   - normalize current-run phase aliases conservatively: `done` / `complete` / `finished` map to closing posture, while `error` / `failed` / `failing` map to blocked self-repair posture
@@ -212,16 +197,16 @@ These are the backend actions the TUI is allowed to call in the current phase.
 ### Doctor / Status
 
 - `doctor`
-  - inspect `.sane` runtime presence
-  - inspect config validity
-  - inspect run snapshot validity
-- inspect managed user skill presence
-- inspect optional repo-local shared skill presence
-- inspect optional repo-local AGENTS overlay presence
-- inspect managed global AGENTS block presence
-- inspect user-level Codex config presence / parse validity
-- surface warning-only Codex config conflicts in Inspect; do not auto-fix unmanaged MCP/plugin setup
-- inspect optional OpenCode-agent export presence
+  - check `.sane` runtime presence
+  - check config validity
+  - check run snapshot validity
+- check managed user skill presence
+- check optional repo-local shared skill presence
+- check optional repo-local AGENTS overlay presence
+- check managed global AGENTS block presence
+- check user-level Codex config presence / parse validity
+- check optional Sane Codex plugin artifact presence (`~/.codex/plugins/sane/`) and Sane marketplace entry (`~/.agents/plugins/marketplace.json`)
+- surface warning-only Codex config conflicts in Status; do not auto-fix unmanaged MCP/plugin setup
 - emit repair hints
 
 - `inventory`
@@ -236,6 +221,7 @@ These are the backend actions the TUI is allowed to call in the current phase.
 - `export_global_agents`
 - `export_hooks`
 - `export_custom_agents`
+- `export_plugin`
 - `export_all`
 - `uninstall_user_skills`
 - `uninstall_repo_skills`
@@ -243,7 +229,14 @@ These are the backend actions the TUI is allowed to call in the current phase.
 - `uninstall_global_agents`
 - `uninstall_hooks`
 - `uninstall_custom_agents`
+- `uninstall_plugin`
 - `uninstall_all`
+
+Plugin artifact boundary:
+- TUI-managed core export remains the default Sane setup path.
+- `export_all` keeps its current managed-target behavior and does not implicitly install or rewrite the Sane Codex plugin artifact.
+- The Sane plugin artifact is an optional distribution/install surface with explicit export/install, status/doctor, and uninstall/remove awareness.
+- Plugin artifact uninstall/remove must preserve unrelated Codex plugins and only target Sane-owned plugin state.
 
 ## Contract Rules
 
@@ -314,15 +307,13 @@ Current implementation note:
 - current TUI status panel renders those two groups separately
 - current hooks target is user-level only and uses the `sane` binary itself as the managed `SessionStart` command
 - current Windows behavior marks hooks as unavailable/invalid and should steer users toward WSL for hook-enabled flows
-- current path/install hardening covers workspace/project-root discovery, home/Codex/OpenCode path derivation, whitespace-only env fallback, native Windows hook exclusion, and preloaded Windows status inference
-- current custom-agents target installs two read-only managed agents: `sane-reviewer` and `sane-explorer`
+- current path/install hardening covers workspace/project-root discovery, home/Codex path derivation, whitespace-only env fallback, native Windows hook exclusion, and preloaded Windows status inference
+- current custom-agents target installs five managed agents: `sane-agent`, `sane-reviewer`, `sane-explorer`, `sane-implementation`, and `sane-realtime`
 - current Codex config work supports narrow explicit opt-in writes for the core profile
 - current integrations profile work supports narrow explicit opt-in writes for recommended MCP servers only
 - current install/inspect integrations UI consumes the structured integrations audit payload instead of rebuilding its own diff logic
-- current Inspect policy visibility is read-only and sourced from the latest current-run-derived preview snapshot
+- current Status policy visibility is read-only and sourced from the latest current-run-derived preview snapshot
 - current Cloudflare profile work supports separate explicit opt-in provider-profile writes only
-- current Opencode compatibility profile work supports separate explicit opt-in compatibility-profile writes only
-- current OpenCode-agent work supports separate explicit opt-in compatibility exports only and stays outside `export_all`
 
 ## TUI Boundary Rule
 

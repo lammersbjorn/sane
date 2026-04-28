@@ -1,6 +1,12 @@
+import { spawnSync } from "node:child_process";
+
 import { type HomeDirEnv, discoverCodexPaths, discoverProjectPaths } from "@sane/platform";
 
-import { renderSessionStartHookOutput } from "@sane/control-plane/session-start-hook.js";
+import {
+  renderSessionEndHookOutput,
+  renderSessionStartHookOutput
+} from "@sane/control-plane/session-start-hook.js";
+import { type ManagedTokscaleSubmitHookEvent } from "@sane/control-plane/tokscale-submit-hook.js";
 
 import { type BackendCommandId, type LaunchShortcut } from "@sane/sane-tui/command-registry.js";
 import { executeUiCommand } from "@sane/sane-tui/shell.js";
@@ -20,6 +26,17 @@ export type ParsedCliCommand =
   | {
       kind: "hook";
       event: "session-start";
+    }
+  | {
+      kind: "hook";
+      event: "session-end";
+      rateLimitResume: boolean;
+    }
+  | {
+      kind: "hook";
+      event: "tokscale-submit";
+      submitEvent: ManagedTokscaleSubmitHookEvent;
+      dryRun: boolean;
     };
 
 export interface CliRunResult {
@@ -31,26 +48,23 @@ const BACKEND_COMMAND_ALIASES: ReadonlyArray<{
   args: readonly string[];
   commandId: BackendCommandId;
 }> = [
-  { args: ["install"], commandId: "install_runtime" },
+  { args: ["install-runtime"], commandId: "install_runtime" },
   { args: ["config"], commandId: "show_config" },
   { args: ["codex-config"], commandId: "show_codex_config" },
   { args: ["summary"], commandId: "show_runtime_summary" },
   { args: ["outcome-readiness"], commandId: "show_outcome_readiness" },
-  { args: ["outcome", "step"], commandId: "advance_outcome" },
   { args: ["backup", "codex-config"], commandId: "backup_codex_config" },
   { args: ["preview", "policy"], commandId: "preview_policy" },
   { args: ["preview", "codex-profile"], commandId: "preview_codex_profile" },
   { args: ["preview", "integrations-profile"], commandId: "preview_integrations_profile" },
   { args: ["preview", "cloudflare-profile"], commandId: "preview_cloudflare_profile" },
-  { args: ["preview", "opencode-profile"], commandId: "preview_opencode_profile" },
   { args: ["preview", "statusline-profile"], commandId: "preview_statusline_profile" },
   { args: ["apply", "codex-profile"], commandId: "apply_codex_profile" },
   { args: ["apply", "integrations-profile"], commandId: "apply_integrations_profile" },
   { args: ["apply", "cloudflare-profile"], commandId: "apply_cloudflare_profile" },
-  { args: ["apply", "opencode-profile"], commandId: "apply_opencode_profile" },
   { args: ["apply", "statusline-profile"], commandId: "apply_statusline_profile" },
   { args: ["restore", "codex-config"], commandId: "restore_codex_config" },
-  { args: ["status"], commandId: "show_status" },
+  { args: ["show", "status"], commandId: "show_status" },
   { args: ["doctor"], commandId: "doctor" },
   { args: ["export", "user-skills"], commandId: "export_user_skills" },
   { args: ["export", "repo-skills"], commandId: "export_repo_skills" },
@@ -58,7 +72,8 @@ const BACKEND_COMMAND_ALIASES: ReadonlyArray<{
   { args: ["export", "global-agents"], commandId: "export_global_agents" },
   { args: ["export", "hooks"], commandId: "export_hooks" },
   { args: ["export", "custom-agents"], commandId: "export_custom_agents" },
-  { args: ["export", "opencode-agents"], commandId: "export_opencode_agents" },
+  { args: ["export", "plugin"], commandId: "export_plugin" },
+  { args: ["export", "opencode"], commandId: "export_opencode_all" },
   { args: ["export", "all"], commandId: "export_all" },
   { args: ["uninstall", "user-skills"], commandId: "uninstall_user_skills" },
   { args: ["uninstall", "repo-skills"], commandId: "uninstall_repo_skills" },
@@ -66,7 +81,7 @@ const BACKEND_COMMAND_ALIASES: ReadonlyArray<{
   { args: ["uninstall", "global-agents"], commandId: "uninstall_global_agents" },
   { args: ["uninstall", "hooks"], commandId: "uninstall_hooks" },
   { args: ["uninstall", "custom-agents"], commandId: "uninstall_custom_agents" },
-  { args: ["uninstall", "opencode-agents"], commandId: "uninstall_opencode_agents" },
+  { args: ["uninstall", "plugin"], commandId: "uninstall_plugin" },
   { args: ["uninstall", "all"], commandId: "uninstall_all" }
 ] as const;
 
@@ -84,6 +99,19 @@ export function parseCliArgs(args: readonly string[]): ParsedCliCommand {
 
   if (matchesArgs(normalizedArgs, ["hook", "session-start"])) {
     return { kind: "hook", event: "session-start" };
+  }
+
+  if (normalizedArgs[0] === "hook" && normalizedArgs[1] === "session-end") {
+    const flags = normalizedArgs.slice(2);
+    const unsupported = flags.find((flag) => flag !== "--rate-limit-resume");
+    if (unsupported) {
+      throw new Error(`unsupported hook session-end option: ${unsupported}`);
+    }
+    return { kind: "hook", event: "session-end", rateLimitResume: flags.includes("--rate-limit-resume") };
+  }
+
+  if (normalizedArgs[0] === "hook" && normalizedArgs[1] === "tokscale-submit") {
+    return parseTokscaleSubmitHookArgs(normalizedArgs.slice(2));
   }
 
   const backend = BACKEND_COMMAND_ALIASES.find((entry) => matchesArgs(normalizedArgs, entry.args));
@@ -114,6 +142,15 @@ export function runCliCommandFromDiscovery(
   }
 
   if (parsed.kind === "hook") {
+    if (parsed.event === "session-end") {
+      return {
+        exitCode: 0,
+        output: renderSessionEndHookOutput({ rateLimitResume: parsed.rateLimitResume })
+      };
+    }
+    if (parsed.event === "tokscale-submit") {
+      return runTokscaleSubmit(parsed.submitEvent, parsed.dryRun);
+    }
     return {
       exitCode: 0,
       output: renderSessionStartHookOutput()
@@ -126,6 +163,77 @@ export function runCliCommandFromDiscovery(
   return {
     exitCode: 0,
     output: result.renderText()
+  };
+}
+
+function parseTokscaleSubmitHookArgs(args: readonly string[]): ParsedCliCommand {
+  let submitEvent: ManagedTokscaleSubmitHookEvent | undefined;
+  let dryRun = false;
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--dry-run") {
+      dryRun = true;
+      continue;
+    }
+    if (arg === "--event") {
+      const value = args[index + 1];
+      if (value !== "session-end") {
+        throw new Error(`invalid tokscale hook event: ${value ?? "<missing>"}`);
+      }
+      submitEvent = value;
+      index += 1;
+      continue;
+    }
+    throw new Error(`unsupported tokscale hook option: ${arg}`);
+  }
+
+  if (!submitEvent) {
+    throw new Error("missing tokscale hook event");
+  }
+
+  return {
+    kind: "hook",
+    event: "tokscale-submit",
+    submitEvent,
+    dryRun
+  };
+}
+
+function runTokscaleSubmit(event: ManagedTokscaleSubmitHookEvent, dryRun: boolean): CliRunResult {
+  const args = ["submit", "--codex"];
+  if (dryRun) {
+    args.push("--dry-run");
+  }
+
+  const result = spawnSync("tokscale", args, {
+    encoding: "utf8",
+    timeout: 20_000
+  });
+
+  const output = [
+    `sane tokscale hook: ${event}${dryRun ? " dry-run" : " submit"}`,
+    result.stdout?.trim(),
+    result.stderr?.trim()
+  ].filter(Boolean).join("\n");
+
+  if (result.error) {
+    return {
+      exitCode: 0,
+      output: `${output}\ntokscale unavailable or timed out: ${result.error.message}\n`
+    };
+  }
+
+  if (typeof result.status === "number" && result.status !== 0) {
+    return {
+      exitCode: 0,
+      output: `${output}\ntokscale exited ${result.status}; hook ignored to avoid blocking Codex.\n`
+    };
+  }
+
+  return {
+    exitCode: 0,
+    output: `${output}\n`
   };
 }
 
@@ -187,9 +295,16 @@ function parseLaunchShortcut(args: readonly string[]): LaunchShortcut | null {
 
   switch (args[0]) {
     case "settings":
+      return "settings";
+    case "install":
+      return "install";
     case "inspect":
+    case "status":
+      return "status";
     case "repair":
-      return args[0];
+      return "repair";
+    case "uninstall":
+      return "uninstall";
     default:
       return null;
   }

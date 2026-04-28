@@ -9,6 +9,15 @@ Purpose:
 
 Related:
 - `docs/research/2026-04-20-tui-tooling-and-ux-audit.md`
+- `docs/specs/2026-04-25-sane-tui-control-center-redesign.md`
+
+Status:
+- superseded for naming, launch lifecycle, renderer selection, and next implementation order by `docs/specs/2026-04-25-sane-tui-control-center-redesign.md`
+- keep this file as historical context for the current TypeScript TUI layering and earlier visual rules
+- historical only: do not implement current labels, launch flow, or renderer work from this file
+
+> [!IMPORTANT]
+> This file preserves earlier design context. For active TUI work, use `docs/specs/2026-04-25-sane-tui-control-center-redesign.md` and the current cleanup spec.
 
 ## Product Goal
 
@@ -20,7 +29,7 @@ The TUI should feel like:
 - not a wall of boxes
 - not an internal backend demo
 
-## Current Screen Model
+## Historical Screen Model
 
 ## Current TS Model Layers
 
@@ -82,14 +91,13 @@ Current install bundle:
 - user skill
 - global `AGENTS.md` block
 - hooks
-- custom agents: `sane-agent`, `sane-reviewer`, `sane-explorer`
+- custom agents: `sane-agent`, `sane-reviewer`, `sane-explorer`, `sane-implementation`, `sane-realtime`
 
 Not part of the main onboarding button:
 
 - repo skills
 - repo `AGENTS.md` block
 - optional provider/integration installs
-- optional OpenCode-agent export
 
 Rules:
 
@@ -122,6 +130,8 @@ Content:
 - runtime handoff state (`current-run`, `summary`, `brief`) with canonical `present` / `missing` / `invalid` layer truth
 - bounded local runtime history previews for the latest `event`, `decision`, and `artifact`, plus counts for `events`, `decisions`, `artifacts`
 - self-hosting shadow readiness as read-only inspection only; readiness requires passed current-run verification, and no self-heal runner is enabled
+- read-only outcome rescue signal for likely stalled long-running work, derived from persisted `.sane` progress timestamps only
+- explicit verification state, current outcome progress summary, last verified outputs, and repo verify command when `AGENTS.md` exposes one
 - latest persisted policy snapshot and typed input classification, read-only only
 - current policy preview summary/scenario counts are shown with the same shared presenter used by action-level `preview policy` details (including per-scenario obligation/trace/orchestration lines), read-only only
 - local config view
@@ -140,8 +150,7 @@ Content:
 - repo `AGENTS.md`
 - global `AGENTS.md` block
 - hooks
-- custom agents (`sane-agent`, `sane-reviewer`, `sane-explorer`)
-- optional OpenCode agents (`~/.config/opencode/agents/`)
+- custom agents (`sane-agent`, `sane-reviewer`, `sane-explorer`, `sane-implementation`, `sane-realtime`)
 - integrations-profile actions should render backend structured audit output directly so users can see exact recommended adds before apply, and inspect/install overview copy should consume that same typed audit state instead of parsing preview summaries
 - install overview copy should come from one typed install snapshot, including integrations status/count, instead of scraping action rows plus inspect state separately
 - install all supported user-level items together

@@ -1,6 +1,6 @@
 # Sane Decision Log
 
-Last updated: 2026-04-22
+Last updated: 2026-04-27
 
 This file is the durable source of truth for decisions already made in the April 19, 2026 session.
 
@@ -51,7 +51,7 @@ Primary source:
 - Implemented TypeScript package boundaries now include `@sane/sane-tui`, `@sane/config`, `@sane/control-plane`, `@sane/core`, `@sane/framework-assets`, `@sane/platform`, `@sane/policy`, and `@sane/state`
 - File-first framework assets should render from checked-in `packs/core` sources through `packages/framework-assets`
 - Codex-native installation targets are the main product surface
-- Current managed Codex surfaces include the user skill, optional repo skills, optional repo `AGENTS.md` block, global `AGENTS.md` block, hooks, and custom agents
+- Current managed Codex surfaces include the user skill, optional repo skills, optional repo `AGENTS.md` block, global `AGENTS.md` block, hooks, custom agents, optional Sane Codex plugin artifact, and narrow Codex config profiles
 - Optional user-level Codex settings management is allowed later, but only as an explicit opt-in surface with preserve / backup / restore behavior
 - Local state may exist, but it must stay thin and operational rather than becoming a separate day-to-day runtime
 
@@ -62,8 +62,11 @@ Primary source:
 - Heavier rigor should appear automatically when useful
 - Avoid rigid visible modes
 - Use per-turn / per-prompt / per-session adaptive policy
-- Single-agent default
-- Subagents only when clearly useful
+- Subagent-first default for all non-tiny work
+- Stay single-agent only for tiny direct answers
+- Broad work needs a lane plan and successful subagent handoff before deep work
+- Broad review needs explorer/reviewer lanes; if higher-priority tool rules require explicit subagent authorization and it is missing, ask and pause
+- Broad editing needs an implementation lane with a disjoint write scope
 - One central verifier / reviewer authority
 - No agent democracy or chatter loops
 - Later state should include an end-to-end outcome runner that can take an idea, ask targeted follow-up questions, do research, verify itself, and keep going until the requested result is reached
@@ -97,8 +100,8 @@ Primary source:
 - TUI is for setup / config / update / export / doctor flows
 - TUI is not the normal prompting interface
 - Onboarding can borrow from the strongest parts of `openagentsbtw`, without becoming command-first
-- The current no-args TUI should open into an onboarding-first tabbed layout
-- Current section tabs are `Get started`, `Preferences`, `Install`, `Inspect`, and `Repair`
+- The current no-args TUI should open into an onboarding-first control-center layout
+- Current section tabs are `Home`, `Settings`, `Add to Codex`, `Status`, `Repair`, and `Uninstall`
 - Current TypeScript TUI implementation is layered as shell state, view models, editor state, and overlays rather than a renderer-owned monolith
 - Narrow layouts take priority over forcing a cramped wide split
 - Risky writes require confirmation, and successful writes may use explicit notice popups plus compact result feedback
@@ -112,19 +115,51 @@ Primary source:
 - Cross-platform from day one
 - Targets: `macOS`, `Linux`, `Windows`
 - TypeScript-first for implementation
-- Architecture should be ready for plugin / pack expansion later
-- `v1` does not need a public plugin API yet
-- `v1` should be pack-system ready, not pack-system complete
+- Architecture should be ready for Codex plugin packaging, while keeping Sane's internal pack model private
+- `v1` should ship a Sane Codex plugin package/marketplace artifact alongside the TUI/control plane when feasible
+- `v1` does not need a public third-party Sane plugin API yet
+- `v1` should be pack-system ready internally, not pack-system complete
 - Built-in packs in `v1`
-- No third-party extension contract in `v1`
-- No compatibility promises for a plugin API in `v1`
+- No third-party Sane extension contract in `v1`
+- No compatibility promises for a Sane plugin API in `v1`
+- Official Codex shape as of 2026-04-25: skills are the authoring format for reusable workflows, and Codex plugins are the installable distribution unit for skills/apps/MCP servers.
+- Sane should therefore keep skills as the concrete workflow surface, and package them as a Codex plugin when the goal is installation/sharing.
+- The whole repository is not the plugin. The repo may contain a plugin package with `.codex-plugin/plugin.json` plus skills/MCP/app metadata, while the TUI/control plane remains the installer/config/inspect/repair surface.
+- TUI-managed core install/export remains the default setup path.
+- The Sane Codex plugin artifact is optional for distribution/install and must be managed through explicit plugin actions.
+- `export_all` remains unchanged and must not implicitly install or rewrite the Sane plugin artifact.
+- Inspect/doctor/uninstall have explicit plugin artifact awareness without treating unrelated Codex plugins as Sane-owned.
 
 ### Built-in Packs
 
 - `v1` built-in pack set is now fixed from the capability audit: `core`, `caveman`, `rtk`, and `frontend-craft`
-- `frontend-craft` stays one curated pack containing the pinned upstream Taste Skill suite plus `impeccable`
+- `frontend-craft` stays one curated pack, but it is now a compact Sane-owned frontend pack instead of exporting the full pinned upstream Taste Skill suite plus `impeccable`
+- `frontend-craft` exports `sane-frontend-craft`, `sane-frontend-visual-assets`, and `sane-frontend-review`
+- upstream Taste Skill, `impeccable`, and `make-interfaces-feel-better` are provenance and inspiration, not the exported `v1` surface
+- the frontend review skill must name the visual tools it should use: in-app browser / Browser Use when appropriate, Playwright for repeatable screenshots and interaction sweeps, screenshots/local image viewing for static visual evidence, and terminal checks only as supporting evidence
+- generated or real visual assets are part of the frontend craft surface when they make the product clearer; generic decorative filler is not
 - Post-`v1` pack changes require a new capability audit, provenance, explicit optional/experimental status first, and install/inspect/uninstall coverage before graduation
-- No public plugin API compatibility promise exists in `v1`
+- No public Sane plugin API compatibility promise exists in `v1`
+
+### Outcome Runner Boundary
+
+- Current B8 work is outcome readiness, conflict detection, policy preflight, and writable internal outcome state.
+- It is not a full-auto runner.
+- A full-auto runner means a plain-language outcome loop that can research, plan, implement, verify, self-repair, persist state, and resume after interruption without exposing a command ritual as the primary UX.
+- `advance_outcome` is internal/state plumbing and should not be marketed as a public runner command.
+- If full-auto execution is required before `v1`, it needs its own explicit build gate with tests and interruption/resume semantics.
+
+### Agent-Flow Philosophy
+
+- Prompt surfaces should be outcome-first, not command-first.
+- Always-on instructions should stay small; concrete behavior belongs in router skills, task skills, agents, hooks, and tests.
+- Sane should help agents challenge bad user choices once, then continue with the user's decision unless the choice is unsafe or impossible.
+- New-project setup should include a current stack/package/tool research pass unless the user has already chosen a stack or the task is too small to justify it.
+- Experimental tools are allowed when they are proven enough for semi-production use and clearly scoped.
+- Session lifecycle hooks must be optional, inspectable, reversible, and privacy-scoped.
+- External submission hooks such as Tokscale must be opt-in and should default to dry-run/preview before sending.
+- Rate-limit resume behavior belongs in a lifecycle/resume gate, not in always-on prose.
+- Evals and benchmark integrations such as Passmark should test agent-flow behavior, not become marketing claims without repo-local evidence.
 
 ### Self-Hosting / Self-Improvement
 
@@ -172,7 +207,7 @@ These are still undecided and should stay out of `Locked`.
 
 - Exact local runtime directory layout and names
 - Exact state file formats and compaction strategy
-- Any additional export surfaces beyond the current user skill, repo skills, repo `AGENTS.md` block, global `AGENTS.md` block, hooks, and custom agents
+- Any additional managed surfaces beyond the current skills, `AGENTS.md` blocks, hooks, custom agents, optional Sane Codex plugin artifact, and narrow Codex config profiles
 - Exact model preset matrix and routing rules
 - Exact control-surface implementation details within the TypeScript-first stack
 - Final product name for the later end-to-end outcome-runner flow

@@ -1,8 +1,8 @@
 import { OperationKind } from "@sane/core";
 import { type HostPlatform } from "@sane/platform";
 
-export type TuiSectionId = "get_started" | "preferences" | "install" | "inspect" | "repair";
-export type LaunchShortcut = "default" | "settings" | "inspect" | "repair";
+export type TuiSectionId = "home" | "settings" | "add_to_codex" | "status" | "repair" | "uninstall";
+export type LaunchShortcut = "default" | "install" | "settings" | "status" | "repair" | "uninstall";
 
 export type BackendCommandId =
   | "install_runtime"
@@ -17,12 +17,10 @@ export type BackendCommandId =
   | "preview_codex_profile"
   | "preview_integrations_profile"
   | "preview_cloudflare_profile"
-  | "preview_opencode_profile"
   | "preview_statusline_profile"
   | "apply_codex_profile"
   | "apply_integrations_profile"
   | "apply_cloudflare_profile"
-  | "apply_opencode_profile"
   | "apply_statusline_profile"
   | "restore_codex_config"
   | "export_user_skills"
@@ -31,7 +29,8 @@ export type BackendCommandId =
   | "export_global_agents"
   | "export_hooks"
   | "export_custom_agents"
-  | "export_opencode_agents"
+  | "export_plugin"
+  | "export_opencode_all"
   | "export_all"
   | "uninstall_user_skills"
   | "uninstall_repo_skills"
@@ -39,7 +38,7 @@ export type BackendCommandId =
   | "uninstall_global_agents"
   | "uninstall_hooks"
   | "uninstall_custom_agents"
-  | "uninstall_opencode_agents"
+  | "uninstall_plugin"
   | "uninstall_all"
   | "show_status"
   | "doctor";
@@ -99,6 +98,9 @@ export interface SectionActionMetadata extends CommandSpec {
 
 const WINDOWS_EXPORT_ALL_FILES_TOUCHED = [
   "~/.agents/skills/sane-router",
+  "~/.agents/skills/sane-bootstrap-research",
+  "~/.agents/skills/sane-agent-lanes",
+  "~/.agents/skills/sane-outcome-continuation",
   "~/.agents/skills/continue",
   "~/.codex/AGENTS.md",
   "~/.codex/agents/"
@@ -108,31 +110,30 @@ const WINDOWS_EXPORT_ALL_INCLUDES = ["user-skills", "global-agents", "custom-age
 
 export const COMMAND_METADATA_REGISTRY = {
   shortcuts: {
-    default: "get_started",
-    settings: "preferences",
-    inspect: "inspect",
-    repair: "repair"
+    default: "home",
+    install: "home",
+    settings: "settings",
+    status: "status",
+    repair: "repair",
+    uninstall: "uninstall"
   } as const,
   sections: [
     {
-      id: "get_started",
-      tabLabel: "Start here",
-      docLabel: "Get Started",
+      id: "home",
+      tabLabel: "Home",
+      docLabel: "Home",
       launchShortcut: "default",
       description: [
-        "Recommended now: follow the ordered setup flow.",
-        "Suggested flow",
-        "1. Create Sane's local project files",
-        "2. Review and back up Codex settings",
-        "3. Apply Sane's recommended Codex settings",
-        "4. Install Sane into Codex",
-        "More options live in Set up preferences and Install to Codex."
+        "Guided setup and tune-up.",
+        "Use this when setting up Sane for the first time or refreshing an existing install.",
+        "Choose defaults, review changes, back up Codex settings, then add or refresh Sane in Codex.",
+        "After setup, normal `sane` opens Status."
       ]
     },
     {
-      id: "preferences",
-      tabLabel: "Set up preferences",
-      docLabel: "Preferences",
+      id: "settings",
+      tabLabel: "Settings",
+      docLabel: "Settings",
       launchShortcut: "settings",
       description: [
         "Change how Sane behaves before installing it into Codex.",
@@ -143,41 +144,53 @@ export const COMMAND_METADATA_REGISTRY = {
       ]
     },
     {
-      id: "install",
-      tabLabel: "Install to Codex",
-      docLabel: "Install",
+      id: "add_to_codex",
+      tabLabel: "Add to Codex",
+      docLabel: "Add to Codex",
       description: [
         "Install Sane into Codex on purpose.",
         "Current install bundle:",
-        "user skills, global AGENTS.md block, sane-agent, sane-reviewer, sane-explorer",
+        "core user skills (sane-router, sane-bootstrap-research, sane-agent-lanes, sane-outcome-continuation, continue), global AGENTS.md block, and custom agents (sane-agent, sane-reviewer, sane-explorer, sane-implementation, sane-realtime)",
         "On macOS/Linux, hooks can join that bundle. On native Windows, use WSL for hook-enabled flows.",
+        "The optional Codex plugin artifact is a separate action and stays outside the core bundle.",
         "User-level install changes your own Codex setup.",
         "Repo-level install is explicit and optional.",
         "Nothing here should silently take over a repo."
       ]
     },
     {
-      id: "inspect",
-      tabLabel: "Inspect",
-      docLabel: "Inspect",
-      launchShortcut: "inspect",
+      id: "status",
+      tabLabel: "Status",
+      docLabel: "Status",
+      launchShortcut: "status",
       description: [
-        "Inspect is read-only visibility before you change anything.",
-        "Inspect includes status summary, doctor result, current-run-derived handoff visibility, local config view, Codex config view, and export drift view.",
-        "Use status and doctor to see what is installed, stale, disabled, or broken.",
+        "Status shows what is installed before you change anything.",
+        "Status includes setup health, saved handoff notes, local config, Codex config, and drift warnings.",
+        "Use Status and setup checks to see what is installed, stale, disabled, or broken.",
         "View Sane config and Codex settings before applying changes.",
-        "Inspect does not orchestrate runtime work."
+        "Status does not run agent work."
       ]
     },
     {
       id: "repair",
-      tabLabel: "Repair or remove",
+      tabLabel: "Repair",
       docLabel: "Repair",
       launchShortcut: "repair",
       description: [
-        "Repair, restore, and uninstall tools.",
+        "Repair and restore tools.",
         "Use backup and restore when settings changes went wrong.",
-        "Use uninstall when you want Sane removed cleanly."
+        "Use repair when Sane-managed files are missing, stale, or invalid."
+      ]
+    },
+    {
+      id: "uninstall",
+      tabLabel: "Uninstall",
+      docLabel: "Uninstall",
+      launchShortcut: "uninstall",
+      description: [
+        "Remove Sane-managed installs cleanly.",
+        "Only Sane-managed content should be removed.",
+        "Unrelated Codex settings, skills, agents, and plugins should stay."
       ]
     }
   ] satisfies TuiSectionMetadata[],
@@ -230,11 +243,11 @@ export const COMMAND_METADATA_REGISTRY = {
       kind: "backend",
       backendKind: OperationKind.ShowRuntimeSummary,
       help: [
-        "Show a read-only summary of local current-run-derived handoff state.",
+        "Show saved local handoff notes from `.sane`.",
         "",
-        "Visibility only for managed surfaces. No runtime orchestration runs.",
-        "This reads current-run, summary, brief, and local runtime history counts.",
-        "Use it when you want a compact view of what Sane has recorded locally."
+        "This opens current-run, summary, brief, and local history counts.",
+        "Use it when you want a compact view of what Sane has recorded locally.",
+        "It does not start agent work."
       ],
       confirmation: null,
       successNoticeTitle: null,
@@ -253,9 +266,8 @@ export const COMMAND_METADATA_REGISTRY = {
       kind: "backend",
       backendKind: OperationKind.ShowOutcomeReadiness,
       help: [
-        "Show whether the current Sane handoff state can support a long-running outcome flow.",
+        "Check whether saved Sane handoff notes are ready for a long-running outcome flow.",
         "",
-        "This is read-only readiness for Codex-native work.",
         "It checks local handoff layers, unresolved blockers, verification posture, latest policy preview state, and the B8 policy preflight suite.",
         "It does not start an autonomous loop or turn Sane into the normal prompting interface."
       ],
@@ -276,11 +288,11 @@ export const COMMAND_METADATA_REGISTRY = {
       kind: "backend",
       backendKind: OperationKind.AdvanceOutcome,
       help: [
-        "Advance the current Sane outcome state inside `.sane`.",
+        "Internal: advance the current Sane outcome state inside `.sane`.",
         "",
-        "This is a framework state transition for Codex-native long-running work.",
+        "This is framework state plumbing for future Codex-native long-running work.",
         "It records the current objective, phase, active tasks, blockers, verification posture, and brief.",
-        "It does not make the TUI the normal prompting interface."
+        "It is not a public full-auto runner and is not shown in the TUI."
       ],
       confirmation: null,
       successNoticeTitle: null,
@@ -321,12 +333,11 @@ export const COMMAND_METADATA_REGISTRY = {
       kind: "backend",
       backendKind: OperationKind.PreviewPolicy,
       help: [
-        "Show Sane's current-run-derived adaptive routing policy preview.",
+        "Explain how Sane would route common Codex work.",
         "",
-        "Visibility only for managed surfaces. No runtime orchestration runs.",
-        "This is a read-only preview over current-run and local config state.",
+        "This uses saved handoff notes and local config state.",
         "It shows per-scenario obligations plus routing defaults.",
-        "Editable coordinator/sidecar/verifier defaults are shown alongside derived execution and realtime-iteration classes."
+        "It does not start agent work."
       ],
       confirmation: null,
       successNoticeTitle: null,
@@ -357,9 +368,8 @@ export const COMMAND_METADATA_REGISTRY = {
       help: [
         "Show the Codex settings Sane recommends by default.",
         "",
-        "Preview only for managed surfaces.",
         "This shows the single-session Codex baseline Sane would write plus hook settings.",
-        "That baseline is coordinator-shaped; broader execution and realtime routing stays derived outside config.toml."
+        "Nothing changes until you apply it."
       ],
       confirmation: null,
       successNoticeTitle: null,
@@ -373,8 +383,8 @@ export const COMMAND_METADATA_REGISTRY = {
       help: [
         "Show the optional integrations profile Sane recommends.",
         "",
-        "Preview only for managed surfaces.",
-        "Today this is where recommended MCP and integration defaults are inspected before apply."
+        "Today this is where recommended MCP and integration defaults are reviewed before apply.",
+        "Nothing changes until you apply it."
       ],
       confirmation: null,
       successNoticeTitle: null,
@@ -388,24 +398,8 @@ export const COMMAND_METADATA_REGISTRY = {
       help: [
         "Show the optional Cloudflare provider profile.",
         "",
-        "Preview only for managed surfaces.",
-        "Use this only if you want Cloudflare-specific tooling added to Codex config."
-      ],
-      confirmation: null,
-      successNoticeTitle: null,
-      repoMutation: false,
-      filesTouched: ["~/.codex/config.toml"]
-    },
-    preview_opencode_profile: {
-      id: "preview_opencode_profile",
-      kind: "backend",
-      backendKind: OperationKind.PreviewOpencodeProfile,
-      help: [
-        "Show the optional Opencode compatibility profile.",
-        "",
-        "Preview only for managed surfaces.",
-        "Today this adds the optional opensrc MCP entry only.",
-        "Broader Opencode-native config stays separate on purpose."
+        "Use this only if you want Cloudflare-specific tooling added to Codex config.",
+        "Nothing changes until you apply it."
       ],
       confirmation: null,
       successNoticeTitle: null,
@@ -419,8 +413,8 @@ export const COMMAND_METADATA_REGISTRY = {
       help: [
         "Show Sane's optional native Codex statusline and terminal-title profile.",
         "",
-        "Preview only for managed surfaces.",
-        "This targets Codex's built-in `tui.status_line`, `tui.terminal_title`, and `tui.notification_condition` settings."
+        "This targets Codex's built-in `tui.status_line`, `tui.terminal_title`, and `tui.notification_condition` settings.",
+        "Nothing changes until you apply it."
       ],
       confirmation: null,
       successNoticeTitle: null,
@@ -459,7 +453,7 @@ export const COMMAND_METADATA_REGISTRY = {
         "Write Sane's recommended Codex tools into `~/.codex/config.toml`.",
         "",
         "Today this adds Context7, Playwright, and grep.app.",
-        "Use preview first if you want to inspect exactly what will be added.",
+        "Use preview first if you want to review exactly what will be added.",
         "",
         "Safety",
         "Confirmation required before this action runs."
@@ -494,28 +488,6 @@ export const COMMAND_METADATA_REGISTRY = {
       repoMutation: false,
       filesTouched: ["~/.codex/config.toml"]
     },
-    apply_opencode_profile: {
-      id: "apply_opencode_profile",
-      kind: "backend",
-      backendKind: OperationKind.ApplyOpencodeProfile,
-      help: [
-        "Write the optional Opencode compatibility profile into `~/.codex/config.toml`.",
-        "",
-        "Today this adds the optional opensrc MCP entry only.",
-        "Broader Opencode-native config stays separate on purpose.",
-        "",
-        "Safety",
-        "Confirmation required before this action runs."
-      ],
-      confirmation: {
-        required: true,
-        impactCopy: "This writes changes into your `~/.codex/config.toml`.",
-        remindPreviewOrBackup: true
-      },
-      successNoticeTitle: "Applied",
-      repoMutation: false,
-      filesTouched: ["~/.codex/config.toml"]
-    },
     apply_statusline_profile: {
       id: "apply_statusline_profile",
       kind: "backend",
@@ -536,21 +508,6 @@ export const COMMAND_METADATA_REGISTRY = {
       successNoticeTitle: "Applied",
       repoMutation: false,
       filesTouched: ["~/.codex/config.toml"]
-    },
-    export_opencode_agents: {
-      id: "export_opencode_agents",
-      kind: "backend",
-      backendKind: OperationKind.ExportOpencodeAgents,
-      help: [
-        "Install the optional Sane OpenCode agents into `~/.config/opencode/agents/`.",
-        "",
-        "This stays outside Sane's default Codex install bundle.",
-        "Use it only if you also want the same Sane agent roles available in OpenCode."
-      ],
-      confirmation: null,
-      successNoticeTitle: "Installed",
-      repoMutation: false,
-      filesTouched: ["~/.config/opencode/agents/"]
     },
     restore_codex_config: {
       id: "restore_codex_config",
@@ -585,7 +542,7 @@ export const COMMAND_METADATA_REGISTRY = {
       confirmation: null,
       successNoticeTitle: "Installed",
       repoMutation: false,
-      filesTouched: ["~/.agents/skills/sane-router", "~/.agents/skills/continue"]
+      filesTouched: ["~/.agents/skills/sane-router", "~/.agents/skills/sane-bootstrap-research", "~/.agents/skills/sane-agent-lanes", "~/.agents/skills/sane-outcome-continuation", "~/.agents/skills/continue"]
     },
     export_repo_skills: {
       id: "export_repo_skills",
@@ -597,7 +554,11 @@ export const COMMAND_METADATA_REGISTRY = {
         "Use this when you want repo-local shared skills instead of user-only install.",
         "This changes the repo on purpose and is not part of `Install Sane into Codex`."
       ],
-      confirmation: null,
+      confirmation: {
+        required: true,
+        impactCopy: "This writes Sane-managed skills into this repo's `.agents/skills` folder.",
+        remindPreviewOrBackup: true
+      },
       successNoticeTitle: "Installed",
       repoMutation: true,
       filesTouched: [".agents/skills/"]
@@ -612,7 +573,11 @@ export const COMMAND_METADATA_REGISTRY = {
         "Use this only when you want repo-local shared AGENTS guidance.",
         "This changes the repo on purpose and is not part of `Install Sane into Codex`."
       ],
-      confirmation: null,
+      confirmation: {
+        required: true,
+        impactCopy: "This writes the Sane-managed block into this repo's `AGENTS.md`.",
+        remindPreviewOrBackup: true
+      },
       successNoticeTitle: "Installed",
       repoMutation: true,
       filesTouched: ["AGENTS.md"]
@@ -653,19 +618,49 @@ export const COMMAND_METADATA_REGISTRY = {
       help: [
         "Add or refresh Sane's custom agent files.",
         "",
-        "These files support editable role defaults plus derived execution/realtime-iteration routing classes."
+        "These files give Codex named Sane agents for coordination, discovery, implementation, review, and quick follow-ups."
       ],
       confirmation: null,
       successNoticeTitle: "Installed",
       repoMutation: false,
       filesTouched: ["~/.codex/agents/"]
     },
+    export_plugin: {
+      id: "export_plugin",
+      kind: "backend",
+      backendKind: OperationKind.ExportPlugin,
+      help: [
+        "Install the optional Sane Codex plugin artifact.",
+        "",
+        "This copies Sane's plugin artifact into `~/.codex/plugins/sane` and registers it in `~/.agents/plugins/marketplace.json`.",
+        "This stays outside `export_all`; the core Codex install bundle remains unchanged."
+      ],
+      confirmation: null,
+      successNoticeTitle: "Installed",
+      repoMutation: false,
+      filesTouched: ["~/.codex/plugins/sane", "~/.agents/plugins/marketplace.json"]
+    },
+    export_opencode_all: {
+      id: "export_opencode_all",
+      kind: "backend",
+      backendKind: OperationKind.ExportAll,
+      help: [
+        "Install the full Sane bundle into OpenCode.",
+        "",
+        "This writes Sane skills, guidance, and agents into `~/.config/opencode/`.",
+        "OpenCode agents use OpenCode Go model IDs with cost-aware task routing."
+      ],
+      confirmation: null,
+      successNoticeTitle: "Installed",
+      repoMutation: false,
+      filesTouched: ["~/.config/opencode/"]
+    },
     export_all: {
       id: "export_all",
       kind: "backend",
       backendKind: OperationKind.ExportAll,
       help: [
-        "Add or refresh everything Sane manages in Codex.",
+        "Add or refresh Sane's core Codex bundle.",
         "",
         "This installs Sane's core user skills, global AGENTS block, and custom agents.",
         "On macOS/Linux, it also installs hooks. On native Windows, use WSL for hook-enabled flows.",
@@ -676,6 +671,9 @@ export const COMMAND_METADATA_REGISTRY = {
       repoMutation: false,
       filesTouched: [
         "~/.agents/skills/sane-router",
+        "~/.agents/skills/sane-bootstrap-research",
+        "~/.agents/skills/sane-agent-lanes",
+        "~/.agents/skills/sane-outcome-continuation",
         "~/.agents/skills/continue",
         "~/.codex/AGENTS.md",
         "~/.codex/hooks.json",
@@ -702,7 +700,7 @@ export const COMMAND_METADATA_REGISTRY = {
       },
       successNoticeTitle: "Uninstalled",
       repoMutation: false,
-      filesTouched: ["~/.agents/skills/sane-router", "~/.agents/skills/continue"]
+      filesTouched: ["~/.agents/skills/sane-router", "~/.agents/skills/sane-bootstrap-research", "~/.agents/skills/sane-agent-lanes", "~/.agents/skills/sane-outcome-continuation", "~/.agents/skills/continue"]
     },
     uninstall_repo_skills: {
       id: "uninstall_repo_skills",
@@ -809,26 +807,27 @@ export const COMMAND_METADATA_REGISTRY = {
       repoMutation: false,
       filesTouched: ["~/.codex/agents/"]
     },
-    uninstall_opencode_agents: {
-      id: "uninstall_opencode_agents",
+    uninstall_plugin: {
+      id: "uninstall_plugin",
       kind: "backend",
-      backendKind: OperationKind.UninstallOpencodeAgents,
+      backendKind: OperationKind.UninstallPlugin,
       help: [
-        "Remove the optional Sane OpenCode agents from `~/.config/opencode/agents/`.",
+        "Remove the optional Sane Codex plugin artifact.",
         "",
-        "This does not touch the main Codex install bundle.",
+        "Only the Sane plugin artifact and Sane marketplace entry should be removed.",
+        "Unrelated Codex plugins are preserved.",
         "",
         "Safety",
         "Confirmation required before this action runs."
       ],
       confirmation: {
         required: true,
-        impactCopy: "This removes Sane's optional OpenCode-agent export.",
+        impactCopy: "This removes Sane's optional Codex plugin artifact.",
         remindPreviewOrBackup: false
       },
       successNoticeTitle: "Uninstalled",
       repoMutation: false,
-      filesTouched: ["~/.config/opencode/agents/"]
+      filesTouched: ["~/.codex/plugins/sane", "~/.agents/plugins/marketplace.json"]
     },
     uninstall_all: {
       id: "uninstall_all",
@@ -837,6 +836,7 @@ export const COMMAND_METADATA_REGISTRY = {
       help: [
         "Remove everything Sane manages in Codex.",
         "",
+        "This removes the core Codex bundle and the optional Sane Codex plugin artifact if present.",
         "Only Sane-managed content should be removed; unrelated user content should stay.",
         "",
         "Safety",
@@ -844,12 +844,12 @@ export const COMMAND_METADATA_REGISTRY = {
       ],
       confirmation: {
         required: true,
-        impactCopy: "This removes all Sane-managed Codex pieces.",
+        impactCopy: "This removes all Sane-managed Codex pieces, including the optional plugin artifact if present.",
         remindPreviewOrBackup: true
       },
       successNoticeTitle: "Uninstalled",
       repoMutation: false,
-      filesTouched: ["~/.agents/skills/sane-router", "~/.agents/skills/continue", "~/.codex/AGENTS.md", "~/.codex/hooks.json", "~/.codex/agents/"]
+      filesTouched: ["~/.agents/skills/sane-router", "~/.agents/skills/sane-bootstrap-research", "~/.agents/skills/sane-agent-lanes", "~/.agents/skills/sane-outcome-continuation", "~/.agents/skills/continue", "~/.codex/AGENTS.md", "~/.codex/hooks.json", "~/.codex/agents/", "~/.codex/plugins/sane", "~/.agents/plugins/marketplace.json"]
     },
     show_status: {
       id: "show_status",
@@ -858,8 +858,7 @@ export const COMMAND_METADATA_REGISTRY = {
       help: [
         "Show everything Sane currently manages.",
         "",
-        "Visibility only for managed surfaces.",
-        "Use status and doctor to see what is installed, stale, disabled, or broken."
+        "Use Status and setup checks to see what is installed, stale, disabled, or broken."
       ],
       confirmation: null,
       successNoticeTitle: null,
@@ -875,7 +874,7 @@ export const COMMAND_METADATA_REGISTRY = {
         "",
         "Visibility only for managed surfaces.",
         "Use this when something feels broken, stale, or only partly installed.",
-        "Doctor points at missing, invalid, or drifted Sane-managed pieces."
+        "This points at missing, invalid, or drifted Sane-managed pieces."
       ],
       confirmation: null,
       successNoticeTitle: null,
@@ -887,11 +886,13 @@ export const COMMAND_METADATA_REGISTRY = {
       kind: "editor",
       backendKind: null,
       help: [
-        "Change the default model and reasoning roles Sane works from.",
+        "Change the default models and reasoning levels Sane uses.",
         "",
-        "Coordinator = main high-context worker.",
-        "Sidecar = cheaper bounded helper.",
-        "Verifier = review and checking role.",
+        "Main session = the top-level Codex session.",
+        "Explorer agent = codebase discovery without edits.",
+        "Implementation agent = bounded code changes.",
+        "Reviewer agent = review and checking.",
+        "Realtime helper = fast iteration.",
         "",
         "Saving here can make managed exports stale until you re-export them."
       ],
@@ -936,53 +937,52 @@ export const COMMAND_METADATA_REGISTRY = {
     }
   } satisfies Record<UiCommandId, CommandSpec>,
   placements: [
-    { commandId: "install_runtime", section: "get_started", order: 1, label: "1. Create Sane's local project files" },
-    { commandId: "show_codex_config", section: "get_started", order: 2, label: "2. View your current Codex settings" },
-    { commandId: "preview_codex_profile", section: "get_started", order: 3, label: "3. Preview Sane's recommended Codex settings" },
-    { commandId: "backup_codex_config", section: "get_started", order: 4, label: "4. Back up your Codex settings" },
-    { commandId: "apply_codex_profile", section: "get_started", order: 5, label: "5. Apply Sane's recommended Codex settings" },
-    { commandId: "export_all", section: "get_started", order: 6, label: "6. Install Sane into Codex" },
-    { commandId: "open_config_editor", section: "preferences", order: 1, label: "Edit default model and reasoning settings" },
-    { commandId: "open_pack_editor", section: "preferences", order: 2, label: "Enable or disable built-in guidance packs" },
-    { commandId: "open_privacy_editor", section: "preferences", order: 3, label: "Choose your telemetry and privacy level" },
-    { commandId: "show_config", section: "preferences", order: 4, label: "View your current Sane config" },
-    { commandId: "show_codex_config", section: "preferences", order: 5, label: "View your current Codex settings" },
-    { commandId: "preview_statusline_profile", section: "preferences", order: 6, label: "Preview optional native Codex statusline settings" },
-    { commandId: "apply_statusline_profile", section: "preferences", order: 7, label: "Apply optional native Codex statusline settings" },
-    { commandId: "preview_cloudflare_profile", section: "preferences", order: 8, label: "Preview optional Cloudflare Codex settings" },
-    { commandId: "apply_cloudflare_profile", section: "preferences", order: 9, label: "Apply optional Cloudflare Codex settings" },
-    { commandId: "preview_opencode_profile", section: "preferences", order: 10, label: "Preview optional Opencode compatibility settings" },
-    { commandId: "apply_opencode_profile", section: "preferences", order: 11, label: "Apply optional Opencode compatibility settings" },
-    { commandId: "export_user_skills", section: "install", order: 1, label: "Install Sane user skills for your account" },
-    { commandId: "export_repo_skills", section: "install", order: 2, label: "Install Sane repo skills for this project" },
-    { commandId: "export_repo_agents", section: "install", order: 3, label: "Install Sane guidance block in this repo's AGENTS.md" },
-    { commandId: "export_global_agents", section: "install", order: 4, label: "Install Sane guidance block in global AGENTS.md" },
-    { commandId: "apply_integrations_profile", section: "install", order: 5, label: "Apply recommended Codex tool integrations" },
-    { commandId: "export_hooks", section: "install", order: 6, label: "Install Sane Codex hooks" },
-    { commandId: "export_custom_agents", section: "install", order: 7, label: "Install Sane custom agents for Codex" },
-    { commandId: "export_all", section: "install", order: 8, label: "Install everything Sane manages in Codex" },
-    { commandId: "export_opencode_agents", section: "install", order: 9, label: "Install optional Sane agents for OpenCode" },
-    { commandId: "show_status", section: "inspect", order: 1, label: "Show everything Sane currently manages" },
-    { commandId: "doctor", section: "inspect", order: 2, label: "Run Sane doctor checks for problems" },
-    { commandId: "show_runtime_summary", section: "inspect", order: 3, label: "View current Sane runtime handoff state" },
-    { commandId: "show_config", section: "inspect", order: 4, label: "View your current Sane config" },
-    { commandId: "show_codex_config", section: "inspect", order: 5, label: "View your current Codex settings" },
-    { commandId: "preview_integrations_profile", section: "inspect", order: 6, label: "Preview optional recommended Codex tools" },
-    { commandId: "preview_statusline_profile", section: "inspect", order: 7, label: "Preview optional native Codex statusline settings" },
-    { commandId: "preview_policy", section: "inspect", order: 8, label: "Explain Sane's routing policy" },
-    { commandId: "show_outcome_readiness", section: "inspect", order: 9, label: "Show outcome readiness" },
+    { commandId: "install_runtime", section: "home", order: 1, label: "1. Set up Sane files" },
+    { commandId: "open_config_editor", section: "home", order: 2, label: "2. Choose defaults" },
+    { commandId: "preview_codex_profile", section: "home", order: 3, label: "3. Review Codex changes" },
+    { commandId: "backup_codex_config", section: "home", order: 4, label: "4. Back up Codex settings" },
+    { commandId: "apply_codex_profile", section: "home", order: 5, label: "5. Apply Codex defaults" },
+    { commandId: "export_all", section: "home", order: 6, label: "6. Refresh Codex setup" },
+    { commandId: "open_config_editor", section: "settings", order: 1, label: "Edit model and agent defaults" },
+    { commandId: "open_pack_editor", section: "settings", order: 2, label: "Enable or disable built-in guidance packs" },
+    { commandId: "open_privacy_editor", section: "settings", order: 3, label: "Choose your telemetry and privacy level" },
+    { commandId: "show_config", section: "settings", order: 4, label: "View your current Sane config" },
+    { commandId: "show_codex_config", section: "settings", order: 5, label: "View your current Codex settings" },
+    { commandId: "preview_statusline_profile", section: "settings", order: 6, label: "Preview optional native Codex statusline settings" },
+    { commandId: "apply_statusline_profile", section: "settings", order: 7, label: "Apply optional native Codex statusline settings" },
+    { commandId: "preview_cloudflare_profile", section: "settings", order: 8, label: "Preview optional Cloudflare Codex settings" },
+    { commandId: "apply_cloudflare_profile", section: "settings", order: 9, label: "Apply optional Cloudflare Codex settings" },
+    { commandId: "export_user_skills", section: "add_to_codex", order: 1, label: "Install Sane user skills for your account" },
+    { commandId: "export_global_agents", section: "add_to_codex", order: 2, label: "Install Sane guidance block in global AGENTS.md" },
+    { commandId: "export_repo_skills", section: "add_to_codex", order: 3, label: "Advanced repo mutation: install Sane repo skills for this project" },
+    { commandId: "export_repo_agents", section: "add_to_codex", order: 4, label: "Advanced repo mutation: install Sane block in this repo's AGENTS.md" },
+    { commandId: "apply_integrations_profile", section: "add_to_codex", order: 5, label: "Apply recommended Codex tool integrations" },
+    { commandId: "export_hooks", section: "add_to_codex", order: 6, label: "Install Sane Codex hooks" },
+    { commandId: "export_custom_agents", section: "add_to_codex", order: 7, label: "Install Sane custom agents for Codex" },
+    { commandId: "export_all", section: "add_to_codex", order: 8, label: "Install Sane core Codex bundle" },
+    { commandId: "export_plugin", section: "add_to_codex", order: 9, label: "Install optional Sane Codex plugin artifact" },
+    { commandId: "export_opencode_all", section: "add_to_codex", order: 10, label: "Install full Sane bundle into OpenCode" },
+    { commandId: "show_status", section: "status", order: 1, label: "Show everything Sane currently manages" },
+    { commandId: "doctor", section: "status", order: 2, label: "Check Sane-managed setup for problems" },
+    { commandId: "show_runtime_summary", section: "status", order: 3, label: "View saved Sane handoff notes" },
+    { commandId: "show_config", section: "status", order: 4, label: "View your current Sane config" },
+    { commandId: "show_codex_config", section: "status", order: 5, label: "View your current Codex settings" },
+    { commandId: "preview_integrations_profile", section: "status", order: 6, label: "Preview optional recommended Codex tools" },
+    { commandId: "preview_statusline_profile", section: "status", order: 7, label: "Preview optional native Codex statusline settings" },
+    { commandId: "preview_policy", section: "status", order: 8, label: "Explain Codex routing choices" },
+    { commandId: "show_outcome_readiness", section: "status", order: 9, label: "Check long-run readiness" },
     { commandId: "install_runtime", section: "repair", order: 1, label: "Repair Sane's local project files" },
     { commandId: "backup_codex_config", section: "repair", order: 2, label: "Back up your Codex settings" },
     { commandId: "restore_codex_config", section: "repair", order: 3, label: "Restore your last Codex backup" },
     { commandId: "reset_telemetry_data", section: "repair", order: 4, label: "Delete Sane's local telemetry data" },
-    { commandId: "uninstall_user_skills", section: "repair", order: 5, label: "Uninstall Sane user skills from your account" },
-    { commandId: "uninstall_repo_skills", section: "repair", order: 6, label: "Uninstall Sane repo skills from this project" },
-    { commandId: "uninstall_global_agents", section: "repair", order: 7, label: "Remove Sane block from global AGENTS.md" },
-    { commandId: "uninstall_repo_agents", section: "repair", order: 8, label: "Remove Sane block from this repo's AGENTS.md" },
-    { commandId: "uninstall_hooks", section: "repair", order: 9, label: "Remove Sane Codex hooks" },
-    { commandId: "uninstall_custom_agents", section: "repair", order: 10, label: "Remove Sane custom agents from Codex" },
-    { commandId: "uninstall_opencode_agents", section: "repair", order: 11, label: "Remove optional Sane agents from OpenCode" },
-    { commandId: "uninstall_all", section: "repair", order: 12, label: "Remove everything Sane manages from Codex" }
+    { commandId: "uninstall_user_skills", section: "uninstall", order: 1, label: "Remove Sane user skills from your account" },
+    { commandId: "uninstall_global_agents", section: "uninstall", order: 2, label: "Remove Sane block from global AGENTS.md" },
+    { commandId: "uninstall_hooks", section: "uninstall", order: 3, label: "Remove Sane Codex hooks" },
+    { commandId: "uninstall_custom_agents", section: "uninstall", order: 4, label: "Remove Sane custom agents from Codex" },
+    { commandId: "uninstall_plugin", section: "uninstall", order: 5, label: "Remove optional Sane Codex plugin artifact" },
+    { commandId: "uninstall_repo_skills", section: "uninstall", order: 6, label: "Advanced repo mutation: remove Sane repo skills from this project" },
+    { commandId: "uninstall_repo_agents", section: "uninstall", order: 7, label: "Advanced repo mutation: remove Sane block from this repo's AGENTS.md" },
+    { commandId: "uninstall_all", section: "uninstall", order: 8, label: "Remove all Sane-managed Codex installs" }
   ] satisfies CommandPlacement[]
 } as const;
 
@@ -996,7 +996,7 @@ export function getSectionMetadata(
 ): TuiSectionMetadata {
   const section = COMMAND_METADATA_REGISTRY.sections.find((entry) => entry.id === sectionId)!;
 
-  if (sectionId !== "install" || hostPlatform !== "windows") {
+  if (sectionId !== "add_to_codex" || hostPlatform !== "windows") {
     return { ...section, description: [...section.description] };
   }
 
@@ -1005,8 +1005,9 @@ export function getSectionMetadata(
     description: [
       "Install Sane into Codex on purpose.",
       "Current install bundle:",
-      "user skills, global AGENTS.md block, sane-agent, sane-reviewer, sane-explorer",
+      "core user skills (sane-router, sane-bootstrap-research, sane-agent-lanes, sane-outcome-continuation, continue), global AGENTS.md block, and custom agents (sane-agent, sane-reviewer, sane-explorer, sane-implementation, sane-realtime)",
       "On native Windows, hooks stay outside the default bundle. Use WSL for hook-enabled flows.",
+      "The optional Codex plugin artifact is a separate action and stays outside the core bundle.",
       "User-level install changes your own Codex setup.",
       "Repo-level install is explicit and optional.",
       "Nothing here should silently take over a repo."

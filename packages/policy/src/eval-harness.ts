@@ -143,11 +143,12 @@ export function b7PolicyEvalFixtures(): readonly PolicyEvalFixture[] {
         obligations: [
           PolicyObligation.Planning,
           PolicyObligation.Review,
+          PolicyObligation.SubagentEligible,
           PolicyObligation.ContextCompaction
         ],
         orchestration: {
-          subagents: SubagentStrategy.WaitForIndependentSlices,
-          subagentReadiness: SubagentReadinessReason.IndependentSlicesNotClear
+          subagents: SubagentStrategy.AllowIndependentSlices,
+          subagentReadiness: SubagentReadinessReason.IndependentSlicesReady
         },
         continuation: {
           strategy: ContinuationStrategy.ContinueUntilVerified,
@@ -163,6 +164,10 @@ export function b7PolicyEvalFixtures(): readonly PolicyEvalFixture[] {
             rule: PolicyRule.NeedsIndependentReview
           },
           {
+            obligation: PolicyObligation.SubagentEligible,
+            rule: PolicyRule.ParallelWorkCanUseSubagents
+          },
+          {
             obligation: PolicyObligation.ContextCompaction,
             rule: PolicyRule.ContextNeedsCompaction
           }
@@ -170,7 +175,7 @@ export function b7PolicyEvalFixtures(): readonly PolicyEvalFixture[] {
       }
     },
     {
-      caseId: "blocked-run-self-repair-without-sidecar",
+      caseId: "blocked-run-self-repair-with-sidecar",
       input: {
         intent: Intent.Orchestrate,
         taskShape: TaskShape.LongRunning,
@@ -184,17 +189,18 @@ export function b7PolicyEvalFixtures(): readonly PolicyEvalFixture[] {
         obligations: [
           PolicyObligation.Planning,
           PolicyObligation.Review,
+          PolicyObligation.SubagentEligible,
           PolicyObligation.ContextCompaction,
           PolicyObligation.SelfRepair
         ],
         roles: {
           coordinator: true,
-          sidecar: false,
+          sidecar: true,
           verifier: true
         },
         orchestration: {
-          subagents: SubagentStrategy.SoloOnly,
-          subagentReadiness: SubagentReadinessReason.RunStateDisallowsDelegation,
+          subagents: SubagentStrategy.AllowIndependentSlices,
+          subagentReadiness: SubagentReadinessReason.IndependentSlicesReady,
           verifierTiming: VerifierTiming.ThroughoutExecution
         },
         continuation: {
@@ -209,6 +215,10 @@ export function b7PolicyEvalFixtures(): readonly PolicyEvalFixture[] {
           {
             obligation: PolicyObligation.Review,
             rule: PolicyRule.NeedsIndependentReview
+          },
+          {
+            obligation: PolicyObligation.SubagentEligible,
+            rule: PolicyRule.ParallelWorkCanUseSubagents
           },
           {
             obligation: PolicyObligation.ContextCompaction,
@@ -234,16 +244,17 @@ export function b7PolicyEvalFixtures(): readonly PolicyEvalFixture[] {
       },
       expected: {
         obligations: [
-          PolicyObligation.Review
+          PolicyObligation.Review,
+          PolicyObligation.SubagentEligible
         ],
         roles: {
           coordinator: true,
-          sidecar: false,
+          sidecar: true,
           verifier: true
         },
         orchestration: {
-          subagents: SubagentStrategy.SoloOnly,
-          subagentReadiness: SubagentReadinessReason.TaskTooSmall,
+          subagents: SubagentStrategy.AllowIndependentSlices,
+          subagentReadiness: SubagentReadinessReason.IndependentSlicesReady,
           verifierTiming: VerifierTiming.ClosingGate
         },
         continuation: {
@@ -254,6 +265,10 @@ export function b7PolicyEvalFixtures(): readonly PolicyEvalFixture[] {
           {
             obligation: PolicyObligation.Review,
             rule: PolicyRule.NeedsIndependentReview
+          },
+          {
+            obligation: PolicyObligation.SubagentEligible,
+            rule: PolicyRule.ParallelWorkCanUseSubagents
           }
         ]
       }
@@ -330,17 +345,18 @@ export function outcomeRunnerPreflightFixtures(): readonly PolicyEvalFixture[] {
         obligations: [
           PolicyObligation.Planning,
           PolicyObligation.Review,
+          PolicyObligation.SubagentEligible,
           PolicyObligation.ContextCompaction,
           PolicyObligation.SelfRepair
         ],
         roles: {
           coordinator: true,
-          sidecar: false,
+          sidecar: true,
           verifier: true
         },
         orchestration: {
-          subagents: SubagentStrategy.SoloOnly,
-          subagentReadiness: SubagentReadinessReason.RunStateDisallowsDelegation,
+          subagents: SubagentStrategy.AllowIndependentSlices,
+          subagentReadiness: SubagentReadinessReason.IndependentSlicesReady,
           verifierTiming: VerifierTiming.ThroughoutExecution
         },
         continuation: {
@@ -355,6 +371,10 @@ export function outcomeRunnerPreflightFixtures(): readonly PolicyEvalFixture[] {
           {
             obligation: PolicyObligation.Review,
             rule: PolicyRule.NeedsIndependentReview
+          },
+          {
+            obligation: PolicyObligation.SubagentEligible,
+            rule: PolicyRule.ParallelWorkCanUseSubagents
           },
           {
             obligation: PolicyObligation.ContextCompaction,
@@ -380,16 +400,17 @@ export function outcomeRunnerPreflightFixtures(): readonly PolicyEvalFixture[] {
       },
       expected: {
         obligations: [
-          PolicyObligation.Planning
+          PolicyObligation.Planning,
+          PolicyObligation.SubagentEligible
         ],
         roles: {
           coordinator: true,
-          sidecar: false,
+          sidecar: true,
           verifier: false
         },
         orchestration: {
-          subagents: SubagentStrategy.SoloOnly,
-          subagentReadiness: SubagentReadinessReason.TaskTooSmall,
+          subagents: SubagentStrategy.AllowIndependentSlices,
+          subagentReadiness: SubagentReadinessReason.IndependentSlicesReady,
           verifierTiming: VerifierTiming.None
         },
         continuation: {
@@ -400,8 +421,272 @@ export function outcomeRunnerPreflightFixtures(): readonly PolicyEvalFixture[] {
           {
             obligation: PolicyObligation.Planning,
             rule: PolicyRule.NeedsUpfrontPlanning
+          },
+          {
+            obligation: PolicyObligation.SubagentEligible,
+            rule: PolicyRule.ParallelWorkCanUseSubagents
           }
         ]
+      }
+    }
+  ];
+}
+
+export function bootstrapResearchPolicyFixtures(): readonly PolicyEvalFixture[] {
+  return [
+    {
+      caseId: "b12-new-project-stack-research",
+      input: {
+        intent: Intent.Design,
+        taskShape: TaskShape.Architectural,
+        risk: Level.Medium,
+        ambiguity: Level.High,
+        parallelism: Parallelism.Possible,
+        contextPressure: Level.Low,
+        runState: RunState.Exploring
+      },
+      expected: {
+        obligations: [
+          PolicyObligation.BootstrapResearch,
+          PolicyObligation.Planning,
+          PolicyObligation.Review,
+          PolicyObligation.SubagentEligible
+        ],
+        roles: {
+          coordinator: true,
+          sidecar: true,
+          verifier: true
+        },
+        orchestration: {
+          subagents: SubagentStrategy.AllowIndependentSlices,
+          subagentReadiness: SubagentReadinessReason.IndependentSlicesReady
+        },
+        continuation: {
+          strategy: ContinuationStrategy.ContinueUntilVerified,
+          stopCondition: StopCondition.Verified
+        },
+        trace: [
+          {
+            obligation: PolicyObligation.BootstrapResearch,
+            rule: PolicyRule.NewProjectNeedsBootstrapResearch
+          },
+          {
+            obligation: PolicyObligation.Planning,
+            rule: PolicyRule.NeedsUpfrontPlanning
+          },
+          {
+            obligation: PolicyObligation.Review,
+            rule: PolicyRule.NeedsIndependentReview
+          },
+          {
+            obligation: PolicyObligation.SubagentEligible,
+            rule: PolicyRule.ParallelWorkCanUseSubagents
+          }
+        ]
+      }
+    },
+    {
+      caseId: "b12-small-existing-change-skips-bootstrap-research",
+      input: {
+        intent: Intent.Edit,
+        taskShape: TaskShape.Local,
+        risk: Level.Low,
+        ambiguity: Level.Low,
+        parallelism: Parallelism.None,
+        contextPressure: Level.Low,
+        runState: RunState.Executing
+      },
+      expected: {
+        obligations: [
+          PolicyObligation.VerifyLight,
+          PolicyObligation.SubagentEligible
+        ],
+        roles: {
+          coordinator: true,
+          sidecar: true,
+          verifier: true
+        },
+        orchestration: {
+          subagents: SubagentStrategy.AllowIndependentSlices,
+          subagentReadiness: SubagentReadinessReason.IndependentSlicesReady,
+          verifierTiming: VerifierTiming.AfterChangeSet
+        },
+        continuation: {
+          strategy: ContinuationStrategy.ContinueUntilVerified,
+          stopCondition: StopCondition.Verified
+        },
+        trace: [
+          {
+            obligation: PolicyObligation.VerifyLight,
+            rule: PolicyRule.LocalChangesNeedLightVerification
+          },
+          {
+            obligation: PolicyObligation.SubagentEligible,
+            rule: PolicyRule.ParallelWorkCanUseSubagents
+          }
+        ]
+      }
+    }
+  ];
+}
+
+export function agentFlowReleasePolicyFixtures(): readonly PolicyEvalFixture[] {
+  return [
+    {
+      caseId: "b14-frontend-review-closing-gate",
+      input: {
+        intent: Intent.Review,
+        taskShape: TaskShape.Architectural,
+        risk: Level.Medium,
+        ambiguity: Level.Medium,
+        parallelism: Parallelism.Possible,
+        contextPressure: Level.Medium,
+        runState: RunState.Validating
+      },
+      expected: {
+        obligations: [
+          PolicyObligation.Planning,
+          PolicyObligation.Review,
+          PolicyObligation.SubagentEligible
+        ],
+        orchestration: {
+          subagents: SubagentStrategy.AllowIndependentSlices,
+          subagentReadiness: SubagentReadinessReason.IndependentSlicesReady,
+          verifierTiming: VerifierTiming.ClosingGate
+        },
+        continuation: {
+          strategy: ContinuationStrategy.ContinueUntilVerified,
+          stopCondition: StopCondition.Verified
+        }
+      }
+    },
+    {
+      caseId: "b14-plugin-packaging-parallel-slices",
+      input: {
+        intent: Intent.Edit,
+        taskShape: TaskShape.MultiFile,
+        risk: Level.Medium,
+        ambiguity: Level.Low,
+        parallelism: Parallelism.Clear,
+        contextPressure: Level.Low,
+        runState: RunState.Executing
+      },
+      expected: {
+        obligations: [
+          PolicyObligation.Tdd,
+          PolicyObligation.Review,
+          PolicyObligation.SubagentEligible
+        ],
+        roles: {
+          coordinator: true,
+          sidecar: true,
+          verifier: true
+        },
+        orchestration: {
+          subagents: SubagentStrategy.AllowIndependentSlices,
+          subagentReadiness: SubagentReadinessReason.IndependentSlicesReady,
+          verifierTiming: VerifierTiming.ThroughoutExecution
+        }
+      }
+    },
+    {
+      caseId: "b14-lifecycle-hooks-risk-gate",
+      input: {
+        intent: Intent.Edit,
+        taskShape: TaskShape.MultiFile,
+        risk: Level.High,
+        ambiguity: Level.Medium,
+        parallelism: Parallelism.Possible,
+        contextPressure: Level.Medium,
+        runState: RunState.Executing
+      },
+      expected: {
+        obligations: [
+          PolicyObligation.Planning,
+          PolicyObligation.Tdd,
+          PolicyObligation.Review,
+          PolicyObligation.SubagentEligible
+        ],
+        orchestration: {
+          subagents: SubagentStrategy.AllowIndependentSlices,
+          subagentReadiness: SubagentReadinessReason.IndependentSlicesReady,
+          verifierTiming: VerifierTiming.ThroughoutExecution
+        }
+      }
+    },
+    {
+      caseId: "b14-continuation-blocked-self-repair",
+      input: {
+        intent: Intent.Orchestrate,
+        taskShape: TaskShape.LongRunning,
+        risk: Level.Medium,
+        ambiguity: Level.High,
+        parallelism: Parallelism.Possible,
+        contextPressure: Level.High,
+        runState: RunState.Blocked
+      },
+      expected: {
+        obligations: [
+          PolicyObligation.Planning,
+          PolicyObligation.Review,
+          PolicyObligation.SubagentEligible,
+          PolicyObligation.ContextCompaction,
+          PolicyObligation.SelfRepair
+        ],
+        continuation: {
+          strategy: ContinuationStrategy.SelfRepairUntilUnblocked,
+          stopCondition: StopCondition.UnblockedOrNeedsInput
+        }
+      }
+    },
+    {
+      caseId: "b14-stop-condition-direct-answer",
+      input: {
+        intent: Intent.Question,
+        taskShape: TaskShape.Trivial,
+        risk: Level.Low,
+        ambiguity: Level.Low,
+        parallelism: Parallelism.None,
+        contextPressure: Level.Low,
+        runState: RunState.Exploring
+      },
+      expected: {
+        obligations: [
+          PolicyObligation.DirectAnswer
+        ],
+        continuation: {
+          strategy: ContinuationStrategy.AnswerDirectly,
+          stopCondition: StopCondition.Answered
+        }
+      }
+    },
+    {
+      caseId: "b14-new-project-current-research-with-sidecars",
+      input: {
+        intent: Intent.Design,
+        taskShape: TaskShape.Architectural,
+        risk: Level.High,
+        ambiguity: Level.High,
+        parallelism: Parallelism.Clear,
+        contextPressure: Level.Medium,
+        runState: RunState.Exploring
+      },
+      expected: {
+        obligations: [
+          PolicyObligation.BootstrapResearch,
+          PolicyObligation.Planning,
+          PolicyObligation.Review,
+          PolicyObligation.SubagentEligible
+        ],
+        roles: {
+          coordinator: true,
+          sidecar: true,
+          verifier: true
+        },
+        orchestration: {
+          subagents: SubagentStrategy.AllowIndependentSlices,
+          subagentReadiness: SubagentReadinessReason.IndependentSlicesReady
+        }
       }
     }
   ];

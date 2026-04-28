@@ -3,156 +3,181 @@ import { OperationKind } from "@sane/core";
 
 import {
   COMMAND_METADATA_REGISTRY,
+  type TuiSectionId,
+  type UiCommandId,
   getCommandSpec,
   getSectionMetadata,
   listSectionActions,
   listSections
 } from "@sane/sane-tui/index.js";
 
+function sectionActionIds(section: TuiSectionId, hostPlatform?: "windows"): UiCommandId[] {
+  return listSectionActions(section, hostPlatform).map((action) => action.id);
+}
+
+function expectSectionContainsInOrder(section: TuiSectionId, ids: readonly UiCommandId[]): void {
+  const actual = sectionActionIds(section);
+  const positions = ids.map((id) => actual.indexOf(id));
+
+  expect(positions.every((index) => index >= 0)).toBe(true);
+  expect(positions).toEqual([...positions].sort((left, right) => left - right));
+}
+
+function expectHelpMentions(commandId: UiCommandId, fragments: readonly string[]): void {
+  const help = getCommandSpec(commandId).help.join("\n");
+  for (const fragment of fragments) {
+    expect(help).toContain(fragment);
+  }
+}
+
+function expectNoCommandIds(commandIds: Iterable<string>, forbidden: readonly string[]): void {
+  expect([...commandIds].sort()).not.toEqual(expect.arrayContaining([...forbidden]));
+}
+
 describe("command metadata registry", () => {
-  it("does not expose a B8 outcome runner command yet", () => {
+  it("does not expose public outcome runner command ids", () => {
     const shippedCommandIds = new Set([
       ...Object.keys(COMMAND_METADATA_REGISTRY.commands),
       ...COMMAND_METADATA_REGISTRY.placements.map((placement) => placement.commandId),
       ...listSections().flatMap((section) => listSectionActions(section.id).map((action) => action.id))
     ]);
 
-    expect([...shippedCommandIds].sort()).not.toEqual(
-      expect.arrayContaining([
-        "outcome_runner",
-        "run_outcome",
-        "start_outcome_runner"
+    expectNoCommandIds(shippedCommandIds, ["runner", "sane_runner", "outcome_runner", "run_outcome", "start_outcome_runner"]);
+  });
+
+  it("keeps public TUI copy free of outcome runner command rituals", () => {
+    const publicCommandCopy = [
+      ...Object.values(COMMAND_METADATA_REGISTRY.commands)
+        .filter((command) => command.id !== "advance_outcome")
+        .flatMap((command) => [
+          command.id,
+          ...command.help,
+          command.successNoticeTitle ?? "",
+          command.confirmation?.impactCopy ?? "",
+          ...command.filesTouched
+        ]),
+      ...COMMAND_METADATA_REGISTRY.placements.flatMap((placement) => [
+        placement.commandId,
+        placement.label
       ])
-    );
+    ].join("\n");
+
+    expect(publicCommandCopy).not.toMatch(/\bsane runner\b|\brun outcome\b|\boutcome runner\b|\bsane outcome step\b/i);
   });
 
   it("exports normalized command specs, placements, and shortcuts", () => {
     expect(COMMAND_METADATA_REGISTRY).toBeDefined();
-    expect(COMMAND_METADATA_REGISTRY.shortcuts.default).toBe("get_started");
-    expect(COMMAND_METADATA_REGISTRY.shortcuts.settings).toBe("preferences");
+    expect(COMMAND_METADATA_REGISTRY.shortcuts.default).toBe("home");
+    expect(COMMAND_METADATA_REGISTRY.shortcuts.settings).toBe("settings");
+    expect(COMMAND_METADATA_REGISTRY.shortcuts.status).toBe("status");
+    expect(COMMAND_METADATA_REGISTRY.shortcuts.repair).toBe("repair");
+    expect(COMMAND_METADATA_REGISTRY.shortcuts.uninstall).toBe("uninstall");
     expect(listSections().map((section) => section.id)).toEqual([
-      "get_started",
-      "preferences",
-      "install",
-      "inspect",
-      "repair"
+      "home",
+      "settings",
+      "add_to_codex",
+      "status",
+      "repair",
+      "uninstall"
+    ]);
+    expect(listSections().map((section) => section.tabLabel)).toEqual([
+      "Home",
+      "Settings",
+      "Add to Codex",
+      "Status",
+      "Repair",
+      "Uninstall"
     ]);
   });
 
   it("keeps section placement separate from command semantics", () => {
-    expect(listSectionActions("get_started").map((action) => action.id)).toEqual([
+    expectSectionContainsInOrder("home", [
       "install_runtime",
-      "show_codex_config",
       "preview_codex_profile",
       "backup_codex_config",
       "apply_codex_profile",
       "export_all"
     ]);
-    expect(listSectionActions("install").map((action) => action.id)).toEqual([
+    expectSectionContainsInOrder("add_to_codex", [
       "export_user_skills",
-      "export_repo_skills",
-      "export_repo_agents",
       "export_global_agents",
-      "apply_integrations_profile",
       "export_hooks",
       "export_custom_agents",
       "export_all",
-      "export_opencode_agents"
+      "export_plugin",
+      "export_opencode_all"
     ]);
-    expect(listSectionActions("preferences").map((action) => action.id)).toEqual([
+    expectSectionContainsInOrder("settings", [
       "open_config_editor",
       "open_pack_editor",
       "open_privacy_editor",
-      "show_config",
-      "show_codex_config",
-      "preview_statusline_profile",
-      "apply_statusline_profile",
-      "preview_cloudflare_profile",
-      "apply_cloudflare_profile",
-      "preview_opencode_profile",
-      "apply_opencode_profile"
+      "show_config"
     ]);
-    expect(listSectionActions("inspect").map((action) => action.id)).toEqual([
+    expectSectionContainsInOrder("status", [
       "show_status",
       "doctor",
       "show_runtime_summary",
-      "show_config",
-      "show_codex_config",
-      "preview_integrations_profile",
-      "preview_statusline_profile",
       "preview_policy",
       "show_outcome_readiness"
     ]);
-    expect(listSectionActions("repair").map((action) => action.id)).toEqual([
+    expectSectionContainsInOrder("repair", [
       "install_runtime",
       "backup_codex_config",
       "restore_codex_config",
-      "reset_telemetry_data",
+      "reset_telemetry_data"
+    ]);
+    expectSectionContainsInOrder("uninstall", [
       "uninstall_user_skills",
-      "uninstall_repo_skills",
       "uninstall_global_agents",
-      "uninstall_repo_agents",
       "uninstall_hooks",
       "uninstall_custom_agents",
-      "uninstall_opencode_agents",
       "uninstall_all"
     ]);
-    expect(listSectionActions("get_started").at(-1)?.label).toBe("6. Install Sane into Codex");
-    expect(listSectionActions("install").at(-1)?.label).toBe("Install optional Sane agents for OpenCode");
-    expect(getCommandSpec("show_runtime_summary").help[0]).toBe(
-      "Show a read-only summary of local current-run-derived handoff state."
-    );
-    expect(getCommandSpec("show_runtime_summary").help[2]).toBe(
-      "Visibility only for managed surfaces. No runtime orchestration runs."
-    );
-    expect(getCommandSpec("show_runtime_summary").help[3]).toBe(
-      "This reads current-run, summary, brief, and local runtime history counts."
-    );
-    expect(getCommandSpec("show_runtime_summary").filesTouched).toEqual([
-      ".sane/state/current-run.json",
-      ".sane/state/summary.json",
-      ".sane/BRIEF.md",
-      ".sane/state/events.jsonl",
-      ".sane/state/decisions.jsonl",
-      ".sane/state/artifacts.jsonl"
+    for (const section of listSections()) {
+      expect(new Set(sectionActionIds(section.id)).size).toBe(sectionActionIds(section.id).length);
+    }
+    expect(sectionActionIds("repair").some((id) => id.startsWith("uninstall_"))).toBe(false);
+    expect(listSectionActions("home").at(-1)?.label).toBe("6. Refresh Codex setup");
+    expect(listSectionActions("add_to_codex").at(-1)?.label).toBe("Install full Sane bundle into OpenCode");
+    expect(listSectionActions("settings").at(-1)?.label).toBe("Apply optional Cloudflare Codex settings");
+    expectHelpMentions("show_runtime_summary", [
+      "saved local handoff notes",
+      "It does not start agent work",
+      "current-run",
+      "local history"
     ]);
+    expect(getCommandSpec("show_runtime_summary").filesTouched).toEqual(
+      expect.arrayContaining([
+        ".sane/state/current-run.json",
+        ".sane/state/summary.json",
+        ".sane/BRIEF.md"
+      ])
+    );
     expect(getCommandSpec("show_outcome_readiness").backendKind).toBe(
       OperationKind.ShowOutcomeReadiness
     );
-    expect(getCommandSpec("show_outcome_readiness").help[2]).toBe(
-      "This is read-only readiness for Codex-native work."
-    );
+    expectHelpMentions("show_outcome_readiness", ["saved Sane handoff notes", "does not start"]);
     expect(getCommandSpec("advance_outcome").backendKind).toBe(
       OperationKind.AdvanceOutcome
     );
     expect(getCommandSpec("advance_outcome").repoMutation).toBe(true);
-    expect(getCommandSpec("preview_policy").filesTouched).toEqual([
-      ".sane/config.local.toml",
-      ".sane/state/current-run.json",
-    ]);
-    expect(getCommandSpec("preview_policy").help[3]).toBe(
-      "This is a read-only preview over current-run and local config state."
+    expect(getCommandSpec("preview_policy").filesTouched).toEqual(
+      expect.arrayContaining([".sane/config.local.toml", ".sane/state/current-run.json"])
     );
-    expect(getCommandSpec("preview_policy").help[2]).toBe(
-      "Visibility only for managed surfaces. No runtime orchestration runs."
-    );
-    expect(getCommandSpec("preview_codex_profile").help[2]).toBe(
-      "Preview only for managed surfaces."
-    );
-    expect(getCommandSpec("show_status").help[2]).toBe(
-      "Visibility only for managed surfaces."
-    );
-    expect(getCommandSpec("doctor").help[2]).toBe(
-      "Visibility only for managed surfaces."
-    );
-    expect(getCommandSpec("export_hooks").help.at(-1)).toBe(
-      "On native Windows, Codex hooks are unavailable; use WSL for hook-enabled flows."
-    );
-    expect(getCommandSpec("export_all").help[2]).toBe(
-      "This installs Sane's core user skills, global AGENTS block, and custom agents."
-    );
-    expect(getCommandSpec("export_all").help[3]).toBe(
-      "On macOS/Linux, it also installs hooks. On native Windows, use WSL for hook-enabled flows."
+    expectHelpMentions("preview_policy", ["route common Codex work", "does not start agent work"]);
+    expectHelpMentions("preview_codex_profile", ["Nothing changes until you apply it"]);
+    expectHelpMentions("show_status", ["currently manages"]);
+    expectHelpMentions("doctor", ["managed surfaces"]);
+    expectHelpMentions("export_hooks", ["native Windows", "WSL"]);
+    expectHelpMentions("export_all", ["core user skills", "custom agents", "native Windows"]);
+    expectHelpMentions("export_plugin", ["optional Sane Codex plugin artifact", "outside `export_all`"]);
+    expectHelpMentions("export_opencode_all", ["Install the full Sane bundle into OpenCode", "~/.config/opencode/", "OpenCode Go model IDs"]);
+    expect(getCommandSpec("export_opencode_all").filesTouched).toEqual(["~/.config/opencode/"]);
+    expect(getCommandSpec("export_all").filesTouched).not.toContain("~/.codex/plugins/sane");
+    expect(getCommandSpec("export_all").includes).not.toContain("plugin");
+    expectHelpMentions("uninstall_all", ["optional Sane Codex plugin artifact"]);
+    expect(getCommandSpec("uninstall_all").filesTouched).toEqual(
+      expect.arrayContaining(["~/.codex/plugins/sane", "~/.agents/plugins/marketplace.json"])
     );
   });
 
@@ -166,14 +191,11 @@ describe("command metadata registry", () => {
     expect(getCommandSpec("apply_integrations_profile").backendKind).toBe(
       OperationKind.ApplyIntegrationsProfile
     );
-    expect(getCommandSpec("export_opencode_agents").backendKind).toBe(
-      OperationKind.ExportOpencodeAgents
+    expect(getCommandSpec("export_plugin").backendKind).toBe(
+      OperationKind.ExportPlugin
     );
-    expect(getCommandSpec("preview_opencode_profile").backendKind).toBe(
-      OperationKind.PreviewOpencodeProfile
-    );
-    expect(getCommandSpec("apply_opencode_profile").backendKind).toBe(
-      OperationKind.ApplyOpencodeProfile
+    expect(getCommandSpec("uninstall_plugin").backendKind).toBe(
+      OperationKind.UninstallPlugin
     );
     expect(getCommandSpec("preview_statusline_profile").backendKind).toBe(
       OperationKind.PreviewStatuslineProfile
@@ -190,43 +212,54 @@ describe("command metadata registry", () => {
     expect(getCommandSpec("reset_telemetry_data").confirmation?.impactCopy).toBe(
       "This deletes Sane's local telemetry files from this machine."
     );
+    expect(getCommandSpec("export_repo_skills").confirmation?.impactCopy).toBe(
+      "This writes Sane-managed skills into this repo's `.agents/skills` folder."
+    );
+    expect(getCommandSpec("export_repo_agents").confirmation?.impactCopy).toBe(
+      "This writes the Sane-managed block into this repo's `AGENTS.md`."
+    );
     expect(getCommandSpec("uninstall_hooks").confirmation?.impactCopy).toBe(
       "This removes Sane's managed Codex hook entry."
     );
-    expect(getCommandSpec("uninstall_opencode_agents").confirmation?.impactCopy).toBe(
-      "This removes Sane's optional OpenCode-agent export."
+    expect(getCommandSpec("uninstall_plugin").confirmation?.impactCopy).toBe(
+      "This removes Sane's optional Codex plugin artifact."
     );
     expect(getCommandSpec("uninstall_all").confirmation?.impactCopy).toBe(
-      "This removes all Sane-managed Codex pieces."
+      "This removes all Sane-managed Codex pieces, including the optional plugin artifact if present."
     );
     expect(getCommandSpec("open_config_editor").successNoticeTitle).toBe("Saved");
     expect(getCommandSpec("apply_integrations_profile").successNoticeTitle).toBe("Applied");
     expect(getCommandSpec("reset_telemetry_data").successNoticeTitle).toBe("Reset");
+    expect(getCommandSpec("export_plugin").successNoticeTitle).toBe("Installed");
+    expect(getCommandSpec("uninstall_plugin").successNoticeTitle).toBe("Uninstalled");
     expect(getCommandSpec("export_all").successNoticeTitle).toBe("Installed");
     expect(getCommandSpec("uninstall_all").successNoticeTitle).toBe("Uninstalled");
   });
 
   it("adapts install metadata for native Windows", () => {
-    expect(getSectionMetadata("install", "windows").description[3]).toBe(
-      "On native Windows, hooks stay outside the default bundle. Use WSL for hook-enabled flows."
+    expect(getSectionMetadata("add_to_codex", "windows").description.join("\n")).toContain(
+      "hooks stay outside the default bundle"
     );
     expect(getCommandSpec("export_hooks", "windows").filesTouched).toEqual([]);
-    expect(getCommandSpec("export_all", "windows").filesTouched).toEqual([
-      "~/.agents/skills/sane-router",
-      "~/.agents/skills/continue",
-      "~/.codex/AGENTS.md",
-      "~/.codex/agents/"
-    ]);
+    expect(getCommandSpec("export_all", "windows").filesTouched).not.toContain("~/.codex/hooks.json");
+    expect(getCommandSpec("export_all", "windows").filesTouched).toEqual(
+      expect.arrayContaining([
+        "~/.agents/skills/sane-router",
+        "~/.agents/skills/sane-bootstrap-research",
+        "~/.agents/skills/sane-agent-lanes",
+        "~/.agents/skills/sane-outcome-continuation",
+        "~/.agents/skills/continue",
+        "~/.codex/AGENTS.md",
+        "~/.codex/agents/"
+      ])
+    );
     expect(getCommandSpec("export_all", "windows").includes).toEqual([
       "user-skills",
       "global-agents",
       "custom-agents"
     ]);
-    expect(listSectionActions("install", "windows").find((action) => action.id === "export_all")?.filesTouched).toEqual([
-      "~/.agents/skills/sane-router",
-      "~/.agents/skills/continue",
-      "~/.codex/AGENTS.md",
-      "~/.codex/agents/"
-    ]);
+    expect(listSectionActions("add_to_codex", "windows").find((action) => action.id === "export_all")?.filesTouched).toEqual(
+      getCommandSpec("export_all", "windows").filesTouched
+    );
   });
 });

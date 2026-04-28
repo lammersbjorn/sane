@@ -37,7 +37,7 @@ export interface PreferencesSnapshot {
   source: "local" | "recommended";
   models: ReturnType<typeof createRecommendedLocalConfig>["models"];
   derivedRouting: Pick<ModelRoutingPresets, "execution" | "realtime">;
-  subagents: Pick<SubagentRoutingPresets, "explorer" | "implementation" | "realtime">;
+  subagents: SubagentRoutingPresets;
   modelCapabilities: ModelCapabilitySnapshot;
   telemetry: ReturnType<typeof createRecommendedLocalConfig>["privacy"]["telemetry"];
   telemetryFiles: TelemetrySnapshot;
@@ -297,9 +297,11 @@ function inspectPreferencesFamilySnapshotFromContext(
         realtime: context.derivedRouting.realtime
       },
       subagents: {
-        explorer: context.subagents.explorer,
-        implementation: context.subagents.implementation,
-        realtime: context.subagents.realtime
+        explorer: context.localConfig.current.subagents.explorer,
+        implementation: context.localConfig.current.subagents.implementation,
+        verifier: context.localConfig.current.subagents.verifier,
+        realtime: context.localConfig.current.subagents.realtime,
+        frontendCraft: context.localConfig.current.subagents.frontendCraft
       },
       modelCapabilities: buildModelCapabilitySnapshot(
         context.environment,
@@ -338,7 +340,8 @@ function buildModelCapabilitySnapshot(
     capabilityLine("verifier", config.models.verifier, environment.availableModels),
     capabilityLine("explorer", subagents.explorer, environment.availableModels),
     capabilityLine("implementation", routing.execution, environment.availableModels),
-    capabilityLine("realtime", routing.realtime, environment.availableModels)
+    capabilityLine("realtime", routing.realtime, environment.availableModels),
+    capabilityLine("frontend-craft", subagents.frontendCraft, environment.availableModels)
   );
 
   return {
@@ -388,7 +391,7 @@ function configDetails(
     lines.splice(
       4,
       0,
-      `derived routing: inspect Preferences for explorer, execution, and realtime defaults from detected model availability`
+      `derived routing: inspect Preferences for explorer, execution, realtime, and frontend-craft defaults from detected model availability`
     );
     return lines;
   }
@@ -399,7 +402,9 @@ function configDetails(
     ...preferences.modelCapabilities.details,
     `explorer: ${formatPreset(preferences.subagents.explorer)} (derived)`,
     `execution: ${formatPreset(preferences.derivedRouting.execution)} (derived)`,
+    `reviewer: ${formatPreset(preferences.subagents.verifier)} (derived)`,
     `realtime: ${formatPreset(preferences.derivedRouting.realtime)} (derived)`,
+    `frontend-craft: ${formatPreset(preferences.subagents.frontendCraft)} (derived)`,
     `telemetry files: summary ${presentFlag(preferences.telemetryFiles.summaryPresent)}, events ${presentFlag(preferences.telemetryFiles.eventsPresent)}, queue ${presentFlag(preferences.telemetryFiles.queuePresent)}`
   );
 

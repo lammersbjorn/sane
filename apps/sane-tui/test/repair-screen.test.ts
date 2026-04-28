@@ -56,36 +56,13 @@ describe("repair screen model", () => {
       "install_runtime",
       "backup_codex_config",
       "restore_codex_config",
-      "reset_telemetry_data",
-      "uninstall_user_skills",
-      "uninstall_repo_skills",
-      "uninstall_global_agents",
-      "uninstall_repo_agents",
-      "uninstall_hooks",
-      "uninstall_custom_agents",
-      "uninstall_opencode_agents",
-      "uninstall_all"
+      "reset_telemetry_data"
     ]);
-    expect(
-      screen.actions.find((action) => action.id === "uninstall_user_skills")?.confirmation
-    ).toBe("This removes Sane's user-level Codex skill install.");
-    expect(
-      screen.actions.find((action) => action.id === "uninstall_global_agents")?.confirmation
-    ).toBe("This removes Sane's managed block from your global `~/.codex/AGENTS.md`.");
-    expect(screen.actions.find((action) => action.id === "uninstall_hooks")?.confirmation).toBe(
-      "This removes Sane's managed Codex hook entry."
-    );
-    expect(
-      screen.actions.find((action) => action.id === "uninstall_opencode_agents")?.confirmation
-    ).toBe("This removes Sane's optional OpenCode-agent export.");
     expect(
       screen.actions.find((action) => action.id === "restore_codex_config")?.confirmation
     ).toBe("This replaces your current Codex config with the latest backup.");
     expect(screen.actions.find((action) => action.id === "reset_telemetry_data")?.confirmation).toBe(
       "This deletes Sane's local telemetry files from this machine."
-    );
-    expect(screen.actions.find((action) => action.id === "uninstall_all")?.confirmation).toBe(
-      "This removes all Sane-managed Codex pieces."
     );
   });
 
@@ -135,26 +112,7 @@ describe("repair screen model", () => {
       kind: "present",
       label: "present"
     });
-    expect(screen.actions.find((action) => action.id === "uninstall_user_skills")?.status).toEqual({
-      kind: "installed",
-      label: "installed"
-    });
-    expect(screen.actions.find((action) => action.id === "uninstall_global_agents")?.status).toEqual({
-      kind: "installed",
-      label: "installed"
-    });
-    expect(screen.actions.find((action) => action.id === "uninstall_hooks")?.status).toEqual({
-      kind: "installed",
-      label: "installed"
-    });
-    expect(screen.actions.find((action) => action.id === "uninstall_custom_agents")?.status).toEqual({
-      kind: "installed",
-      label: "installed"
-    });
-    expect(screen.actions.find((action) => action.id === "uninstall_all")?.status).toEqual({
-      kind: "installed",
-      label: "installed"
-    });
+    expect(screen.actions.some((action) => action.id.startsWith("uninstall_"))).toBe(false);
   });
 
   it("builds from a preloaded status bundle when requested", () => {
@@ -183,9 +141,6 @@ describe("repair screen model", () => {
     const bundle = inventory.inspectStatusBundle(paths, codexPaths, "windows");
     const screen = loadRepairScreenFromStatusBundle(paths, codexPaths, bundle);
 
-    expect(screen.actions.find((action) => action.id === "uninstall_hooks")?.status).toEqual({
-      kind: "disabled",
-      label: "unsupported (use WSL)"
-    });
+    expect(screen.actions.some((action) => action.id === "uninstall_hooks")).toBe(false);
   });
 });

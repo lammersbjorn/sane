@@ -211,7 +211,11 @@ describe('codex path parity', () => {
     expect(paths.codexHome).toBe(join(home, '.codex'));
     expect(paths.configToml).toBe(join(home, '.codex', 'config.toml'));
     expect(paths.userAgentsDir).toBe(join(home, '.agents'));
+    expect(paths.userPluginsDir).toBe(join(home, '.agents', 'plugins'));
+    expect(paths.userPluginsMarketplaceJson).toBe(join(home, '.agents', 'plugins', 'marketplace.json'));
     expect(paths.userSkillsDir).toBe(join(home, '.agents', 'skills'));
+    expect(paths.codexPluginsDir).toBe(join(home, '.codex', 'plugins'));
+    expect(paths.sanePluginDir).toBe(join(home, '.codex', 'plugins', 'sane'));
     expect(paths.globalAgentsMd).toBe(join(home, '.codex', 'AGENTS.md'));
     expect(paths.hooksJson).toBe(join(home, '.codex', 'hooks.json'));
   });
@@ -276,7 +280,6 @@ describe('codex path parity', () => {
     expect(paths.homeDir).toBe(normalizedHome);
     expect(paths.codexHome).toBe(join(normalizedHome, '.codex'));
     expect(paths.userSkillsDir).toBe(join(normalizedHome, '.agents', 'skills'));
-    expect(paths.opencodeGlobalAgentsDir).toBe(join(normalizedHome, '.config', 'opencode', 'agents'));
   });
 
   it('falls back to os.homedir-compatible values when env vars are missing', () => {

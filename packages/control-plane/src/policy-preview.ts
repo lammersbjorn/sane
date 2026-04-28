@@ -1,9 +1,6 @@
 import {
   createDefaultLocalConfig,
-  createDefaultModelRoutingPresets,
-  createRecommendedModelRoutingPresets,
-  createRecommendedSubagentPreset,
-  detectCodexEnvironment
+  type LocalConfig
 } from "@sane/config";
 import {
   OperationKind,
@@ -11,7 +8,7 @@ import {
   type PolicyPreviewPayload,
   type PolicyPreviewScenario
 } from "@sane/core";
-import { discoverCodexPaths, type HomeDirEnv, type ProjectPaths } from "@sane/platform";
+import { type HomeDirEnv, type ProjectPaths } from "@sane/platform";
 import {
   canonicalScenarios,
   Intent,
@@ -38,14 +35,13 @@ export function previewPolicy(paths: ProjectPaths, env: HomeDirEnv = process.env
 export function previewPolicyForCurrentRun(
   paths: ProjectPaths,
   currentRun: CurrentRunState | null,
-  env: HomeDirEnv = process.env
+  _env: HomeDirEnv = process.env
 ): OperationResult {
   const config = loadOrDefaultConfig(paths);
-  const routing = loadDerivedRouting(paths, env);
-  const subagents = buildSubagentRouting(paths, env);
+  const subagents = config.subagents;
   const policyPreview = buildPolicyPreviewPayload(currentRun);
   const details = policyPreview.scenarios.map((scenario) =>
-    renderPolicyPreviewLine(config, routing, subagents, scenario)
+    renderPolicyPreviewLine(config, subagents, scenario)
   );
 
   return new OperationResult({
@@ -64,17 +60,15 @@ function loadOrDefaultConfig(paths: ProjectPaths) {
 
 function renderPolicyPreviewLine(
   config: ReturnType<typeof createDefaultLocalConfig>,
-  routing: ReturnType<typeof createDefaultModelRoutingPresets>,
-  subagents: ReturnType<typeof buildSubagentRouting>,
+  subagents: LocalConfig["subagents"],
   scenario: PolicyPreviewScenario
 ): string {
-  return `${scenario.id}: ${scenario.obligations.join(", ")} | ${renderRolePlan(config, routing, subagents, scenario.roles)}`;
+  return `${scenario.id}: ${scenario.obligations.join(", ")} | ${renderRolePlan(config, subagents, scenario.roles)}`;
 }
 
 function renderRolePlan(
   config: ReturnType<typeof createDefaultLocalConfig>,
-  routing: ReturnType<typeof createDefaultModelRoutingPresets>,
-  subagents: ReturnType<typeof buildSubagentRouting>,
+  subagents: LocalConfig["subagents"],
   roles: PolicyPreviewScenario["roles"]
 ): string {
   const parts: string[] = [];
@@ -94,8 +88,9 @@ function renderRolePlan(
   }
 
   parts.push(`explorer=${subagents.explorer.model}/${subagents.explorer.reasoningEffort}`);
-  parts.push(`execution=${routing.execution.model}/${routing.execution.reasoningEffort}`);
-  parts.push(`realtime=${routing.realtime.model}/${routing.realtime.reasoningEffort}`);
+  parts.push(`execution=${subagents.implementation.model}/${subagents.implementation.reasoningEffort}`);
+  parts.push(`realtime=${subagents.realtime.model}/${subagents.realtime.reasoningEffort}`);
+  parts.push(`frontend-craft=${subagents.frontendCraft.model}/${subagents.frontendCraft.reasoningEffort}`);
 
   return parts.join(", ");
 }
@@ -298,50 +293,4 @@ function hasAny(value: string, needles: string[]): boolean {
 function isRealBlockingQuestion(question: string): boolean {
   const normalized = question.trim().toLowerCase();
   return normalized.length > 0 && normalized !== "none" && normalized !== "n/a";
-}
-
-function loadDerivedRouting(paths: ProjectPaths, env: HomeDirEnv) {
-  try {
-    return createRecommendedModelRoutingPresets(
-      readCodexEnvironment(paths, env)
-    );
-  } catch {
-    return createDefaultModelRoutingPresets();
-  }
-}
-
-function readCodexEnvironment(paths: ProjectPaths, env: HomeDirEnv) {
-  const codexPaths = discoverCodexPaths(env);
-  return detectCodexEnvironment(codexPaths.modelsCacheJson, codexPaths.authJson);
-}
-
-function buildSubagentRouting(paths: ProjectPaths, env: HomeDirEnv) {
-  try {
-    const environment = readCodexEnvironment(paths, env);
-    return {
-      explorer: createRecommendedSubagentPreset(environment, "explorer"),
-      implementation: createRecommendedSubagentPreset(environment, "implementation"),
-      verifier: createRecommendedSubagentPreset(environment, "verifier"),
-      realtime: createRecommendedSubagentPreset(environment, "realtime"),
-    };
-  } catch {
-    return {
-      explorer: {
-        model: "gpt-5.4-mini",
-        reasoningEffort: "low" as const,
-      },
-      implementation: {
-        model: "gpt-5.3-codex",
-        reasoningEffort: "medium" as const,
-      },
-      verifier: {
-        model: "gpt-5.4",
-        reasoningEffort: "high" as const,
-      },
-      realtime: {
-        model: "gpt-5.3-codex-spark",
-        reasoningEffort: "low" as const,
-      },
-    };
-  }
 }

@@ -1,4 +1,4 @@
-import { startTerminalLoop } from "../src/terminal-loop.js";
+import { startInkTerminalLoop } from "../src/ink-terminal.js";
 import { createTextTuiRuntimeFromDiscovery } from "../src/text-driver.js";
 
 if (!process.stdin.isTTY || !process.stdout.isTTY) {
@@ -8,30 +8,34 @@ if (!process.stdin.isTTY || !process.stdout.isTTY) {
 
 const launchShortcut = process.argv[2] === "settings" ? "settings" : "default";
 
-const runtime = createTextTuiRuntimeFromDiscovery(process.cwd(), process.env, {
-  launchShortcut
-});
+void main();
 
-const controller = startTerminalLoop(runtime, {
-  stdin: process.stdin,
-  stdout: process.stdout
-});
+async function main(): Promise<void> {
+  const runtime = createTextTuiRuntimeFromDiscovery(process.cwd(), process.env, {
+    launchShortcut
+  });
 
-const stop = () => {
-  controller.stop();
-};
+  const controller = await startInkTerminalLoop(runtime, {
+    stdin: process.stdin,
+    stdout: process.stdout
+  });
 
-process.once("SIGINT", () => {
-  stop();
-  process.exit(0);
-});
+  const stop = () => {
+    controller.unmount();
+  };
 
-process.once("SIGTERM", () => {
-  stop();
-  process.exit(0);
-});
+  process.once("SIGINT", () => {
+    stop();
+    process.exit(0);
+  });
 
-process.once("SIGHUP", () => {
-  stop();
-  process.exit(0);
-});
+  process.once("SIGTERM", () => {
+    stop();
+    process.exit(0);
+  });
+
+  process.once("SIGHUP", () => {
+    stop();
+    process.exit(0);
+  });
+}

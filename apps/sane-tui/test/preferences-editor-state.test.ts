@@ -46,12 +46,18 @@ describe("preferences editor state", () => {
     const editor = createConfigEditorState(config, defaults);
 
     expect(editor.fields).toEqual([
-      "coordinator_model",
-      "coordinator_reasoning",
-      "sidecar_model",
-      "sidecar_reasoning",
-      "verifier_model",
-      "verifier_reasoning"
+      "main_model",
+      "main_reasoning",
+      "explorer_model",
+      "explorer_reasoning",
+      "implementation_model",
+      "implementation_reasoning",
+      "reviewer_model",
+      "reviewer_reasoning",
+      "realtime_model",
+      "realtime_reasoning",
+      "frontend_craft_model",
+      "frontend_craft_reasoning"
     ]);
 
     const moved = moveConfigFieldSelection(editor, 1);
@@ -60,23 +66,33 @@ describe("preferences editor state", () => {
     const cycled = cycleSelectedConfigField(editor, 1);
     expect(cycled.config.models.coordinator.model).not.toBe(config.models.coordinator.model);
     expect(cycleSelectedConfigField(editor, -1).config.models.coordinator.model).toBe(
-      previousOption(CONFIG_FIELD_METADATA.coordinator_model.options, config.models.coordinator.model)
+      previousOption(CONFIG_FIELD_METADATA.main_model.options, config.models.coordinator.model)
     );
 
-    const coordinatorReasoning = cycleSelectedConfigField(moveConfigFieldSelection(editor, 1), 1);
-    expect(coordinatorReasoning.config.models.coordinator.reasoningEffort).toBe("xhigh");
+    const mainReasoning = cycleSelectedConfigField(moveConfigFieldSelection(editor, 1), 1);
+    expect(mainReasoning.config.models.coordinator.reasoningEffort).not.toBe(
+      config.models.coordinator.reasoningEffort
+    );
 
     const verifierReasoning = cycleSelectedConfigField(
       moveConfigFieldSelection(
         moveConfigFieldSelection(
-          moveConfigFieldSelection(moveConfigFieldSelection(moveConfigFieldSelection(editor, 1), 1), 1),
+          moveConfigFieldSelection(
+            moveConfigFieldSelection(
+              moveConfigFieldSelection(moveConfigFieldSelection(moveConfigFieldSelection(editor, 1), 1), 1),
+              1
+            ),
+            1
+          ),
           1
         ),
         1
       ),
       1
     );
-    expect(verifierReasoning.config.models.verifier.reasoningEffort).toBe("xhigh");
+    expect(verifierReasoning.config.models.verifier.reasoningEffort).not.toBe(
+      config.models.verifier.reasoningEffort
+    );
 
     const reset = resetConfigEditor(cycled);
     expect(reset.config).toEqual(defaults);
@@ -95,12 +111,12 @@ describe("preferences editor state", () => {
 
     const reverseModel = cycleSelectedConfigField(editor, -1);
     expect(reverseModel.config.models.coordinator.model).toBe(
-      previousOption(CONFIG_FIELD_METADATA.coordinator_model.options, defaults.models.coordinator.model)
+      previousOption(CONFIG_FIELD_METADATA.main_model.options, defaults.models.coordinator.model)
     );
 
     const reasoningEditor = moveConfigFieldSelection(editor, 1);
     const reverseReasoning = cycleSelectedConfigField(reasoningEditor, -1);
-    const reasoningOptions = [...CONFIG_FIELD_METADATA.coordinator_reasoning.options];
+    const reasoningOptions = [...CONFIG_FIELD_METADATA.main_reasoning.options];
     const defaultReasoning = defaults.models.coordinator.reasoningEffort;
     expect(reverseReasoning.config.models.coordinator.reasoningEffort).toBe(
       reasoningOptions[

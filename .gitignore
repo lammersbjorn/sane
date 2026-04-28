@@ -3,6 +3,7 @@
 /.turbo
 **/.turbo
 /.pnpm-store
+.playwright-mcp/
 **/node_modules
 **/dist
 **/.vite

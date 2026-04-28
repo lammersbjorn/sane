@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
-import { createRecommendedLocalConfig, detectCodexEnvironment } from "@sane/config";
+import { createRecommendedLocalConfig } from "@sane/config";
 import { InventoryScope, InventoryStatus, OperationKind, OperationResult } from "@sane/core";
 import {
   createOptionalPackSkills,
@@ -22,15 +22,13 @@ import {
   type CodexConfigConflictWarning
 } from "./codex-config.js";
 import { inspectCodexSkillsAndAgents } from "./codex-native.js";
+import { inspectPluginInventory } from "./codex-plugin.js";
 import { inspectCustomAgentsInventory, inspectHooksInventory } from "./hooks-custom-agents.js";
 import { inspectSavedLocalConfig } from "./local-config.js";
 import {
   isUnsupportedNativeWindowsHooks,
-  managedStatusKindFromInventory,
-  presentManagedInventoryItem,
-  presentManagedStatus
+  presentManagedInventoryItem
 } from "./status-presenter.js";
-import { inspectOpencodeAgentsInventory } from "./opencode-native.js";
 import { inspectRuntimeInventory } from "./runtime-inventory.js";
 import { inspectRuntimeState } from "./runtime-state.js";
 
@@ -58,7 +56,7 @@ type DoctorInventoryName =
   | "global-agents"
   | "hooks"
   | "custom-agents"
-  | "opencode-agents";
+  | "plugin";
 
 type PackConfigState =
   | { kind: "missing" }
@@ -170,7 +168,7 @@ const DOCTOR_ROW_NAMES: DoctorInventoryName[] = [
   "global-agents",
   "hooks",
   "custom-agents",
-  "opencode-agents"
+  "plugin"
 ];
 
 const DOCTOR_STATUS_FORMATTERS: Partial<Record<DoctorInventoryName, (item: InventoryItem) => string>> = {
@@ -205,7 +203,7 @@ const DOCTOR_STATUS_FORMATTERS: Partial<Record<DoctorInventoryName, (item: Inven
       : doctorExportLabel(item, "export global-agents"),
   hooks: (item) => doctorManagedConfigLabel(item, "export hooks", "~/.codex/hooks.json"),
   "custom-agents": (item) => doctorExportLabel(item, "export custom-agents"),
-  "opencode-agents": (item) => doctorExportLabel(item, "export opencode-agents")
+  plugin: doctorPluginLabel
 };
 
 const PACK_INVENTORY_TARGETS: PackInventoryTarget[] = [
@@ -222,6 +220,9 @@ const PACK_INVENTORY_TARGETS: PackInventoryTarget[] = [
 const OPTIONAL_PACK_INVENTORY_TARGETS = PACK_INVENTORY_TARGETS.filter(
   (target): target is Extract<PackInventoryTarget, { packName: OptionalPackName }> => target.packName !== "core"
 );
+
+const GUIDANCE_WARNING_MAX_LINES = 220;
+const GUIDANCE_WARNING_MAX_CHARS = 12_000;
 
 export function showStatus(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
   return showStatusFromStatusBundle(inspectStatusBundle(paths, codexPaths));
@@ -293,15 +294,18 @@ export function inspectStatusBundle(
     ...inspectPackInventory(paths, codexPaths),
     inspectCodexConfigInventory(codexPaths),
     ...inspectCodexSkillsAndAgents(paths, codexPaths),
-    inspectHooksInventory(codexPaths, hostPlatform),
+    inspectHooksInventory(paths, codexPaths, hostPlatform),
     inspectCustomAgentsInventory(paths, codexPaths),
-    inspectOpencodeAgentsInventory(paths, codexPaths)
+    inspectPluginInventory(codexPaths)
   ];
 
   const localRuntime = inventory.filter((item) => item.scope === InventoryScope.LocalRuntime);
   const codexNative = inventory.filter((item) => item.scope === InventoryScope.CodexNative);
   const compatibility = inventory.filter((item) => item.scope === InventoryScope.Compatibility);
-  const conflictWarnings = inspectCodexConfigConflictWarnings(codexPaths);
+  const conflictWarnings = [
+    ...inspectCodexConfigConflictWarnings(codexPaths),
+    ...inspectGuidanceFileWarnings(paths, codexPaths)
+  ];
   const driftItems = inventory.filter(
     (item) =>
       item.status === InventoryStatus.Invalid
@@ -403,6 +407,38 @@ function inspectOptionalPackSnapshots(inventory: InventoryItem[]): OptionalPackS
       provenance: optionalPackProvenance(packName) ?? null
     };
   });
+}
+
+function inspectGuidanceFileWarnings(
+  paths: ProjectPaths,
+  codexPaths: CodexPaths
+): CodexConfigConflictWarning[] {
+  return [
+    inspectGuidanceFileWarning("AGENTS.md", paths.repoAgentsMd),
+    inspectGuidanceFileWarning("~/.codex/AGENTS.md", codexPaths.globalAgentsMd)
+  ].filter((warning): warning is CodexConfigConflictWarning => warning !== null);
+}
+
+function inspectGuidanceFileWarning(
+  target: string,
+  path: string
+): CodexConfigConflictWarning | null {
+  if (!existsSync(path)) {
+    return null;
+  }
+
+  const body = readFileSync(path, "utf8");
+  const lineCount = body.split("\n").length;
+  if (lineCount <= GUIDANCE_WARNING_MAX_LINES && body.length <= GUIDANCE_WARNING_MAX_CHARS) {
+    return null;
+  }
+
+  return {
+    kind: "oversized_guidance_file",
+    target,
+    path,
+    message: `guidance file is large (${lineCount} lines, ${body.length} chars); prefer narrow skills and repo-native config over always-loaded context`
+  };
 }
 
 function packStatusFromConfig(
@@ -675,6 +711,26 @@ function doctorExportLabel(item: InventoryItem, exportCommand: string): string {
       : item.status === InventoryStatus.Invalid
         ? `invalid (rerun \`${exportCommand}\`)`
         : doctorManagedFallback(item);
+}
+
+function doctorPluginLabel(item: InventoryItem): string {
+  if (item.status !== InventoryStatus.Installed) {
+    return doctorExportLabel(item, "export plugin");
+  }
+
+  const version = installedPluginVersion(item.path);
+  return version ? `installed (version ${version})` : "installed";
+}
+
+function installedPluginVersion(pluginDir: string): string | null {
+  try {
+    const parsed = JSON.parse(
+      readFileSync(resolve(pluginDir, ".codex-plugin", "plugin.json"), "utf8")
+    ) as { version?: unknown };
+    return typeof parsed.version === "string" && parsed.version.length > 0 ? parsed.version : null;
+  } catch {
+    return null;
+  }
 }
 
 function collectPathsTouched(inventory: InventoryItem[]): string[] {

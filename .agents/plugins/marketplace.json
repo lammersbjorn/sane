@@ -1,0 +1,20 @@
+{
+  "name": "sane-local",
+  "interface": {
+    "displayName": "Sane Local"
+  },
+  "plugins": [
+    {
+      "name": "sane",
+      "source": {
+        "source": "local",
+        "path": "./plugins/sane"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

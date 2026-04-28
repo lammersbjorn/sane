@@ -5,7 +5,6 @@ import {
 } from "@sane/control-plane/codex-config.js";
 import {
   inspectStatusBundle,
-  inspectOnboardingSnapshot,
   inspectOnboardingSnapshotFromStatusBundle,
   type OnboardingAttentionItem,
   type OnboardingReasonId
@@ -13,10 +12,10 @@ import {
 import { presentManagedInventoryItem } from "@sane/control-plane/status-presenter.js";
 import { listSectionActions } from "@sane/sane-tui/command-registry.js";
 
-export interface GetStartedStep {
+export interface HomeStep {
   id:
     | "install_runtime"
-    | "show_codex_config"
+    | "open_config_editor"
     | "preview_codex_profile"
     | "backup_codex_config"
     | "apply_codex_profile"
@@ -26,26 +25,26 @@ export interface GetStartedStep {
   filesTouched: string[];
 }
 
-export interface GetStartedScreenModel {
-  summary: "Get Started";
-  recommendedActionId: GetStartedStep["id"] | null;
+export interface HomeScreenModel {
+  summary: "Home";
+  recommendedActionId: HomeStep["id"] | null;
   recommendedNextStep: string;
   attentionItems: string[];
   statusLine: string;
   codexProfileAudit: ReturnType<typeof inspectCodexProfileFamilySnapshot>["core"]["audit"];
   codexProfileApply: ReturnType<typeof inspectCodexProfileFamilySnapshot>["core"]["apply"];
   codexProfilePreview: ReturnType<typeof inspectCodexProfileFamilySnapshot>["core"]["preview"];
-  steps: GetStartedStep[];
+  steps: HomeStep[];
 }
 
 type CodexProfileFamily = ReturnType<typeof inspectCodexProfileFamilySnapshot>;
 
-export function loadGetStartedScreen(
+export function loadHomeScreen(
   paths: ProjectPaths,
   codexPaths: CodexPaths,
   hostPlatform: HostPlatform = detectPlatform()
-): GetStartedScreenModel {
-  return loadGetStartedScreenFromStatusBundle(
+): HomeScreenModel {
+  return loadHomeScreenFromStatusBundle(
     paths,
     codexPaths,
     inspectStatusBundle(paths, codexPaths, hostPlatform),
@@ -54,28 +53,25 @@ export function loadGetStartedScreen(
   );
 }
 
-export function loadGetStartedScreenFromStatusBundle(
+export function loadHomeScreenFromStatusBundle(
   paths: ProjectPaths,
   codexPaths: CodexPaths,
   statusBundle: ReturnType<typeof inspectStatusBundle>,
   profiles: CodexProfileFamily = inspectCodexProfileFamilySnapshot(codexPaths),
   hostPlatform: HostPlatform = detectPlatform()
-): GetStartedScreenModel {
+): HomeScreenModel {
   const onboarding = inspectOnboardingSnapshotFromStatusBundle(paths, statusBundle);
   const codexProfile = profiles.core;
-  const steps = listSectionActions("get_started", hostPlatform).map((action) => ({
-    id: action.id as GetStartedStep["id"],
+  const steps = listSectionActions("home", hostPlatform).map((action) => ({
+    id: action.id as HomeStep["id"],
     title: action.label,
-    impact: onboardingStepImpact(action.id as GetStartedStep["id"]),
-    filesTouched:
-      action.id === "export_all"
-        ? exportAllFilesTouched(statusBundle)
-        : action.filesTouched
+    impact: onboardingStepImpact(action.id as HomeStep["id"]),
+    filesTouched: action.filesTouched
   }));
 
   return {
-    summary: "Get Started",
-    recommendedActionId: onboarding.recommendedActionId,
+    summary: "Home",
+    recommendedActionId: homeRecommendedActionId(onboarding.recommendedActionId),
     recommendedNextStep: recommendedNextStep(onboarding.recommendedReason),
     attentionItems: onboarding.attentionItems.map(formatAttentionItem),
     statusLine: [
@@ -95,55 +91,45 @@ export function loadGetStartedScreenFromStatusBundle(
 function recommendedNextStep(reason: OnboardingReasonId): string {
   switch (reason) {
     case "install_runtime":
-      return "Create Sane's local project files first.";
+      return "Set up Sane's local files first.";
     case "show_codex_config":
-      return "Inspect Codex config, then preview the core Codex profile.";
+      return "Review the Codex changes before applying them.";
     case "export_all":
-      return "Install Sane into Codex so Codex can use Sane's guidance.";
+      return "Add or refresh Sane in Codex.";
     default:
-      return "Review configure or inspect sections and change only what you actually want.";
+      return "Setup is complete. Choose a tune-up action or open Status.";
   }
 }
 
-function onboardingStepImpact(stepId: GetStartedStep["id"]): string {
+function onboardingStepImpact(stepId: HomeStep["id"]): string {
   switch (stepId) {
     case "install_runtime":
-      return "Create repo-local `.sane/` state and config files.";
-    case "show_codex_config":
-      return "Read current `~/.codex/config.toml` before changing anything.";
+      return "Create or repair repo-local `.sane/` files.";
+    case "open_config_editor":
+      return "Choose model, reasoning, packs, and privacy defaults.";
     case "preview_codex_profile":
-      return "Preview Sane's recommended Codex defaults and hooks.";
+      return "See what Sane would change in Codex settings.";
     case "backup_codex_config":
-      return "Save a rollback copy of current Codex settings into `.sane/backups`.";
+      return "Save a rollback copy before writing settings.";
     case "apply_codex_profile":
-      return "Write Sane's core Codex defaults into `~/.codex/config.toml`.";
+      return "Write Sane's recommended Codex defaults.";
     case "export_all":
-      return "Install Sane's user skills, AGENTS block, and custom agents into Codex.";
+      return "Add Sane skills, guidance, hooks, and agents to Codex.";
   }
+}
+
+function homeRecommendedActionId(
+  actionId: ReturnType<typeof inspectOnboardingSnapshotFromStatusBundle>["recommendedActionId"]
+): HomeScreenModel["recommendedActionId"] {
+  if (actionId === "show_codex_config") {
+    return "preview_codex_profile";
+  }
+
+  return actionId;
 }
 
 function formatAttentionItem(item: OnboardingAttentionItem): string {
   return `${item.id}: ${item.status}`;
-}
-
-function exportAllFilesTouched(
-  statusBundle: ReturnType<typeof inspectStatusBundle>
-): string[] {
-  const hooks = statusBundle.primary.hooks;
-  return hooks?.status.asString() === "invalid" && hooks.repairHint?.includes("native Windows")
-    ? [
-        "~/.agents/skills/sane-router",
-        "~/.agents/skills/continue",
-        "~/.codex/AGENTS.md",
-        "~/.codex/agents/"
-      ]
-    : [
-        "~/.agents/skills/sane-router",
-        "~/.agents/skills/continue",
-        "~/.codex/AGENTS.md",
-        "~/.codex/hooks.json",
-        "~/.codex/agents/"
-      ];
 }
 
 function hookStatusLabel(statusBundle: ReturnType<typeof inspectStatusBundle>): string {

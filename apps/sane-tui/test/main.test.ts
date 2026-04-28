@@ -27,8 +27,8 @@ describe("tui app bootstrap", () => {
   it("builds the dashboard from default launch", () => {
     const app = createSaneTuiAppFromRoots(makeTempDir(), makeTempDir());
 
-    expect(app.shell.activeSectionId).toBe("get_started");
-    expect(app.dashboard.activeSection.docLabel).toBe("Get Started");
+    expect(app.shell.activeSectionId).toBe("home");
+    expect(app.dashboard.activeSection.docLabel).toBe("Home");
     expect(app.dashboard.selectedAction.id).toBe("install_runtime");
   });
 
@@ -40,8 +40,8 @@ describe("tui app bootstrap", () => {
     moveSelection(app.shell, "section", 1);
     const refreshed = refreshSaneTuiApp(app);
 
-    expect(refreshed.shell.activeSectionId).toBe("install");
-    expect(refreshed.dashboard.activeSection.docLabel).toBe("Install");
+    expect(refreshed.shell.activeSectionId).toBe("add_to_codex");
+    expect(refreshed.dashboard.activeSection.docLabel).toBe("Add to Codex");
   });
 
   it("can bootstrap from discovery inputs", () => {
@@ -56,6 +56,6 @@ describe("tui app bootstrap", () => {
 
     expect(app.paths.projectRoot).toBe(projectRoot);
     expect(app.codexPaths.homeDir).toBe(homeDir);
-    expect(app.shell.activeSectionId).toBe("preferences");
+    expect(app.shell.activeSectionId).toBe("settings");
   });
 });

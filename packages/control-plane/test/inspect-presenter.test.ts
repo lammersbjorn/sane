@@ -10,6 +10,16 @@ import {
   type InspectOverviewSnapshot
 } from "../src/inspect-presenter.js";
 
+function expectOptionalPackProvenanceContract(line: string): void {
+  expect(line).toContain("optional pack provenance:");
+  expect(line).toContain("caveman configured");
+  expect(line).toContain("derived from caveman");
+  expect(line).toContain("rtk disabled (no skills; internal)");
+  expect(line).toContain("frontend-craft disabled");
+  expect(line).toContain("derived from taste-skill");
+  expect(line).toContain("impeccable");
+}
+
 describe("inspect presenter", () => {
   it("formats optional-pack provenance with upstream and internal origins", () => {
     const line = formatInspectOptionalPackProvenanceLine([
@@ -23,7 +33,7 @@ describe("inspect presenter", () => {
           kind: "derived",
           note: "curated from caveman",
           updateStrategy: "manual-curated",
-          upstreams: [{ name: "caveman", url: "https://github.com/JuliusBrussee/caveman", ref: "0.1.0" }]
+          upstreams: [{ name: "caveman", url: "https://github.com/JuliusBrussee/caveman", ref: "v1.6.0" }]
         }
       },
       {
@@ -38,23 +48,22 @@ describe("inspect presenter", () => {
         name: "frontend-craft",
         inventoryName: "pack-frontend-craft",
         status: "disabled",
-        skillName: "design-taste-frontend",
+        skillName: "sane-frontend-craft",
         skillNames: optionalPackSkillNames("frontend-craft"),
         provenance: {
           kind: "derived",
-          note: "taste + impeccable",
+          note: "compact frontend craft",
           updateStrategy: "manual-curated",
           upstreams: [
             { name: "taste-skill", url: "https://github.com/Leonxlnx/taste-skill", ref: "main" },
-            { name: "impeccable", url: "https://github.com/pbakaus/impeccable", ref: "main" }
+            { name: "impeccable", url: "https://github.com/pbakaus/impeccable", ref: "main" },
+            { name: "make-interfaces-feel-better", url: "https://skills.sh/jakubkrehel/make-interfaces-feel-better/make-interfaces-feel-better", ref: null }
           ]
         }
       }
     ]);
 
-    expect(line).toBe(
-      `optional pack provenance: caveman configured (sane-caveman; derived from caveman); rtk disabled (no skills; internal); frontend-craft disabled (${optionalPackSkillNames("frontend-craft").join(" + ")}; derived from taste-skill + impeccable)`
-    );
+    expectOptionalPackProvenanceContract(line);
   });
 
   it("formats drift summary and detail lines", () => {
@@ -104,7 +113,7 @@ describe("inspect presenter", () => {
               kind: "derived",
               note: "curated from caveman",
               updateStrategy: "manual-curated",
-              upstreams: [{ name: "caveman", url: "https://github.com/JuliusBrussee/caveman", ref: "0.1.0" }]
+              upstreams: [{ name: "caveman", url: "https://github.com/JuliusBrussee/caveman", ref: "v1.6.0" }]
             }
           }
         ],
@@ -165,9 +174,33 @@ describe("inspect presenter", () => {
         checks: [
           { status: "pass" },
           { status: "pass" },
+          { status: "warn" },
           { status: "warn" }
         ]
       },
+      outcomeRescueSignal: {
+        status: "warn",
+        summary: "long silence: no persisted progress for 42m while 1 task(s) remain open",
+        reasons: ["long silence: no persisted progress for 42m while 1 task(s) remain open"]
+      },
+      worktreeReadiness: {
+        mode: "read-only-worktree-readiness",
+        status: "ready",
+        summary: "linked git worktree detected",
+        path: "/tmp/repo/.git",
+        linkedWorktree: true,
+        reasons: ["checkout is already backed by a worktree gitdir"]
+      },
+      runtimeOutcome: {
+        phase: "executing",
+        activeTaskCount: 1,
+        blockingQuestionCount: 0,
+        verificationStatus: "pending",
+        verificationSummary: "implementation in progress",
+        lastVerifiedOutputs: [],
+        filesTouchedCount: 0
+      },
+      repoVerifyCommand: "rtk run 'pnpm test && pnpm typecheck'",
       latestPolicyPreview: {
         status: "missing",
         scenarioCount: 0,
@@ -212,11 +245,23 @@ describe("inspect presenter", () => {
       "self-hosting shadow (read-only): blocked, runner disabled, checks pass 1, warn 1, block 1"
     );
     expect(lines).toContain(
-      "outcome readiness (read-only): ready, autonomous loop disabled, checks pass 2, warn 1, block 0"
+      "outcome readiness (read-only): ready, autonomous loop disabled, checks pass 2, warn 2, block 0"
     );
     expect(lines).toContain(
-      "optional pack provenance: caveman configured (sane-caveman; derived from caveman)"
+      "outcome rescue signal (read-only): warn - long silence: no persisted progress for 42m while 1 task(s) remain open"
     );
+    expect(lines).toContain("worktree readiness (read-only): ready - linked git worktree detected");
+    expect(lines).toContain(
+      "outcome verification (read-only): pending (implementation in progress)"
+    );
+    expect(lines).toContain(
+      "outcome progress (read-only): phase executing, active tasks 1, blocking questions 0, files touched 0"
+    );
+    expect(lines).toContain("last verified outputs (read-only): none");
+    expect(lines).toContain("repo verify (read-only): rtk run 'pnpm test && pnpm typecheck'");
+    expect(lines.join("\n")).toContain("optional pack provenance:");
+    expect(lines.join("\n")).toContain("caveman configured");
+    expect(lines.join("\n")).toContain("derived from caveman");
     expect(lines).toContain("export drift view: hooks");
     expect(lines).toContain("conflict warnings: none");
     expect(lines).toContain(

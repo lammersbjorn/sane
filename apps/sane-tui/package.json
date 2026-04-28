@@ -8,12 +8,38 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./*.js": "./src/*.ts"
+    "./add-to-codex-screen.js": "./src/add-to-codex-screen.ts",
+    "./app-view.js": "./src/app-view.ts",
+    "./cli.js": "./src/cli.ts",
+    "./command-registry.js": "./src/command-registry.ts",
+    "./dashboard.js": "./src/dashboard.ts",
+    "./home-screen.js": "./src/home-screen.ts",
+    "./index.js": "./src/index.ts",
+    "./ink-terminal.js": "./src/ink-terminal.ts",
+    "./input-driver.js": "./src/input-driver.ts",
+    "./main.js": "./src/main.ts",
+    "./overlay-models.js": "./src/overlay-models.ts",
+    "./preferences-editor-state.js": "./src/preferences-editor-state.ts",
+    "./presentation-normalizer.js": "./src/presentation-normalizer.ts",
+    "./preview-launch.js": "./src/preview-launch.ts",
+    "./repair-screen.js": "./src/repair-screen.ts",
+    "./result-panel.js": "./src/result-panel.ts",
+    "./result-panel-layer.js": "./src/result-panel-layer.ts",
+    "./section-action-rows.js": "./src/section-action-rows.ts",
+    "./settings-screen.js": "./src/settings-screen.ts",
+    "./shell.js": "./src/shell.ts",
+    "./shell-layer.js": "./src/shell-layer.ts",
+    "./status-screen.js": "./src/status-screen.ts",
+    "./terminal-driver.js": "./src/terminal-driver.ts",
+    "./terminal-keys.js": "./src/terminal-keys.ts",
+    "./terminal-loop.js": "./src/terminal-loop.ts",
+    "./text-driver.js": "./src/text-driver.ts",
+    "./text-renderer.js": "./src/text-renderer.ts"
   },
   "scripts": {
     "build": "tsup --config tsup.config.ts",
     "build:package": "pnpm run build && node ./scripts/write-dist-package.mjs",
-    "build:smoke": "pnpm run build:package && node ./dist/bin/sane.cjs inspect",
+    "build:smoke": "pnpm run build:package && node ./dist/bin/sane.cjs status",
     "preview": "tsx ./bin/sane-preview.ts",
     "preview:built": "node ./dist/bin/sane.cjs",
     "preview:terminal": "tsx ./bin/sane-terminal-preview.ts",
@@ -28,12 +54,17 @@
     "@sane/core": "workspace:*",
     "@sane/framework-assets": "workspace:*",
     "@sane/platform": "workspace:*",
-    "@sane/state": "workspace:*"
+    "@sane/state": "workspace:*",
+    "ink": "7.0.1",
+    "react": "19.2.5",
+    "react-devtools-core": "^6.1.5"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "tsx": "^4.21.0",
+    "@types/react": "19.2.14",
+    "ink-testing-library": "4.0.0",
     "tsup": "^8.5.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
     "vitest": "catalog:"
   }
 }

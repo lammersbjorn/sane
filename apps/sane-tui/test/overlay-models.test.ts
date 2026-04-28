@@ -35,13 +35,14 @@ describe("overlay models", () => {
       throw new Error("expected config overlay");
     }
     expect(overlay.title).toBe("Model Defaults");
-    expect(overlay.headerLines[1]).toContain("Up/down picks field");
-    expect(overlay.detailsLines[0]).toBe("Coordinator model");
+    expect(overlay.headerLines[1]).toContain("Up/down row");
+    expect(overlay.fieldLines[0]).toContain("> Main session model:");
+    expect(overlay.fieldLines.some((line) => line.includes("Explorer agent model:"))).toBe(true);
+    expect(overlay.fieldLines.some((line) => line.includes("Implementation agent model:"))).toBe(true);
+    expect(overlay.detailsLines[0]).toBe("Main session model");
+    expect(overlay.detailsLines).toContain("Recommended: gpt-5.5");
     expect(overlay.detailsLines).toContain("Routing behavior");
-    expect(overlay.detailsLines).toContain("Coordinator/sidecar/verifier are editable defaults.");
-    expect(overlay.detailsLines).toContain(
-      "Sane also derives execution and realtime-iteration classes from detected model availability."
-    );
+    expect(overlay.detailsLines).toContain("These rows are saved in Sane config.");
   });
 
   it("builds privacy and pack modal side content", () => {
@@ -54,6 +55,7 @@ describe("overlay models", () => {
     if (!overlay || overlay.kind !== "packs") {
       throw new Error("expected packs overlay");
     }
+    expect(overlay.fieldLines[0]).toContain("> caveman:");
     expect(overlay.detailsLines.some((line: string) => line.includes("selected pack: caveman"))).toBe(true);
     expect(overlay.detailsLines).toContain("exports: sane-caveman");
 
@@ -67,7 +69,7 @@ describe("overlay models", () => {
       throw new Error("expected packs overlay");
     }
     expect(overlay.detailsLines.some((line: string) => line.includes("selected pack: rtk"))).toBe(true);
-    expect(overlay.detailsLines).toContain("exports: no dedicated skills");
+    expect(overlay.detailsLines).toContain(`exports: ${optionalPackSkillNames("rtk").join(", ")}`);
 
     shell.activeEditor.selected = 2;
     overlay = loadOverlayModel(shell);
@@ -91,6 +93,7 @@ describe("overlay models", () => {
     if (!overlay || overlay.kind !== "privacy") {
       throw new Error("expected privacy overlay");
     }
+    expect(overlay.fieldLines).toEqual(["> Telemetry: local-only"]);
     expect(overlay.detailsLines.some((line: string) => line.includes("consent: local-only"))).toBe(true);
     expect(overlay.detailsLines).toContain("policy: local-only keeps summary/events local and removes upload queue");
     expect(overlay.detailsLines.some((line: string) => line.includes("summary path:"))).toBe(true);
@@ -116,7 +119,7 @@ describe("overlay models", () => {
       title: "Saved",
       body: "config: saved at .sane/config.toml",
       footer: "Enter, Space, or Esc closes this message.",
-      section: "preferences"
+      section: "settings"
     };
     overlay = loadOverlayModel(shell);
     expect(overlay?.kind).toBe("notice");

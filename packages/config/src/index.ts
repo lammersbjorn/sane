@@ -59,13 +59,15 @@ export interface SubagentRoutingPresets {
   implementation: ModelPreset;
   verifier: ModelPreset;
   realtime: ModelPreset;
+  frontendCraft: ModelPreset;
 }
 
 export type SubagentTaskClass =
   | 'explorer'
   | 'implementation'
   | 'verifier'
-  | 'realtime';
+  | 'realtime'
+  | 'frontendCraft';
 
 export interface DetectedAvailableModel {
   slug: string;
@@ -88,11 +90,19 @@ export interface PackConfig {
   frontendCraft: boolean;
 }
 
+export interface LifecycleHooksConfig {
+  tokscaleSubmit: boolean;
+  tokscaleDryRun: boolean;
+  rateLimitResume: boolean;
+}
+
 export interface LocalConfig {
   version: number;
   models: ModelRolePresets;
+  subagents: SubagentRoutingPresets;
   privacy: PrivacyConfig;
   packs: PackConfig;
+  lifecycleHooks: LifecycleHooksConfig;
 }
 
 const reasoningEffortSchema = z.enum(REASONING_EFFORTS);
@@ -152,13 +162,31 @@ const REALTIME_PRIORITY = [
   'gpt-5.1-codex',
   'gpt-5-codex',
 ] as const;
+const FRONTEND_CRAFT_PRIORITY = [
+  'gpt-5.5',
+  'gpt-5.4',
+  'gpt-5.3-codex',
+  'gpt-5.2',
+  'gpt-5.4-mini',
+  'gpt-5.3-codex-spark',
+  'gpt-5.1-codex',
+  'gpt-5-codex',
+  'gpt-5.1-codex-mini',
+] as const;
 const COORDINATOR_REASONING: readonly ReasoningEffort[] = ['high', 'xhigh', 'medium', 'low'];
 const EXECUTION_REASONING: readonly ReasoningEffort[] = ['medium', 'high', 'low', 'xhigh'];
 const SIDECAR_REASONING: readonly ReasoningEffort[] = ['medium', 'low', 'high', 'xhigh'];
 const VERIFIER_REASONING: readonly ReasoningEffort[] = ['high', 'medium', 'xhigh', 'low'];
 const REALTIME_REASONING: readonly ReasoningEffort[] = ['low', 'medium', 'high', 'xhigh'];
+const FRONTEND_CRAFT_REASONING: readonly ReasoningEffort[] = ['high', 'xhigh', 'medium', 'low'];
 const COORDINATOR_REASONING_BY_MODEL: Record<string, readonly ReasoningEffort[]> = {
   'gpt-5.5': ['medium', 'high', 'xhigh', 'low'],
+};
+const DEFAULT_RECOMMENDATION_ENVIRONMENT: CodexEnvironment = {
+  availableModels: AVAILABLE_MODELS.map((slug) => ({
+    slug,
+    reasoningEfforts: [...REASONING_EFFORTS],
+  })),
 };
 
 const modelPresetSchema = z.object({
@@ -192,11 +220,27 @@ const packConfigSchema = z
     }
   });
 
+const lifecycleHooksConfigSchema = z.object({
+  tokscaleSubmit: z.boolean().default(false),
+  tokscaleDryRun: z.boolean().default(true),
+  rateLimitResume: z.boolean().default(false),
+});
+
 const localConfigSchema = z.object({
   version: z.literal(1),
   models: modelRolePresetsSchema.default(createDefaultModelRolePresets),
+  subagents: z.object({
+    explorer: modelPresetSchema,
+    implementation: modelPresetSchema,
+    verifier: modelPresetSchema,
+    realtime: modelPresetSchema,
+    frontendCraft: modelPresetSchema.default(
+      () => createDefaultSubagentRoutingPresets().frontendCraft,
+    ),
+  }).default(createDefaultSubagentRoutingPresets),
   privacy: privacyConfigSchema.default(createDefaultPrivacyConfig),
   packs: packConfigSchema.default(createDefaultPackConfig),
+  lifecycleHooks: lifecycleHooksConfigSchema.default(createDefaultLifecycleHooksConfig),
 });
 
 export function createDefaultModelRolePresets(): ModelRolePresets {
@@ -210,28 +254,11 @@ export function createDefaultModelRolePresets(): ModelRolePresets {
 }
 
 export function createDefaultModelRoutingPresets(): ModelRoutingPresets {
-  return {
-    coordinator: {
-      model: 'gpt-5.4',
-      reasoningEffort: 'high',
-    },
-    execution: {
-      model: 'gpt-5.3-codex',
-      reasoningEffort: 'medium',
-    },
-    sidecar: {
-      model: 'gpt-5.4-mini',
-      reasoningEffort: 'medium',
-    },
-    verifier: {
-      model: 'gpt-5.4',
-      reasoningEffort: 'high',
-    },
-    realtime: {
-      model: 'gpt-5.3-codex-spark',
-      reasoningEffort: 'low',
-    },
-  };
+  return createRecommendedModelRoutingPresets(DEFAULT_RECOMMENDATION_ENVIRONMENT);
+}
+
+export function createDefaultSubagentRoutingPresets(): SubagentRoutingPresets {
+  return createRecommendedSubagentRoutingPresets(DEFAULT_RECOMMENDATION_ENVIRONMENT);
 }
 
 export function createDefaultPrivacyConfig(): PrivacyConfig {
@@ -249,12 +276,22 @@ export function createDefaultPackConfig(): PackConfig {
   };
 }
 
+export function createDefaultLifecycleHooksConfig(): LifecycleHooksConfig {
+  return {
+    tokscaleSubmit: false,
+    tokscaleDryRun: true,
+    rateLimitResume: false,
+  };
+}
+
 export function createDefaultLocalConfig(): LocalConfig {
   return {
     version: 1,
     models: createDefaultModelRolePresets(),
+    subagents: createDefaultSubagentRoutingPresets(),
     privacy: createDefaultPrivacyConfig(),
     packs: createDefaultPackConfig(),
+    lifecycleHooks: createDefaultLifecycleHooksConfig(),
   };
 }
 
@@ -305,8 +342,10 @@ export function createRecommendedLocalConfig(environment: CodexEnvironment): Loc
   return {
     version: 1,
     models: createRecommendedModelRolePresets(environment),
+    subagents: createRecommendedSubagentRoutingPresets(environment),
     privacy: createDefaultPrivacyConfig(),
     packs: createDefaultPackConfig(),
+    lifecycleHooks: createDefaultLifecycleHooksConfig(),
   };
 }
 
@@ -318,6 +357,7 @@ export function createRecommendedSubagentRoutingPresets(
     implementation: createRecommendedSubagentPreset(environment, 'implementation'),
     verifier: createRecommendedSubagentPreset(environment, 'verifier'),
     realtime: createRecommendedSubagentPreset(environment, 'realtime'),
+    frontendCraft: createRecommendedSubagentPreset(environment, 'frontendCraft'),
   };
 }
 
@@ -344,6 +384,20 @@ export function createRecommendedSubagentPreset(
       return routing.verifier;
     case 'realtime':
       return routing.realtime;
+    case 'frontendCraft':
+      return (
+        pickModelPreset(
+          environment.availableModels,
+          FRONTEND_CRAFT_PRIORITY,
+          FRONTEND_CRAFT_REASONING,
+        ) ??
+        selectAvailableModelPreset(
+          environment.availableModels,
+          true,
+          FRONTEND_CRAFT_REASONING,
+        ) ??
+        createDefaultSubagentRoutingPresets().frontendCraft
+      );
   }
 }
 
@@ -494,6 +548,26 @@ export function stringifyLocalConfig(config: LocalConfig): string {
     `model = ${quote(normalized.models.verifier.model)}`,
     `reasoning_effort = ${quote(normalized.models.verifier.reasoningEffort)}`,
     '',
+    '[subagents.explorer]',
+    `model = ${quote(normalized.subagents.explorer.model)}`,
+    `reasoning_effort = ${quote(normalized.subagents.explorer.reasoningEffort)}`,
+    '',
+    '[subagents.implementation]',
+    `model = ${quote(normalized.subagents.implementation.model)}`,
+    `reasoning_effort = ${quote(normalized.subagents.implementation.reasoningEffort)}`,
+    '',
+    '[subagents.verifier]',
+    `model = ${quote(normalized.subagents.verifier.model)}`,
+    `reasoning_effort = ${quote(normalized.subagents.verifier.reasoningEffort)}`,
+    '',
+    '[subagents.realtime]',
+    `model = ${quote(normalized.subagents.realtime.model)}`,
+    `reasoning_effort = ${quote(normalized.subagents.realtime.reasoningEffort)}`,
+    '',
+    '[subagents."frontend-craft"]',
+    `model = ${quote(normalized.subagents.frontendCraft.model)}`,
+    `reasoning_effort = ${quote(normalized.subagents.frontendCraft.reasoningEffort)}`,
+    '',
     '[privacy]',
     `telemetry = ${quote(normalized.privacy.telemetry)}`,
     '',
@@ -502,6 +576,11 @@ export function stringifyLocalConfig(config: LocalConfig): string {
     `caveman = ${normalized.packs.caveman}`,
     `rtk = ${normalized.packs.rtk}`,
     `"frontend-craft" = ${normalized.packs.frontendCraft}`,
+    '',
+    '[lifecycle-hooks]',
+    `"tokscale-submit" = ${normalized.lifecycleHooks.tokscaleSubmit}`,
+    `"tokscale-dry-run" = ${normalized.lifecycleHooks.tokscaleDryRun}`,
+    `"rate-limit-resume" = ${normalized.lifecycleHooks.rateLimitResume}`,
     '',
   ].join('\n');
 }
@@ -550,6 +629,18 @@ function normalizeLocalConfigInput(value: unknown): unknown {
       }
     : undefined;
 
+  const subagents = isRecord(value.subagents)
+    ? {
+        explorer: normalizeModelPreset(value.subagents.explorer),
+        implementation: normalizeModelPreset(value.subagents.implementation),
+        verifier: normalizeModelPreset(value.subagents.verifier),
+        realtime: normalizeModelPreset(value.subagents.realtime),
+        frontendCraft: normalizeModelPreset(
+          value.subagents['frontend-craft'] ?? value.subagents.frontendCraft,
+        ),
+      }
+    : undefined;
+
   const packs = isRecord(value.packs)
     ? {
         core: value.packs.core,
@@ -559,11 +650,26 @@ function normalizeLocalConfigInput(value: unknown): unknown {
       }
     : undefined;
 
+  const rawLifecycleHooks = isRecord(value['lifecycle-hooks'])
+    ? value['lifecycle-hooks']
+    : isRecord(value.lifecycleHooks)
+      ? value.lifecycleHooks
+      : undefined;
+  const lifecycleHooks = rawLifecycleHooks
+    ? {
+        tokscaleSubmit: rawLifecycleHooks['tokscale-submit'] ?? rawLifecycleHooks.tokscaleSubmit,
+        tokscaleDryRun: rawLifecycleHooks['tokscale-dry-run'] ?? rawLifecycleHooks.tokscaleDryRun,
+        rateLimitResume: rawLifecycleHooks['rate-limit-resume'] ?? rawLifecycleHooks.rateLimitResume,
+      }
+    : undefined;
+
   return {
     version: value.version,
     models,
+    subagents,
     privacy,
     packs,
+    lifecycleHooks,
   };
 }
 
@@ -621,6 +727,20 @@ function validateNormalizedLocalConfig(value: unknown, path: string): LocalConfi
     if (!isAvailableModel(model)) {
       throw new Error(
         `invalid config at ${path}: ${role} model \`${model}\` is not in the supported Codex model set`,
+      );
+    }
+  }
+  for (const role of [
+    'explorer',
+    'implementation',
+    'verifier',
+    'realtime',
+    'frontendCraft',
+  ] as const) {
+    const model = parsed.data.subagents[role].model;
+    if (!isAvailableModel(model)) {
+      throw new Error(
+        `invalid config at ${path}: ${role} subagent model \`${model}\` is not in the supported Codex model set`,
       );
     }
   }

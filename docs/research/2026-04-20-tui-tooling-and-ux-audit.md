@@ -2,6 +2,9 @@
 
 Last updated: 2026-04-23
 
+> [!WARNING]
+> Historical UX research snapshot (dated 2026-04-23). This note is archival/date-state evidence, not current naming or active product spec.
+
 Purpose:
 - avoid blindly swapping terminal UI stacks
 - study what makes strong terminal tools feel polished

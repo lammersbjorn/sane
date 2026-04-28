@@ -8,12 +8,18 @@ import {
 import { OPTIONAL_PACK_METADATA, type OptionalPackName } from "@sane/framework-assets";
 
 export type ConfigFieldId =
-  | "coordinator_model"
-  | "coordinator_reasoning"
-  | "sidecar_model"
-  | "sidecar_reasoning"
-  | "verifier_model"
-  | "verifier_reasoning";
+  | "main_model"
+  | "main_reasoning"
+  | "explorer_model"
+  | "explorer_reasoning"
+  | "implementation_model"
+  | "implementation_reasoning"
+  | "reviewer_model"
+  | "reviewer_reasoning"
+  | "realtime_model"
+  | "realtime_reasoning"
+  | "frontend_craft_model"
+  | "frontend_craft_reasoning";
 
 export type PackFieldId = "caveman" | "rtk" | "frontend_craft";
 
@@ -57,19 +63,19 @@ export interface ConfigFieldMetadata {
 }
 
 export const CONFIG_FIELD_METADATA: Record<ConfigFieldId, ConfigFieldMetadata> = {
-  coordinator_model: {
-    label: "Coordinator model",
+  main_model: {
+    label: "Main session model",
     explanation:
-      "Editable default model for highest-context work: planning, shaping, integration, and hard calls.",
+      "Default model for the top-level Codex session when Sane writes recommended Codex settings.",
     options: PICKER_MODELS,
     value: (config) => config.models.coordinator.model,
     applyStep: (config, step) => {
       config.models.coordinator.model = cycleValue(PICKER_MODELS, config.models.coordinator.model, step);
     }
   },
-  coordinator_reasoning: {
-    label: "Coordinator reasoning",
-    explanation: "Default reasoning depth for the main coordinator role.",
+  main_reasoning: {
+    label: "Main session reasoning",
+    explanation: "Default reasoning depth for the top-level Codex session.",
     options: REASONING_EFFORTS,
     value: (config) => config.models.coordinator.reasoningEffort,
     applyStep: (config, step) => {
@@ -80,47 +86,118 @@ export const CONFIG_FIELD_METADATA: Record<ConfigFieldId, ConfigFieldMetadata> =
       );
     }
   },
-  sidecar_model: {
-    label: "Sidecar model",
+  explorer_model: {
+    label: "Explorer agent model",
     explanation:
-      "Editable default model for bounded helper work that should not consume coordinator budget.",
+      "Default model for discovery agents that inspect code, docs, and state without editing files.",
     options: PICKER_MODELS,
-    value: (config) => config.models.sidecar.model,
+    value: (config) => config.subagents.explorer.model,
     applyStep: (config, step) => {
-      config.models.sidecar.model = cycleValue(PICKER_MODELS, config.models.sidecar.model, step);
+      config.subagents.explorer.model = cycleValue(PICKER_MODELS, config.subagents.explorer.model, step);
+      config.models.sidecar.model = config.subagents.explorer.model;
     }
   },
-  sidecar_reasoning: {
-    label: "Sidecar reasoning",
-    explanation: "Default reasoning depth for sidecar tasks such as narrow inspections or support work.",
+  explorer_reasoning: {
+    label: "Explorer agent reasoning",
+    explanation: "Default reasoning depth for discovery agents that inspect without editing.",
     options: REASONING_EFFORTS,
-    value: (config) => config.models.sidecar.reasoningEffort,
+    value: (config) => config.subagents.explorer.reasoningEffort,
     applyStep: (config, step) => {
-      config.models.sidecar.reasoningEffort = cycleValue(
+      config.subagents.explorer.reasoningEffort = cycleValue(
         REASONING_EFFORTS,
-        config.models.sidecar.reasoningEffort,
+        config.subagents.explorer.reasoningEffort,
+        step
+      );
+      config.models.sidecar.reasoningEffort = config.subagents.explorer.reasoningEffort;
+    }
+  },
+  implementation_model: {
+    label: "Implementation agent model",
+    explanation: "Default model for bounded code-change agents.",
+    options: PICKER_MODELS,
+    value: (config) => config.subagents.implementation.model,
+    applyStep: (config, step) => {
+      config.subagents.implementation.model = cycleValue(PICKER_MODELS, config.subagents.implementation.model, step);
+    }
+  },
+  implementation_reasoning: {
+    label: "Implementation agent reasoning",
+    explanation: "Default reasoning depth for bounded code-change agents.",
+    options: REASONING_EFFORTS,
+    value: (config) => config.subagents.implementation.reasoningEffort,
+    applyStep: (config, step) => {
+      config.subagents.implementation.reasoningEffort = cycleValue(
+        REASONING_EFFORTS,
+        config.subagents.implementation.reasoningEffort,
         step
       );
     }
   },
-  verifier_model: {
-    label: "Verifier model",
-    explanation: "Editable default model when Sane runs reviewer or checker work.",
+  reviewer_model: {
+    label: "Reviewer agent model",
+    explanation: "Default model for review, checking, and verification agents.",
     options: PICKER_MODELS,
-    value: (config) => config.models.verifier.model,
+    value: (config) => config.subagents.verifier.model,
     applyStep: (config, step) => {
-      config.models.verifier.model = cycleValue(PICKER_MODELS, config.models.verifier.model, step);
+      config.subagents.verifier.model = cycleValue(PICKER_MODELS, config.subagents.verifier.model, step);
+      config.models.verifier.model = config.subagents.verifier.model;
     }
   },
-  verifier_reasoning: {
-    label: "Verifier reasoning",
-    explanation: "Default reasoning depth for review, checking, and verification tasks.",
+  reviewer_reasoning: {
+    label: "Reviewer agent reasoning",
+    explanation: "Default reasoning depth for review, checking, and verification agents.",
     options: REASONING_EFFORTS,
-    value: (config) => config.models.verifier.reasoningEffort,
+    value: (config) => config.subagents.verifier.reasoningEffort,
     applyStep: (config, step) => {
-      config.models.verifier.reasoningEffort = cycleValue(
+      config.subagents.verifier.reasoningEffort = cycleValue(
         REASONING_EFFORTS,
-        config.models.verifier.reasoningEffort,
+        config.subagents.verifier.reasoningEffort,
+        step
+      );
+      config.models.verifier.reasoningEffort = config.subagents.verifier.reasoningEffort;
+    }
+  },
+  realtime_model: {
+    label: "Realtime helper model",
+    explanation: "Default model for fast iteration and lightweight helper work.",
+    options: PICKER_MODELS,
+    value: (config) => config.subagents.realtime.model,
+    applyStep: (config, step) => {
+      config.subagents.realtime.model = cycleValue(PICKER_MODELS, config.subagents.realtime.model, step);
+    }
+  },
+  realtime_reasoning: {
+    label: "Realtime helper reasoning",
+    explanation: "Default reasoning depth for fast iteration and lightweight helper work.",
+    options: REASONING_EFFORTS,
+    value: (config) => config.subagents.realtime.reasoningEffort,
+    applyStep: (config, step) => {
+      config.subagents.realtime.reasoningEffort = cycleValue(
+        REASONING_EFFORTS,
+        config.subagents.realtime.reasoningEffort,
+        step
+      );
+    }
+  },
+  frontend_craft_model: {
+    label: "Frontend craft agent model",
+    explanation: "Default model for UI generation, redesign, visual polish, and visual QA agents.",
+    options: PICKER_MODELS,
+    value: (config) => config.subagents.frontendCraft.model,
+    applyStep: (config, step) => {
+      config.subagents.frontendCraft.model = cycleValue(PICKER_MODELS, config.subagents.frontendCraft.model, step);
+    }
+  },
+  frontend_craft_reasoning: {
+    label: "Frontend craft agent reasoning",
+    explanation:
+      "Default reasoning depth for UI generation, redesign, screenshot/Figma parity, and visual QA.",
+    options: REASONING_EFFORTS,
+    value: (config) => config.subagents.frontendCraft.reasoningEffort,
+    applyStep: (config, step) => {
+      config.subagents.frontendCraft.reasoningEffort = cycleValue(
+        REASONING_EFFORTS,
+        config.subagents.frontendCraft.reasoningEffort,
         step
       );
     }

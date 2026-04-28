@@ -5,6 +5,11 @@ import {
   exportCoreInstallBundleTargets,
   uninstallCoreInstallBundleTargets
 } from "./core-install-bundle-targets.js";
+import {
+  exportOpencodeCoreBundle,
+  uninstallOpencodeCoreBundle
+} from "./opencode-native.js";
+import { uninstallPlugin } from "./codex-plugin.js";
 
 export function exportAll(
   paths: ProjectPaths,
@@ -22,7 +27,32 @@ export function uninstallAll(codexPaths: CodexPaths): OperationResult {
   return mergeResults(
     OperationKind.UninstallAll,
     "uninstall all: removed Sane's Codex changes",
-    uninstallCoreInstallBundleTargets(codexPaths)
+    [
+      ...uninstallCoreInstallBundleTargets(codexPaths),
+      uninstallPlugin(codexPaths)
+    ]
+  );
+}
+
+export function exportOpencodeCore(
+  paths: ProjectPaths,
+  codexPaths: CodexPaths
+): OperationResult {
+  return mergeResults(
+    OperationKind.ExportAll,
+    "export opencode: installed managed OpenCode targets",
+    exportOpencodeCoreBundle(paths, codexPaths)
+  );
+}
+
+export function uninstallOpencodeCore(
+  _paths: ProjectPaths,
+  codexPaths: CodexPaths
+): OperationResult {
+  return mergeResults(
+    OperationKind.UninstallAll,
+    "uninstall opencode: removed Sane OpenCode changes",
+    uninstallOpencodeCoreBundle(codexPaths)
   );
 }
 

@@ -1,5 +1,6 @@
 import { compactLines } from "@sane/sane-tui/result-panel.js";
 import { type SaneTuiAppView } from "@sane/sane-tui/app-view.js";
+import { compactActionLabel, compactStatusSummary } from "@sane/sane-tui/presentation-normalizer.js";
 
 export interface TextViewport {
   width?: number;
@@ -9,8 +10,9 @@ export interface TextViewport {
 
 const DEFAULT_WIDTH = 112;
 const WIDE_LAYOUT_MIN_WIDTH = 96;
-const WIDE_RAIL_WIDTH = 34;
+const WIDE_RAIL_WIDTH = 30;
 const BOX_FRAME_HEIGHT = 4;
+const MAX_WIDE_BODY_HEIGHT = 22;
 
 export function renderTextAppView(view: SaneTuiAppView, viewport: TextViewport = {}): string {
   const width = Math.max(20, viewport.width ?? DEFAULT_WIDTH);
@@ -80,8 +82,8 @@ function renderOverlayLayout(
         : [
             ...overlay.headerLines,
             "",
-            "Last Result",
-            ...overlay.outputLines,
+            "Fields",
+            ...overlay.fieldLines,
             "",
             overlay.detailsTitle,
             ...overlay.detailsLines
@@ -99,22 +101,16 @@ function renderOverlayLayout(
 function renderHeader(view: SaneTuiAppView, width: number, compact = false): string[] {
   if (compact) {
     return [
-      ...wrapLines(`${view.title} | ${view.subtitle}`, width),
-      ...wrapLines(`Section: ${view.tabs.selected} | Mode: ${view.mode.label}`, width),
+      ...wrapLines(`${view.title}  ${view.activeSection.docLabel}`, width),
+      ...wrapLines(formatTabs(view), width),
       ...wrapLines(statusline(view, width), width)
     ];
   }
 
   return [
-    ...wrapLines(`${view.title} | ${view.subtitle}`, width),
-    ...wrapLines(
-      `Project ${view.projectLabel}  |  Section ${view.activeSection.docLabel}  |  Recommended ${view.recommendedNextStep}`,
-      width
-    ),
-    ...wrapLines(`Section: ${view.tabs.selected}`, width),
-    ...wrapLines(`Sections: ${formatTabs(view)}`, width),
-    ...wrapLines(statusline(view, width), width),
-    ...wrapLines(`Mode: ${view.mode.label} | ${view.mode.hint}`, width)
+    ...wrapLines(`${view.title}  ${view.activeSection.docLabel}  ${view.projectLabel}`, width),
+    ...wrapLines(formatTabs(view), width),
+    ...wrapLines(statusline(view, width), width)
   ];
 }
 
@@ -123,14 +119,13 @@ function renderWideBody(
   width: number,
   availableHeight?: number
 ): string[] {
-  const railWidth = Math.min(WIDE_RAIL_WIDTH, Math.max(30, Math.floor(width * 0.32)));
+  const railWidth = Math.min(WIDE_RAIL_WIDTH, Math.max(28, Math.floor(width * 0.28)));
   const detailWidth = width - railWidth - 2;
-  const naturalRail = renderBox("Actions", actionRailLines(view), railWidth);
   const detail = renderBox(detailPaneTitle(view), detailPaneLines(view), detailWidth);
   const targetHeight =
     availableHeight === undefined
-      ? Math.max(naturalRail.length, detail.length)
-      : Math.max(10, availableHeight);
+      ? Math.min(MAX_WIDE_BODY_HEIGHT, Math.max(14, detail.length))
+      : Math.max(10, Math.min(MAX_WIDE_BODY_HEIGHT, availableHeight));
   const rail = renderBox(
     "Actions",
     actionRailLines(view, { maxLines: targetHeight - BOX_FRAME_HEIGHT }),
@@ -193,22 +188,18 @@ interface ActionRailOptions {
 }
 
 function actionRailLines(view: SaneTuiAppView, options: ActionRailOptions = {}): string[] {
-  const compact = options.compactLabels ?? false;
-  const lines = [
-    `Current section: ${view.activeSection.docLabel}`,
-    `Selected step: ${presentActionLabel(view.selectedAction.label, compact)}`,
-    ""
-  ];
+  const compact = options.compactLabels ?? true;
+  const lines = [`${view.actions.length} actions`, ""];
 
   const recommended = selectedActionLabel(view);
   if (recommended !== view.selectedAction.label) {
-    lines.push(`Recommended step: ${presentActionLabel(recommended, compact)}`);
+    lines.push(`Next: ${presentActionLabel(recommended, compact)}`);
     lines.push("");
   }
 
   const actionLines = view.actions.map((action) => {
     const selected = action.id === view.selectedAction.id ? ">" : " ";
-    const recommendedBadge = action.id === view.recommendedActionId ? " [recommended]" : "";
+    const recommendedBadge = action.id === view.recommendedActionId ? " *" : "";
     return `${selected} ${presentActionLabel(action.label, compact)}${recommendedBadge}`;
   });
 
@@ -220,7 +211,7 @@ function actionRailLines(view: SaneTuiAppView, options: ActionRailOptions = {}):
   lines.push(...visibleActionLines);
 
   if (
-    view.activeSection.id === "get_started"
+    view.activeSection.id === "home"
     && view.attentionItems.length > 0
     && (options.maxLines === undefined || lines.length + view.attentionItems.length + 2 <= options.maxLines)
   ) {
@@ -233,24 +224,60 @@ function actionRailLines(view: SaneTuiAppView, options: ActionRailOptions = {}):
 }
 
 function detailPaneTitle(view: SaneTuiAppView): string {
-  return `${view.activeSection.docLabel} Details`;
+  return `${view.activeSection.docLabel} Focus`;
 }
 
 function detailPaneLines(view: SaneTuiAppView): string[] {
-  const overviewLines = compactLines(view.sectionOverviewLines, 10);
-  const selectedHelpLines = compactLines(view.selectedHelpLines, 14);
-  const latestStatusLines = compactLines(view.latestStatusLines, 6);
+  const selectedHelpLines = compactLines(
+    readableHelpLines(view.selectedHelpLines),
+    9
+  ).filter((line) => !line.trim().startsWith("... "));
+  const overviewLines = compactLines(readableOverviewLines(view.sectionOverviewLines), 6)
+    .filter((line) => !line.trim().startsWith("... "));
+  const latestStatusLines = shouldShowLatestStatus(view.latestStatusLines)
+    ? compactLines(view.latestStatusLines, 2).filter((line) => !line.trim().startsWith("... "))
+    : [];
 
   return [
-    "Section overview",
-    ...overviewLines,
+    presentActionLabel(view.selectedAction.label, false),
     "",
-    "Selected step",
     ...selectedHelpLines,
     "",
-    view.latestStatusTitle,
-    ...latestStatusLines
+    "Snapshot",
+    ...overviewLines,
+    ...(latestStatusLines.length > 0 ? ["", view.latestStatusTitle, ...latestStatusLines] : [])
   ];
+}
+
+function shouldShowLatestStatus(lines: string[]): boolean {
+  const first = lines[0] ?? "";
+  return first.length > 0 && !first.startsWith("Ready.");
+}
+
+function readableHelpLines(lines: string[]): string[] {
+  return lines.filter((line) => {
+    const trimmed = line.trim();
+    return (
+      trimmed.length > 0
+      && !trimmed.startsWith("Files touched:")
+      && !trimmed.startsWith("Visibility only")
+      && !trimmed.startsWith("Use it when")
+    );
+  });
+}
+
+function readableOverviewLines(lines: string[]): string[] {
+  return lines.filter((line) => {
+    const trimmed = line.trim();
+    return (
+      trimmed.length > 0
+      && !trimmed.startsWith("latest event")
+      && !trimmed.startsWith("latest decision")
+      && !trimmed.startsWith("latest artifact")
+      && !trimmed.startsWith("runtime history")
+      && !trimmed.startsWith("runtime summary")
+    );
+  });
 }
 
 function selectedActionLabel(view: SaneTuiAppView): string {
@@ -267,27 +294,6 @@ function compactFocusLines(view: SaneTuiAppView): string[] {
     `Status: ${compactStatusSummary(view.latestStatusLines[0] ?? "ready")}`,
     "Use a wider terminal for the full rail and detail view."
   ];
-}
-
-function compactActionLabel(label: string): string {
-  return label
-    .replace("View your current ", "View ")
-    .replace("Preview optional ", "Preview ")
-    .replace("Apply optional ", "Apply ")
-    .replace("Enable or disable built-in guidance packs", "Toggle built-in packs")
-    .replace("Edit default model and reasoning settings", "Edit model defaults")
-    .replace("Choose your telemetry and privacy level", "Set telemetry and privacy")
-    .replace("Show everything Sane currently manages", "Show managed surfaces")
-    .replace("Run Sane doctor checks for problems", "Run doctor checks")
-    .replace("View current Sane runtime handoff state", "View runtime handoff")
-    .replace("Explain Sane's routing policy", "Explain routing policy")
-    .replace("Codex settings", "Codex")
-    .replace("compatibility settings", "compatibility")
-    .replace("statusline settings", "statusline");
-}
-
-function compactStatusSummary(summary: string): string {
-  return summary.replace(/\S+\/\.sane\b/g, ".sane");
 }
 
 function footerLine(view: SaneTuiAppView, width: number): string {
@@ -384,7 +390,7 @@ function compactStatusChipLabel(chip: SaneTuiAppView["chips"][number]): string {
 function formatTabs(view: SaneTuiAppView): string {
   return view.tabs.items
     .map((item) => (item.id === view.tabs.selected ? `[${item.label}]` : item.label))
-    .join(" | ");
+    .join("  ");
 }
 
 function renderBox(title: string, lines: string[], width: number): string[] {
@@ -547,6 +553,10 @@ function styleLine(
     return line.replace(/\[[^\]]+\]/g, (match) => ansi("7", match));
   }
 
+  if (isTabsLine(line, view)) {
+    return line.replace(/\[[^\]]+\]/g, (match) => ansi("1;46;30", match));
+  }
+
   if (line.startsWith("| > ")) {
     return ansi("7", line);
   }
@@ -588,13 +598,25 @@ function styleStatusTokens(line: string, view: SaneTuiAppView): string {
 function isBoxTitle(line: string): boolean {
   const content = line.slice(2, -2).trim();
   return (
+    line.includes("| Actions")
+    || line.includes(" Focus")
+    ||
     content === "Actions" ||
     content.endsWith("Details") ||
+    content.endsWith("Focus") ||
     content.startsWith("[Overlay: ") ||
     content === "Confirm" ||
     content === "Model Defaults" ||
     content === "Built-in Packs" ||
     content === "Privacy"
+  );
+}
+
+function isTabsLine(line: string, view: SaneTuiAppView): boolean {
+  return (
+    line.includes("[")
+    && line.includes("]")
+    && view.tabs.items.some((item) => line.includes(item.label))
   );
 }
 

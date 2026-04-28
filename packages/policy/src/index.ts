@@ -10,7 +10,9 @@ export enum Intent {
 }
 
 export {
+  agentFlowReleasePolicyFixtures,
   b7PolicyEvalFixtures,
+  bootstrapResearchPolicyFixtures,
   canonicalPolicyEvalFixtures,
   evaluatePolicyFixtures,
   outcomeRunnerPreflightFixtures,
@@ -57,7 +59,8 @@ export enum Obligation {
   Review = "review",
   SubagentEligible = "subagent_eligible",
   ContextCompaction = "context_compaction",
-  SelfRepair = "self_repair"
+  SelfRepair = "self_repair",
+  BootstrapResearch = "bootstrap_research"
 }
 
 export enum PolicyRule {
@@ -69,7 +72,8 @@ export enum PolicyRule {
   NeedsIndependentReview = "needs_independent_review",
   ParallelWorkCanUseSubagents = "parallel_work_can_use_subagents",
   ContextNeedsCompaction = "context_needs_compaction",
-  BlockedRunNeedsSelfRepair = "blocked_run_needs_self_repair"
+  BlockedRunNeedsSelfRepair = "blocked_run_needs_self_repair",
+  NewProjectNeedsBootstrapResearch = "new_project_needs_bootstrap_research"
 }
 
 export interface PolicyInput {
@@ -189,11 +193,13 @@ const POLICY_RULE_REASONS: Record<PolicyRule, string> = {
   [PolicyRule.NeedsIndependentReview]:
     "complex, risky, or closing-stage work needs a reviewer/verifier posture",
   [PolicyRule.ParallelWorkCanUseSubagents]:
-    "clear parallel work can justify sidecar help without changing the single-agent default",
+    "all non-tiny work should use bounded subagent lanes; broad edits need an implementation lane before overlapping main edits",
   [PolicyRule.ContextNeedsCompaction]:
     "long or crowded runs need compaction before context quality drifts",
   [PolicyRule.BlockedRunNeedsSelfRepair]:
-    "blocked runs should switch into bounded self-repair instead of stalling"
+    "blocked runs should switch into bounded self-repair instead of stalling",
+  [PolicyRule.NewProjectNeedsBootstrapResearch]:
+    "new project and major stack choices need current package/tool research before implementation"
 };
 
 const CANONICAL_SCENARIOS: readonly PolicyScenario[] = Object.freeze([
@@ -225,7 +231,7 @@ const CANONICAL_SCENARIOS: readonly PolicyScenario[] = Object.freeze([
   },
   {
     id: "unknown-bug",
-    summary: "debugging stays single-agent but adds rigor",
+    summary: "debugging gets subagent support and adds rigor",
     input: {
       intent: Intent.Debug,
       taskShape: TaskShape.Local,
@@ -413,6 +419,20 @@ function evaluateWithTrace(
   }
 
   if (
+    input.intent === Intent.Design &&
+    (input.taskShape === TaskShape.Architectural ||
+      input.taskShape === TaskShape.LongRunning) &&
+    (input.ambiguity === Level.Medium || input.ambiguity === Level.High)
+  ) {
+    pushUnique(
+      obligations,
+      trace,
+      Obligation.BootstrapResearch,
+      PolicyRule.NewProjectNeedsBootstrapResearch
+    );
+  }
+
+  if (
     (input.intent === Intent.Edit || input.intent === Intent.Inspect) &&
     (input.taskShape === TaskShape.Trivial || input.taskShape === TaskShape.Local) &&
     input.risk === Level.Low &&
@@ -488,13 +508,11 @@ function evaluateWithTrace(
     );
   }
 
-  if (
-    input.parallelism === Parallelism.Clear &&
-    (input.taskShape === TaskShape.MultiFile ||
-      input.taskShape === TaskShape.LongRunning ||
-      input.taskShape === TaskShape.Architectural) &&
-    (input.runState === RunState.Executing || input.runState === RunState.Exploring)
-  ) {
+  const tinyOneShot =
+    trivialDirect &&
+    input.parallelism === Parallelism.None;
+
+  if (!tinyOneShot) {
     pushUnique(
       obligations,
       trace,
@@ -546,10 +564,9 @@ function classifySubagentReadiness(
   input: PolicyInput,
   decision: PolicyDecision
 ): [SubagentStrategy, SubagentReadinessReason] {
-  const complexParallelShape =
-    input.taskShape === TaskShape.MultiFile ||
-    input.taskShape === TaskShape.Architectural ||
-    input.taskShape === TaskShape.LongRunning;
+  if (decision.has(Obligation.DirectAnswer)) {
+    return [SubagentStrategy.SoloOnly, SubagentReadinessReason.TaskTooSmall];
+  }
 
   if (decision.has(Obligation.SubagentEligible)) {
     return [
@@ -558,8 +575,16 @@ function classifySubagentReadiness(
     ];
   }
 
-  if (!complexParallelShape) {
-    return [SubagentStrategy.SoloOnly, SubagentReadinessReason.TaskTooSmall];
+  if (
+    decision.has(Obligation.Review) ||
+    decision.has(Obligation.VerifyLight) ||
+    decision.has(Obligation.DebugRigor) ||
+    decision.has(Obligation.Tdd)
+  ) {
+    return [
+      SubagentStrategy.AllowIndependentSlices,
+      SubagentReadinessReason.IndependentSlicesReady
+    ];
   }
 
   if (
@@ -570,23 +595,6 @@ function classifySubagentReadiness(
     return [
       SubagentStrategy.SoloOnly,
       SubagentReadinessReason.RunStateDisallowsDelegation
-    ];
-  }
-
-  if (
-    input.runState === RunState.Blocked &&
-    input.parallelism === Parallelism.Clear
-  ) {
-    return [
-      SubagentStrategy.SoloOnly,
-      SubagentReadinessReason.RunStateDisallowsDelegation
-    ];
-  }
-
-  if (input.parallelism === Parallelism.Possible) {
-    return [
-      SubagentStrategy.WaitForIndependentSlices,
-      SubagentReadinessReason.IndependentSlicesNotClear
     ];
   }
 

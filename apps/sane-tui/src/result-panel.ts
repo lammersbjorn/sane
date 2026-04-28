@@ -49,6 +49,18 @@ export function buildNotice(
   };
 }
 
+export function buildResultNotice(
+  title: string,
+  result: OperationResult
+): NoticeView {
+  const compact = buildLastResultView(result, result.summary);
+  return {
+    title,
+    body: compact.lines.join("\n"),
+    footer: "Enter, Space, or Esc closes this message."
+  };
+}
+
 export function resultLines(result: OperationResult): string[] {
   return result.renderText().split("\n").filter((line) => line.length > 0);
 }

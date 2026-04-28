@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -8,6 +8,7 @@ import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { exportAll, uninstallAll } from "../src/bundles.js";
+import { exportPlugin } from "../src/codex-plugin.js";
 import { CORE_INSTALL_BUNDLE_TARGETS } from "../src/core-install-bundle-targets.js";
 import { saveConfig } from "../src/preferences.js";
 
@@ -52,7 +53,7 @@ describe("bundled install/remove operations", () => {
     expect(result.details).toContain("export global-agents: installed managed block");
     expect(result.details).toContain("export hooks: installed managed SessionStart hook");
     expect(result.details).toContain(
-      "export custom-agents: installed sane-agent, sane-reviewer, and sane-explorer"
+      "export custom-agents: installed Sane custom agents"
     );
     expect(result.inventory.find((item) => item.name === "user-skills")?.status).toBe(
       InventoryStatus.Installed
@@ -88,7 +89,7 @@ describe("bundled install/remove operations", () => {
     expect(result.details).toContain("export user-skills: installed core skills");
     expect(result.details).toContain("export global-agents: installed managed block");
     expect(result.details).toContain(
-      "export custom-agents: installed sane-agent, sane-reviewer, and sane-explorer"
+      "export custom-agents: installed Sane custom agents"
     );
     expect(result.details).not.toContain("export hooks: installed managed SessionStart hook");
     expect(result.inventory.find((item) => item.name === "user-skills")?.status).toBe(
@@ -103,22 +104,26 @@ describe("bundled install/remove operations", () => {
     expect(result.inventory.find((item) => item.name === "hooks")).toBeUndefined();
   });
 
-  it("uninstalls current managed user-level targets together", () => {
+  it("uninstalls current managed user-level targets and optional plugin together", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const paths = createProjectPaths(projectRoot);
     const codexPaths = createCodexPaths(homeDir);
 
     exportAll(paths, codexPaths);
+    exportPlugin(codexPaths);
     const result = uninstallAll(codexPaths);
 
     expect(result.kind).toBe(OperationKind.UninstallAll);
     expect(result.summary).toBe("uninstall all: removed Sane's Codex changes");
     expect(result.details).toContain("uninstall user-skills: removed core skills");
     expect(result.details).toContain("uninstall global-agents: removed managed block");
-    expect(result.details).toContain("uninstall hooks: removed managed SessionStart hook");
+    expect(result.details).toContain("uninstall hooks: removed managed lifecycle hooks");
     expect(result.details).toContain(
-      "uninstall custom-agents: removed sane-agent, sane-reviewer, and sane-explorer"
+      "uninstall custom-agents: removed Sane custom agents"
+    );
+    expect(result.details).toContain(
+      "uninstall plugin: removed Sane Codex plugin artifact"
     );
     expect(result.inventory.find((item) => item.name === "user-skills")?.status).toBe(
       InventoryStatus.Removed
@@ -132,6 +137,11 @@ describe("bundled install/remove operations", () => {
     expect(result.inventory.find((item) => item.name === "custom-agents")?.status).toBe(
       InventoryStatus.Removed
     );
+    expect(result.inventory.find((item) => item.name === "plugin")?.status).toBe(
+      InventoryStatus.Removed
+    );
+    expect(existsSync(codexPaths.sanePluginDir)).toBe(false);
+    expect(existsSync(codexPaths.userPluginsMarketplaceJson)).toBe(false);
     expect(result.details).not.toContain("uninstall repo-skills: removed core skills");
     expect(result.details).not.toContain("uninstall repo-agents: removed managed block");
     expect(result.inventory.find((item) => item.name === "repo-skills")).toBeUndefined();

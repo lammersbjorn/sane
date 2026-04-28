@@ -22,6 +22,7 @@ import {
   createTuiShell,
   currentAction,
   editActiveValue,
+  executeUiCommand,
   moveSelection,
   resetLocalTelemetry,
   runSelectedAction,
@@ -45,7 +46,7 @@ afterEach(() => {
 });
 
 describe("tui shell", () => {
-  it("defaults to get_started and supports settings shortcut", () => {
+  it("defaults to Home while setup is missing and supports settings shortcut", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const paths = createProjectPaths(projectRoot);
@@ -54,10 +55,23 @@ describe("tui shell", () => {
     const shell = createTuiShell(paths, codexPaths);
     const settingsShell = createTuiShell(paths, codexPaths, "settings");
 
-    expect(shell.activeSectionId).toBe("get_started");
+    expect(shell.activeSectionId).toBe("home");
     expect(currentAction(shell).id).toBe("install_runtime");
-    expect(settingsShell.activeSectionId).toBe("preferences");
+    expect(settingsShell.activeSectionId).toBe("settings");
     expect(currentAction(settingsShell).id).toBe("open_config_editor");
+  });
+
+  it("opens Status by default after Sane is installed", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    controlPlane.installRuntime(paths, codexPaths);
+    const shell = createTuiShell(paths, codexPaths);
+
+    expect(shell.activeSectionId).toBe("status");
+    expect(currentAction(shell).id).toBe("show_status");
   });
 
   it("stores a typed status snapshot and refreshes it after managed actions", () => {
@@ -92,6 +106,8 @@ describe("tui shell", () => {
     expect(shell.statusSnapshot.statusBundle.runtimeState.current?.phase).toBe("setup");
     expect(shell.statusSnapshot.codexProfiles.core.audit.status).toBe("missing");
     expect(shell.statusSnapshot.preferences.preferences.source).toBe("local");
+    expect(shell.activeSectionId).toBe("status");
+    expect(currentAction(shell).id).toBe("show_status");
   });
 
   it("hydrates the initial last-result copy from the canonical runtime snapshot", () => {
@@ -113,20 +129,17 @@ describe("tui shell", () => {
     const codexPaths = createCodexPaths(homeDir);
     const shell = createTuiShell(paths, codexPaths, "settings");
 
-    moveSelection(shell, "action", 1);
-    moveSelection(shell, "action", 1);
-    moveSelection(shell, "action", 1);
+    while (currentAction(shell).id !== "show_config") {
+      moveSelection(shell, "action", 1);
+    }
     runSelectedAction(shell);
 
-    moveSelection(shell, "section", 1);
-    moveSelection(shell, "section", 1);
+    selectSection(shell, "status");
     runSelectedAction(shell);
 
-    moveSelection(shell, "action", 1);
-    moveSelection(shell, "action", 1);
-    moveSelection(shell, "action", 1);
-    moveSelection(shell, "action", 1);
-    moveSelection(shell, "action", 1);
+    while (currentAction(shell).id !== "preview_integrations_profile") {
+      moveSelection(shell, "action", 1);
+    }
     runSelectedAction(shell);
 
     const events = readJsonlRecords(paths.eventsPath, parseEventRecordJson);
@@ -148,7 +161,7 @@ describe("tui shell", () => {
     const runtimeStateSpy = vi.spyOn(runtimeState, "inspectRuntimeState");
     const shell = createTuiShell(paths, codexPaths);
 
-    while (shell.activeSectionId !== "inspect") {
+    while (shell.activeSectionId !== "status") {
       moveSelection(shell, "section", 1);
     }
     while (currentAction(shell).id !== "show_runtime_summary") {
@@ -169,7 +182,7 @@ describe("tui shell", () => {
     const codexPaths = createCodexPaths(homeDir);
     const shell = createTuiShell(paths, codexPaths);
 
-    while (shell.activeSectionId !== "inspect") {
+    while (shell.activeSectionId !== "status") {
       moveSelection(shell, "section", 1);
     }
 
@@ -186,7 +199,7 @@ describe("tui shell", () => {
     const doctorCodexPaths = createCodexPaths(doctorHomeDir);
     const doctorShell = createTuiShell(doctorPaths, doctorCodexPaths);
 
-    while (doctorShell.activeSectionId !== "inspect") {
+    while (doctorShell.activeSectionId !== "status") {
       moveSelection(doctorShell, "section", 1);
     }
     while (currentAction(doctorShell).id !== "doctor") {
@@ -206,7 +219,7 @@ describe("tui shell", () => {
     const codexPaths = createCodexPaths(homeDir);
     const shell = createTuiShell(paths, codexPaths);
 
-    while (shell.activeSectionId !== "inspect") {
+    while (shell.activeSectionId !== "status") {
       moveSelection(shell, "section", 1);
     }
     while (currentAction(shell).id !== "preview_policy") {
@@ -248,10 +261,42 @@ describe("tui shell", () => {
 
     const result = runSelectedAction(shell);
 
-    expect(result?.summary).toBe("codex-profile preview: 0 recommended change(s)");
-    expect(result?.details).toContain("model: keep gpt-5.4");
-    expect(result?.details).toContain("reasoning: keep high");
+    expect(result?.summary).toBe("codex-profile preview: 2 recommended change(s)");
+    expect(result?.details).toContain("model: gpt-5.4 -> gpt-5.5");
+    expect(result?.details).toContain("reasoning: high -> medium");
     expect(result?.details).toContain("codex hooks: keep enabled");
+  });
+
+  it("executes optional plugin artifact commands through the shell command router", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    const exported = executeUiCommand(paths, codexPaths, "export_plugin");
+
+    expect(exported.summary).toBe("export plugin: installed Sane Codex plugin artifact");
+    expect(existsSync(join(codexPaths.sanePluginDir, ".codex-plugin", "plugin.json"))).toBe(true);
+    expect(existsSync(codexPaths.userPluginsMarketplaceJson)).toBe(true);
+
+    const uninstalled = executeUiCommand(paths, codexPaths, "uninstall_plugin");
+
+    expect(uninstalled.summary).toBe("uninstall plugin: removed Sane Codex plugin artifact");
+    expect(existsSync(codexPaths.sanePluginDir)).toBe(false);
+  });
+
+  it("executes the OpenCode export command through the shell command router", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    const result = executeUiCommand(paths, codexPaths, "export_opencode_all");
+
+    expect(result.summary).toBe("export opencode: installed managed OpenCode targets");
+    expect(result.details).toContain("export opencode-skills: installed core skills");
+    expect(result.details).toContain("export opencode-agents: installed Sane OpenCode agents");
+    expect(existsSync(join(homeDir, ".config", "opencode", "agents", "sane-agent.md"))).toBe(true);
   });
 
   it("wraps selection and resets action cursor when section changes", () => {
@@ -263,7 +308,7 @@ describe("tui shell", () => {
     expect(currentAction(shell).id).toBe("export_all");
 
     moveSelection(shell, "section", 1);
-    expect(shell.activeSectionId).toBe("preferences");
+    expect(shell.activeSectionId).toBe("settings");
     expect(shell.activeActionIndex).toBe(0);
     expect(currentAction(shell).id).toBe("open_config_editor");
   });
@@ -294,7 +339,7 @@ describe("tui shell", () => {
     expect(result?.summary).toContain("codex-profile apply");
     expect(shell.pendingConfirmation).toBeNull();
     expect(shell.notice?.title).toBe("Applied");
-    expect(shell.activeSectionId).toBe("get_started");
+    expect(shell.activeSectionId).toBe("home");
     expect(shell.activeActionIndex).toBe(0);
     expect(existsSync(codexPaths.configToml)).toBe(true);
   });
@@ -340,7 +385,7 @@ describe("tui shell", () => {
     }
     expect(shell.activeEditor.initial.models.coordinator.model).toBe("gpt-5.2");
     expect(shell.activeEditor.config.models.coordinator.model).toBe("gpt-5.2");
-    expect(shell.activeEditor.defaults.models.coordinator.model).toBe("gpt-5.4");
+    expect(shell.activeEditor.defaults.models.coordinator.model).toBe("gpt-5.5");
   });
 
   it("applies the integrations profile from install after confirmation", () => {
@@ -368,10 +413,29 @@ describe("tui shell", () => {
     expect(result?.summary).toContain("integrations-profile apply");
     expect(shell.pendingConfirmation).toBeNull();
     expect(shell.notice?.title).toBe("Applied");
-    expect(shell.notice?.section).toBe("install");
-    expect(shell.activeSectionId).toBe("install");
+    expect(shell.notice?.section).toBe("add_to_codex");
+    expect(shell.activeSectionId).toBe("add_to_codex");
     expect(currentAction(shell).id).toBe("export_all");
     expect(existsSync(codexPaths.configToml)).toBe(true);
+  });
+
+  it("moves to Status after completing the full Add to Codex install", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const shell = createTuiShell(paths, codexPaths);
+
+    while (currentAction(shell).id !== "export_all") {
+      moveSelection(shell, "action", 1);
+    }
+
+    const result = runSelectedAction(shell);
+
+    expect(result?.summary).toBe("export all: installed managed targets");
+    expect(shell.activeSectionId).toBe("status");
+    expect(currentAction(shell).id).toBe("show_status");
+    expect(shell.notice?.section).toBe("status");
   });
 
   it("resets local telemetry data from the privacy editor flow", () => {
@@ -436,7 +500,7 @@ describe("tui shell", () => {
     expect(existsSync(paths.telemetryDir)).toBe(false);
   });
 
-  it("removes individual managed codex targets from the repair section", () => {
+  it("removes individual managed codex targets from the uninstall section", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const paths = createProjectPaths(projectRoot);
@@ -445,7 +509,7 @@ describe("tui shell", () => {
 
     const shell = createTuiShell(paths, codexPaths);
     moveSelection(shell, "section", -1);
-    for (let index = 0; index < 8; index += 1) {
+    for (let index = 0; index < 2; index += 1) {
       moveSelection(shell, "action", 1);
     }
     expect(currentAction(shell).id).toBe("uninstall_hooks");

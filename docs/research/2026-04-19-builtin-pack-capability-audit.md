@@ -57,7 +57,7 @@ Why `v1`:
 Owns:
 - safer shell command routing
 - RTK-routed shell integration when the pack is enabled
-- capability-only pack behavior for now, not a mirrored standalone skill
+- compact Sane-owned `sane-rtk` skill plus router/overlay/custom-agent behavior
 
 Why `v1`:
 - already part of your real workflow
@@ -98,13 +98,15 @@ Extra signal:
 
 ## Not Recommended As Separate `v1` Packs
 
-Do not split these yet:
+Do not split these as exported `v1` packs:
 - `Taste Skill` standalone pack
 - `impeccable` standalone pack
+- `make-interfaces-feel-better` standalone pack
 
 Reason:
 - too much surface for early pack UX
 - easier `v1` story if “frontend craft” is one curated bundle
+- the exported surface should be Sane-owned and small, with upstreams kept as provenance/reference material
 
 ## Defer
 
@@ -163,7 +165,7 @@ Why not default:
 - terse communication + token economy
 
 `rtk`
-- shell execution discipline, currently capability-only
+- shell execution discipline through compact `sane-rtk` plus router/overlay/custom-agent guidance
 
 `frontend-craft`
 - high-quality UI generation / anti-generic frontend output
@@ -203,8 +205,9 @@ Do not expose a public pack API yet.
 `R1` answer:
 - `v1` should ship a curated builtin set of four packs: `core`, `caveman`, `rtk`, and `frontend-craft`.
 - `frontend-craft` should use `Taste Skill` as the primary upstream inspiration/reference instead of `Uncodixfy`.
-- the full pinned upstream `Leonxlnx/taste-skill` skill suite and `impeccable` should stay bundled together initially under `frontend-craft`.
-- marketplace/plugin extensibility remains deferred until after `v1`.
+- superseded 2026-04-25 implementation note: the full pinned upstream `Leonxlnx/taste-skill` skill suite and `impeccable` should not be exported as the `v1` surface.
+- current implementation decision: export compact Sane-owned frontend skills under `frontend-craft` and keep Taste Skill, `impeccable`, and `make-interfaces-feel-better` as provenance/reference inputs.
+- Codex plugin packaging can ship alongside the TUI/control plane, but public third-party Sane pack/API compatibility remains deferred until after `v1`.
 
 ## Post-v1 Expansion / Contraction Policy
 

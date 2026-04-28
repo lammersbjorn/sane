@@ -28,7 +28,7 @@ describe("text driver", () => {
       createCodexPaths(makeTempDir())
     );
 
-    expect(runtime.render()).toContain("Section: get_started");
+    expect(runtime.render()).toContain("[Home]");
   });
 
   it("supports settings launch shortcut and key-driven section changes", () => {
@@ -38,9 +38,9 @@ describe("text driver", () => {
       { launchShortcut: "settings" }
     );
 
-    expect(runtime.render()).toContain("Section: preferences");
+    expect(runtime.render()).toContain("[Settings]");
     runtime.handleInput("right");
-    expect(runtime.render()).toContain("Section: install");
+    expect(runtime.render()).toContain("[Add to Codex]");
   });
 
   it("re-renders visible selection chrome after key navigation", () => {
@@ -49,9 +49,9 @@ describe("text driver", () => {
       createCodexPaths(makeTempDir())
     );
 
-    expect(runtime.render()).toContain("| > 1. Create Sane's local");
+    expect(runtime.render()).toContain("| > 1. Set up Sane files");
     runtime.handleInput("down");
-    expect(runtime.render()).toContain("| > 2. View your current Codex");
+    expect(runtime.render()).toContain("| > 2. Choose defaults");
   });
 
   it("shows overlay state after entering an editor", () => {
@@ -80,6 +80,6 @@ describe("text driver", () => {
 
     expect(runtime.app.paths.projectRoot).toBe(projectRoot);
     expect(runtime.app.codexPaths.homeDir).toBe(homeDir);
-    expect(runtime.render()).toContain("Section: preferences");
+    expect(runtime.render()).toContain("[Settings]");
   });
 });

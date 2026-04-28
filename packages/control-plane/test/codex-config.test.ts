@@ -10,7 +10,6 @@ import {
   applyCloudflareProfile,
   applyCodexProfile,
   applyIntegrationsProfile,
-  applyOpencodeProfile,
   backupCodexConfig,
   inspectCloudflareProfileAudit,
   inspectCloudflareProfileApplyResult,
@@ -26,10 +25,6 @@ import {
   inspectIntegrationsProfileApplyResult,
   inspectIntegrationsProfileSnapshot,
   inspectIntegrationsProfileStatus,
-  inspectOpencodeProfileAudit,
-  inspectOpencodeProfileApplyResult,
-  inspectOpencodeProfileSnapshot,
-  inspectOpencodeProfileStatus,
   inspectStatuslineProfileAudit,
   inspectStatuslineProfileApplyResult,
   inspectStatuslineProfileSnapshot,
@@ -37,7 +32,6 @@ import {
   previewCloudflareProfile,
   previewCodexProfile,
   previewIntegrationsProfile,
-  previewOpencodeProfile,
   previewStatuslineProfile,
   restoreCodexConfig,
   showCodexConfig,
@@ -67,8 +61,8 @@ describe("codex config control plane", () => {
     const result = previewCodexProfile(codexPaths);
 
     expect(result.summary).toBe("codex-profile preview: 3 recommended change(s)");
-    expect(result.details).toContain("model: <missing> -> gpt-5.4");
-    expect(result.details).toContain("reasoning: <missing> -> high");
+    expect(result.details).toContain("model: <missing> -> gpt-5.5");
+    expect(result.details).toContain("reasoning: <missing> -> medium");
     expect(result.details).toContain("codex hooks: <missing> -> enabled");
     expect(result.details).toContain("note: this writes the single-session Codex baseline only");
     expect(result.details).toContain(
@@ -158,34 +152,22 @@ describe("codex config control plane", () => {
     expect(result.details).toContain("applied keys: model, model_reasoning_effort, features.codex_hooks");
     expect(result.details).toContain("note: this writes the single-session Codex baseline only");
     expect(result.details).toContain("backup: skipped (no prior config existed)");
-    expect(body).toContain('model = "gpt-5.4"');
-    expect(body).toContain('model_reasoning_effort = "high"');
+    expect(body).toContain('model = "gpt-5.5"');
+    expect(body).toContain('model_reasoning_effort = "medium"');
     expect(body).toContain("[features]");
     expect(body).toContain("codex_hooks = true");
   });
 
-  it("applies integrations profile additively and keeps opensrc untouched", () => {
+  it("applies integrations profile additively", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const projectPaths = createProjectPaths(projectRoot);
     const codexPaths = createCodexPaths(homeDir);
 
-    mkdirSync(join(homeDir, ".codex"), { recursive: true });
-    writeFileSync(
-      codexPaths.configToml,
-      [
-        '[mcp_servers.opensrc]',
-        'url = "https://mcp.opensrc.dev"',
-        ""
-      ].join("\n"),
-      "utf8"
-    );
-
     const result = applyIntegrationsProfile(projectPaths, codexPaths);
     const body = readFileSync(codexPaths.configToml, "utf8");
 
     expect(result.summary).toBe("integrations-profile apply: wrote recommended integrations");
-    expect(result.details).toContain("opensrc left untouched");
     expect(body).toContain("[mcp_servers.context7]");
     expect(body).toContain('url = "https://mcp.context7.com/mcp"');
     expect(body).toContain("[mcp_servers.playwright]");
@@ -193,48 +175,6 @@ describe("codex config control plane", () => {
     expect(body).toContain('"@playwright/mcp@latest"');
     expect(body).toContain("[mcp_servers.grep_app]");
     expect(body).toContain('url = "https://mcp.grep.app"');
-    expect(body).toContain("[mcp_servers.opensrc]");
-    expect(result.pathsTouched.some((path) => path.startsWith(projectPaths.codexConfigBackupsDir))).toBe(true);
-  });
-
-  it("applies cloudflare profile once and reports already satisfied on repeat", () => {
-    const projectRoot = makeTempDir();
-    const homeDir = makeTempDir();
-    const projectPaths = createProjectPaths(projectRoot);
-    const codexPaths = createCodexPaths(homeDir);
-
-    expect(previewCloudflareProfile(codexPaths).details).toContain(
-      "cloudflare-api: missing -> optional provider profile"
-    );
-
-    const first = applyCloudflareProfile(projectPaths, codexPaths);
-    const second = applyCloudflareProfile(projectPaths, codexPaths);
-    const body = readFileSync(codexPaths.configToml, "utf8");
-
-    expect(first.summary).toBe("cloudflare-profile apply: wrote optional provider profile");
-    expect(second.summary).toBe("cloudflare-profile apply: already satisfied");
-    expect(body).toContain("[mcp_servers.cloudflare-api]");
-    expect(body).toContain('url = "https://mcp.cloudflare.com/mcp"');
-  });
-
-  it("applies optional opencode compatibility profile once and reports already satisfied on repeat", () => {
-    const projectRoot = makeTempDir();
-    const homeDir = makeTempDir();
-    const projectPaths = createProjectPaths(projectRoot);
-    const codexPaths = createCodexPaths(homeDir);
-
-    expect(previewOpencodeProfile(codexPaths).details).toContain(
-      "opensrc: missing -> optional Opencode compatibility profile"
-    );
-
-    const first = applyOpencodeProfile(projectPaths, codexPaths);
-    const second = applyOpencodeProfile(projectPaths, codexPaths);
-    const body = readFileSync(codexPaths.configToml, "utf8");
-
-    expect(first.summary).toBe("opencode-profile apply: wrote optional compatibility profile");
-    expect(second.summary).toBe("opencode-profile apply: already satisfied");
-    expect(body).toContain("[mcp_servers.opensrc]");
-    expect(body).toContain('url = "https://mcp.opensrc.dev"');
   });
 
   it("backs up and restores the latest codex config snapshot", () => {
@@ -377,7 +317,7 @@ describe("codex config control plane", () => {
       status: "missing",
       recommendedChangeCount: 3,
       recommendedTargets: ["context7", "playwright", "grep.app"],
-      optionalTargets: ["opensrc"]
+      optionalTargets: []
     });
 
     applyIntegrationsProfile(projectPaths, codexPaths);
@@ -386,7 +326,7 @@ describe("codex config control plane", () => {
       status: "installed",
       recommendedChangeCount: 0,
       recommendedTargets: [],
-      optionalTargets: ["opensrc"]
+      optionalTargets: []
     });
   });
 
@@ -430,13 +370,6 @@ describe("codex config control plane", () => {
         summary: "cloudflare-profile preview: 1 recommended change(s)"
       })
     });
-    expect(inspectOpencodeProfileSnapshot(codexPaths)).toMatchObject({
-      audit: expect.objectContaining({ status: "missing", recommendedChangeCount: 1 }),
-      apply: expect.objectContaining({ status: "ready", recommendedChangeCount: 1 }),
-      preview: expect.objectContaining({
-        summary: "opencode-profile preview: 1 recommended change(s)"
-      })
-    });
     expect(inspectStatuslineProfileSnapshot(codexPaths)).toMatchObject({
       audit: expect.objectContaining({ status: "missing", recommendedChangeCount: 3 }),
       apply: expect.objectContaining({ status: "ready", recommendedChangeCount: 3 }),
@@ -448,7 +381,6 @@ describe("codex config control plane", () => {
     applyCodexProfile(projectPaths, codexPaths);
     applyIntegrationsProfile(projectPaths, codexPaths);
     applyCloudflareProfile(projectPaths, codexPaths);
-    applyOpencodeProfile(projectPaths, codexPaths);
     applyStatuslineProfile(projectPaths, codexPaths);
 
     expect(inspectCodexProfileSnapshot(codexPaths)).toMatchObject({
@@ -460,10 +392,6 @@ describe("codex config control plane", () => {
       apply: expect.objectContaining({ status: "already_satisfied", recommendedChangeCount: 0 })
     });
     expect(inspectCloudflareProfileSnapshot(codexPaths)).toMatchObject({
-      audit: expect.objectContaining({ status: "installed", recommendedChangeCount: 0 }),
-      apply: expect.objectContaining({ status: "already_satisfied", recommendedChangeCount: 0 })
-    });
-    expect(inspectOpencodeProfileSnapshot(codexPaths)).toMatchObject({
       audit: expect.objectContaining({ status: "installed", recommendedChangeCount: 0 }),
       apply: expect.objectContaining({ status: "already_satisfied", recommendedChangeCount: 0 })
     });
@@ -484,13 +412,11 @@ describe("codex config control plane", () => {
     expect(missingFamily.core).toEqual(inspectCodexProfileSnapshot(codexPaths));
     expect(missingFamily.integrations).toEqual(inspectIntegrationsProfileSnapshot(codexPaths));
     expect(missingFamily.cloudflare).toEqual(inspectCloudflareProfileSnapshot(codexPaths));
-    expect(missingFamily.opencode).toEqual(inspectOpencodeProfileSnapshot(codexPaths));
     expect(missingFamily.statusline).toEqual(inspectStatuslineProfileSnapshot(codexPaths));
 
     applyCodexProfile(projectPaths, codexPaths);
     applyIntegrationsProfile(projectPaths, codexPaths);
     applyCloudflareProfile(projectPaths, codexPaths);
-    applyOpencodeProfile(projectPaths, codexPaths);
     applyStatuslineProfile(projectPaths, codexPaths);
 
     const installedFamily = inspectCodexProfileFamilySnapshot(codexPaths);
@@ -498,7 +424,6 @@ describe("codex config control plane", () => {
     expect(installedFamily.core).toEqual(inspectCodexProfileSnapshot(codexPaths));
     expect(installedFamily.integrations).toEqual(inspectIntegrationsProfileSnapshot(codexPaths));
     expect(installedFamily.cloudflare).toEqual(inspectCloudflareProfileSnapshot(codexPaths));
-    expect(installedFamily.opencode).toEqual(inspectOpencodeProfileSnapshot(codexPaths));
     expect(installedFamily.statusline).toEqual(inspectStatuslineProfileSnapshot(codexPaths));
   });
 
@@ -529,11 +454,6 @@ describe("codex config control plane", () => {
         audit: { status: "invalid", recommendedChangeCount: 0 },
         apply: { status: "blocked_invalid", recommendedChangeCount: 0 },
         preview: { summary: "cloudflare-profile preview: blocked by invalid config" }
-      },
-      opencode: {
-        audit: { status: "invalid", recommendedChangeCount: 0 },
-        apply: { status: "blocked_invalid", recommendedChangeCount: 0 },
-        preview: { summary: "opencode-profile preview: blocked by invalid config" }
       },
       statusline: {
         audit: { status: "invalid", recommendedChangeCount: 0 },
@@ -619,61 +539,6 @@ describe("codex config control plane", () => {
     });
   });
 
-  it("reports structured opencode-profile audit state without scraping preview strings", () => {
-    const projectRoot = makeTempDir();
-    const homeDir = makeTempDir();
-    const projectPaths = createProjectPaths(projectRoot);
-    const codexPaths = createCodexPaths(homeDir);
-
-    expect(inspectOpencodeProfileAudit(codexPaths)).toMatchObject({
-      status: "missing",
-      recommendedChangeCount: 1,
-      target: "opensrc"
-    });
-
-    applyOpencodeProfile(projectPaths, codexPaths);
-
-    expect(inspectOpencodeProfileAudit(codexPaths)).toMatchObject({
-      status: "installed",
-      recommendedChangeCount: 0,
-      target: "opensrc"
-    });
-  });
-
-  it("reports opencode-profile status through a narrow helper", () => {
-    const projectRoot = makeTempDir();
-    const homeDir = makeTempDir();
-    const projectPaths = createProjectPaths(projectRoot);
-    const codexPaths = createCodexPaths(homeDir);
-
-    expect(inspectOpencodeProfileStatus(codexPaths)).toBe("missing");
-
-    applyOpencodeProfile(projectPaths, codexPaths);
-
-    expect(inspectOpencodeProfileStatus(codexPaths)).toBe("installed");
-  });
-
-  it("reports typed opencode-profile apply result without scraping apply summary strings", () => {
-    const projectRoot = makeTempDir();
-    const homeDir = makeTempDir();
-    const projectPaths = createProjectPaths(projectRoot);
-    const codexPaths = createCodexPaths(homeDir);
-
-    expect(inspectOpencodeProfileApplyResult(codexPaths)).toMatchObject({
-      status: "ready",
-      recommendedChangeCount: 1,
-      appliedKeys: ["mcp_servers.opensrc"]
-    });
-
-    applyOpencodeProfile(projectPaths, codexPaths);
-
-    expect(inspectOpencodeProfileApplyResult(codexPaths)).toMatchObject({
-      status: "already_satisfied",
-      recommendedChangeCount: 0,
-      appliedKeys: []
-    });
-  });
-
   it("reports structured statusline-profile audit state without scraping preview strings", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
@@ -741,8 +606,8 @@ describe("codex config control plane", () => {
       status: "missing",
       recommendedChangeCount: 3,
       changes: [
-        { key: "model", current: null, recommended: "gpt-5.4" },
-        { key: "model_reasoning_effort", current: null, recommended: "high" },
+        { key: "model", current: null, recommended: "gpt-5.5" },
+        { key: "model_reasoning_effort", current: null, recommended: "medium" },
         { key: "features.codex_hooks", current: null, recommended: "enabled" }
       ]
     });
@@ -808,10 +673,13 @@ describe("codex config control plane", () => {
 
     expect(audit).toMatchObject({
       status: "missing",
-      recommendedChangeCount: 1,
-      changes: [{ key: "model_reasoning_effort", current: "low", recommended: "high" }]
+      recommendedChangeCount: 2,
+      changes: [
+        { key: "model", current: "gpt-5.4", recommended: "gpt-5.5" },
+        { key: "model_reasoning_effort", current: "low", recommended: "medium" }
+      ]
     });
-    expect(preview.summary).toBe("codex-profile preview: 1 recommended change(s)");
+    expect(preview.summary).toBe("codex-profile preview: 2 recommended change(s)");
   });
 
   it("keeps cloudflare-profile preview summary count aligned with structured audit", () => {
@@ -825,19 +693,6 @@ describe("codex config control plane", () => {
       recommendedChangeCount: 1
     });
     expect(preview.summary).toBe("cloudflare-profile preview: 1 recommended change(s)");
-  });
-
-  it("keeps opencode-profile preview summary count aligned with structured audit", () => {
-    const homeDir = makeTempDir();
-    const codexPaths = createCodexPaths(homeDir);
-    const audit = inspectOpencodeProfileAudit(codexPaths);
-    const preview = previewOpencodeProfile(codexPaths);
-
-    expect(audit).toMatchObject({
-      status: "missing",
-      recommendedChangeCount: 1
-    });
-    expect(preview.summary).toBe("opencode-profile preview: 1 recommended change(s)");
   });
 
   it("keeps statusline-profile preview summary count aligned with structured audit", () => {

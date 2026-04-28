@@ -9,13 +9,15 @@ import {
   createDecisionRecord,
   readCurrentRunState,
   readRunSummary,
-  stringifyDecisionRecord
+  stringifyDecisionRecord,
+  writeCurrentRunState
 } from "@sane/state";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { installRuntime } from "../src/index.js";
 import {
   advanceOutcomeState,
+  inspectOutcomeRescueSignalFromRuntimeState,
   inspectRuntimeState,
   inspectOutcomeReadinessSnapshot,
   inspectSelfHostingShadowSnapshot,
@@ -193,6 +195,105 @@ describe("inspectRuntimeState", () => {
     );
     expect(inspectOutcomeReadinessSnapshot(paths)).toMatchObject({
       status: "needs_input"
+    });
+  });
+
+  it("warns when outcome work looks stalled from persisted timestamps", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+
+    installRuntime(paths, createCodexPaths(homeDir));
+    advanceOutcomeState(paths, {
+      objective: "ship B15 rescue signal",
+      nextTasks: ["patch inspect presenter"],
+      verification: {
+        status: "pending",
+        summary: "waiting on visible output"
+      }
+    });
+    const current = readCurrentRunState(paths.currentRunPath);
+    writeCurrentRunState(paths.currentRunPath, {
+      ...current,
+      extra: {
+        ...current.extra,
+        outcome: {
+          ...((current.extra.outcome as Record<string, unknown> | undefined) ?? {}),
+          lastAdvanceTsUnix: 1
+        }
+      }
+    });
+
+    expect(inspectOutcomeReadinessSnapshot(paths).checks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "long-silence",
+          status: "warn"
+        })
+      ])
+    );
+    expect(inspectOutcomeRescueSignalFromRuntimeState(inspectRuntimeState(paths))).toMatchObject({
+      status: "warn",
+      summary: expect.stringContaining("long silence:")
+    });
+  });
+
+  it("surfaces repeated phase, no file delta, and repeated tool error rescue signals", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+
+    installRuntime(paths, createCodexPaths(homeDir));
+    advanceOutcomeState(paths, {
+      objective: "ship B15 rescue signals",
+      nextTasks: ["keep working"],
+      verification: {
+        status: "pending",
+        summary: "still running"
+      },
+      repeatedToolErrorCount: 3,
+      toolError: "tool timeout"
+    });
+    for (let index = 0; index < 2; index += 1) {
+      advanceOutcomeState(paths, {
+        nextTasks: ["keep working"],
+        verification: {
+          status: "pending",
+          summary: "still running"
+        },
+        repeatedToolErrorCount: 3,
+        toolError: "tool timeout"
+      });
+    }
+
+    const checks = inspectOutcomeReadinessSnapshot(paths).checks;
+
+    expect(checks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "repeated-phase",
+          status: "warn",
+          summary: expect.stringContaining("repeated phase: executing")
+        }),
+        expect.objectContaining({
+          id: "file-delta",
+          status: "warn",
+          summary: "no file delta recorded while active unverified work remains"
+        }),
+        expect.objectContaining({
+          id: "repeated-tool-errors",
+          status: "warn",
+          summary: "repeated tool errors: 3 recent failure(s) (tool timeout)"
+        })
+      ])
+    );
+    expect(inspectOutcomeRescueSignalFromRuntimeState(inspectRuntimeState(paths))).toMatchObject({
+      status: "warn",
+      reasons: expect.arrayContaining([
+        expect.stringContaining("repeated phase: executing"),
+        "no file delta recorded while active unverified work remains",
+        "repeated tool errors: 3 recent failure(s) (tool timeout)"
+      ])
     });
   });
 

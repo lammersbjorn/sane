@@ -4,13 +4,19 @@ import { fileURLToPath } from "node:url";
 
 export const NAME = "Sane";
 export const SANE_ROUTER_SKILL_NAME = "sane-router";
+export const SANE_BOOTSTRAP_RESEARCH_SKILL_NAME = "sane-bootstrap-research";
+export const SANE_AGENT_LANES_SKILL_NAME = "sane-agent-lanes";
+export const SANE_OUTCOME_CONTINUATION_SKILL_NAME = "sane-outcome-continuation";
 export const SANE_CONTINUE_SKILL_NAME = "continue";
 export const SANE_CAVEMAN_PACK_SKILL_NAME = "sane-caveman";
-export const SANE_FRONTEND_CRAFT_PACK_SKILL_NAME = "design-taste-frontend";
-export const SANE_FRONTEND_REVIEW_PACK_SKILL_NAME = "impeccable";
+export const SANE_FRONTEND_CRAFT_PACK_SKILL_NAME = "sane-frontend-craft";
+export const SANE_FRONTEND_VISUAL_ASSETS_PACK_SKILL_NAME = "sane-frontend-visual-assets";
+export const SANE_FRONTEND_REVIEW_PACK_SKILL_NAME = "sane-frontend-review";
 export const SANE_AGENT_NAME = "sane-agent";
 export const SANE_REVIEWER_AGENT_NAME = "sane-reviewer";
 export const SANE_EXPLORER_AGENT_NAME = "sane-explorer";
+export const SANE_IMPLEMENTATION_AGENT_NAME = "sane-implementation";
+export const SANE_REALTIME_AGENT_NAME = "sane-realtime";
 export const SANE_GLOBAL_AGENTS_BEGIN = "<!-- sane:global-agents:start -->";
 export const SANE_GLOBAL_AGENTS_END = "<!-- sane:global-agents:end -->";
 export const SANE_REPO_AGENTS_BEGIN = "<!-- sane:repo-agents:start -->";
@@ -117,6 +123,9 @@ interface CorePackManifest {
   name: string;
   assets: {
     routerSkill: string;
+    bootstrapResearchSkill: string;
+    agentLanesSkill: string;
+    outcomeContinuationSkill: string;
     continueSkill: string;
     globalOverlay: string;
     repoOverlay: string;
@@ -124,11 +133,8 @@ interface CorePackManifest {
       primary: string;
       reviewer: string;
       explorer: string;
-    };
-    opencodeAgents: {
-      primary: string;
-      reviewer: string;
-      explorer: string;
+      implementation: string;
+      realtime: string;
     };
   };
   optionalPacks: Record<
@@ -193,6 +199,18 @@ export function createSaneContinueSkill(): string {
   return readCoreAsset(CORE_PACK_MANIFEST.assets.continueSkill);
 }
 
+export function createSaneBootstrapResearchSkill(): string {
+  return readCoreAsset(CORE_PACK_MANIFEST.assets.bootstrapResearchSkill);
+}
+
+export function createSaneAgentLanesSkill(): string {
+  return readCoreAsset(CORE_PACK_MANIFEST.assets.agentLanesSkill);
+}
+
+export function createSaneOutcomeContinuationSkill(): string {
+  return readCoreAsset(CORE_PACK_MANIFEST.assets.outcomeContinuationSkill);
+}
+
 export function createCoreSkills(
   packs: GuidancePacks = createDefaultGuidancePacks(),
   roles: ModelRoutingGuidance = {
@@ -216,6 +234,21 @@ export function createCoreSkills(
     {
       name: SANE_ROUTER_SKILL_NAME,
       content: createSaneRouterSkill(packs, roles),
+      resources: []
+    },
+    {
+      name: SANE_BOOTSTRAP_RESEARCH_SKILL_NAME,
+      content: createSaneBootstrapResearchSkill(),
+      resources: []
+    },
+    {
+      name: SANE_AGENT_LANES_SKILL_NAME,
+      content: createSaneAgentLanesSkill(),
+      resources: []
+    },
+    {
+      name: SANE_OUTCOME_CONTINUATION_SKILL_NAME,
+      content: createSaneOutcomeContinuationSkill(),
       resources: []
     },
     {
@@ -390,53 +423,40 @@ export function createSaneExplorerAgentTemplateWithPacks(
   });
 }
 
-export function createSaneOpencodeAgentTemplate(roles: ModelRoleGuidance): string {
-  return renderCoreAsset(CORE_PACK_MANIFEST.assets.opencodeAgents.primary, {
-    MODEL: roles.coordinatorModel,
+export function createSaneImplementationAgentTemplate(roles: ModelRoutingGuidance): string {
+  return renderCoreAsset(CORE_PACK_MANIFEST.assets.agents.implementation, {
+    MODEL: roles.executionModel,
+    MODEL_REASONING: roles.executionReasoning,
     ENABLED_PACK_AGENT_NOTES: ""
   });
 }
 
-export function createSaneOpencodeAgentTemplateWithPacks(
-  roles: ModelRoleGuidance,
+export function createSaneImplementationAgentTemplateWithPacks(
+  roles: ModelRoutingGuidance,
   packs: GuidancePacks
 ): string {
-  return renderCoreAsset(CORE_PACK_MANIFEST.assets.opencodeAgents.primary, {
-    MODEL: roles.coordinatorModel,
+  return renderCoreAsset(CORE_PACK_MANIFEST.assets.agents.implementation, {
+    MODEL: roles.executionModel,
+    MODEL_REASONING: roles.executionReasoning,
     ENABLED_PACK_AGENT_NOTES: enabledPackAgentNotes(packs)
   });
 }
 
-export function createSaneOpencodeReviewerAgentTemplate(roles: ModelRoleGuidance): string {
-  return renderCoreAsset(CORE_PACK_MANIFEST.assets.opencodeAgents.reviewer, {
-    MODEL: roles.verifierModel,
+export function createSaneRealtimeAgentTemplate(roles: ModelRoutingGuidance): string {
+  return renderCoreAsset(CORE_PACK_MANIFEST.assets.agents.realtime, {
+    MODEL: roles.realtimeModel,
+    MODEL_REASONING: roles.realtimeReasoning,
     ENABLED_PACK_AGENT_NOTES: ""
   });
 }
 
-export function createSaneOpencodeReviewerAgentTemplateWithPacks(
-  roles: ModelRoleGuidance,
+export function createSaneRealtimeAgentTemplateWithPacks(
+  roles: ModelRoutingGuidance,
   packs: GuidancePacks
 ): string {
-  return renderCoreAsset(CORE_PACK_MANIFEST.assets.opencodeAgents.reviewer, {
-    MODEL: roles.verifierModel,
-    ENABLED_PACK_AGENT_NOTES: enabledPackAgentNotes(packs)
-  });
-}
-
-export function createSaneOpencodeExplorerAgentTemplate(roles: ModelRoleGuidance): string {
-  return renderCoreAsset(CORE_PACK_MANIFEST.assets.opencodeAgents.explorer, {
-    MODEL: roles.sidecarModel,
-    ENABLED_PACK_AGENT_NOTES: ""
-  });
-}
-
-export function createSaneOpencodeExplorerAgentTemplateWithPacks(
-  roles: ModelRoleGuidance,
-  packs: GuidancePacks
-): string {
-  return renderCoreAsset(CORE_PACK_MANIFEST.assets.opencodeAgents.explorer, {
-    MODEL: roles.sidecarModel,
+  return renderCoreAsset(CORE_PACK_MANIFEST.assets.agents.realtime, {
+    MODEL: roles.realtimeModel,
+    MODEL_REASONING: roles.realtimeReasoning,
     ENABLED_PACK_AGENT_NOTES: enabledPackAgentNotes(packs)
   });
 }
@@ -446,7 +466,11 @@ function readCorePackManifest(): CorePackManifest {
 }
 
 function candidateRepoRootStarts(): string[] {
-  const starts = new Set<string>([process.cwd(), dirname(process.argv[1] ?? process.cwd())]);
+  const starts = new Set<string>();
+
+  if (process.argv[1]) {
+    starts.add(dirname(resolve(process.argv[1])));
+  }
 
   try {
     starts.add(dirname(fileURLToPath(import.meta.url)));
@@ -505,7 +529,7 @@ function enabledPackEntries(
 
 function enabledPackSkillSelections(packs: GuidancePacks): string {
   return enabledPackEntries(packs)
-    .flatMap(([pack, entry]) =>
+    .flatMap(([pack]) =>
       optionalPackSkills(pack).flatMap((skill) => {
         const taskKinds = Array.isArray(skill.taskKinds) ? skill.taskKinds : [];
         if (taskKinds.length === 0) {

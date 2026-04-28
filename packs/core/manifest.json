@@ -2,18 +2,18 @@
   "name": "core",
   "assets": {
     "routerSkill": "skills/sane-router.md.tmpl",
+    "bootstrapResearchSkill": "skills/sane-bootstrap-research.md",
+    "agentLanesSkill": "skills/sane-agent-lanes.md",
+    "outcomeContinuationSkill": "skills/sane-outcome-continuation.md",
     "continueSkill": "skills/continue/SKILL.md",
     "globalOverlay": "overlays/global-agents.md.tmpl",
     "repoOverlay": "overlays/repo-agents.md.tmpl",
     "agents": {
       "primary": "agents/sane-agent.toml.tmpl",
       "reviewer": "agents/sane-reviewer.toml.tmpl",
-      "explorer": "agents/sane-explorer.toml.tmpl"
-    },
-    "opencodeAgents": {
-      "primary": "agents/opencode/sane-agent.md.tmpl",
-      "reviewer": "agents/opencode/sane-reviewer.md.tmpl",
-      "explorer": "agents/opencode/sane-explorer.md.tmpl"
+      "explorer": "agents/sane-explorer.toml.tmpl",
+      "implementation": "agents/sane-implementation.toml.tmpl",
+      "realtime": "agents/sane-realtime.toml.tmpl"
     }
   },
   "optionalPacks": {
@@ -24,21 +24,21 @@
         {
           "name": "sane-caveman",
           "path": "skills/optional/sane-caveman.md",
-          "taskKinds": ["communication", "brevity", "token-efficiency"]
+          "taskKinds": ["communication-style", "caveman-prose", "brevity"]
         }
       ],
-      "routerNote": "- caveman pack active: default to terse, token-efficient prose for normal narrative output; only switch to normal phrasing when exact commands, code, paths, URLs, errors, diffs, or quotes need it",
-      "overlayNote": "- caveman pack active: always use terse, token-efficient prose for normal narrative output; keep exact commands, code, paths, URLs, errors, diffs, and direct quotes unchanged",
+      "routerNote": "- Caveman pack active: load `sane-caveman` for prose rules",
+      "overlayNote": "- Caveman pack active: load `sane-caveman` for prose rules",
       "provenance": {
         "kind": "derived",
-        "note": "Pinned mirror of the upstream Caveman skill, exported under a Sane-managed name to avoid collisions with user-installed plugin skills.",
+        "note": "Pinned curated mirror of the upstream Caveman skill, exported under a Sane-managed name to avoid collisions with user-installed plugin skills.",
         "updateStrategy": "pinned-manual",
         "upstreams": [
           {
             "name": "caveman",
             "role": "primary",
             "url": "https://github.com/JuliusBrussee/caveman",
-            "ref": "0.1.0",
+            "ref": "v1.6.0",
             "path": "skills/caveman/SKILL.md",
             "license": "MIT"
           }
@@ -46,359 +46,185 @@
       }
     },
     "rtk": {
-      "routerNote": "- rtk pack active: always route shell work through RTK instead of raw shell",
-      "overlayNote": "- rtk pack active: always route shell work through RTK instead of raw shell",
+      "skillName": "sane-rtk",
+      "skillPath": "skills/optional/sane-rtk.md",
+      "skills": [
+        {
+          "name": "sane-rtk",
+          "path": "skills/optional/sane-rtk.md",
+          "taskKinds": ["shell", "search", "test", "logs"]
+        }
+      ],
+      "routerNote": "- RTK pack active: load `sane-rtk` for shell/search/test/log routing",
+      "overlayNote": "- RTK pack active: load `sane-rtk` for shell/search/test/log routing",
       "provenance": {
         "kind": "internal",
-        "note": "Capability-only workflow pack for RTK-aware shell routing. No dedicated skill export until there is a concrete upstream skill worth mirroring.",
+        "note": "Internal workflow pack for RTK-aware shell routing. The skill teaches native RTK command selection instead of a raw-shell wrapper ritual.",
         "updateStrategy": "manual-curated"
       }
     },
     "frontend-craft": {
-      "skillName": "design-taste-frontend",
-      "skillPath": "skills/vendor/frontend/taste-skill/SKILL.md",
+      "skillName": "sane-frontend-craft",
+      "skillPath": "skills/optional/frontend-craft/sane-frontend-craft.md",
       "skills": [
         {
-          "name": "design-taste-frontend",
-          "path": "skills/vendor/frontend/taste-skill/SKILL.md",
-          "taskKinds": ["implementation", "restyle", "frontend-build"]
+          "name": "sane-frontend-craft",
+          "path": "skills/optional/frontend-craft/sane-frontend-craft.md",
+          "taskKinds": ["frontend-build", "redesign", "ui-implementation", "visual-polish"]
         },
         {
-          "name": "gpt-taste",
-          "path": "skills/vendor/frontend/gpt-tasteskill/SKILL.md",
-          "taskKinds": ["ambitious-frontend-build", "gsap-motion", "high-variance-layout"]
+          "name": "sane-frontend-visual-assets",
+          "path": "skills/optional/frontend-craft/sane-frontend-visual-assets.md",
+          "taskKinds": ["image-generation", "visual-assets", "hero-media", "art-direction"]
         },
         {
-          "name": "image-taste-frontend",
-          "path": "skills/vendor/frontend/images-taste-skill/SKILL.md",
-          "taskKinds": ["image-first-design", "visual-reference", "premium-landing-page"]
-        },
-        {
-          "name": "redesign-existing-projects",
-          "path": "skills/vendor/frontend/redesign-skill/SKILL.md",
-          "taskKinds": ["redesign", "existing-project", "visual-upgrade"]
-        },
-        {
-          "name": "high-end-visual-design",
-          "path": "skills/vendor/frontend/soft-skill/SKILL.md",
-          "taskKinds": ["soft-premium-ui", "agency-style", "visual-polish"]
-        },
-        {
-          "name": "full-output-enforcement",
-          "path": "skills/vendor/frontend/output-skill/SKILL.md",
-          "taskKinds": ["complete-output", "no-placeholders", "long-generation"]
-        },
-        {
-          "name": "minimalist-ui",
-          "path": "skills/vendor/frontend/minimalist-skill/SKILL.md",
-          "taskKinds": ["minimalist-ui", "editorial-ui", "clean-interface"]
-        },
-        {
-          "name": "industrial-brutalist-ui",
-          "path": "skills/vendor/frontend/brutalist-skill/SKILL.md",
-          "taskKinds": ["brutalist-ui", "mechanical-interface", "bold-dashboard"]
-        },
-        {
-          "name": "stitch-design-taste",
-          "path": "skills/vendor/frontend/stitch-skill/SKILL.md",
-          "resources": [
-            {
-              "source": "skills/vendor/frontend/stitch-skill/DESIGN.md",
-              "target": "DESIGN.md"
-            }
-          ],
-          "taskKinds": ["stitch-design", "design-system", "semantic-design"]
-        },
-        {
-          "name": "impeccable",
-          "path": "skills/vendor/frontend/impeccable/SKILL.md",
-          "resources": [
-            {
-              "source": "skills/vendor/frontend/impeccable/reference/color-and-contrast.md",
-              "target": "reference/color-and-contrast.md"
-            },
-            {
-              "source": "skills/vendor/frontend/impeccable/reference/craft.md",
-              "target": "reference/craft.md"
-            },
-            {
-              "source": "skills/vendor/frontend/impeccable/reference/extract.md",
-              "target": "reference/extract.md"
-            },
-            {
-              "source": "skills/vendor/frontend/impeccable/reference/interaction-design.md",
-              "target": "reference/interaction-design.md"
-            },
-            {
-              "source": "skills/vendor/frontend/impeccable/reference/motion-design.md",
-              "target": "reference/motion-design.md"
-            },
-            {
-              "source": "skills/vendor/frontend/impeccable/reference/responsive-design.md",
-              "target": "reference/responsive-design.md"
-            },
-            {
-              "source": "skills/vendor/frontend/impeccable/reference/spatial-design.md",
-              "target": "reference/spatial-design.md"
-            },
-            {
-              "source": "skills/vendor/frontend/impeccable/reference/typography.md",
-              "target": "reference/typography.md"
-            },
-            {
-              "source": "skills/vendor/frontend/impeccable/reference/ux-writing.md",
-              "target": "reference/ux-writing.md"
-            }
-          ],
-          "taskKinds": ["review", "audit", "critique", "polish"]
+          "name": "sane-frontend-review",
+          "path": "skills/optional/frontend-craft/sane-frontend-review.md",
+          "taskKinds": ["frontend-review", "responsive-qa", "visual-audit", "polish"]
         }
       ],
-      "routerNote": "- frontend-craft pack active: choose the most specific frontend skill for the job: `design-taste-frontend` for general implementation, `gpt-taste` for ambitious GSAP/high-variance builds, `image-taste-frontend` for image-first art direction, the Taste variants for known styles, and `impeccable` for critique/review",
-      "overlayNote": "- frontend-craft pack active: for frontend work, pick the real task-specific frontend skills (`design-taste-frontend`, `gpt-taste`, `image-taste-frontend`, Taste variants, `impeccable`) instead of vague pack wrappers",
+      "routerNote": "- Frontend-craft pack active: load the matching frontend skill for UI, asset, or visual-review work",
+      "overlayNote": "- Frontend-craft pack active: load the matching frontend skill for UI, asset, or visual-review work",
       "provenance": {
         "kind": "derived",
-        "note": "Pinned vendored mirror of every upstream Taste Skill skill plus Impeccable, exported under upstream skill names instead of Sane-written wrapper prose.",
-        "updateStrategy": "pinned-manual",
+        "note": "Sane-owned compact frontend craft pack informed by Taste Skill, Impeccable, make-interfaces-feel-better, and current Codex image-generation workflows; upstream mirrors remain reference material, not exported v1 surface.",
+        "updateStrategy": "manual-curated",
         "upstreams": [
           {
             "name": "taste-skill",
-            "role": "primary-skill-suite",
+            "role": "inspiration",
             "url": "https://github.com/Leonxlnx/taste-skill",
-            "ref": "39dc15944b4ada367984489726b3849f400511ec",
+            "ref": "c3f9d2ba9c133c8c45c206ad7a6fe1e534b2874f",
             "path": "skills/",
             "license": null
           },
           {
             "name": "impeccable",
-            "role": "review-secondary",
+            "role": "inspiration",
             "url": "https://github.com/pbakaus/impeccable",
-            "ref": "00d485659af82982aef0328d0419c49a2716d123",
+            "ref": "25e6c820aab580526f8e9ffb3866b5a5b39c16c9",
             "path": "source/skills/impeccable/SKILL.md",
             "license": "Apache-2.0"
+          },
+          {
+            "name": "make-interfaces-feel-better",
+            "role": "inspiration",
+            "url": "https://skills.sh/jakubkrehel/make-interfaces-feel-better/make-interfaces-feel-better",
+            "ref": null,
+            "path": null,
+            "license": null
           }
         ]
       }
     }
   },
   "assetSources": {
-    "style": "pinned-upstream-link",
+    "style": "mixed-source-provenance",
     "items": {
       "skills/sane-router.md.tmpl": {
         "repo": "https://github.com/lammersbjorn/sane",
         "path": "packs/core/skills/sane-router.md.tmpl",
-        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
+        "ref": "workspace",
         "license": "MIT OR Apache-2.0",
         "updateStrategy": "pinned-manual"
+      },
+      "skills/sane-bootstrap-research.md": {
+        "repo": "https://github.com/lammersbjorn/sane",
+        "path": "packs/core/skills/sane-bootstrap-research.md",
+        "ref": "workspace",
+        "license": "MIT OR Apache-2.0",
+        "updateStrategy": "manual-curated"
+      },
+      "skills/sane-agent-lanes.md": {
+        "repo": "https://github.com/lammersbjorn/sane",
+        "path": "packs/core/skills/sane-agent-lanes.md",
+        "ref": "workspace",
+        "license": "MIT OR Apache-2.0",
+        "updateStrategy": "manual-curated"
+      },
+      "skills/sane-outcome-continuation.md": {
+        "repo": "https://github.com/lammersbjorn/sane",
+        "path": "packs/core/skills/sane-outcome-continuation.md",
+        "ref": "workspace",
+        "license": "MIT OR Apache-2.0",
+        "updateStrategy": "manual-curated"
       },
       "skills/continue/SKILL.md": {
         "repo": "https://github.com/lammersbjorn/sane",
         "path": "packs/core/skills/continue/SKILL.md",
-        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
+        "ref": "workspace",
         "license": "MIT OR Apache-2.0",
         "updateStrategy": "pinned-manual"
       },
       "overlays/global-agents.md.tmpl": {
         "repo": "https://github.com/lammersbjorn/sane",
         "path": "packs/core/overlays/global-agents.md.tmpl",
-        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
+        "ref": "workspace",
         "license": "MIT OR Apache-2.0",
         "updateStrategy": "pinned-manual"
       },
       "overlays/repo-agents.md.tmpl": {
         "repo": "https://github.com/lammersbjorn/sane",
         "path": "packs/core/overlays/repo-agents.md.tmpl",
-        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
+        "ref": "workspace",
         "license": "MIT OR Apache-2.0",
         "updateStrategy": "pinned-manual"
       },
       "agents/sane-agent.toml.tmpl": {
         "repo": "https://github.com/lammersbjorn/sane",
         "path": "packs/core/agents/sane-agent.toml.tmpl",
-        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
+        "ref": "workspace",
         "license": "MIT OR Apache-2.0",
         "updateStrategy": "pinned-manual"
       },
       "agents/sane-reviewer.toml.tmpl": {
         "repo": "https://github.com/lammersbjorn/sane",
         "path": "packs/core/agents/sane-reviewer.toml.tmpl",
-        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
+        "ref": "workspace",
         "license": "MIT OR Apache-2.0",
         "updateStrategy": "pinned-manual"
       },
       "agents/sane-explorer.toml.tmpl": {
         "repo": "https://github.com/lammersbjorn/sane",
         "path": "packs/core/agents/sane-explorer.toml.tmpl",
-        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
-        "license": "MIT OR Apache-2.0",
-        "updateStrategy": "pinned-manual"
-      },
-      "agents/opencode/sane-agent.md.tmpl": {
-        "repo": "https://github.com/lammersbjorn/sane",
-        "path": "packs/core/agents/opencode/sane-agent.md.tmpl",
-        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
-        "license": "MIT OR Apache-2.0",
-        "updateStrategy": "pinned-manual"
-      },
-      "agents/opencode/sane-reviewer.md.tmpl": {
-        "repo": "https://github.com/lammersbjorn/sane",
-        "path": "packs/core/agents/opencode/sane-reviewer.md.tmpl",
-        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
-        "license": "MIT OR Apache-2.0",
-        "updateStrategy": "pinned-manual"
-      },
-      "agents/opencode/sane-explorer.md.tmpl": {
-        "repo": "https://github.com/lammersbjorn/sane",
-        "path": "packs/core/agents/opencode/sane-explorer.md.tmpl",
-        "ref": "1223ee84d34551e4189caaa33d3b25a827afc620",
+        "ref": "workspace",
         "license": "MIT OR Apache-2.0",
         "updateStrategy": "pinned-manual"
       },
       "skills/optional/sane-caveman.md": {
         "repo": "https://github.com/JuliusBrussee/caveman",
         "path": "skills/caveman/SKILL.md",
-        "ref": "0.1.0",
+        "ref": "v1.6.0",
         "license": "MIT",
         "updateStrategy": "pinned-manual"
       },
-      "skills/vendor/frontend/taste-skill/SKILL.md": {
-        "repo": "https://github.com/Leonxlnx/taste-skill",
-        "path": "skills/taste-skill/SKILL.md",
-        "ref": "39dc15944b4ada367984489726b3849f400511ec",
-        "license": "NOASSERTION",
-        "updateStrategy": "pinned-manual"
+      "skills/optional/sane-rtk.md": {
+        "repo": "https://github.com/lammersbjorn/sane",
+        "path": "packs/core/skills/optional/sane-rtk.md",
+        "ref": "workspace",
+        "license": "MIT OR Apache-2.0",
+        "updateStrategy": "manual-curated"
       },
-      "skills/vendor/frontend/gpt-tasteskill/SKILL.md": {
-        "repo": "https://github.com/Leonxlnx/taste-skill",
-        "path": "skills/gpt-tasteskill/SKILL.md",
-        "ref": "39dc15944b4ada367984489726b3849f400511ec",
-        "license": "NOASSERTION",
-        "updateStrategy": "pinned-manual"
+      "skills/optional/frontend-craft/sane-frontend-craft.md": {
+        "repo": "https://github.com/lammersbjorn/sane",
+        "path": "packs/core/skills/optional/frontend-craft/sane-frontend-craft.md",
+        "ref": "workspace",
+        "license": "MIT OR Apache-2.0",
+        "updateStrategy": "manual-curated"
       },
-      "skills/vendor/frontend/images-taste-skill/SKILL.md": {
-        "repo": "https://github.com/Leonxlnx/taste-skill",
-        "path": "skills/images-taste-skill/SKILL.md",
-        "ref": "39dc15944b4ada367984489726b3849f400511ec",
-        "license": "NOASSERTION",
-        "updateStrategy": "pinned-manual"
+      "skills/optional/frontend-craft/sane-frontend-visual-assets.md": {
+        "repo": "https://github.com/lammersbjorn/sane",
+        "path": "packs/core/skills/optional/frontend-craft/sane-frontend-visual-assets.md",
+        "ref": "workspace",
+        "license": "MIT OR Apache-2.0",
+        "updateStrategy": "manual-curated"
       },
-      "skills/vendor/frontend/redesign-skill/SKILL.md": {
-        "repo": "https://github.com/Leonxlnx/taste-skill",
-        "path": "skills/redesign-skill/SKILL.md",
-        "ref": "39dc15944b4ada367984489726b3849f400511ec",
-        "license": "NOASSERTION",
-        "updateStrategy": "pinned-manual"
-      },
-      "skills/vendor/frontend/soft-skill/SKILL.md": {
-        "repo": "https://github.com/Leonxlnx/taste-skill",
-        "path": "skills/soft-skill/SKILL.md",
-        "ref": "39dc15944b4ada367984489726b3849f400511ec",
-        "license": "NOASSERTION",
-        "updateStrategy": "pinned-manual"
-      },
-      "skills/vendor/frontend/output-skill/SKILL.md": {
-        "repo": "https://github.com/Leonxlnx/taste-skill",
-        "path": "skills/output-skill/SKILL.md",
-        "ref": "39dc15944b4ada367984489726b3849f400511ec",
-        "license": "NOASSERTION",
-        "updateStrategy": "pinned-manual"
-      },
-      "skills/vendor/frontend/minimalist-skill/SKILL.md": {
-        "repo": "https://github.com/Leonxlnx/taste-skill",
-        "path": "skills/minimalist-skill/SKILL.md",
-        "ref": "39dc15944b4ada367984489726b3849f400511ec",
-        "license": "NOASSERTION",
-        "updateStrategy": "pinned-manual"
-      },
-      "skills/vendor/frontend/brutalist-skill/SKILL.md": {
-        "repo": "https://github.com/Leonxlnx/taste-skill",
-        "path": "skills/brutalist-skill/SKILL.md",
-        "ref": "39dc15944b4ada367984489726b3849f400511ec",
-        "license": "NOASSERTION",
-        "updateStrategy": "pinned-manual"
-      },
-      "skills/vendor/frontend/stitch-skill/SKILL.md": {
-        "repo": "https://github.com/Leonxlnx/taste-skill",
-        "path": "skills/stitch-skill/SKILL.md",
-        "ref": "39dc15944b4ada367984489726b3849f400511ec",
-        "license": "NOASSERTION",
-        "updateStrategy": "pinned-manual"
-      },
-      "skills/vendor/frontend/stitch-skill/DESIGN.md": {
-        "repo": "https://github.com/Leonxlnx/taste-skill",
-        "path": "skills/stitch-skill/DESIGN.md",
-        "ref": "39dc15944b4ada367984489726b3849f400511ec",
-        "license": "NOASSERTION",
-        "updateStrategy": "pinned-manual"
-      },
-      "skills/vendor/frontend/impeccable/SKILL.md": {
-        "repo": "https://github.com/pbakaus/impeccable",
-        "path": "source/skills/impeccable/SKILL.md",
-        "ref": "00d485659af82982aef0328d0419c49a2716d123",
-        "license": "Apache-2.0",
-        "updateStrategy": "pinned-manual"
-      },
-      "skills/vendor/frontend/impeccable/reference/color-and-contrast.md": {
-        "repo": "https://github.com/pbakaus/impeccable",
-        "path": "source/skills/impeccable/reference/color-and-contrast.md",
-        "ref": "00d485659af82982aef0328d0419c49a2716d123",
-        "license": "Apache-2.0",
-        "updateStrategy": "pinned-manual"
-      },
-      "skills/vendor/frontend/impeccable/reference/craft.md": {
-        "repo": "https://github.com/pbakaus/impeccable",
-        "path": "source/skills/impeccable/reference/craft.md",
-        "ref": "00d485659af82982aef0328d0419c49a2716d123",
-        "license": "Apache-2.0",
-        "updateStrategy": "pinned-manual"
-      },
-      "skills/vendor/frontend/impeccable/reference/extract.md": {
-        "repo": "https://github.com/pbakaus/impeccable",
-        "path": "source/skills/impeccable/reference/extract.md",
-        "ref": "00d485659af82982aef0328d0419c49a2716d123",
-        "license": "Apache-2.0",
-        "updateStrategy": "pinned-manual"
-      },
-      "skills/vendor/frontend/impeccable/reference/interaction-design.md": {
-        "repo": "https://github.com/pbakaus/impeccable",
-        "path": "source/skills/impeccable/reference/interaction-design.md",
-        "ref": "00d485659af82982aef0328d0419c49a2716d123",
-        "license": "Apache-2.0",
-        "updateStrategy": "pinned-manual"
-      },
-      "skills/vendor/frontend/impeccable/reference/motion-design.md": {
-        "repo": "https://github.com/pbakaus/impeccable",
-        "path": "source/skills/impeccable/reference/motion-design.md",
-        "ref": "00d485659af82982aef0328d0419c49a2716d123",
-        "license": "Apache-2.0",
-        "updateStrategy": "pinned-manual"
-      },
-      "skills/vendor/frontend/impeccable/reference/responsive-design.md": {
-        "repo": "https://github.com/pbakaus/impeccable",
-        "path": "source/skills/impeccable/reference/responsive-design.md",
-        "ref": "00d485659af82982aef0328d0419c49a2716d123",
-        "license": "Apache-2.0",
-        "updateStrategy": "pinned-manual"
-      },
-      "skills/vendor/frontend/impeccable/reference/spatial-design.md": {
-        "repo": "https://github.com/pbakaus/impeccable",
-        "path": "source/skills/impeccable/reference/spatial-design.md",
-        "ref": "00d485659af82982aef0328d0419c49a2716d123",
-        "license": "Apache-2.0",
-        "updateStrategy": "pinned-manual"
-      },
-      "skills/vendor/frontend/impeccable/reference/typography.md": {
-        "repo": "https://github.com/pbakaus/impeccable",
-        "path": "source/skills/impeccable/reference/typography.md",
-        "ref": "00d485659af82982aef0328d0419c49a2716d123",
-        "license": "Apache-2.0",
-        "updateStrategy": "pinned-manual"
-      },
-      "skills/vendor/frontend/impeccable/reference/ux-writing.md": {
-        "repo": "https://github.com/pbakaus/impeccable",
-        "path": "source/skills/impeccable/reference/ux-writing.md",
-        "ref": "00d485659af82982aef0328d0419c49a2716d123",
-        "license": "Apache-2.0",
-        "updateStrategy": "pinned-manual"
+      "skills/optional/frontend-craft/sane-frontend-review.md": {
+        "repo": "https://github.com/lammersbjorn/sane",
+        "path": "packs/core/skills/optional/frontend-craft/sane-frontend-review.md",
+        "ref": "workspace",
+        "license": "MIT OR Apache-2.0",
+        "updateStrategy": "manual-curated"
       }
     }
   }

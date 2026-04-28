@@ -37,8 +37,6 @@ If a tool is powerful but high-privilege or provider-specific, it should move to
 - Cloudflare MCP:
   - [cloudflare/mcp](https://github.com/cloudflare/mcp)
   - [Cloudflare MCP server docs](https://developers.cloudflare.com/agents/model-context-protocol/mcp-servers-for-cloudflare/)
-- OpenSRC:
-  - [opensrc official site](https://opensrc.sh/)
 - Context Mode:
   - [mksglu/context-mode](https://github.com/mksglu/context-mode)
   - [Context Mode benchmark doc](https://raw.githubusercontent.com/mksglu/context-mode/main/BENCHMARK.md)
@@ -105,13 +103,11 @@ Why it fits Sane:
 ### 4. OpenSRC
 
 Verdict:
-- drop from broad recommended profile
-- keep experimental / advanced optional only
+- drop from Sane-managed MCP profiles
 
 Why:
-- official `opensrc` product exists, but I did not find first-party MCP docs comparable to Context7 / Playwright / GitHub / Vercel / Supabase
-- public evidence for `opensrc-mcp` is mostly ecosystem/marketplace/community packaging rather than clear first-party official docs
-- broad default recommendation bar is higher than "interesting and useful"
+- first-party MCP evidence was not strong enough for a managed profile
+- later local startup checks also showed the configured endpoint was not reliable enough to keep as an optional install path
 
 Interpretation:
 - official CLI/tooling appears real and useful

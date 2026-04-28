@@ -1,6 +1,5 @@
 import {
   createRecommendedLocalConfig,
-  createRecommendedModelRoutingPresets,
   detectCodexEnvironment,
 } from "@sane/config";
 import {
@@ -14,6 +13,11 @@ import {
 import {
   disabledOptionalPackNames,
   enabledOptionalPackNames,
+  SANE_AGENT_LANES_SKILL_NAME,
+  SANE_BOOTSTRAP_RESEARCH_SKILL_NAME,
+  SANE_CONTINUE_SKILL_NAME,
+  SANE_OUTCOME_CONTINUATION_SKILL_NAME,
+  SANE_ROUTER_SKILL_NAME,
   SANE_GLOBAL_AGENTS_BEGIN,
   SANE_GLOBAL_AGENTS_END,
   SANE_REPO_AGENTS_BEGIN,
@@ -22,7 +26,6 @@ import {
   createOptionalPackSkills,
   createSaneGlobalAgentsOverlay,
   createSaneRepoAgentsOverlay,
-  createSaneRouterSkill,
   optionalPackNames,
   optionalPackSkillNames,
   type OptionalPackName,
@@ -36,6 +39,9 @@ import { existsSync, mkdirSync, readFileSync, rmSync, rmSync as removeSync } fro
 import { dirname, join } from "node:path";
 
 import { recommendedLocalConfigFromEnvironment } from "./local-config.js";
+
+const SKILL_OWNERSHIP_MARKER_FILE = ".sane-owned";
+const SKILL_OWNERSHIP_MARKER_CONTENT = "managed-by: sane\n";
 export function exportUserSkills(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
   return exportSkillsTarget(
     paths,
@@ -130,13 +136,12 @@ export function uninstallRepoAgents(paths: ProjectPaths): OperationResult {
 
 export function inspectCodexSkillsAndAgents(paths: ProjectPaths, codexPaths: CodexPaths) {
   const { packs, roles } = activeGuidance(paths, codexPaths);
-  const expectedSkill = createSaneRouterSkill(packs, roles);
   const expectedCoreSkills = createCoreSkills(packs, roles);
   const expectedGlobalAgents = createSaneGlobalAgentsOverlay(packs, roles);
   const expectedRepoAgents = createSaneRepoAgentsOverlay(packs, roles);
 
-  const userSkillPath = join(codexPaths.userSkillsDir, "sane-router", "SKILL.md");
-  const repoSkillPath = join(paths.repoSkillsDir, "sane-router", "SKILL.md");
+  const userSkillPath = join(codexPaths.userSkillsDir, SANE_ROUTER_SKILL_NAME, "SKILL.md");
+  const repoSkillPath = join(paths.repoSkillsDir, SANE_ROUTER_SKILL_NAME, "SKILL.md");
 
   return [
     {
@@ -184,38 +189,66 @@ function exportSkillsTarget(
 ): OperationResult {
   const { packs, roles } = activeGuidance(paths, codexPaths);
   const coreSkills = createCoreSkills(packs, roles);
-  const skillPath = join(skillsRoot, "sane-router", "SKILL.md");
+  const enabledOptionalSkills = enabledOptionalPackSkills(packs).flatMap(([, skills]) => skills);
+  const managedSkillNames = [
+    ...coreSkills.map((skill) => skill.name),
+    ...enabledOptionalSkills.map((skill) => skill.name)
+  ];
+  const disabledSkillNames = disabledOptionalPackNames(packs).flatMap((packName) => optionalPackSkillNames(packName));
+  const skillPath = join(skillsRoot, SANE_ROUTER_SKILL_NAME, "SKILL.md");
   const pathsTouched: string[] = [];
+  const protectedDirs = collectUnownedSkillDirs(skillsRoot, [...managedSkillNames, ...disabledSkillNames]);
+
+  if (protectedDirs.length > 0) {
+    return new OperationResult({
+      kind,
+      summary: `${summaryPrefix}: blocked by non-Sane skill directories`,
+      details: [
+        "refusing to overwrite or delete skill directories without Sane ownership marker",
+        ...protectedDirs.map((path) => `blocked: ${path}`)
+      ],
+      pathsTouched: protectedDirs,
+      inventory: [
+        {
+          name: inventoryName,
+          scope: InventoryScope.CodexNative,
+          status: InventoryStatus.Invalid,
+          path: skillPath,
+          repairHint: `resolve blocked directories, then rerun \`${summaryPrefix}\``
+        }
+      ]
+    });
+  }
 
   for (const skill of coreSkills) {
     const skillDir = join(skillsRoot, skill.name);
     const targetPath = join(skillDir, "SKILL.md");
     mkdirSync(skillDir, { recursive: true });
     writeAtomicTextFile(targetPath, skill.content);
+    writeAtomicTextFile(join(skillDir, SKILL_OWNERSHIP_MARKER_FILE), SKILL_OWNERSHIP_MARKER_CONTENT);
     pathsTouched.push(targetPath);
   }
 
-  for (const [, skills] of enabledOptionalPackSkills(packs)) {
-    for (const skill of skills) {
-      const packDir = join(skillsRoot, skill.name);
-      const packPath = join(packDir, "SKILL.md");
-      mkdirSync(packDir, { recursive: true });
-      writeAtomicTextFile(packPath, skill.content);
-      pathsTouched.push(packPath);
+  for (const skill of enabledOptionalSkills) {
+    const packDir = join(skillsRoot, skill.name);
+    const packPath = join(packDir, "SKILL.md");
+    mkdirSync(packDir, { recursive: true });
+    writeAtomicTextFile(packPath, skill.content);
+    writeAtomicTextFile(join(packDir, SKILL_OWNERSHIP_MARKER_FILE), SKILL_OWNERSHIP_MARKER_CONTENT);
+    pathsTouched.push(packPath);
 
-      for (const resource of skill.resources) {
-        const resourcePath = join(packDir, resource.path);
-        mkdirSync(dirname(resourcePath), { recursive: true });
-        writeAtomicTextFile(resourcePath, resource.content);
-        pathsTouched.push(resourcePath);
-      }
+    for (const resource of skill.resources) {
+      const resourcePath = join(packDir, resource.path);
+      mkdirSync(dirname(resourcePath), { recursive: true });
+      writeAtomicTextFile(resourcePath, resource.content);
+      pathsTouched.push(resourcePath);
     }
   }
 
   for (const packName of disabledOptionalPackNames(packs)) {
     for (const name of optionalPackSkillNames(packName)) {
       const packDir = join(skillsRoot, name);
-      if (existsSync(packDir)) {
+      if (existsSync(packDir) && isSaneOwnedSkillDir(packDir)) {
         removeSync(packDir, { recursive: true, force: true });
         pathsTouched.push(packDir);
       }
@@ -294,8 +327,14 @@ function uninstallSkillsTarget(
   optionalWhenMissing: boolean,
   summaryPrefix: string
 ): OperationResult {
-  const coreSkillDirs = ["sane-router", "continue"].map((skillName) => join(skillsRoot, skillName));
-  const skillPath = join(skillsRoot, "sane-router", "SKILL.md");
+  const coreSkillDirs = [
+    SANE_ROUTER_SKILL_NAME,
+    SANE_BOOTSTRAP_RESEARCH_SKILL_NAME,
+    SANE_AGENT_LANES_SKILL_NAME,
+    SANE_OUTCOME_CONTINUATION_SKILL_NAME,
+    SANE_CONTINUE_SKILL_NAME
+  ].map((skillName) => join(skillsRoot, skillName));
+  const skillPath = join(skillsRoot, SANE_ROUTER_SKILL_NAME, "SKILL.md");
   const optionalDirs = optionalPackNames().flatMap((name) =>
     optionalPackSkillNames(name).map((skillName) => join(skillsRoot, skillName))
   );
@@ -318,30 +357,50 @@ function uninstallSkillsTarget(
     });
   }
 
-  const pathsTouched: string[] = [];
-  for (const dir of coreSkillDirs) {
-    if (existsSync(dir)) {
-      rmSync(dir, { recursive: true, force: true });
-      pathsTouched.push(dir);
-    }
+  const presentDirs = [...coreSkillDirs, ...optionalDirs].filter((dir) => existsSync(dir));
+  const managedDirs = presentDirs.filter((dir) => isSaneOwnedSkillDir(dir));
+  const preservedDirs = presentDirs.filter((dir) => !isSaneOwnedSkillDir(dir));
+
+  if (managedDirs.length === 0 && preservedDirs.length > 0) {
+    return new OperationResult({
+      kind,
+      summary: `${summaryPrefix}: blocked by non-Sane skill directories`,
+      details: [
+        "refusing to delete skill directories without Sane ownership marker",
+        ...preservedDirs.map((path) => `blocked: ${path}`)
+      ],
+      pathsTouched: preservedDirs,
+      inventory: [
+        {
+          name: inventoryName,
+          scope: InventoryScope.CodexNative,
+          status: InventoryStatus.Invalid,
+          path: skillPath,
+          repairHint: null
+        }
+      ]
+    });
   }
-  for (const dir of optionalDirs) {
-    if (existsSync(dir)) {
-      rmSync(dir, { recursive: true, force: true });
-      pathsTouched.push(dir);
-    }
+
+  const pathsTouched: string[] = [];
+  for (const dir of managedDirs) {
+    rmSync(dir, { recursive: true, force: true });
+    pathsTouched.push(dir);
   }
 
   return new OperationResult({
     kind,
-    summary: `${summaryPrefix}: removed core skills`,
-    details: [],
+    summary:
+      preservedDirs.length > 0
+        ? `${summaryPrefix}: removed managed skills; preserved non-Sane directories`
+        : `${summaryPrefix}: removed core skills`,
+    details: preservedDirs.map((path) => `preserved: ${path}`),
     pathsTouched,
     inventory: [
       {
         name: inventoryName,
         scope: InventoryScope.CodexNative,
-        status: InventoryStatus.Removed,
+        status: preservedDirs.length > 0 ? InventoryStatus.Invalid : InventoryStatus.Removed,
         path: skillPath,
         repairHint: null
       }
@@ -511,7 +570,6 @@ function activeGuidance(paths: ProjectPaths, codexPaths: CodexPaths): {
 } {
   const environment = detectCodexEnvironment(codexPaths.modelsCacheJson, codexPaths.authJson);
   const config = loadOrDefaultConfig(paths, codexPaths, environment);
-  const routing = createRecommendedModelRoutingPresets(environment);
   return {
     packs: {
       caveman: config.packs.caveman,
@@ -521,14 +579,14 @@ function activeGuidance(paths: ProjectPaths, codexPaths: CodexPaths): {
     roles: {
       coordinatorModel: config.models.coordinator.model,
       coordinatorReasoning: config.models.coordinator.reasoningEffort,
-      executionModel: routing.execution.model,
-      executionReasoning: routing.execution.reasoningEffort,
-      sidecarModel: config.models.sidecar.model,
-      sidecarReasoning: config.models.sidecar.reasoningEffort,
-      verifierModel: config.models.verifier.model,
-      verifierReasoning: config.models.verifier.reasoningEffort,
-      realtimeModel: routing.realtime.model,
-      realtimeReasoning: routing.realtime.reasoningEffort
+      executionModel: config.subagents.implementation.model,
+      executionReasoning: config.subagents.implementation.reasoningEffort,
+      sidecarModel: config.subagents.explorer.model,
+      sidecarReasoning: config.subagents.explorer.reasoningEffort,
+      verifierModel: config.subagents.verifier.model,
+      verifierReasoning: config.subagents.verifier.reasoningEffort,
+      realtimeModel: config.subagents.realtime.model,
+      realtimeReasoning: config.subagents.realtime.reasoningEffort
     }
   };
 }
@@ -553,4 +611,19 @@ function enabledOptionalPackSkills(
   ]
 > {
   return enabledOptionalPackNames(packs).map((name) => [name, createOptionalPackSkills(name)]);
+}
+
+function isSaneOwnedSkillDir(path: string): boolean {
+  return existsSync(join(path, SKILL_OWNERSHIP_MARKER_FILE));
+}
+
+function collectUnownedSkillDirs(skillsRoot: string, skillNames: string[]): string[] {
+  const blocked = new Set<string>();
+  for (const name of skillNames) {
+    const path = join(skillsRoot, name);
+    if (existsSync(path) && !isSaneOwnedSkillDir(path)) {
+      blocked.add(path);
+    }
+  }
+  return [...blocked];
 }

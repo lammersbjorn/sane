@@ -33,11 +33,11 @@ describe("app view", () => {
 
     const view = loadAppView(shell);
 
-    expect(view.activeSection.id).toBe("get_started");
+    expect(view.activeSection.id).toBe("home");
     expect(view.tabs.title).toBe("Sections");
-    expect(view.tabs.selected).toBe("get_started");
-    expect(view.tabs.items[0]).toEqual({ id: "get_started", label: "Start here" });
-    expect(view.sectionOverviewLines[0]).toContain("Recommended now:");
+    expect(view.tabs.selected).toBe("home");
+    expect(view.tabs.items[0]).toEqual({ id: "home", label: "Home" });
+    expect(view.sectionOverviewLines[0]).toContain("Guided setup");
     expect(view.selectedHelpLines[0]).toContain("Selected action:");
     expect(view.latestStatusTitle).toBe("Latest Status");
     expect(view.mode.id).toBe("browse");
@@ -52,45 +52,45 @@ describe("app view", () => {
     expect(view.footerLines[0]).toContain("drift");
   });
 
-  it("loads Get Started once even when dashboard and section overview both need it", async () => {
+  it("loads Home once even when dashboard and section overview both need it", async () => {
     vi.resetModules();
-    vi.doMock("@sane/sane-tui/get-started-screen.js", async () => {
-      const actual = await vi.importActual<typeof import("@sane/sane-tui/get-started-screen.js")>("@sane/sane-tui/get-started-screen.js");
+    vi.doMock("@sane/sane-tui/home-screen.js", async () => {
+      const actual = await vi.importActual<typeof import("@sane/sane-tui/home-screen.js")>("@sane/sane-tui/home-screen.js");
       return {
         ...actual,
-        loadGetStartedScreenFromStatusBundle: vi.fn(actual.loadGetStartedScreenFromStatusBundle)
+        loadHomeScreenFromStatusBundle: vi.fn(actual.loadHomeScreenFromStatusBundle)
       };
     });
-    vi.doMock("@sane/sane-tui/install-screen.js", async () => {
-      const actual = await vi.importActual<typeof import("@sane/sane-tui/install-screen.js")>("@sane/sane-tui/install-screen.js");
+    vi.doMock("@sane/sane-tui/add-to-codex-screen.js", async () => {
+      const actual = await vi.importActual<typeof import("@sane/sane-tui/add-to-codex-screen.js")>("@sane/sane-tui/add-to-codex-screen.js");
       return {
         ...actual,
-        loadInstallScreenFromStatusBundle: vi.fn(actual.loadInstallScreenFromStatusBundle)
+        loadAddToCodexScreenFromStatusBundle: vi.fn(actual.loadAddToCodexScreenFromStatusBundle)
       };
     });
 
     const { loadAppView: loadAppViewWithSpy } = await import("@sane/sane-tui/app-view.js");
-    const getStartedScreen = await import("@sane/sane-tui/get-started-screen.js");
-    const installScreen = await import("@sane/sane-tui/install-screen.js");
+    const homeScreen = await import("@sane/sane-tui/home-screen.js");
+    const addToCodexScreen = await import("@sane/sane-tui/add-to-codex-screen.js");
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
 
     loadAppViewWithSpy(shell);
 
-    expect(vi.mocked(getStartedScreen.loadGetStartedScreenFromStatusBundle)).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(getStartedScreen.loadGetStartedScreenFromStatusBundle).mock.calls[0]?.[2]).toBe(
+    expect(vi.mocked(homeScreen.loadHomeScreenFromStatusBundle)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(homeScreen.loadHomeScreenFromStatusBundle).mock.calls[0]?.[2]).toBe(
       shell.statusSnapshot.statusBundle
     );
-    expect(vi.mocked(getStartedScreen.loadGetStartedScreenFromStatusBundle).mock.calls[0]?.[3]).toBeDefined();
-    expect(vi.mocked(getStartedScreen.loadGetStartedScreenFromStatusBundle).mock.calls[0]?.[4]).toBe(
+    expect(vi.mocked(homeScreen.loadHomeScreenFromStatusBundle).mock.calls[0]?.[3]).toBeDefined();
+    expect(vi.mocked(homeScreen.loadHomeScreenFromStatusBundle).mock.calls[0]?.[4]).toBe(
       shell.hostPlatform
     );
-    expect(vi.mocked(installScreen.loadInstallScreenFromStatusBundle)).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(installScreen.loadInstallScreenFromStatusBundle).mock.calls[0]?.[2]).toBe(
+    expect(vi.mocked(addToCodexScreen.loadAddToCodexScreenFromStatusBundle)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(addToCodexScreen.loadAddToCodexScreenFromStatusBundle).mock.calls[0]?.[2]).toBe(
       shell.statusSnapshot.statusBundle
     );
-    expect(vi.mocked(installScreen.loadInstallScreenFromStatusBundle).mock.calls[0]?.[3]).toBeDefined();
-    vi.doUnmock("@sane/sane-tui/get-started-screen.js");
-    vi.doUnmock("@sane/sane-tui/install-screen.js");
+    expect(vi.mocked(addToCodexScreen.loadAddToCodexScreenFromStatusBundle).mock.calls[0]?.[3]).toBeDefined();
+    vi.doUnmock("@sane/sane-tui/home-screen.js");
+    vi.doUnmock("@sane/sane-tui/add-to-codex-screen.js");
     vi.resetModules();
   });
 
@@ -111,25 +111,25 @@ describe("app view", () => {
         inspectPreferencesFamilySnapshot: vi.fn(actual.inspectPreferencesFamilySnapshot)
       };
     });
-    vi.doMock("@sane/sane-tui/get-started-screen.js", async () => {
-      const actual = await vi.importActual<typeof import("@sane/sane-tui/get-started-screen.js")>("@sane/sane-tui/get-started-screen.js");
+    vi.doMock("@sane/sane-tui/home-screen.js", async () => {
+      const actual = await vi.importActual<typeof import("@sane/sane-tui/home-screen.js")>("@sane/sane-tui/home-screen.js");
       return {
         ...actual,
-        loadGetStartedScreenFromStatusBundle: vi.fn(actual.loadGetStartedScreenFromStatusBundle)
+        loadHomeScreenFromStatusBundle: vi.fn(actual.loadHomeScreenFromStatusBundle)
       };
     });
-    vi.doMock("@sane/sane-tui/preferences-screen.js", async () => {
-      const actual = await vi.importActual<typeof import("@sane/sane-tui/preferences-screen.js")>("@sane/sane-tui/preferences-screen.js");
+    vi.doMock("@sane/sane-tui/settings-screen.js", async () => {
+      const actual = await vi.importActual<typeof import("@sane/sane-tui/settings-screen.js")>("@sane/sane-tui/settings-screen.js");
       return {
         ...actual,
-        loadPreferencesScreen: vi.fn(actual.loadPreferencesScreen)
+        loadSettingsScreen: vi.fn(actual.loadSettingsScreen)
       };
     });
-    vi.doMock("@sane/sane-tui/inspect-screen.js", async () => {
-      const actual = await vi.importActual<typeof import("@sane/sane-tui/inspect-screen.js")>("@sane/sane-tui/inspect-screen.js");
+    vi.doMock("@sane/sane-tui/status-screen.js", async () => {
+      const actual = await vi.importActual<typeof import("@sane/sane-tui/status-screen.js")>("@sane/sane-tui/status-screen.js");
       return {
         ...actual,
-        loadInspectScreenFromStatusBundle: vi.fn(actual.loadInspectScreenFromStatusBundle)
+        loadStatusScreenFromStatusBundle: vi.fn(actual.loadStatusScreenFromStatusBundle)
       };
     });
 
@@ -137,11 +137,11 @@ describe("app view", () => {
     const shellModule = await import("@sane/sane-tui/shell.js");
     const codexConfig = await import("@sane/control-plane/codex-config.js");
     const preferencesControlPlane = await import("@sane/control-plane/preferences.js");
-    const getStartedScreen = await import("@sane/sane-tui/get-started-screen.js");
-    const inspectScreen = await import("@sane/sane-tui/inspect-screen.js");
-    const preferencesScreen = await import("@sane/sane-tui/preferences-screen.js");
+    const homeScreen = await import("@sane/sane-tui/home-screen.js");
+    const statusScreen = await import("@sane/sane-tui/status-screen.js");
+    const settingsScreen = await import("@sane/sane-tui/settings-screen.js");
     const shell = shellModule.createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
-    shellModule.selectSection(shell, "preferences");
+    shellModule.selectSection(shell, "settings");
     vi.mocked(codexConfig.inspectCodexProfileFamilySnapshot).mockClear();
     vi.mocked(preferencesControlPlane.inspectPreferencesFamilySnapshot).mockClear();
 
@@ -151,13 +151,13 @@ describe("app view", () => {
     expect(vi.mocked(preferencesControlPlane.inspectPreferencesFamilySnapshot)).not.toHaveBeenCalled();
     const profileSnapshot = shell.statusSnapshot.codexProfiles;
     const preferencesSnapshot = shell.statusSnapshot.preferences;
-    expect(vi.mocked(getStartedScreen.loadGetStartedScreenFromStatusBundle).mock.calls[0]?.[3]).toBe(
+    expect(vi.mocked(homeScreen.loadHomeScreenFromStatusBundle).mock.calls[0]?.[3]).toBe(
       profileSnapshot
     );
-    expect(vi.mocked(preferencesScreen.loadPreferencesScreen).mock.calls[0]?.[2]).toBe(profileSnapshot);
-    expect(vi.mocked(preferencesScreen.loadPreferencesScreen).mock.calls[0]?.[3]).toBe(preferencesSnapshot);
-    expect(vi.mocked(preferencesScreen.loadPreferencesScreen).mock.calls[0]?.[4]).toBe(shell.hostPlatform);
-    shellModule.selectSection(shell, "inspect");
+    expect(vi.mocked(settingsScreen.loadSettingsScreen).mock.calls[0]?.[2]).toBe(profileSnapshot);
+    expect(vi.mocked(settingsScreen.loadSettingsScreen).mock.calls[0]?.[3]).toBe(preferencesSnapshot);
+    expect(vi.mocked(settingsScreen.loadSettingsScreen).mock.calls[0]?.[4]).toBe(shell.hostPlatform);
+    shellModule.selectSection(shell, "status");
     while (shellModule.currentAction(shell).id !== "preview_integrations_profile") {
       shellModule.moveSelection(shell, "action", 1);
     }
@@ -166,17 +166,17 @@ describe("app view", () => {
 
     expect(vi.mocked(codexConfig.inspectCodexProfileFamilySnapshot)).not.toHaveBeenCalled();
     expect(vi.mocked(codexConfig.showCodexConfig)).not.toHaveBeenCalled();
-    expect(vi.mocked(inspectScreen.loadInspectScreenFromStatusBundle).mock.calls[0]?.[3]).toBe(
+    expect(vi.mocked(statusScreen.loadStatusScreenFromStatusBundle).mock.calls[0]?.[3]).toBe(
       profileSnapshot
     );
-    expect(vi.mocked(inspectScreen.loadInspectScreenFromStatusBundle).mock.calls[0]?.[5]).toBe(
+    expect(vi.mocked(statusScreen.loadStatusScreenFromStatusBundle).mock.calls[0]?.[5]).toBe(
       shell.hostPlatform
     );
     vi.doUnmock("@sane/control-plane/codex-config.js");
     vi.doUnmock("@sane/control-plane/preferences.js");
-    vi.doUnmock("@sane/sane-tui/get-started-screen.js");
-    vi.doUnmock("@sane/sane-tui/inspect-screen.js");
-    vi.doUnmock("@sane/sane-tui/preferences-screen.js");
+    vi.doUnmock("@sane/sane-tui/home-screen.js");
+    vi.doUnmock("@sane/sane-tui/status-screen.js");
+    vi.doUnmock("@sane/sane-tui/settings-screen.js");
     vi.resetModules();
   });
 
@@ -185,16 +185,16 @@ describe("app view", () => {
 
     const view = loadAppView(shell);
 
-    expect(view.recommendedNextStep).toBe("Create Sane's local project files first.");
-    expect(view.sectionOverviewLines.join("\n")).toContain("Status now:");
+    expect(view.recommendedNextStep).toBe("Set up Sane's local files first.");
+    expect(view.sectionOverviewLines.join("\n")).toContain("Current setup");
     expect(view.sectionOverviewLines.join("\n")).toContain("runtime: missing");
     expect(view.sectionOverviewLines.join("\n")).toContain("config: missing");
     expect(view.sectionOverviewLines.join("\n")).toContain("codex-config: missing");
     expect(view.sectionOverviewLines.join("\n")).toContain("user-skills: missing");
-    expect(view.sectionOverviewLines.join("\n")).toContain("core codex profile: missing");
+    expect(view.sectionOverviewLines.join("\n")).toContain("Codex defaults: missing");
   });
 
-  it("surfaces typed codex profile readiness in Get Started guidance", () => {
+  it("surfaces typed codex profile readiness in Home guidance", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
     for (let index = 0; index < 2; index += 1) {
       moveSelection(shell, "action", 1);
@@ -205,18 +205,18 @@ describe("app view", () => {
     expect(view.selectedAction.id).toBe("preview_codex_profile");
     expect(view.selectedHelpLines.join("\n")).toContain("audit: missing");
     expect(view.selectedHelpLines.join("\n")).toContain("apply readiness: ready (3 changes)");
-    expect(view.selectedHelpLines.join("\n")).toContain("model: <missing> -> gpt-5.4");
+    expect(view.selectedHelpLines.join("\n")).toContain("model: <missing> -> gpt-5.5");
   });
 
   it("expands inspect into read-only status, doctor, config, and drift guidance", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
-    selectSection(shell, "inspect");
+    selectSection(shell, "status");
 
     const view = loadAppView(shell);
 
     expect(view.sectionOverviewLines.join("\n")).toContain("status counts");
     expect(view.sectionOverviewLines.join("\n")).toContain("primary surfaces");
-    expect(view.sectionOverviewLines.join("\n")).toContain("doctor result");
+    expect(view.sectionOverviewLines.join("\n")).toContain("setup check");
     expect(view.sectionOverviewLines.join("\n")).toContain("runtime summary");
     expect(view.sectionOverviewLines.join("\n")).toContain("runtime history");
     expect(view.sectionOverviewLines.join("\n")).toContain("latest event");
@@ -232,9 +232,9 @@ describe("app view", () => {
 
   it("uses inspect overview selector instead of unpacking inspect status bundle in app-view", async () => {
     vi.resetModules();
-    vi.doMock("@sane/sane-tui/inspect-screen.js", () => {
+    vi.doMock("@sane/sane-tui/status-screen.js", () => {
       const inspectModel: Record<string, unknown> = {
-        summary: "Inspect",
+        summary: "Status",
         actions: [],
         overviewLines: ["from-model-overview-lines"]
       };
@@ -245,22 +245,22 @@ describe("app view", () => {
       });
 
       return {
-        loadInspectScreenFromStatusBundle: vi.fn(() => inspectModel),
-        inspectOverviewLines: vi.fn(() => ["from-inspect-overview-selector"]),
-        formatInspectPolicyPreviewLines: vi.fn(() => ["from-inspect-policy-preview-selector"])
+        loadStatusScreenFromStatusBundle: vi.fn(() => inspectModel),
+        statusOverviewLines: vi.fn(() => ["from-inspect-overview-selector"]),
+        formatStatusPolicyPreviewLines: vi.fn(() => ["from-inspect-policy-preview-selector"])
       };
     });
 
     const { loadAppView: loadAppViewWithMock } = await import("@sane/sane-tui/app-view.js");
-    const inspectScreen = await import("@sane/sane-tui/inspect-screen.js");
+    const statusScreen = await import("@sane/sane-tui/status-screen.js");
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
-    selectSection(shell, "inspect");
+    selectSection(shell, "status");
 
     const view = loadAppViewWithMock(shell);
 
     expect(view.sectionOverviewLines).toEqual(["from-inspect-overview-selector"]);
-    expect(vi.mocked(inspectScreen.inspectOverviewLines)).toHaveBeenCalledTimes(1);
-    vi.doUnmock("@sane/sane-tui/inspect-screen.js");
+    expect(vi.mocked(statusScreen.statusOverviewLines)).toHaveBeenCalledTimes(1);
+    vi.doUnmock("@sane/sane-tui/status-screen.js");
     vi.resetModules();
   });
 
@@ -277,27 +277,27 @@ describe("app view", () => {
 
   it("threads shell status bundle into inspect when the inspect section is opened", async () => {
     vi.resetModules();
-    vi.doMock("@sane/sane-tui/inspect-screen.js", async () => {
-      const actual = await vi.importActual<typeof import("@sane/sane-tui/inspect-screen.js")>("@sane/sane-tui/inspect-screen.js");
+    vi.doMock("@sane/sane-tui/status-screen.js", async () => {
+      const actual = await vi.importActual<typeof import("@sane/sane-tui/status-screen.js")>("@sane/sane-tui/status-screen.js");
       return {
         ...actual,
-        loadInspectScreenFromStatusBundle: vi.fn(actual.loadInspectScreenFromStatusBundle)
+        loadStatusScreenFromStatusBundle: vi.fn(actual.loadStatusScreenFromStatusBundle)
       };
     });
 
     const { loadAppView: loadAppViewWithSpy } = await import("@sane/sane-tui/app-view.js");
-    const inspectScreen = await import("@sane/sane-tui/inspect-screen.js");
+    const statusScreen = await import("@sane/sane-tui/status-screen.js");
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
-    selectSection(shell, "inspect");
+    selectSection(shell, "status");
 
     loadAppViewWithSpy(shell);
 
-    expect(vi.mocked(inspectScreen.loadInspectScreenFromStatusBundle)).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(inspectScreen.loadInspectScreenFromStatusBundle).mock.calls[0]?.[2]).toBe(
+    expect(vi.mocked(statusScreen.loadStatusScreenFromStatusBundle)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(statusScreen.loadStatusScreenFromStatusBundle).mock.calls[0]?.[2]).toBe(
       shell.statusSnapshot.statusBundle
     );
-    expect(vi.mocked(inspectScreen.loadInspectScreenFromStatusBundle).mock.calls[0]?.[5]).toBe(shell.hostPlatform);
-    vi.doUnmock("@sane/sane-tui/inspect-screen.js");
+    expect(vi.mocked(statusScreen.loadStatusScreenFromStatusBundle).mock.calls[0]?.[5]).toBe(shell.hostPlatform);
+    vi.doUnmock("@sane/sane-tui/status-screen.js");
     vi.resetModules();
   });
 
@@ -327,7 +327,7 @@ describe("app view", () => {
     vi.resetModules();
   });
 
-  it("surfaces invalid install drift in Inspect guidance", () => {
+  it("surfaces invalid install drift in Status guidance", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const paths = createProjectPaths(projectRoot);
@@ -337,7 +337,7 @@ describe("app view", () => {
     writeFileSync(codexPaths.hooksJson, "{", "utf8");
 
     const shell = createTuiShell(paths, codexPaths);
-    selectSection(shell, "inspect");
+    selectSection(shell, "status");
     for (let index = 0; index < 5; index += 1) {
       moveSelection(shell, "action", 1);
     }
@@ -348,9 +348,9 @@ describe("app view", () => {
     expect(view.sectionOverviewLines.join("\n")).toContain("hooks: invalid");
   });
 
-  it("surfaces integrations preview payload in Inspect guidance", () => {
+  it("surfaces integrations preview payload in Status guidance", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
-    selectSection(shell, "inspect");
+    selectSection(shell, "status");
     for (let index = 0; index < 5; index += 1) {
       moveSelection(shell, "action", 1);
     }
@@ -365,9 +365,9 @@ describe("app view", () => {
     expect(view.selectedHelpLines.join("\n")).toContain("grep.app: missing -> recommended");
   });
 
-  it("surfaces typed cloudflare profile readiness in Preferences guidance", () => {
+  it("surfaces typed cloudflare profile readiness in Settings guidance", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
-    selectSection(shell, "preferences");
+    selectSection(shell, "settings");
     for (let index = 0; index < 7; index += 1) {
       moveSelection(shell, "action", 1);
     }
@@ -377,9 +377,12 @@ describe("app view", () => {
     expect(view.selectedAction.id).toBe("preview_cloudflare_profile");
     expect(view.sectionOverviewLines.join("\n")).toContain("statusline profile: missing");
     expect(view.sectionOverviewLines.join("\n")).toContain("cloudflare profile: missing");
-    expect(view.sectionOverviewLines.join("\n")).toContain("explorer: gpt-5.4-mini/low");
-    expect(view.sectionOverviewLines.join("\n")).toContain("execution: gpt-5.3-codex/medium");
-    expect(view.sectionOverviewLines.join("\n")).toContain("realtime: gpt-5.3-codex-spark/low");
+    expect(view.sectionOverviewLines.join("\n")).toContain("explorer agent: gpt-5.4-mini/low");
+    expect(view.sectionOverviewLines.join("\n")).toContain("implementation agent: gpt-5.3-codex/medium");
+    expect(view.sectionOverviewLines.join("\n")).toContain("verifier agent:");
+    expect(view.sectionOverviewLines.join("\n")).not.toContain("reviewer agent:");
+    expect(view.sectionOverviewLines.join("\n")).toContain("realtime helper: gpt-5.3-codex-spark/low");
+    expect(view.sectionOverviewLines.join("\n")).toContain("frontend craft agent: gpt-5.5/high");
     expect(view.selectedHelpLines.join("\n")).toContain("audit: missing");
     expect(view.selectedHelpLines.join("\n")).toContain("apply readiness: ready (1 keys)");
     expect(view.selectedHelpLines.join("\n")).toContain(
@@ -387,31 +390,9 @@ describe("app view", () => {
     );
   });
 
-  it("surfaces typed opencode profile readiness in Preferences guidance", () => {
+  it("surfaces runtime-summary payload in Status guidance", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
-    selectSection(shell, "preferences");
-    for (let index = 0; index < 10; index += 1) {
-      moveSelection(shell, "action", 1);
-    }
-
-    const view = loadAppView(shell);
-
-    expect(view.selectedAction.id).toBe("apply_opencode_profile");
-    expect(view.sectionOverviewLines.join("\n")).toContain("statusline profile: missing");
-    expect(view.sectionOverviewLines.join("\n")).toContain("opencode profile: missing");
-    expect(view.sectionOverviewLines.join("\n")).toContain("explorer: gpt-5.4-mini/low");
-    expect(view.sectionOverviewLines.join("\n")).toContain("execution: gpt-5.3-codex/medium");
-    expect(view.sectionOverviewLines.join("\n")).toContain("realtime: gpt-5.3-codex-spark/low");
-    expect(view.selectedHelpLines.join("\n")).toContain("audit: missing");
-    expect(view.selectedHelpLines.join("\n")).toContain("apply readiness: ready (1 keys)");
-    expect(view.selectedHelpLines.join("\n")).toContain(
-      "opensrc: missing -> optional Opencode compatibility profile"
-    );
-  });
-
-  it("surfaces runtime-summary payload in Inspect guidance", () => {
-    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
-    selectSection(shell, "inspect");
+    selectSection(shell, "status");
     for (let index = 0; index < 2; index += 1) {
       moveSelection(shell, "action", 1);
     }
@@ -420,8 +401,9 @@ describe("app view", () => {
 
     expect(view.selectedAction.id).toBe("show_runtime_summary");
     expect(view.selectedHelpLines.join("\n")).toContain(
-      "Runtime handoff visibility is read-only and current-run-derived."
+      "opens details without changing files."
     );
+    expect(view.selectedHelpLines.join("\n")).toContain("It does not start agent work.");
     expect(view.selectedHelpLines.join("\n")).toContain(
       "runtime handoff layers: current-run missing, summary missing, brief missing"
     );
@@ -433,7 +415,7 @@ describe("app view", () => {
     expect(view.selectedHelpLines.join("\n")).toContain("latest artifact (read-only local visibility):");
   });
 
-  it("surfaces enriched local config payload in Preferences guidance", () => {
+  it("surfaces enriched local config payload in Settings guidance", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const paths = createProjectPaths(projectRoot);
@@ -441,7 +423,7 @@ describe("app view", () => {
     saveConfig(paths, createDefaultLocalConfig());
 
     const shell = createTuiShell(paths, codexPaths);
-    selectSection(shell, "preferences");
+    selectSection(shell, "settings");
     for (let index = 0; index < 3; index += 1) {
       moveSelection(shell, "action", 1);
     }
@@ -455,7 +437,7 @@ describe("app view", () => {
     expect(view.selectedHelpLines.join("\n")).toContain("realtime: gpt-5.3-codex-spark (low) (derived)");
   });
 
-  it("keeps Inspect show-config tied to the shell preferences snapshot", () => {
+  it("keeps Status show-config tied to the shell preferences snapshot", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const paths = createProjectPaths(projectRoot);
@@ -484,7 +466,7 @@ describe("app view", () => {
       }),
       "utf8"
     );
-    selectSection(shell, "inspect");
+    selectSection(shell, "status");
     for (let index = 0; index < 3; index += 1) {
       moveSelection(shell, "action", 1);
     }
@@ -500,7 +482,7 @@ describe("app view", () => {
     );
   });
 
-  it("surfaces codex config payload in Preferences guidance", () => {
+  it("surfaces codex config payload in Settings guidance", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const paths = createProjectPaths(projectRoot);
@@ -509,7 +491,7 @@ describe("app view", () => {
     applyCodexProfile(paths, codexPaths);
 
     const shell = createTuiShell(paths, codexPaths);
-    selectSection(shell, "preferences");
+    selectSection(shell, "settings");
     for (let index = 0; index < 4; index += 1) {
       moveSelection(shell, "action", 1);
     }
@@ -521,7 +503,7 @@ describe("app view", () => {
     expect(view.selectedHelpLines.join("\n")).toContain("reasoning:");
   });
 
-  it("surfaces the latest typed policy snapshot in Inspect guidance", () => {
+  it("surfaces the latest typed policy snapshot in Status guidance", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const paths = createProjectPaths(projectRoot);
@@ -540,7 +522,7 @@ describe("app view", () => {
     appendJsonlRecord(paths.decisionsPath, decision, stringifyDecisionRecord);
 
     const shell = createTuiShell(paths, codexPaths);
-    selectSection(shell, "inspect");
+    selectSection(shell, "status");
 
     const view = loadAppView(shell);
 
@@ -554,7 +536,7 @@ describe("app view", () => {
 
   it("surfaces policy preview payload for the inspect policy action", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
-    selectSection(shell, "inspect");
+    selectSection(shell, "status");
     for (let index = 0; index < 7; index += 1) {
       moveSelection(shell, "action", 1);
     }
@@ -578,9 +560,9 @@ describe("app view", () => {
 
   it("uses inspect policy presenter selector instead of manual policy line stitching", async () => {
     vi.resetModules();
-    vi.doMock("@sane/sane-tui/inspect-screen.js", () => {
+    vi.doMock("@sane/sane-tui/status-screen.js", () => {
       const inspectModel = {
-        summary: "Inspect",
+        summary: "Status",
         actions: [],
         overviewLines: ["inspect-overview"],
         latestPolicyPreview: { status: "missing" },
@@ -594,16 +576,16 @@ describe("app view", () => {
       };
 
       return {
-        loadInspectScreenFromStatusBundle: vi.fn(() => inspectModel),
-        inspectOverviewLines: vi.fn(() => ["inspect-overview"]),
-        formatInspectPolicyPreviewLines: vi.fn(() => ["from-policy-presenter"])
+        loadStatusScreenFromStatusBundle: vi.fn(() => inspectModel),
+        statusOverviewLines: vi.fn(() => ["inspect-overview"]),
+        formatStatusPolicyPreviewLines: vi.fn(() => ["from-policy-presenter"])
       };
     });
 
     const { loadAppView: loadAppViewWithMock } = await import("@sane/sane-tui/app-view.js");
-    const inspectScreen = await import("@sane/sane-tui/inspect-screen.js");
+    const statusScreen = await import("@sane/sane-tui/status-screen.js");
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
-    selectSection(shell, "inspect");
+    selectSection(shell, "status");
     for (let index = 0; index < 7; index += 1) {
       moveSelection(shell, "action", 1);
     }
@@ -613,8 +595,8 @@ describe("app view", () => {
     expect(view.selectedAction.id).toBe("preview_policy");
     expect(view.selectedHelpLines).toContain("from-policy-presenter");
     expect(view.selectedHelpLines).not.toContain("should-not-appear");
-    expect(vi.mocked(inspectScreen.formatInspectPolicyPreviewLines)).toHaveBeenCalledTimes(1);
-    vi.doUnmock("@sane/sane-tui/inspect-screen.js");
+    expect(vi.mocked(statusScreen.formatStatusPolicyPreviewLines)).toHaveBeenCalledTimes(1);
+    vi.doUnmock("@sane/sane-tui/status-screen.js");
     vi.resetModules();
   });
 
@@ -651,7 +633,7 @@ describe("app view", () => {
     appendJsonlRecord(paths.decisionsPath, decision, stringifyDecisionRecord);
 
     const shell = createTuiShell(paths, codexPaths);
-    selectSection(shell, "inspect");
+    selectSection(shell, "status");
     for (let index = 0; index < 7; index += 1) {
       moveSelection(shell, "action", 1);
     }
@@ -665,7 +647,7 @@ describe("app view", () => {
 
   it("surfaces integrations preview payload for the install apply action too", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
-    selectSection(shell, "install");
+    selectSection(shell, "add_to_codex");
     for (let index = 0; index < 12 && currentAction(shell).id !== "apply_integrations_profile"; index += 1) {
       moveSelection(shell, "action", 1);
     }
@@ -681,7 +663,7 @@ describe("app view", () => {
 
   it("surfaces live install-state guidance in the install section overview", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
-    selectSection(shell, "install");
+    selectSection(shell, "add_to_codex");
 
     const view = loadAppView(shell);
     const overview = view.sectionOverviewLines.join("\n");
@@ -695,26 +677,26 @@ describe("app view", () => {
 
   it("loads inspect snapshot once when install overview and selected help both need it", async () => {
     vi.resetModules();
-    vi.doMock("@sane/sane-tui/inspect-screen.js", async () => {
-      const actual = await vi.importActual<typeof import("@sane/sane-tui/inspect-screen.js")>("@sane/sane-tui/inspect-screen.js");
+    vi.doMock("@sane/sane-tui/status-screen.js", async () => {
+      const actual = await vi.importActual<typeof import("@sane/sane-tui/status-screen.js")>("@sane/sane-tui/status-screen.js");
       return {
         ...actual,
-        loadInspectScreenFromStatusBundle: vi.fn(actual.loadInspectScreenFromStatusBundle)
+        loadStatusScreenFromStatusBundle: vi.fn(actual.loadStatusScreenFromStatusBundle)
       };
     });
 
     const { loadAppView: loadAppViewWithSpy } = await import("@sane/sane-tui/app-view.js");
-    const inspectScreen = await import("@sane/sane-tui/inspect-screen.js");
+    const statusScreen = await import("@sane/sane-tui/status-screen.js");
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
-    selectSection(shell, "install");
+    selectSection(shell, "add_to_codex");
     for (let index = 0; index < 12 && currentAction(shell).id !== "apply_integrations_profile"; index += 1) {
       moveSelection(shell, "action", 1);
     }
 
     loadAppViewWithSpy(shell);
 
-    expect(vi.mocked(inspectScreen.loadInspectScreenFromStatusBundle)).toHaveBeenCalledTimes(1);
-    vi.doUnmock("@sane/sane-tui/inspect-screen.js");
+    expect(vi.mocked(statusScreen.loadStatusScreenFromStatusBundle)).toHaveBeenCalledTimes(1);
+    vi.doUnmock("@sane/sane-tui/status-screen.js");
     vi.resetModules();
   });
 
@@ -724,7 +706,7 @@ describe("app view", () => {
     const view = loadAppView(shell);
 
     expect(view.sectionOverviewLines.join("\n")).toContain("defaults source:");
-    expect(view.sectionOverviewLines.join("\n")).toContain("coordinator:");
+    expect(view.sectionOverviewLines.join("\n")).toContain("main session:");
     expect(view.sectionOverviewLines.join("\n")).toContain("local telemetry data:");
     expect(view.sectionOverviewLines.join("\n")).toContain("telemetry files:");
     expect(view.sectionOverviewLines.join("\n")).toContain("enabled packs:");

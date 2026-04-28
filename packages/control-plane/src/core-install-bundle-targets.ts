@@ -37,7 +37,7 @@ const EXPORT_ACTIONS: Record<
 > = {
   "user-skills": (paths, codexPaths) => exportUserSkills(paths, codexPaths),
   "global-agents": (paths, codexPaths) => exportGlobalAgents(paths, codexPaths),
-  hooks: (_paths, codexPaths) => exportHooks(codexPaths),
+  hooks: (paths, codexPaths) => exportHooks(paths, codexPaths),
   "custom-agents": (paths, codexPaths) => exportCustomAgents(paths, codexPaths)
 };
 

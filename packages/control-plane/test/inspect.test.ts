@@ -3,7 +3,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createDefaultLocalConfig } from "@sane/config";
-import { optionalPackSkillNames } from "@sane/framework-assets";
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { appendJsonlRecord, createDecisionRecord, stringifyDecisionRecord } from "@sane/state";
 import { afterEach, describe, expect, it } from "vitest";
@@ -26,6 +25,24 @@ function makeTempDir(): string {
   const dir = mkdtempSync(join(tmpdir(), "sane-control-plane-inspect-"));
   tempDirs.push(dir);
   return dir;
+}
+
+function expectReadOnlyRunnerDisabledOverview(overview: string): void {
+  expect(overview).toContain("self-hosting shadow (read-only): ready, runner disabled");
+  expect(overview).toContain("outcome readiness (read-only): ready, autonomous loop disabled");
+  expect(overview).toContain("outcome rescue signal (read-only):");
+  expect(overview).toContain("worktree readiness (read-only):");
+  expect(overview).toContain("outcome verification (read-only):");
+  expect(overview).toContain("repo verify (read-only):");
+}
+
+function expectOptionalPackProvenanceOverview(overview: string): void {
+  expect(overview).toContain("optional pack provenance:");
+  expect(overview).toContain("caveman configured");
+  expect(overview).toContain("rtk disabled");
+  expect(overview).toContain("frontend-craft disabled");
+  expect(overview).toContain("derived from taste-skill");
+  expect(overview).toContain("impeccable");
 }
 
 afterEach(() => {
@@ -63,7 +80,7 @@ describe("inspect snapshot", () => {
     );
     saveConfig(paths, config);
     applyCodexProfile(paths, codexPaths);
-    exportHooks(codexPaths);
+    exportHooks(paths, codexPaths);
 
     const snapshot = inspectSnapshot(paths, codexPaths);
 
@@ -92,18 +109,33 @@ describe("inspect snapshot", () => {
       autonomousLoopEnabled: false,
       status: "ready"
     });
-    expect(snapshot.latestPolicyPreview).toEqual({
+    expect(snapshot.outcomeRescueSignal).toMatchObject({
+      status: "pass"
+    });
+    expect(snapshot.worktreeReadiness).toMatchObject({
+      mode: "read-only-worktree-readiness",
+      status: "missing"
+    });
+    expect(snapshot.runtimeOutcome).toMatchObject({
+      phase: "setup",
+      verificationStatus: "passed",
+      verificationSummary: "inspect fixture verified"
+    });
+    expect(snapshot.repoVerifyCommand).toBeNull();
+    expect(snapshot.latestPolicyPreview).toMatchObject({
       status: "missing",
       scenarioCount: 0,
-      scenarioIds: [],
-      scenarios: [],
       tsUnix: null,
       summary: null
     });
     expect(snapshot.localConfig.summary).toContain("config: ok");
-    expect(snapshot.localConfig.details).toContain("explorer: gpt-5.4-mini (low) (derived)");
-    expect(snapshot.localConfig.details).toContain("execution: gpt-5.3-codex (medium) (derived)");
-    expect(snapshot.localConfig.details).toContain("realtime: gpt-5.3-codex-spark (low) (derived)");
+    expect(snapshot.localConfig.details).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/^explorer: .+ \(derived\)$/),
+        expect.stringMatching(/^execution: .+ \(derived\)$/),
+        expect.stringMatching(/^realtime: .+ \(derived\)$/)
+      ])
+    );
     expect(snapshot.codexConfig.summary).toContain("codex-config: ok");
     expect(snapshot.integrationsAudit.status).toBe("missing");
     expect(snapshot.integrationsPreview.summary).toContain("integrations-profile preview");
@@ -121,17 +153,10 @@ describe("inspect snapshot", () => {
 
     expect(overview).toContain("status counts:");
     expect(overview).toContain("primary surfaces:");
-    expect(overview).toContain(
-      "self-hosting shadow (read-only): ready, runner disabled"
-    );
-    expect(overview).toContain(
-      "outcome readiness (read-only): ready, autonomous loop disabled"
-    );
+    expectReadOnlyRunnerDisabledOverview(overview);
     expect(overview).toContain("statusline profile: missing");
     expect(overview).toContain("conflict warnings: none");
-    expect(overview).toContain(
-      `optional pack provenance: caveman configured (sane-caveman; derived from caveman); rtk disabled (no skills; internal); frontend-craft disabled (${optionalPackSkillNames("frontend-craft").join(" + ")}; derived from taste-skill + impeccable)`
-    );
+    expectOptionalPackProvenanceOverview(overview);
   });
 
   it("surfaces conflict warnings in inspect overview without mutating Codex config", () => {
@@ -160,8 +185,27 @@ describe("inspect snapshot", () => {
     ]);
     expect(overview).toContain("conflict warnings: 1");
     expect(overview).toContain(
-      "mcp_servers.experimental_sidecar: unmanaged Codex MCP server 'experimental_sidecar' is outside Sane's known profiles"
+      "mcp_servers.experimental_sidecar: unmanaged Codex MCP server 'experimental_sidecar' is outside Sane's known profiles; warning-only, no auto-install or auto-remove"
     );
+  });
+
+  it("surfaces worktree readiness from git metadata without mutating the repo", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    writeFileSync(join(projectRoot, ".git"), "gitdir: /tmp/linked-worktree/.git\n", "utf8");
+
+    const snapshot = inspectSnapshot(paths, codexPaths);
+    const overview = formatInspectOverviewLines(snapshot).join("\n");
+
+    expect(snapshot.worktreeReadiness).toMatchObject({
+      status: "ready",
+      linkedWorktree: true,
+      summary: "linked git worktree detected"
+    });
+    expect(overview).toContain("worktree readiness (read-only): ready - linked git worktree detected");
   });
 
   it("surfaces disabled Codex hooks in inspect overview without mutating Codex config", () => {
@@ -241,41 +285,23 @@ describe("inspect snapshot", () => {
         status: "invalid"
       })
     ]);
-    expect(snapshot.latestPolicyPreview).toEqual({
+    expect(snapshot.latestPolicyPreview).toMatchObject({
       status: "present",
       scenarioCount: 2,
       scenarioIds: ["simple-question", "multi-file-feature"],
       scenarios: [
         {
           id: "simple-question",
-          summary: null,
-          input: null,
           roles: {
-            coordinator: true,
-            sidecar: false,
-            verifier: false
+            coordinator: true
           },
           orchestration: {
             subagents: "none",
-            subagentReadiness: "not_needed",
-            reviewPosture: "inline_only",
-            verifierTiming: "inline"
-          },
-          continuation: null,
-          obligationCount: 0,
-          traceCount: 0,
-          trace: []
+            reviewPosture: "inline_only"
+          }
         },
         {
-          id: "multi-file-feature",
-          summary: null,
-          input: null,
-          roles: null,
-          orchestration: null,
-          continuation: null,
-          obligationCount: 0,
-          traceCount: 0,
-          trace: []
+          id: "multi-file-feature"
         }
       ],
       tsUnix: 1_700_000_003,

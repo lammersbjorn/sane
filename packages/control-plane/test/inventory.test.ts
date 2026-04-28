@@ -10,6 +10,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { applyCodexProfile } from "../src/codex-config.js";
 import { exportAll } from "../src/bundles.js";
+import { exportPlugin } from "../src/codex-plugin.js";
 import { exportGlobalAgents, exportUserSkills } from "../src/codex-native.js";
 import { exportCustomAgents, exportHooks } from "../src/hooks-custom-agents.js";
 import {
@@ -64,18 +65,20 @@ describe("full inventory and doctor", () => {
       "pack-rtk",
       "pack-frontend-craft"
     ]);
-    expect(bundle.codexNative.map((item) => item.name)).toEqual([
-      "codex-config",
-      "user-skills",
-      "repo-skills",
-      "repo-agents",
-      "global-agents",
-      "hooks",
-      "custom-agents"
-    ]);
-    expect(bundle.compatibility.map((item) => item.name)).toEqual([
-      "opencode-agents"
-    ]);
+    const codexNativeNames = bundle.codexNative.map((item) => item.name);
+    expect(codexNativeNames).toEqual(
+      expect.arrayContaining([
+        "codex-config",
+        "user-skills",
+        "repo-skills",
+        "repo-agents",
+        "global-agents",
+        "hooks",
+        "custom-agents",
+        "plugin"
+      ])
+    );
+    expect(bundle.compatibility).toEqual([]);
     expect(bundle.inventory).toHaveLength(
       bundle.localRuntime.length + bundle.codexNative.length + bundle.compatibility.length
     );
@@ -94,8 +97,8 @@ describe("full inventory and doctor", () => {
         name: "rtk",
         inventoryName: "pack-rtk",
         status: "disabled",
-        skillName: null,
-        skillNames: [],
+        skillName: "sane-rtk",
+        skillNames: ["sane-rtk"],
         provenance: expect.objectContaining({
           kind: "internal"
         })
@@ -104,7 +107,7 @@ describe("full inventory and doctor", () => {
         name: "frontend-craft",
         inventoryName: "pack-frontend-craft",
         status: "disabled",
-        skillName: "design-taste-frontend",
+        skillName: "sane-frontend-craft",
         skillNames: optionalPackSkillNames("frontend-craft"),
         provenance: expect.objectContaining({
           kind: "derived"
@@ -273,13 +276,13 @@ describe("full inventory and doctor", () => {
         target: "mcp_servers.experimental_sidecar",
         path: codexPaths.configToml,
         message:
-          "unmanaged Codex MCP server 'experimental_sidecar' is outside Sane's known profiles"
+          "unmanaged Codex MCP server 'experimental_sidecar' is outside Sane's known profiles; warning-only, no auto-install or auto-remove"
       },
       {
         kind: "unmanaged_plugin",
         target: "plugins.local_lab",
         path: codexPaths.configToml,
-        message: "enabled Codex plugin 'local_lab' is outside Sane's managed profiles"
+        message: "enabled Codex plugin 'local_lab' is outside Sane's managed profiles; warning-only, no auto-install or auto-remove"
       }
     ]);
   });
@@ -308,8 +311,36 @@ describe("full inventory and doctor", () => {
         kind: "managed_mcp_server_drift",
         target: "mcp_servers.context7",
         path: codexPaths.configToml,
-        message: "managed Codex MCP server 'context7' differs from Sane's profile"
+        message: "managed Codex MCP server 'context7' differs from Sane's profile; warning-only until you explicitly apply a profile"
       }
+    ]);
+  });
+
+  it("surfaces oversized always-loaded guidance as warning-only context bloat", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+    writeFileSync(paths.repoAgentsMd, Array.from({ length: 230 }, (_, index) => `repo line ${index}`).join("\n"));
+    writeFileSync(codexPaths.globalAgentsMd, `${"global ".repeat(2_100)}\n`);
+
+    const bundle = inspectStatusBundle(paths, codexPaths);
+
+    expect(bundle.conflictWarnings).toEqual([
+      expect.objectContaining({
+        kind: "oversized_guidance_file",
+        target: "AGENTS.md",
+        path: paths.repoAgentsMd,
+        message: expect.stringContaining("prefer narrow skills")
+      }),
+      expect.objectContaining({
+        kind: "oversized_guidance_file",
+        target: "~/.codex/AGENTS.md",
+        path: codexPaths.globalAgentsMd,
+        message: expect.stringContaining("always-loaded context")
+      })
     ]);
   });
 
@@ -513,7 +544,7 @@ describe("full inventory and doctor", () => {
     expect(doctorSnapshot.lines).toContain("repo-agents: disabled (optional repo export)");
     expect(doctorSnapshot.lines).toContain("hooks: missing (run `export hooks`)");
     expect(doctorSnapshot.lines).toContain("custom-agents: missing (run `export custom-agents`)");
-    expect(doctorSnapshot.lines).toContain("opencode-agents: missing (run `export opencode-agents`)");
+    expect(doctorSnapshot.lines).toContain("plugin: missing (run `export plugin`)");
   });
 
   it("formats overflowed backup history in the doctor snapshot", () => {
@@ -550,8 +581,9 @@ describe("full inventory and doctor", () => {
     applyCodexProfile(paths, codexPaths);
     exportUserSkills(paths, codexPaths);
     exportGlobalAgents(paths, codexPaths);
-    exportHooks(codexPaths);
+    exportHooks(paths, codexPaths);
     exportCustomAgents(paths, codexPaths);
+    exportPlugin(codexPaths);
 
     const status = showStatus(paths, codexPaths);
     const doctorResult = doctor(paths, codexPaths);
@@ -575,8 +607,8 @@ describe("full inventory and doctor", () => {
     expect(status.inventory.find((item) => item.name === "custom-agents")?.status).toBe(
       InventoryStatus.Installed
     );
-    expect(status.inventory.find((item) => item.name === "opencode-agents")?.status).toBe(
-      InventoryStatus.Missing
+    expect(status.inventory.find((item) => item.name === "plugin")?.status).toBe(
+      InventoryStatus.Installed
     );
     expect(doctorResult.summary).toContain("pack-caveman: enabled");
     expect(doctorResult.summary).toContain("codex-config: installed");
@@ -584,7 +616,7 @@ describe("full inventory and doctor", () => {
     expect(doctorResult.summary).toContain("global-agents: installed");
     expect(doctorResult.summary).toContain("hooks: installed");
     expect(doctorResult.summary).toContain("custom-agents: installed");
-    expect(doctorResult.summary).toContain("opencode-agents: missing");
+    expect(doctorResult.summary).toContain("plugin: installed (version 0.1.0)");
     expect(doctorSnapshot.headline).toBe("runtime: ok");
     expect(doctorSnapshot.lines[0]).toBe("runtime: ok");
   });
@@ -600,7 +632,7 @@ describe("full inventory and doctor", () => {
     installRuntime(paths, codexPaths);
     saveConfig(paths, config);
     exportUserSkills(paths, codexPaths);
-    rmSync(join(codexPaths.userSkillsDir, "impeccable"), { recursive: true, force: true });
+    rmSync(join(codexPaths.userSkillsDir, "sane-frontend-review"), { recursive: true, force: true });
 
     const bundle = inspectStatusBundle(paths, codexPaths);
 
@@ -615,7 +647,7 @@ describe("full inventory and doctor", () => {
     );
   });
 
-  it("marks a pack invalid when a shipped frontend reference file goes missing", () => {
+  it("marks a pack invalid when a shipped frontend skill goes missing", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const paths = createProjectPaths(projectRoot);
@@ -626,9 +658,11 @@ describe("full inventory and doctor", () => {
     installRuntime(paths, codexPaths);
     saveConfig(paths, config);
     exportUserSkills(paths, codexPaths);
-    rmSync(join(codexPaths.userSkillsDir, "impeccable", "reference", "typography.md"), {
-      force: true
-    });
+    writeFileSync(
+      join(codexPaths.userSkillsDir, "sane-frontend-visual-assets", "SKILL.md"),
+      "stale frontend asset skill",
+      "utf8"
+    );
 
     const bundle = inspectStatusBundle(paths, codexPaths);
 

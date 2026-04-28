@@ -1,11 +1,14 @@
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createDefaultLocalConfig, writeLocalConfig } from "@sane/config";
 import { InventoryStatus } from "@sane/core";
 import {
+  SANE_AGENT_LANES_SKILL_NAME,
+  SANE_BOOTSTRAP_RESEARCH_SKILL_NAME,
   SANE_CONTINUE_SKILL_NAME,
+  SANE_OUTCOME_CONTINUATION_SKILL_NAME,
   SANE_GLOBAL_AGENTS_BEGIN,
   SANE_GLOBAL_AGENTS_END,
   SANE_REPO_AGENTS_BEGIN,
@@ -54,15 +57,29 @@ describe("codex-native skills and agents", () => {
     const codexPaths = createCodexPaths(homeDir);
     const config = createDefaultLocalConfig();
     config.packs.caveman = true;
+    config.subagents.explorer.model = "gpt-5.1-codex-mini";
+    config.subagents.explorer.reasoningEffort = "low";
+    config.subagents.implementation.model = "gpt-5.2";
+    config.subagents.implementation.reasoningEffort = "high";
+    config.subagents.verifier.model = "gpt-5.4";
+    config.subagents.verifier.reasoningEffort = "xhigh";
+    config.subagents.realtime.model = "gpt-5.3-codex-spark";
+    config.subagents.realtime.reasoningEffort = "low";
     writeLocalConfig(projectPaths.configPath, config);
 
     const result = exportUserSkills(projectPaths, codexPaths);
     const routerPath = join(codexPaths.userSkillsDir, "sane-router", "SKILL.md");
+    const bootstrapResearchPath = join(codexPaths.userSkillsDir, SANE_BOOTSTRAP_RESEARCH_SKILL_NAME, "SKILL.md");
+    const agentLanesPath = join(codexPaths.userSkillsDir, SANE_AGENT_LANES_SKILL_NAME, "SKILL.md");
+    const outcomeContinuationPath = join(codexPaths.userSkillsDir, SANE_OUTCOME_CONTINUATION_SKILL_NAME, "SKILL.md");
     const continuePath = join(codexPaths.userSkillsDir, SANE_CONTINUE_SKILL_NAME, "SKILL.md");
     const cavemanPath = join(codexPaths.userSkillsDir, "sane-caveman", "SKILL.md");
 
     expect(result.summary).toBe("export user-skills: installed core skills");
     expect(result.pathsTouched).toContain(routerPath);
+    expect(result.pathsTouched).toContain(bootstrapResearchPath);
+    expect(result.pathsTouched).toContain(agentLanesPath);
+    expect(result.pathsTouched).toContain(outcomeContinuationPath);
     expect(result.pathsTouched).toContain(continuePath);
     expect(result.pathsTouched).toContain(cavemanPath);
     expect(readFileSync(routerPath, "utf8")).toBe(
@@ -75,17 +92,20 @@ describe("codex-native skills and agents", () => {
         {
           coordinatorModel: config.models.coordinator.model,
           coordinatorReasoning: config.models.coordinator.reasoningEffort,
-          executionModel: "gpt-5.3-codex",
-          executionReasoning: "medium",
-          sidecarModel: config.models.sidecar.model,
-          sidecarReasoning: config.models.sidecar.reasoningEffort,
-          verifierModel: config.models.verifier.model,
-          verifierReasoning: config.models.verifier.reasoningEffort,
-          realtimeModel: "gpt-5.3-codex-spark",
-          realtimeReasoning: "low"
+          executionModel: config.subagents.implementation.model,
+          executionReasoning: config.subagents.implementation.reasoningEffort,
+          sidecarModel: config.subagents.explorer.model,
+          sidecarReasoning: config.subagents.explorer.reasoningEffort,
+          verifierModel: config.subagents.verifier.model,
+          verifierReasoning: config.subagents.verifier.reasoningEffort,
+          realtimeModel: config.subagents.realtime.model,
+          realtimeReasoning: config.subagents.realtime.reasoningEffort
         }
       )
     );
+    expect(readFileSync(bootstrapResearchPath, "utf8")).toContain("name: sane-bootstrap-research");
+    expect(readFileSync(agentLanesPath, "utf8")).toContain("name: sane-agent-lanes");
+    expect(readFileSync(outcomeContinuationPath, "utf8")).toContain("name: sane-outcome-continuation");
     expect(readFileSync(continuePath, "utf8")).toContain("name: continue");
     expect(readFileSync(cavemanPath, "utf8")).toBe(createOptionalPackSkill("caveman"));
   });
@@ -113,22 +133,14 @@ describe("codex-native skills and agents", () => {
     for (const [index, skill] of exportedSkills.entries()) {
       expect(readFileSync(skillPaths[index]!, "utf8")).toBe(skill.content);
     }
-    expect(
-      readFileSync(
-        join(codexPaths.userSkillsDir, "impeccable", "reference", "typography.md"),
-        "utf8"
-      )
-    ).toBe(
-      exportedSkills.find((skill) => skill.name === "impeccable")!.resources.find(
-        (resource) => resource.path === "reference/typography.md"
-      )!.content
+    expect(readFileSync(join(codexPaths.userSkillsDir, "sane-frontend-craft", "SKILL.md"), "utf8")).toContain(
+      "Build frontend work that feels specific to the product"
     );
-    expect(
-      readFileSync(join(codexPaths.userSkillsDir, "stitch-design-taste", "DESIGN.md"), "utf8")
-    ).toBe(
-      exportedSkills.find((skill) => skill.name === "stitch-design-taste")!.resources.find(
-        (resource) => resource.path === "DESIGN.md"
-      )!.content
+    expect(readFileSync(join(codexPaths.userSkillsDir, "sane-frontend-visual-assets", "SKILL.md"), "utf8")).toContain(
+      "Choose, generate, or direct visual assets"
+    );
+    expect(readFileSync(join(codexPaths.userSkillsDir, "sane-frontend-review", "SKILL.md"), "utf8")).toContain(
+      "Use the strongest available visual tool"
     );
   });
 
@@ -139,6 +151,14 @@ describe("codex-native skills and agents", () => {
     const codexPaths = createCodexPaths(homeDir);
     const config = createDefaultLocalConfig();
     config.packs.rtk = true;
+    config.subagents.explorer.model = "gpt-5.1-codex-mini";
+    config.subagents.explorer.reasoningEffort = "low";
+    config.subagents.implementation.model = "gpt-5.2";
+    config.subagents.implementation.reasoningEffort = "high";
+    config.subagents.verifier.model = "gpt-5.4";
+    config.subagents.verifier.reasoningEffort = "xhigh";
+    config.subagents.realtime.model = "gpt-5.3-codex-spark";
+    config.subagents.realtime.reasoningEffort = "low";
     writeLocalConfig(projectPaths.configPath, config);
 
     mkdirSync(join(homeDir, ".codex"), { recursive: true });
@@ -153,14 +173,14 @@ describe("codex-native skills and agents", () => {
     const roles = {
       coordinatorModel: config.models.coordinator.model,
       coordinatorReasoning: config.models.coordinator.reasoningEffort,
-      executionModel: "gpt-5.3-codex",
-      executionReasoning: "medium",
-      sidecarModel: config.models.sidecar.model,
-      sidecarReasoning: config.models.sidecar.reasoningEffort,
-      verifierModel: config.models.verifier.model,
-      verifierReasoning: config.models.verifier.reasoningEffort,
-      realtimeModel: "gpt-5.3-codex-spark",
-      realtimeReasoning: "low"
+      executionModel: config.subagents.implementation.model,
+      executionReasoning: config.subagents.implementation.reasoningEffort,
+      sidecarModel: config.subagents.explorer.model,
+      sidecarReasoning: config.subagents.explorer.reasoningEffort,
+      verifierModel: config.subagents.verifier.model,
+      verifierReasoning: config.subagents.verifier.reasoningEffort,
+      realtimeModel: config.subagents.realtime.model,
+      realtimeReasoning: config.subagents.realtime.reasoningEffort
     };
 
     expect(globalBody).toContain("# User notes");
@@ -224,8 +244,14 @@ describe("codex-native skills and agents", () => {
     expect(uninstallUser.summary).toBe("uninstall user-skills: removed core skills");
     expect(uninstallRepo.summary).toBe("uninstall repo-skills: removed core skills");
     expect(uninstallUser.pathsTouched.some((path) => path.endsWith("/sane-router"))).toBe(true);
+    expect(uninstallUser.pathsTouched.some((path) => path.endsWith(`/${SANE_BOOTSTRAP_RESEARCH_SKILL_NAME}`))).toBe(true);
+    expect(uninstallUser.pathsTouched.some((path) => path.endsWith(`/${SANE_AGENT_LANES_SKILL_NAME}`))).toBe(true);
+    expect(uninstallUser.pathsTouched.some((path) => path.endsWith(`/${SANE_OUTCOME_CONTINUATION_SKILL_NAME}`))).toBe(true);
     expect(uninstallUser.pathsTouched.some((path) => path.endsWith(`/${SANE_CONTINUE_SKILL_NAME}`))).toBe(true);
     expect(uninstallRepo.pathsTouched.some((path) => path.endsWith("/sane-router"))).toBe(true);
+    expect(uninstallRepo.pathsTouched.some((path) => path.endsWith(`/${SANE_BOOTSTRAP_RESEARCH_SKILL_NAME}`))).toBe(true);
+    expect(uninstallRepo.pathsTouched.some((path) => path.endsWith(`/${SANE_AGENT_LANES_SKILL_NAME}`))).toBe(true);
+    expect(uninstallRepo.pathsTouched.some((path) => path.endsWith(`/${SANE_OUTCOME_CONTINUATION_SKILL_NAME}`))).toBe(true);
     expect(uninstallRepo.pathsTouched.some((path) => path.endsWith(`/${SANE_CONTINUE_SKILL_NAME}`))).toBe(true);
   });
 
@@ -243,10 +269,46 @@ describe("codex-native skills and agents", () => {
 
     expect(uninstallUser.pathsTouched).toEqual(
       expect.arrayContaining([
-        join(codexPaths.userSkillsDir, "design-taste-frontend"),
-        join(codexPaths.userSkillsDir, "impeccable")
+        join(codexPaths.userSkillsDir, "sane-frontend-craft"),
+        join(codexPaths.userSkillsDir, "sane-frontend-review")
       ])
     );
+  });
+
+  it("blocks exporting when target skill directory exists without Sane ownership marker", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const routerDir = join(codexPaths.userSkillsDir, "sane-router");
+    mkdirSync(routerDir, { recursive: true });
+    writeFileSync(join(routerDir, "SKILL.md"), "name: foreign-skill\n", "utf8");
+
+    const result = exportUserSkills(projectPaths, codexPaths);
+
+    expect(result.summary).toBe("export user-skills: blocked by non-Sane skill directories");
+    expect(result.inventory[0]?.status).toBe(InventoryStatus.Invalid);
+    expect(readFileSync(join(routerDir, "SKILL.md"), "utf8")).toBe("name: foreign-skill\n");
+    expect(existsSync(join(routerDir, ".sane-owned"))).toBe(false);
+  });
+
+  it("preserves non-Sane optional skill directories on uninstall", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    exportUserSkills(projectPaths, codexPaths);
+
+    const foreignDir = join(codexPaths.userSkillsDir, "sane-frontend-review");
+    rmSync(foreignDir, { recursive: true, force: true });
+    mkdirSync(foreignDir, { recursive: true });
+    writeFileSync(join(foreignDir, "SKILL.md"), "name: foreign-frontend-review\n", "utf8");
+
+    const uninstall = uninstallUserSkills(codexPaths);
+
+    expect(uninstall.summary).toBe("uninstall user-skills: removed managed skills; preserved non-Sane directories");
+    expect(uninstall.inventory[0]?.status).toBe(InventoryStatus.Invalid);
+    expect(readFileSync(join(foreignDir, "SKILL.md"), "utf8")).toBe("name: foreign-frontend-review\n");
   });
 
   it("inspects codex-native skills and agents inventory with expected statuses", () => {

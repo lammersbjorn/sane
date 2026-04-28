@@ -8,7 +8,6 @@ import {
 import { executeOperation } from "@sane/control-plane/history.js";
 import { uninstallGlobalAgents, uninstallUserSkills } from "@sane/control-plane/codex-native.js";
 import { uninstallCustomAgents, uninstallHooks } from "@sane/control-plane/hooks-custom-agents.js";
-import { uninstallOpencodeAgents } from "@sane/control-plane/opencode-native.js";
 import {
   inspectRepairStatusFromStatusBundle,
   inspectRepairStatus,
@@ -48,7 +47,6 @@ export interface RepairScreenModel {
     uninstallRepoAgents: () => ReturnType<typeof uninstallRepoAgents>;
     uninstallHooks: () => ReturnType<typeof uninstallHooks>;
     uninstallCustomAgents: () => ReturnType<typeof uninstallCustomAgents>;
-    uninstallOpencodeAgents: () => ReturnType<typeof uninstallOpencodeAgents>;
     uninstallAll: () => ReturnType<typeof uninstallAll>;
   };
 }
@@ -94,7 +92,6 @@ export function loadRepairScreenFromStatusBundle(
       uninstallRepoAgents: () => executeOperation(paths, () => uninstallRepoAgents(paths)),
       uninstallHooks: () => executeOperation(paths, () => uninstallHooks(codexPaths)),
       uninstallCustomAgents: () => executeOperation(paths, () => uninstallCustomAgents(codexPaths)),
-      uninstallOpencodeAgents: () => executeOperation(paths, () => uninstallOpencodeAgents(codexPaths)),
       uninstallAll: () => executeOperation(paths, () => uninstallAll(codexPaths))
     }
   };

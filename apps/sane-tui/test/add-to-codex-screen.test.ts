@@ -9,12 +9,12 @@ import { applyIntegrationsProfile } from "@sane/control-plane/codex-config.js";
 import { exportAll } from "@sane/control-plane";
 import * as inventory from "@sane/control-plane/inventory.js";
 import * as installStatus from "@sane/control-plane/install-status.js";
-import { loadInstallScreen, loadInstallScreenFromStatusBundle } from "@sane/sane-tui/install-screen.js";
+import { loadAddToCodexScreen, loadAddToCodexScreenFromStatusBundle } from "@sane/sane-tui/add-to-codex-screen.js";
 
 const tempDirs: string[] = [];
 
 function makeTempDir(): string {
-  const dir = mkdtempSync(join(tmpdir(), "sane-tui-install-"));
+  const dir = mkdtempSync(join(tmpdir(), "sane-tui-add-to-codex-"));
   tempDirs.push(dir);
   return dir;
 }
@@ -25,16 +25,16 @@ afterEach(() => {
   }
 });
 
-describe("install screen model", () => {
+describe("add-to-codex screen model", () => {
   it("lists the full codex-native install surface in current order", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const paths = createProjectPaths(projectRoot);
     const codexPaths = createCodexPaths(homeDir);
 
-    const screen = loadInstallScreen(paths, codexPaths);
+    const screen = loadAddToCodexScreen(paths, codexPaths);
 
-    expect(screen.summary).toBe("Install");
+    expect(screen.summary).toBe("Add to Codex");
     expect(screen.recommendedActionId).toBe("export_all");
     expect(screen.bundleStatus).toBe("missing");
     expect(screen.missingTargets).toEqual([
@@ -47,14 +47,15 @@ describe("install screen model", () => {
     expect(screen.integrationsRecommendedChangeCount).toBe(3);
     expect(screen.actions.map((action) => action.id)).toEqual([
       "export_user_skills",
+      "export_global_agents",
       "export_repo_skills",
       "export_repo_agents",
-      "export_global_agents",
       "apply_integrations_profile",
       "export_hooks",
       "export_custom_agents",
       "export_all",
-      "export_opencode_agents"
+      "export_plugin",
+      "export_opencode_all"
     ]);
     expect(screen.actions.find((action) => action.id === "export_repo_skills")?.repoMutation).toBe(
       true
@@ -69,9 +70,13 @@ describe("install screen model", () => {
       kind: "missing",
       label: "missing"
     });
-    expect(screen.actions.find((action) => action.id === "export_opencode_agents")?.status).toEqual({
+    expect(screen.actions.find((action) => action.id === "export_plugin")?.status).toEqual({
       kind: "missing",
       label: "missing"
+    });
+    expect(screen.actions.find((action) => action.id === "export_opencode_all")?.status).toEqual({
+      kind: "missing",
+      label: "not tracked by Codex install audit"
     });
   });
 
@@ -82,7 +87,7 @@ describe("install screen model", () => {
     const codexPaths = createCodexPaths(homeDir);
 
     exportAll(paths, codexPaths);
-    const screen = loadInstallScreen(paths, codexPaths);
+    const screen = loadAddToCodexScreen(paths, codexPaths);
 
     expect(screen.recommendedActionId).toBe("apply_integrations_profile");
     expect(screen.bundleStatus).toBe("installed");
@@ -114,7 +119,7 @@ describe("install screen model", () => {
     const codexPaths = createCodexPaths(homeDir);
 
     applyIntegrationsProfile(paths, codexPaths);
-    const screen = loadInstallScreen(paths, codexPaths);
+    const screen = loadAddToCodexScreen(paths, codexPaths);
 
     expect(screen.integrationsStatus).toEqual({ kind: "installed", label: "installed" });
     expect(screen.integrationsRecommendedChangeCount).toBe(0);
@@ -132,7 +137,7 @@ describe("install screen model", () => {
 
     exportAll(paths, codexPaths);
     applyIntegrationsProfile(paths, codexPaths);
-    const screen = loadInstallScreen(paths, codexPaths);
+    const screen = loadAddToCodexScreen(paths, codexPaths);
 
     expect(screen.integrationsStatus).toEqual({ kind: "installed", label: "installed" });
     expect(screen.integrationsRecommendedChangeCount).toBe(0);
@@ -153,7 +158,7 @@ describe("install screen model", () => {
     mkdirSync(codexPaths.codexHome, { recursive: true });
     writeFileSync(codexPaths.configToml, "model = ", "utf8");
 
-    const screen = loadInstallScreen(paths, codexPaths);
+    const screen = loadAddToCodexScreen(paths, codexPaths);
 
     expect(screen.integrationsStatus).toEqual({ kind: "invalid", label: "invalid" });
     expect(screen.integrationsRecommendedChangeCount).toBe(0);
@@ -170,7 +175,7 @@ describe("install screen model", () => {
     const codexPaths = createCodexPaths(homeDir);
     const bundle = inventory.inspectStatusBundle(paths, codexPaths);
     const fromBundleSpy = vi.spyOn(installStatus, "inspectInstallStatusFromStatusBundle");
-    const screen = loadInstallScreenFromStatusBundle(paths, codexPaths, bundle);
+    const screen = loadAddToCodexScreenFromStatusBundle(paths, codexPaths, bundle);
 
     expect(fromBundleSpy).toHaveBeenCalledTimes(1);
     expect(fromBundleSpy).toHaveBeenCalledWith(
@@ -194,7 +199,7 @@ describe("install screen model", () => {
     const codexPaths = createCodexPaths(homeDir);
     const statusSpy = vi.spyOn(inventory, "inspectStatusBundle");
 
-    loadInstallScreen(paths, codexPaths, "windows");
+    loadAddToCodexScreen(paths, codexPaths, "windows");
 
     expect(statusSpy).toHaveBeenCalledWith(paths, codexPaths, "windows");
   });
@@ -207,7 +212,7 @@ describe("install screen model", () => {
 
     exportAll(paths, codexPaths, "windows");
     const bundle = inventory.inspectStatusBundle(paths, codexPaths, "windows");
-    const screen = loadInstallScreenFromStatusBundle(paths, codexPaths, bundle);
+    const screen = loadAddToCodexScreenFromStatusBundle(paths, codexPaths, bundle);
 
     expect(screen.bundleStatus).toBe("installed");
     expect(screen.missingTargets).toEqual([]);

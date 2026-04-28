@@ -7,6 +7,7 @@ import {
   type ConfigEditorState,
   type PackEditorState,
   type PackFieldId,
+  packFieldConfigKey,
   packFieldPackName,
   type PrivacyEditorState
 } from "@sane/sane-tui/preferences-editor-state.js";
@@ -16,6 +17,7 @@ export interface EditorOverlayModel {
   kind: "config" | "packs" | "privacy";
   title: string;
   headerLines: string[];
+  fieldLines: string[];
   outputLines: string[];
   detailsTitle: string;
   detailsLines: string[];
@@ -78,8 +80,9 @@ export function loadOverlayModel(shell: TuiShell): OverlayModel {
         title: "Model Defaults",
         headerLines: [
           "Model Defaults",
-          "Up/down picks field. Left/right cycles. Enter saves. r resets to this machine's recommended defaults. Esc backs out."
+          "Up/down row. Left/right value. Enter save. r reset. Esc close."
         ],
+        fieldLines: configFieldLines(shell.activeEditor),
         outputLines: shell.lastResult.lines,
         detailsTitle: "Field Help",
         detailsLines: configFieldHelpLines(shell.activeEditor)
@@ -90,9 +93,9 @@ export function loadOverlayModel(shell: TuiShell): OverlayModel {
         title: "Privacy",
         headerLines: [
           "Privacy / Telemetry",
-          "Left/right changes consent. Enter saves. d deletes local telemetry data. Esc backs out.",
-          "Telemetry stays optional and product-improvement-only."
+          "Left/right consent. Enter save. d delete local telemetry. Esc close."
         ],
+        fieldLines: privacyFieldLines(shell.activeEditor),
         outputLines: shell.lastResult.lines,
         detailsTitle: "Transparency",
         detailsLines: privacyLines(shell)
@@ -103,14 +106,35 @@ export function loadOverlayModel(shell: TuiShell): OverlayModel {
         title: "Built-in Packs",
         headerLines: [
           "Built-in Packs",
-          "core stays on. Up/down selects. Space toggles optional packs. Enter saves. Esc backs out.",
-          "Packs change local guidance and may make exports stale until you re-export."
+          "Core stays on. Up/down pack. Space toggle. Enter save. Esc close."
         ],
+        fieldLines: packFieldLines(shell.activeEditor),
         outputLines: shell.lastResult.lines,
         detailsTitle: "Pack Summary",
         detailsLines: packLines(shell.activeEditor)
       };
   }
+}
+
+function configFieldLines(editor: ConfigEditorState): string[] {
+  return editor.fields.map((field, index) => {
+    const metadata = CONFIG_FIELD_METADATA[field];
+    const current = metadata.value(editor.config);
+    const recommended = metadata.value(editor.defaults);
+    const suffix = current === recommended ? "" : `  recommended ${recommended}`;
+    return `${index === editor.selected ? "> " : "  "}${metadata.label}: ${current}${suffix}`;
+  });
+}
+
+function packFieldLines(editor: PackEditorState): string[] {
+  return editor.fields.map((field, index) => {
+    const enabled = editor.config.packs[packFieldConfigKey(field)];
+    return `${index === editor.selected ? "> " : "  "}${packFieldLabel(field)}: ${enabled ? "on" : "off"}`;
+  });
+}
+
+function privacyFieldLines(editor: PrivacyEditorState): string[] {
+  return [`> Telemetry: ${editor.config.privacy.telemetry}`];
 }
 
 function configFieldHelpLines(editor: ConfigEditorState): string[] {
@@ -120,17 +144,20 @@ function configFieldHelpLines(editor: ConfigEditorState): string[] {
   const lines = [
     metadata.label,
     `Current value: ${value}`,
+    `Recommended: ${metadata.value(editor.defaults)}`,
     "",
     metadata.explanation,
     "",
     "Editable defaults",
-    "Coordinator = top-level session baseline",
-    "Sidecar = bounded helper default",
-    "Verifier = review/checking default",
+    "Main session = top-level Codex baseline",
+    "Explorer agent = codebase discovery, no edits",
+    "Implementation agent = bounded code changes",
+    "Reviewer agent = review/checking",
+    "Realtime helper = fast iteration",
     "",
     "Routing behavior",
-    "Coordinator/sidecar/verifier are editable defaults.",
-    "Sane also derives execution and realtime-iteration classes from detected model availability.",
+    "These rows are saved in Sane config.",
+    "Exports use these defaults where the target supports explicit agent models.",
     "",
     "Choices"
   ];
