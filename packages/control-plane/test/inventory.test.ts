@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -10,7 +10,6 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { applyCodexProfile } from "../src/codex-config.js";
 import { exportAll } from "../src/bundles.js";
-import { exportPlugin } from "../src/codex-plugin.js";
 import { exportGlobalAgents, exportUserSkills } from "../src/codex-native.js";
 import { exportCustomAgents, exportHooks } from "../src/hooks-custom-agents.js";
 import {
@@ -74,8 +73,7 @@ describe("full inventory and doctor", () => {
         "repo-agents",
         "global-agents",
         "hooks",
-        "custom-agents",
-        "plugin"
+        "custom-agents"
       ])
     );
     expect(bundle.compatibility).toEqual([]);
@@ -163,6 +161,59 @@ describe("full inventory and doctor", () => {
     );
     expect(result.inventory.find((item) => item.name === "hooks")?.status).toBe(
       InventoryStatus.Missing
+    );
+  });
+
+  it("surfaces missing RTK binary when the RTK pack is enabled", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const config = createDefaultLocalConfig();
+    config.packs.rtk = true;
+
+    installRuntime(paths, codexPaths);
+    saveConfig(paths, config);
+
+    const bundle = inspectStatusBundle(paths, codexPaths, "linux", { PATH: "" });
+    const rtkBinary = bundle.compatibility.find((item) => item.name === "rtk-binary");
+    const doctorSnapshot = inspectDoctorSnapshot(paths, codexPaths, bundle);
+
+    expect(rtkBinary).toEqual(
+      expect.objectContaining({
+        status: InventoryStatus.Missing,
+        path: "PATH",
+        repairHint: "install upstream RTK (`brew install rtk`, upstream install script, or Cargo) and ensure `rtk` is on PATH"
+      })
+    );
+    expect(doctorSnapshot.lines).toContain(
+      "rtk-binary: missing (install upstream RTK (`brew install rtk`, upstream install script, or Cargo) and ensure `rtk` is on PATH; Homebrew packaging: future Sane Homebrew formula should depend on upstream `rtk`)"
+    );
+  });
+
+  it("marks RTK binary installed when a PATH executable exists", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const binDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const config = createDefaultLocalConfig();
+    config.packs.rtk = true;
+    const rtkPath = join(binDir, "rtk");
+
+    installRuntime(paths, codexPaths);
+    saveConfig(paths, config);
+    writeFileSync(rtkPath, "#!/bin/sh\nexit 0\n", "utf8");
+    chmodSync(rtkPath, 0o755);
+
+    const bundle = inspectStatusBundle(paths, codexPaths, "linux", { PATH: binDir });
+
+    expect(bundle.compatibility.find((item) => item.name === "rtk-binary")).toEqual(
+      expect.objectContaining({
+        status: InventoryStatus.Installed,
+        path: rtkPath,
+        repairHint: null
+      })
     );
   });
 
@@ -544,7 +595,6 @@ describe("full inventory and doctor", () => {
     expect(doctorSnapshot.lines).toContain("repo-agents: disabled (optional repo export)");
     expect(doctorSnapshot.lines).toContain("hooks: missing (run `export hooks`)");
     expect(doctorSnapshot.lines).toContain("custom-agents: missing (run `export custom-agents`)");
-    expect(doctorSnapshot.lines).toContain("plugin: missing (run `export plugin`)");
   });
 
   it("formats overflowed backup history in the doctor snapshot", () => {
@@ -583,7 +633,6 @@ describe("full inventory and doctor", () => {
     exportGlobalAgents(paths, codexPaths);
     exportHooks(paths, codexPaths);
     exportCustomAgents(paths, codexPaths);
-    exportPlugin(codexPaths);
 
     const status = showStatus(paths, codexPaths);
     const doctorResult = doctor(paths, codexPaths);
@@ -607,16 +656,12 @@ describe("full inventory and doctor", () => {
     expect(status.inventory.find((item) => item.name === "custom-agents")?.status).toBe(
       InventoryStatus.Installed
     );
-    expect(status.inventory.find((item) => item.name === "plugin")?.status).toBe(
-      InventoryStatus.Installed
-    );
     expect(doctorResult.summary).toContain("pack-caveman: enabled");
     expect(doctorResult.summary).toContain("codex-config: installed");
     expect(doctorResult.summary).toContain("user-skills: installed");
     expect(doctorResult.summary).toContain("global-agents: installed");
     expect(doctorResult.summary).toContain("hooks: installed");
     expect(doctorResult.summary).toContain("custom-agents: installed");
-    expect(doctorResult.summary).toContain("plugin: installed (version 0.1.0)");
     expect(doctorSnapshot.headline).toBe("runtime: ok");
     expect(doctorSnapshot.lines[0]).toBe("runtime: ok");
   });

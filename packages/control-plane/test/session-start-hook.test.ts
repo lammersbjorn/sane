@@ -22,14 +22,18 @@ describe("session-start hook helper", () => {
       expect(JSON.parse(execSync(command, { encoding: "utf8", shell: "/bin/sh" }))).toEqual({
         hookSpecificOutput: {
           hookEventName: "SessionStart",
-          additionalContext: expect.stringContaining("Read repo AGENTS.md if present")
+          additionalContext: expect.stringContaining("Before work: read repo AGENTS.md if present")
         }
       });
       const context = JSON.parse(execSync(command, { encoding: "utf8", shell: "/bin/sh" }))
         .hookSpecificOutput.additionalContext;
-      expect(context).toContain("do not report when it is absent");
-      expect(context).toContain("Use sane-router for Sane routing");
-      expect(context).toContain("load sane-agent-lanes");
+      expect(context).toContain("do not report when absent");
+      expect(context).toContain("Load `sane-router` skill body");
+      expect(context).toContain("read that matching SKILL.md before acting");
+      expect(context).toContain("Use subagents by default");
+      expect(context).toContain("load `sane-agent-lanes`");
+      expect(context).toContain("including follow-up implementation after research");
+      expect(context).toContain("before broad edits");
       expect(context).not.toContain("Subagent/model routing summary");
       expect(context).not.toContain("Sane command lane:");
       expect(context).not.toContain("sane-outcome-continuation");
@@ -66,17 +70,26 @@ describe("session-start hook helper", () => {
     expect(JSON.parse(renderSessionStartHookOutput())).toEqual({
       hookSpecificOutput: {
         hookEventName: "SessionStart",
-        additionalContext: expect.stringContaining("Read repo AGENTS.md if present")
+        additionalContext: expect.stringContaining("Before work: read repo AGENTS.md if present")
       }
     });
     expect(JSON.parse(renderSessionStartHookOutput()).hookSpecificOutput.additionalContext).toContain(
-      "do not report when it is absent"
+      "do not report when absent"
     );
     expect(JSON.parse(renderSessionStartHookOutput()).hookSpecificOutput.additionalContext).toContain(
-      "Use sane-router for Sane routing"
+      "Load `sane-router` skill body"
     );
     expect(JSON.parse(renderSessionStartHookOutput()).hookSpecificOutput.additionalContext).toContain(
-      "load sane-agent-lanes"
+      "read that matching SKILL.md before acting"
+    );
+    expect(JSON.parse(renderSessionStartHookOutput()).hookSpecificOutput.additionalContext).toContain(
+      "Use subagents by default"
+    );
+    expect(JSON.parse(renderSessionStartHookOutput()).hookSpecificOutput.additionalContext).toContain(
+      "load `sane-agent-lanes`"
+    );
+    expect(JSON.parse(renderSessionStartHookOutput()).hookSpecificOutput.additionalContext).toContain(
+      "including follow-up implementation after research"
     );
     expect(JSON.parse(renderSessionStartHookOutput()).hookSpecificOutput.additionalContext).not.toContain(
       "sane-outcome-continuation"
@@ -92,12 +105,12 @@ describe("session-start hook helper", () => {
     });
   });
 
-  it("renders SessionEnd hook output payload JSON", () => {
+  it("renders Stop hook output payload JSON", () => {
     expect(JSON.parse(renderSessionEndHookOutput({ rateLimitResume: true }))).toEqual({
       hookSpecificOutput: {
-        hookEventName: "SessionEnd",
+        hookEventName: "Stop",
         additionalContext:
-          "Sane managed SessionEnd hook loaded. Rate-limit auto-resume is enabled, but Codex did not provide a reset timestamp in this hook payload."
+          "Sane managed Stop hook loaded. Rate-limit auto-resume is enabled, but Codex did not provide a reset timestamp in this hook payload."
       }
     });
   });

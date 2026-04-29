@@ -6,7 +6,10 @@ import {
   renderSessionEndHookOutput,
   renderSessionStartHookOutput
 } from "@sane/control-plane/session-start-hook.js";
-import { type ManagedTokscaleSubmitHookEvent } from "@sane/control-plane/tokscale-submit-hook.js";
+import {
+  type ManagedTokscaleSubmitHookEvent,
+  renderTokscaleSubmitHookOutput
+} from "@sane/control-plane/tokscale-submit-hook.js";
 
 import { type BackendCommandId, type LaunchShortcut } from "@sane/sane-tui/command-registry.js";
 import { executeUiCommand } from "@sane/sane-tui/shell.js";
@@ -44,6 +47,8 @@ export interface CliRunResult {
   output: string;
 }
 
+type CliEnv = HomeDirEnv & NodeJS.ProcessEnv;
+
 const BACKEND_COMMAND_ALIASES: ReadonlyArray<{
   args: readonly string[];
   commandId: BackendCommandId;
@@ -72,7 +77,6 @@ const BACKEND_COMMAND_ALIASES: ReadonlyArray<{
   { args: ["export", "global-agents"], commandId: "export_global_agents" },
   { args: ["export", "hooks"], commandId: "export_hooks" },
   { args: ["export", "custom-agents"], commandId: "export_custom_agents" },
-  { args: ["export", "plugin"], commandId: "export_plugin" },
   { args: ["export", "opencode"], commandId: "export_opencode_all" },
   { args: ["export", "all"], commandId: "export_all" },
   { args: ["uninstall", "user-skills"], commandId: "uninstall_user_skills" },
@@ -81,7 +85,6 @@ const BACKEND_COMMAND_ALIASES: ReadonlyArray<{
   { args: ["uninstall", "global-agents"], commandId: "uninstall_global_agents" },
   { args: ["uninstall", "hooks"], commandId: "uninstall_hooks" },
   { args: ["uninstall", "custom-agents"], commandId: "uninstall_custom_agents" },
-  { args: ["uninstall", "plugin"], commandId: "uninstall_plugin" },
   { args: ["uninstall", "all"], commandId: "uninstall_all" }
 ] as const;
 
@@ -128,7 +131,7 @@ export function parseCliArgs(args: readonly string[]): ParsedCliCommand {
 export function runCliCommandFromDiscovery(
   args: readonly string[],
   startPath: string,
-  env: HomeDirEnv = process.env
+  env: CliEnv = process.env
 ): CliRunResult {
   const parsed = parseCliArgs(args);
 
@@ -149,7 +152,7 @@ export function runCliCommandFromDiscovery(
       };
     }
     if (parsed.event === "tokscale-submit") {
-      return runTokscaleSubmit(parsed.submitEvent, parsed.dryRun);
+      return runTokscaleSubmit(parsed.submitEvent, parsed.dryRun, env);
     }
     return {
       exitCode: 0,
@@ -178,10 +181,10 @@ function parseTokscaleSubmitHookArgs(args: readonly string[]): ParsedCliCommand 
     }
     if (arg === "--event") {
       const value = args[index + 1];
-      if (value !== "session-end") {
+      if (value !== "stop" && value !== "session-end") {
         throw new Error(`invalid tokscale hook event: ${value ?? "<missing>"}`);
       }
-      submitEvent = value;
+      submitEvent = value === "session-end" ? "stop" : value;
       index += 1;
       continue;
     }
@@ -200,7 +203,11 @@ function parseTokscaleSubmitHookArgs(args: readonly string[]): ParsedCliCommand 
   };
 }
 
-function runTokscaleSubmit(event: ManagedTokscaleSubmitHookEvent, dryRun: boolean): CliRunResult {
+function runTokscaleSubmit(
+  event: ManagedTokscaleSubmitHookEvent,
+  dryRun: boolean,
+  env: NodeJS.ProcessEnv = process.env
+): CliRunResult {
   const args = ["submit", "--codex"];
   if (dryRun) {
     args.push("--dry-run");
@@ -208,32 +215,17 @@ function runTokscaleSubmit(event: ManagedTokscaleSubmitHookEvent, dryRun: boolea
 
   const result = spawnSync("tokscale", args, {
     encoding: "utf8",
+    env,
     timeout: 20_000
   });
 
-  const output = [
-    `sane tokscale hook: ${event}${dryRun ? " dry-run" : " submit"}`,
-    result.stdout?.trim(),
-    result.stderr?.trim()
-  ].filter(Boolean).join("\n");
-
-  if (result.error) {
-    return {
-      exitCode: 0,
-      output: `${output}\ntokscale unavailable or timed out: ${result.error.message}\n`
-    };
-  }
-
-  if (typeof result.status === "number" && result.status !== 0) {
-    return {
-      exitCode: 0,
-      output: `${output}\ntokscale exited ${result.status}; hook ignored to avoid blocking Codex.\n`
-    };
-  }
+  void event;
+  void dryRun;
+  void result;
 
   return {
     exitCode: 0,
-    output: `${output}\n`
+    output: renderTokscaleSubmitHookOutput()
   };
 }
 

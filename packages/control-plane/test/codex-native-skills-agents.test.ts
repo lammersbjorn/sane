@@ -134,7 +134,7 @@ describe("codex-native skills and agents", () => {
       expect(readFileSync(skillPaths[index]!, "utf8")).toBe(skill.content);
     }
     expect(readFileSync(join(codexPaths.userSkillsDir, "sane-frontend-craft", "SKILL.md"), "utf8")).toContain(
-      "Build frontend work that feels specific to the product"
+      "Build frontend work that fits the product"
     );
     expect(readFileSync(join(codexPaths.userSkillsDir, "sane-frontend-visual-assets", "SKILL.md"), "utf8")).toContain(
       "Choose, generate, or direct visual assets"
@@ -209,7 +209,7 @@ describe("codex-native skills and agents", () => {
         roles
       )
     );
-    expect(repoBody).toContain("Prefer repo-local truth over generic memory or stale chat context");
+    expect(repoBody).toContain("Prefer repo-local evidence over memory or stale chat context.");
     expect(repoBody).not.toBe(globalBody);
 
     const inventory = inspectCodexSkillsAndAgents(projectPaths, codexPaths);

@@ -9,7 +9,6 @@ import {
   exportOpencodeCoreBundle,
   uninstallOpencodeCoreBundle
 } from "./opencode-native.js";
-import { uninstallPlugin } from "./codex-plugin.js";
 
 export function exportAll(
   paths: ProjectPaths,
@@ -27,10 +26,7 @@ export function uninstallAll(codexPaths: CodexPaths): OperationResult {
   return mergeResults(
     OperationKind.UninstallAll,
     "uninstall all: removed Sane's Codex changes",
-    [
-      ...uninstallCoreInstallBundleTargets(codexPaths),
-      uninstallPlugin(codexPaths)
-    ]
+    uninstallCoreInstallBundleTargets(codexPaths)
   );
 }
 

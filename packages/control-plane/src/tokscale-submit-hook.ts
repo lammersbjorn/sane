@@ -2,8 +2,9 @@ const MANAGED_TOKSCALE_SUBMIT_HOOK_COMMAND_SUFFIX = "hook tokscale-submit";
 const DEFAULT_MANAGED_TOKSCALE_SUBMIT_HOOK_EXECUTABLE = "sane";
 
 export const MANAGED_TOKSCALE_STATUS_MESSAGE = "Submitting Codex usage to Tokscale";
+export const TOKSCALE_SUBMIT_HOOK_EVENT_NAME = "Stop";
 
-export type ManagedTokscaleSubmitHookEvent = "session-end";
+export type ManagedTokscaleSubmitHookEvent = "stop";
 
 export function buildManagedTokscaleSubmitHookCommand(
   event: ManagedTokscaleSubmitHookEvent,
@@ -23,6 +24,10 @@ export function isManagedTokscaleSubmitHookCommand(command: string): boolean {
   return command.includes(MANAGED_TOKSCALE_SUBMIT_HOOK_COMMAND_SUFFIX);
 }
 
+export function renderTokscaleSubmitHookOutput(): string {
+  return JSON.stringify({});
+}
+
 function buildInlineTokscaleSubmitHookCommand(event: ManagedTokscaleSubmitHookEvent, dryRun: boolean): string {
   const args = ["submit", "--codex"];
   if (dryRun) {
@@ -33,10 +38,8 @@ function buildInlineTokscaleSubmitHookCommand(event: ManagedTokscaleSubmitHookEv
     `const event = ${JSON.stringify(event)};`,
     `const dryRun = ${JSON.stringify(dryRun)};`,
     `const result = spawnSync('tokscale', ${JSON.stringify(args)}, { encoding: 'utf8', timeout: 20000 });`,
-    "const output = [`sane tokscale hook: ${event}${dryRun ? ' dry-run' : ' submit'}`, result.stdout && result.stdout.trim(), result.stderr && result.stderr.trim()].filter(Boolean).join('\\n');",
-    "if (result.error) { process.stdout.write(`${output}\\ntokscale unavailable or timed out: ${result.error.message}\\n`); process.exit(0); }",
-    "if (typeof result.status === 'number' && result.status !== 0) { process.stdout.write(`${output}\\ntokscale exited ${result.status}; hook ignored to avoid blocking Codex.\\n`); process.exit(0); }",
-    "process.stdout.write(`${output}\\n`);"
+    "void result;",
+    "process.stdout.write(JSON.stringify({}));"
   ].join(" ");
   return buildInlineNodeCommand(
     script,

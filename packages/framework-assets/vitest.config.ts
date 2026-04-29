@@ -8,6 +8,6 @@ export default defineConfig({
     environment: "node",
     include: ["test/**/*.test.ts"],
     name: "@sane/framework-assets",
-    passWithNoTests: true
+    passWithNoTests: false
   }
 });

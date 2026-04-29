@@ -1,19 +1,20 @@
 {
   "name": "@sane/control-plane",
   "private": true,
+  "version": "1.0.0-beta.1",
+  "description": "Backend operations for Sane install, status, config, export, repair, and uninstall flows.",
+  "license": "MIT OR Apache-2.0",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
     "./bundles.js": "./src/bundles.ts",
     "./codex-config.js": "./src/codex-config.ts",
     "./codex-native.js": "./src/codex-native.ts",
-    "./codex-plugin.js": "./src/codex-plugin.ts",
     "./history.js": "./src/history.ts",
     "./hooks-custom-agents.js": "./src/hooks-custom-agents.ts",
     "./index.js": "./src/index.ts",
     "./install-status.js": "./src/install-status.ts",
     "./inventory.js": "./src/inventory.ts",
-    "./opencode.js": "./src/opencode.ts",
     "./policy-preview.js": "./src/policy-preview.ts",
     "./preferences.js": "./src/preferences.ts",
     "./repair-status.js": "./src/repair-status.ts",
@@ -28,13 +29,13 @@
     "typecheck": "tsc --project tsconfig.json"
   },
   "dependencies": {
-    "@iarna/toml": "^2.2.5",
     "@sane/config": "workspace:*",
     "@sane/core": "workspace:*",
     "@sane/framework-assets": "workspace:*",
     "@sane/platform": "workspace:*",
     "@sane/policy": "workspace:*",
-    "@sane/state": "workspace:*"
+    "@sane/state": "workspace:*",
+    "smol-toml": "^1.6.1"
   },
   "devDependencies": {
     "typescript": "^5.9.3",

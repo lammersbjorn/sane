@@ -7,7 +7,7 @@ description: Use when a repo requires RTK or shell/search/test/log work should u
 
 ## Goal
 
-Route shell work through RTK in the most useful form: native compact commands first, exact raw shell only when needed.
+Route shell/search/test/log work through RTK with compact, task-relevant output.
 
 ## Use When
 
@@ -31,4 +31,5 @@ Use `rtk run '<command>'` only when no native RTK command fits, when exact shell
 
 - do not wrap RTK-native commands in `rtk run`
 - keep exact commands, paths, errors, and diffs intact when reporting them
+- do not run broad exploratory commands when a targeted RTK command answers the task
 - follow normal repo safety rules for destructive commands

@@ -204,8 +204,9 @@ describe("app view", () => {
 
     expect(view.selectedAction.id).toBe("preview_codex_profile");
     expect(view.selectedHelpLines.join("\n")).toContain("audit: missing");
-    expect(view.selectedHelpLines.join("\n")).toContain("apply readiness: ready (3 changes)");
+    expect(view.selectedHelpLines.join("\n")).toContain("apply readiness: ready (4 changes)");
     expect(view.selectedHelpLines.join("\n")).toContain("model: <missing> -> gpt-5.5");
+    expect(view.selectedHelpLines.join("\n")).toContain("compact prompt: <missing> -> Sane continuity prompt");
   });
 
   it("expands inspect into read-only status, doctor, config, and drift guidance", () => {
@@ -368,7 +369,7 @@ describe("app view", () => {
   it("surfaces typed cloudflare profile readiness in Settings guidance", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
     selectSection(shell, "settings");
-    for (let index = 0; index < 7; index += 1) {
+    for (let index = 0; index < 16 && currentAction(shell).id !== "preview_cloudflare_profile"; index += 1) {
       moveSelection(shell, "action", 1);
     }
 
@@ -377,12 +378,12 @@ describe("app view", () => {
     expect(view.selectedAction.id).toBe("preview_cloudflare_profile");
     expect(view.sectionOverviewLines.join("\n")).toContain("statusline profile: missing");
     expect(view.sectionOverviewLines.join("\n")).toContain("cloudflare profile: missing");
-    expect(view.sectionOverviewLines.join("\n")).toContain("explorer agent: gpt-5.4-mini/low");
-    expect(view.sectionOverviewLines.join("\n")).toContain("implementation agent: gpt-5.3-codex/medium");
-    expect(view.sectionOverviewLines.join("\n")).toContain("verifier agent:");
+    expect(view.sectionOverviewLines.join("\n")).toContain("explore model: gpt-5.4-mini/low");
+    expect(view.sectionOverviewLines.join("\n")).toContain("build model: gpt-5.3-codex/medium");
+    expect(view.sectionOverviewLines.join("\n")).toContain("review model:");
     expect(view.sectionOverviewLines.join("\n")).not.toContain("reviewer agent:");
-    expect(view.sectionOverviewLines.join("\n")).toContain("realtime helper: gpt-5.3-codex-spark/low");
-    expect(view.sectionOverviewLines.join("\n")).toContain("frontend craft agent: gpt-5.5/high");
+    expect(view.sectionOverviewLines.join("\n")).toContain("quick helper model: gpt-5.3-codex-spark/low");
+    expect(view.sectionOverviewLines.join("\n")).toContain("frontend helper model: gpt-5.5/high");
     expect(view.selectedHelpLines.join("\n")).toContain("audit: missing");
     expect(view.selectedHelpLines.join("\n")).toContain("apply readiness: ready (1 keys)");
     expect(view.selectedHelpLines.join("\n")).toContain(
@@ -492,7 +493,7 @@ describe("app view", () => {
 
     const shell = createTuiShell(paths, codexPaths);
     selectSection(shell, "settings");
-    for (let index = 0; index < 4; index += 1) {
+    for (let index = 0; index < 16 && currentAction(shell).id !== "show_codex_config"; index += 1) {
       moveSelection(shell, "action", 1);
     }
 
@@ -706,7 +707,7 @@ describe("app view", () => {
     const view = loadAppView(shell);
 
     expect(view.sectionOverviewLines.join("\n")).toContain("defaults source:");
-    expect(view.sectionOverviewLines.join("\n")).toContain("main session:");
+    expect(view.sectionOverviewLines.join("\n")).toContain("default model:");
     expect(view.sectionOverviewLines.join("\n")).toContain("local telemetry data:");
     expect(view.sectionOverviewLines.join("\n")).toContain("telemetry files:");
     expect(view.sectionOverviewLines.join("\n")).toContain("enabled packs:");

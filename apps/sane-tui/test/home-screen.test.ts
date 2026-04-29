@@ -95,7 +95,7 @@ describe("get started screen model", () => {
     expect(screen.recommendedNextStep).toBe(
       "Review the Codex changes before applying them."
     );
-    expect(screen.codexProfilePreview.summary).toBe("codex-profile preview: 3 recommended change(s)");
+    expect(screen.codexProfilePreview.summary).toBe("codex-profile preview: 4 recommended change(s)");
   });
 
   it("recommends bundle export once runtime and core Codex config are in place", () => {

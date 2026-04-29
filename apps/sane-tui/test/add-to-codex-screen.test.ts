@@ -54,7 +54,6 @@ describe("add-to-codex screen model", () => {
       "export_hooks",
       "export_custom_agents",
       "export_all",
-      "export_plugin",
       "export_opencode_all"
     ]);
     expect(screen.actions.find((action) => action.id === "export_repo_skills")?.repoMutation).toBe(
@@ -67,10 +66,6 @@ describe("add-to-codex screen model", () => {
       "custom-agents"
     ]);
     expect(screen.actions.find((action) => action.id === "apply_integrations_profile")?.status).toEqual({
-      kind: "missing",
-      label: "missing"
-    });
-    expect(screen.actions.find((action) => action.id === "export_plugin")?.status).toEqual({
       kind: "missing",
       label: "missing"
     });

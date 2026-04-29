@@ -158,16 +158,12 @@ function operationMilestone(kind: OperationKind): string | null {
       return "hooks exported";
     case OperationKind.ExportCustomAgents:
       return "custom agents exported";
-    case OperationKind.ExportPlugin:
-      return "Sane plugin artifact exported";
     case OperationKind.ExportAll:
       return "Sane installed into Codex";
     case OperationKind.UninstallRepoSkills:
       return "repo skills removed";
     case OperationKind.UninstallRepoAgents:
       return "repo AGENTS removed";
-    case OperationKind.UninstallPlugin:
-      return "Sane plugin artifact removed";
     case OperationKind.UninstallAll:
       return "Sane removed from Codex";
     default:
@@ -239,8 +235,6 @@ function operationKindLabel(kind: OperationKind): string {
       return "export_hooks";
     case OperationKind.ExportCustomAgents:
       return "export_custom_agents";
-    case OperationKind.ExportPlugin:
-      return "export_plugin";
     case OperationKind.ExportAll:
       return "export_all";
     case OperationKind.UninstallUserSkills:
@@ -255,8 +249,6 @@ function operationKindLabel(kind: OperationKind): string {
       return "uninstall_hooks";
     case OperationKind.UninstallCustomAgents:
       return "uninstall_custom_agents";
-    case OperationKind.UninstallPlugin:
-      return "uninstall_plugin";
     case OperationKind.UninstallAll:
       return "uninstall_all";
     default:

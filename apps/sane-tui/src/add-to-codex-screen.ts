@@ -11,7 +11,6 @@ import {
   exportRepoSkills,
   exportUserSkills
 } from "@sane/control-plane/codex-native.js";
-import { exportPlugin } from "@sane/control-plane/codex-plugin.js";
 import {
   exportCustomAgents,
   exportHooks
@@ -44,7 +43,6 @@ export interface AddToCodexScreenModel {
     applyIntegrationsProfile: () => ReturnType<typeof applyIntegrationsProfile>;
     installHooks: () => ReturnType<typeof exportHooks>;
     installCustomAgents: () => ReturnType<typeof exportCustomAgents>;
-    installPlugin: () => ReturnType<typeof exportPlugin>;
     installAll: () => ReturnType<typeof exportAll>;
   };
 }
@@ -104,7 +102,6 @@ export function loadAddToCodexScreenFromStatusBundle(
       applyIntegrationsProfile: () => executeOperation(paths, () => applyIntegrationsProfile(paths, codexPaths)),
       installHooks: () => executeOperation(paths, () => exportHooks(paths, codexPaths)),
       installCustomAgents: () => executeOperation(paths, () => exportCustomAgents(paths, codexPaths)),
-      installPlugin: () => executeOperation(paths, () => exportPlugin(codexPaths)),
       installAll: () => executeOperation(paths, () => exportAll(paths, codexPaths))
     }
   };

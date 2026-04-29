@@ -42,8 +42,8 @@ Research and video context:
 
 ## Main Findings
 
-1. Startup-visible context must stay small.
-   Only `name` and `description` are available for skill discovery in many systems. Large always-on files waste tokens and degrade routing.
+1. Startup-visible context must stay minimal.
+   ETH Zurich (arXiv:2602.11988) reports no aggregate success gain from context-file usage and a clear cost increase from longer prompts. Keep always-on surfaces small and static.
 
 2. `AGENTS.md` should hold durable repo truth only.
    Keep it to product frame, startup rules, exact verify commands, and hard boundaries. Move procedures and task detail into skills or docs.
@@ -52,7 +52,7 @@ Research and video context:
    Good triggering comes from a sharp description plus clear `Use when` and `Don't use when` guidance, not from giant bodies.
 
 4. Progressive disclosure is required.
-   Keep the main `SKILL.md` lean. Move bulky detail into repo docs, `references/`, scripts, or other exact artifacts.
+   Keep the main `SKILL.md` lean. Move bulky detail into repo docs, `references/`, scripts, or other exact artifacts loaded only when triggered.
 
 5. Prompt hardening belongs in structure, not just prose.
    Prefer validators, scripts, permissions, hooks, and exact output contracts over broad natural-language rulebooks.
@@ -61,12 +61,32 @@ Research and video context:
    If the same rule appears in root `AGENTS.md`, repo-local skills, overlays, and agent templates, it will drift and waste context.
 
 7. Generated or broad repo summaries are weak default context.
-   ETH research found no overall success gain from context files and higher inference cost. The video reaches the same practical conclusion: repeated restatement of discoverable repo facts is usually the wrong spend.
+   ETH research found no overall success gain from context files and higher inference cost. Do not auto-generate or auto-inject repo overviews as always-on context.
 
 8. Task-specific skills beat vague pack umbrellas.
    Router or pack glue should point to the exact concrete skill or agent. It should not try to become a second system prompt.
 
 ## Hard Rules For Sane
+
+### Rewrite Rules (ETH-aligned)
+
+1. Minimal always-on context.
+   Keep root/repo overlays to durable constraints only. Move execution detail out of always-on surfaces.
+
+2. No generated repo overviews.
+   Ban synthesized "repo summary" blocks in always-on prompts. Load concrete files on demand.
+
+3. Exact task-relevant requirements only.
+   Require concrete paths, commands, boundaries, and outputs tied to current task. Remove generic doctrine.
+
+4. Progressive disclosure by default.
+   Discovery text small; detailed guidance lives in skill-local docs/scripts/references and is opened only when needed.
+
+5. Role/surface-specific prompt contracts.
+   Each surface (router, lane, concrete skill, overlay) must define role, authority, tool/write scope, required output shape, and stop conditions.
+
+6. Verification is mandatory and explicit.
+   Every editing surface must declare verification command(s) and completion criteria before done is claimed.
 
 ### Root `AGENTS.md`
 
@@ -78,6 +98,7 @@ Research and video context:
   - hard repo boundaries
   - done criteria
 - Do not put long workflow prose here.
+- Do not include generated repository overviews.
 
 ### Repo-local skills in `.agents/skills`
 
@@ -93,6 +114,7 @@ Research and video context:
   - `Gotchas / Safety`
   - `Examples`
 - Keep descriptions concrete and trigger-oriented.
+- Include only exact task-relevant requirements for that skill.
 - If the body grows large, split detail into repo docs or `references/`.
 
 ### Exported Sane-managed skills and overlays
@@ -102,6 +124,12 @@ Research and video context:
   - tell Codex when to use Sane-managed surfaces
   - point to concrete pack skills or agents
   - avoid broad daily-wrapper behavior
+- Every surface must define its prompt contract:
+  - role and non-goals
+  - authority and edit boundary
+  - tools allowed and disallowed
+  - required output format
+  - verification and done condition
 - Global overlays and repo overlays must not be duplicates.
 - Agent templates should define:
   - exact role

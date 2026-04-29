@@ -41,7 +41,7 @@ If you need the user story first, re-read:
 
 ### Prerequisites
 
-- Node.js
+- Node.js 22 or newer
 - pnpm
 - Git
 - a Codex environment if you want to test end-to-end behavior
@@ -94,7 +94,9 @@ Useful commands:
 | `pnpm start` | Open the onboarding-first TUI. |
 | `pnpm run start:settings` | Go straight to settings/configure mode. |
 | `pnpm run start:repair` | Go straight to repair/remove mode. |
-| `pnpm run start:inspect` | Inspect current managed targets, runtime state, and drift. |
+| `pnpm run start:status` | Show current managed targets, runtime state, and drift. |
+| `pnpm run release:verify` | Run full verification, build the packaged CLI, and produce the npm tarball for release checks. |
+| `pnpm run release:npm:dry-run` | Validate npm publish metadata and payload without publishing. |
 
 If your change affects repair, preview/apply, export, or uninstall, test that flow directly.
 
@@ -178,6 +180,13 @@ Before opening a PR, make sure you can explain:
 - what surfaces changed
 - what you verified
 - which docs changed with it
+
+## Release Guardrails
+
+- Never enable unattended publish without secrets and environment approval.
+- Tag releases as `vX.Y.Z`; this triggers GitHub Release packaging.
+- Publish `sane-codex` from `apps/sane-tui/dist` only after `release:verify` passes.
+- Use GitHub Release `SHA256SUMS.txt` as source of truth for Homebrew, winget, and Scoop updates.
 
 ## Commit Style
 

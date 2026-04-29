@@ -104,8 +104,9 @@ interface CorePackManifestEntry {
       target: string;
     }>;
   }>;
-  routerNote: string;
-  overlayNote: string;
+  policyNote?: string;
+  routerNote?: string;
+  overlayNote?: string;
   provenance: PackAssetProvenance;
 }
 
@@ -188,9 +189,7 @@ export function createSaneRouterSkill(packs: GuidancePacks, roles: ModelRoutingG
     VERIFIER_REASONING: roles.verifierReasoning,
     REALTIME_MODEL: roles.realtimeModel,
     REALTIME_REASONING: roles.realtimeReasoning,
-    ENABLED_PACK_ROUTER_NOTES: enabledPackEntries(packs)
-      .map(([, entry]) => entry.routerNote)
-      .join("\n"),
+    ENABLED_PACK_ROUTER_NOTES: enabledPackPolicyNotes(packs),
     ENABLED_PACK_SKILL_SELECTIONS: enabledPackSkillSelections(packs)
   });
 }
@@ -274,9 +273,7 @@ export function createSaneGlobalAgentsOverlay(
     VERIFIER_REASONING: roles.verifierReasoning,
     REALTIME_MODEL: roles.realtimeModel,
     REALTIME_REASONING: roles.realtimeReasoning,
-    ENABLED_PACK_OVERLAY_NOTES: enabledPackEntries(packs)
-      .map(([, entry]) => entry.overlayNote)
-      .join("\n"),
+    ENABLED_PACK_OVERLAY_NOTES: enabledPackPolicyNotes(packs),
     ENABLED_PACK_SKILL_SELECTIONS: enabledPackSkillSelections(packs)
   });
 }
@@ -296,9 +293,7 @@ export function createSaneRepoAgentsOverlay(
     VERIFIER_REASONING: roles.verifierReasoning,
     REALTIME_MODEL: roles.realtimeModel,
     REALTIME_REASONING: roles.realtimeReasoning,
-    ENABLED_PACK_OVERLAY_NOTES: enabledPackEntries(packs)
-      .map(([, entry]) => entry.overlayNote)
-      .join("\n"),
+    ENABLED_PACK_OVERLAY_NOTES: enabledPackPolicyNotes(packs),
     ENABLED_PACK_SKILL_SELECTIONS: enabledPackSkillSelections(packs)
   });
 }
@@ -542,10 +537,19 @@ function enabledPackSkillSelections(packs: GuidancePacks): string {
     .join("\n");
 }
 
-function enabledPackAgentNotes(packs: GuidancePacks): string {
+function packPolicyNote(entry: CorePackManifestEntry): string {
+  return entry.policyNote ?? entry.routerNote ?? entry.overlayNote ?? "";
+}
+
+function enabledPackPolicyNotes(packs: GuidancePacks): string {
   return enabledPackEntries(packs)
-    .map(([, entry]) => entry.overlayNote)
+    .map(([, entry]) => packPolicyNote(entry))
+    .filter((note) => note.length > 0)
     .join("\n");
+}
+
+function enabledPackAgentNotes(packs: GuidancePacks): string {
+  return enabledPackPolicyNotes(packs);
 }
 
 function optionalPackMetadata(pack: OptionalPackName): (typeof OPTIONAL_PACK_METADATA)[number] {

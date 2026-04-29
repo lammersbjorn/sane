@@ -3,6 +3,9 @@
 /.turbo
 **/.turbo
 /.pnpm-store
+.env
+.env.*
+*.env
 .playwright-mcp/
 **/node_modules
 **/dist

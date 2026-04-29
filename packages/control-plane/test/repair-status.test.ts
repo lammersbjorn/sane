@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -7,7 +7,6 @@ import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { applyCodexProfile, backupCodexConfig } from "../src/codex-config.js";
-import { exportPlugin } from "../src/codex-plugin.js";
 import { CORE_INSTALL_BUNDLE_TARGETS } from "../src/core-install-bundle-targets.js";
 import { exportAll } from "../src/index.js";
 import {
@@ -72,22 +71,6 @@ describe("repair status snapshot", () => {
     });
   });
 
-  it("treats an installed optional plugin artifact as removable by uninstall-all", () => {
-    const projectRoot = makeTempDir();
-    const homeDir = makeTempDir();
-    const paths = createProjectPaths(projectRoot);
-    const codexPaths = createCodexPaths(homeDir);
-
-    exportPlugin(codexPaths);
-
-    expect(inspectRepairStatus(paths, codexPaths)).toMatchObject({
-      removableInstalls: ["plugin"],
-      actionStatus: {
-        uninstall_all: { kind: "installed", label: "installed" }
-      }
-    });
-  });
-
   it("reports repair affordances from backend state without raw inventory consumers", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
@@ -149,5 +132,29 @@ describe("repair status snapshot", () => {
     expect(inspectRepairStatusFromStatusBundle(paths, codexPaths, bundle)).toEqual(
       inspectRepairStatus(paths, codexPaths)
     );
+  });
+
+  it("does not offer to remove externally installed RTK binary", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const binDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const config = createDefaultLocalConfig();
+    config.packs.rtk = true;
+
+    installRuntime(paths, codexPaths);
+    saveConfig(paths, config);
+    const rtkPath = join(binDir, "rtk");
+    writeFileSync(rtkPath, "#!/bin/sh\nexit 0\n", "utf8");
+    chmodSync(rtkPath, 0o755);
+
+    const bundle = inspectStatusBundle(paths, codexPaths, "linux", { PATH: binDir });
+    const repair = inspectRepairStatusFromStatusBundle(paths, codexPaths, bundle);
+
+    expect(bundle.compatibility.find((item) => item.name === "rtk-binary")?.status.asString()).toBe(
+      "installed"
+    );
+    expect(repair.removableInstalls).not.toContain("rtk-binary");
   });
 });

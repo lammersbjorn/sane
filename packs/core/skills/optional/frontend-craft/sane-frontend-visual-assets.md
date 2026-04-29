@@ -7,7 +7,7 @@ description: Use when frontend work needs generated images, image editing, visua
 
 ## Goal
 
-Choose, generate, or direct visual assets that make a UI specific and inspectable.
+Choose, generate, or direct visual assets that make a UI specific, useful, and inspectable.
 
 ## Use When
 

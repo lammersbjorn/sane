@@ -1,6 +1,6 @@
 # Sane Backend Contract
 
-Last updated: 2026-04-19
+Last updated: 2026-04-29
 
 This document defines the thin backend contract the proper `Sane` TUI must wrap.
 
@@ -50,7 +50,7 @@ Current managed targets are:
 5. optional additive global overlay block in `~/.codex/AGENTS.md`
 6. additive user-level hooks entry in `~/.codex/hooks.json`
 7. additive user-level custom agents in `~/.codex/agents/`
-8. optional Sane Codex plugin artifact export at `~/.codex/plugins/sane/` with marketplace entry in `~/.agents/plugins/marketplace.json`
+8. optional full OpenCode export at `~/.config/opencode/` (skills, `AGENTS.md`, session-start plugin wiring, and Sane agents)
 9. narrow explicit opt-in profile management for user-level Codex config at `~/.codex/config.toml`
 
 Current managed export behavior also depends on local config:
@@ -59,7 +59,7 @@ Current managed export behavior also depends on local config:
 - exported `sane-router` skill content can reflect enabled guidance packs and current routing defaults
 - exported global and repo `AGENTS.md` overlays can reflect enabled guidance packs and current routing defaults
 - status/doctor should flag those assets as invalid when current exports drift from enabled guidance-pack or routing config
-- enabled optional packs may materialize as additional managed user skills during `export_user_skills` (currently `sane-caveman`, `sane-frontend-craft`, `sane-frontend-visual-assets`, and `sane-frontend-review`)
+- enabled optional packs may materialize as additional managed user skills during `export_user_skills` (currently `sane-caveman`, `sane-rtk`, `sane-frontend-craft`, `sane-frontend-visual-assets`, and `sane-frontend-review`)
 - enabled optional packs may materialize as additional managed repo skills during `export_repo_skills` (same exported skill names as user scope)
 - `frontend-craft` currently exports compact Sane-owned frontend skills instead of the full upstream Taste/Impeccable mirrors; Taste Skill, `impeccable`, and `make-interfaces-feel-better` remain provenance/reference inputs
 - `sane-frontend-review` must direct agents to use browser, Playwright, screenshot/local image, and terminal tooling according to what evidence the UI review needs
@@ -87,6 +87,19 @@ These are the backend actions the TUI is allowed to call in the current phase.
   - read config from `.sane/config.local.toml`
   - display current routing defaults
   - when Codex context is available, also display detected model availability, plan hint, supported reasoning efforts, and the capability line that explains each selected routing default
+
+- `export_portable_settings`
+  - write portable settings JSON to `.sane/settings.portable.json`
+  - export current local config when present, otherwise export default local config
+
+- `import_portable_settings`
+  - read portable settings JSON from `.sane/settings.portable.json`
+  - validate payload version and embedded config
+  - write validated config into `.sane/config.local.toml` with normal backup behavior
+
+- `install_from_portable_settings`
+  - run runtime install/repair baseline
+  - then import `.sane/settings.portable.json` into local config
 
 - `show_codex_config`
   - read `~/.codex/config.toml` if present
@@ -153,7 +166,9 @@ These are the backend actions the TUI is allowed to call in the current phase.
   - write only:
     - `model`
     - `model_reasoning_effort`
+    - `compact_prompt`
     - `features.codex_hooks`
+  - compact prompt stays small and operational: preserve objective, verified state, active Sane rules, completed work, next actions, and blocker state without generated repo overviews
   - preserve all unrelated user config
 
 - `restore_codex_config`
@@ -205,7 +220,6 @@ These are the backend actions the TUI is allowed to call in the current phase.
 - check optional repo-local AGENTS overlay presence
 - check managed global AGENTS block presence
 - check user-level Codex config presence / parse validity
-- check optional Sane Codex plugin artifact presence (`~/.codex/plugins/sane/`) and Sane marketplace entry (`~/.agents/plugins/marketplace.json`)
 - surface warning-only Codex config conflicts in Status; do not auto-fix unmanaged MCP/plugin setup
 - emit repair hints
 
@@ -221,7 +235,7 @@ These are the backend actions the TUI is allowed to call in the current phase.
 - `export_global_agents`
 - `export_hooks`
 - `export_custom_agents`
-- `export_plugin`
+- `export_opencode_all`
 - `export_all`
 - `uninstall_user_skills`
 - `uninstall_repo_skills`
@@ -229,14 +243,13 @@ These are the backend actions the TUI is allowed to call in the current phase.
 - `uninstall_global_agents`
 - `uninstall_hooks`
 - `uninstall_custom_agents`
-- `uninstall_plugin`
+- `uninstall_opencode_all`
 - `uninstall_all`
 
 Plugin artifact boundary:
+- Codex plugin packaging is deferred until Plugins support richer Sane product surfaces.
 - TUI-managed core export remains the default Sane setup path.
-- `export_all` keeps its current managed-target behavior and does not implicitly install or rewrite the Sane Codex plugin artifact.
-- The Sane plugin artifact is an optional distribution/install surface with explicit export/install, status/doctor, and uninstall/remove awareness.
-- Plugin artifact uninstall/remove must preserve unrelated Codex plugins and only target Sane-owned plugin state.
+- `export_all` keeps its current native managed-target behavior and does not manage plugin artifacts.
 
 ## Contract Rules
 

@@ -50,7 +50,6 @@ describe("section action rows", () => {
         apply_integrations_profile: { kind: "missing", label: "missing" },
         export_hooks: { kind: "missing", label: "missing" },
         export_custom_agents: { kind: "missing", label: "missing" },
-        export_plugin: { kind: "missing", label: "missing" },
         export_all: { kind: "missing", label: "missing" }
       })
     ).toEqual([

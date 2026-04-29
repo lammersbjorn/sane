@@ -1,12 +1,14 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
-import * as TOML from "@iarna/toml";
+import { parse as parseToml, stringify as stringifyToml } from "smol-toml";
 
 import { createRecommendedLocalConfig, detectCodexEnvironment, type LocalConfig } from "@sane/config";
 import { InventoryScope, InventoryStatus, OperationKind, OperationResult } from "@sane/core";
 import { type CodexPaths, ensureRuntimeDirs, type ProjectPaths } from "@sane/platform";
 import { writeAtomicTextFile } from "@sane/state";
+
+import { buildSaneCompactPrompt } from "./session-start-hook.js";
 
 type TomlTable = Record<string, unknown>;
 
@@ -35,7 +37,7 @@ export interface IntegrationsProfileApplyResult {
 }
 
 export interface CodexProfileChange {
-  key: "model" | "model_reasoning_effort" | "features.codex_hooks";
+  key: "model" | "model_reasoning_effort" | "features.codex_hooks" | "compact_prompt";
   current: string | null;
   recommended: string;
 }
@@ -307,7 +309,7 @@ export function applyCodexProfile(paths: ProjectPaths, codexPaths: CodexPaths): 
   applyCoreCodexProfileToValue(config, context.recommended);
   writeCodexConfig(codexPaths.configToml, config);
 
-  details.push("applied keys: model, model_reasoning_effort, features.codex_hooks");
+  details.push("applied keys: model, model_reasoning_effort, compact_prompt, features.codex_hooks");
   details.push(backupPath ? `backup: ${backupPath}` : "backup: skipped (no prior config existed)");
 
   return new OperationResult({
@@ -875,12 +877,12 @@ function installedCodexConfigInventory(codexPaths: CodexPaths) {
 
 function writeCodexConfig(path: string, config: TomlTable): void {
   mkdirSync(codexPathsParent(path), { recursive: true });
-  writeAtomicTextFile(path, `${TOML.stringify(config as TOML.JsonMap).trimEnd()}\n`);
+  writeAtomicTextFile(path, `${stringifyToml(config).trimEnd()}\n`);
 }
 
 function readCodexConfig(path: string): TomlTable {
   try {
-    const decoded = TOML.parse(readFileSync(path, "utf8"));
+    const decoded = parseToml(readFileSync(path, "utf8"));
     if (!isTomlTable(decoded)) {
       throw new Error("config.toml root must be a table");
     }
@@ -1096,7 +1098,8 @@ function inspectCodexProfileAuditFromContext(context: CodexConfigContext): Codex
       {
         model: null,
         modelReasoningEffort: null,
-        codexHooks: null
+        codexHooks: null,
+        compactPrompt: null
       },
       "missing"
     );
@@ -1108,7 +1111,8 @@ function inspectCodexProfileAuditFromContext(context: CodexConfigContext): Codex
     {
       model: asString(context.config?.model),
       modelReasoningEffort: asString(context.config?.model_reasoning_effort),
-      codexHooks: displayHooks(features?.codex_hooks)
+      codexHooks: displayHooks(features?.codex_hooks),
+      compactPrompt: compactPromptStatus(context.config?.compact_prompt)
     },
     "missing"
   );
@@ -1238,6 +1242,7 @@ function inspectStatuslineProfileApplyResultFromContext(
 function applyCoreCodexProfileToValue(config: TomlTable, recommended: LocalConfig): void {
   config.model = recommended.models.coordinator.model;
   config.model_reasoning_effort = recommended.models.coordinator.reasoningEffort;
+  config.compact_prompt = buildSaneCompactPrompt();
 
   const features = ensureChildTable(config, "features", "[features] must be a table");
   features.codex_hooks = true;
@@ -1318,6 +1323,7 @@ function codexConfigDetails(config: TomlTable): string[] {
   return [
     `model: ${asString(config.model) ?? "unset"}`,
     `reasoning: ${asString(config.model_reasoning_effort) ?? "unset"}`,
+    `compact prompt: ${compactPromptStatus(config.compact_prompt) ?? "missing"}`,
     `codex hooks: ${displayHooks(features?.codex_hooks)}`,
     `codex memories: ${displayEnabled(features?.memories)}`,
     `mcp servers: ${mcpServers.length}`,
@@ -1348,6 +1354,7 @@ function codexProfileAuditFromCurrentValues(
     model: string | null;
     modelReasoningEffort: string | null;
     codexHooks: string | null;
+    compactPrompt: string | null;
   },
   status: CodexProfileAudit["status"]
 ): CodexProfileAudit {
@@ -1369,6 +1376,14 @@ function codexProfileAuditFromCurrentValues(
     "reasoning",
     current.modelReasoningEffort,
     recommended.models.coordinator.reasoningEffort
+  );
+  pushCodexProfileChange(
+    changes,
+    details,
+    "compact_prompt",
+    "compact prompt",
+    current.compactPrompt,
+    "Sane continuity prompt"
   );
   pushCodexProfileChange(
     changes,
@@ -1578,6 +1593,13 @@ function displayHooks(value: unknown): string {
     return "disabled";
   }
   return "unset";
+}
+
+function compactPromptStatus(value: unknown): string | null {
+  if (value === undefined) {
+    return null;
+  }
+  return value === buildSaneCompactPrompt() ? "Sane continuity prompt" : "custom";
 }
 
 function isTomlTable(value: unknown): value is TomlTable {

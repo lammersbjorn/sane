@@ -1,8 +1,22 @@
 {
   "name": "@sane/workspace",
   "private": true,
+  "version": "1.0.0-beta.1",
+  "description": "Sane terminal onboarding and setup surface for Codex.",
+  "license": "MIT OR Apache-2.0",
   "type": "module",
   "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lammersbjorn/sane.git"
+  },
+  "homepage": "https://github.com/lammersbjorn/sane#readme",
+  "bugs": {
+    "url": "https://github.com/lammersbjorn/sane/issues"
+  },
   "scripts": {
     "start": "pnpm --filter @sane/sane-tui run build:package && node ./apps/sane-tui/dist/bin/sane.cjs",
     "start:settings": "pnpm --filter @sane/sane-tui run build:package && node ./apps/sane-tui/dist/bin/sane.cjs settings",
@@ -19,6 +33,9 @@
     "start:ts-built-preview:status": "pnpm --filter @sane/sane-tui run build && node ./apps/sane-tui/dist/bin/sane.cjs status",
     "start:ts-built-preview:inspect": "pnpm --filter @sane/sane-tui run build && node ./apps/sane-tui/dist/bin/sane.cjs inspect",
     "check": "pnpm typecheck && pnpm test",
+    "release:verify": "pnpm check && pnpm --filter @sane/sane-tui run build:smoke && pnpm run pack:sane-tui",
+    "release:npm:dry-run": "pnpm run release:verify && cd apps/sane-tui/dist && pnpm publish --dry-run --access public --no-git-checks",
+    "release:npm:dry-run:beta": "pnpm run release:verify && cd apps/sane-tui/dist && pnpm publish --dry-run --access public --no-git-checks --tag beta",
     "test": "turbo run test",
     "test:watch": "turbo run test:watch --parallel",
     "typecheck": "turbo run typecheck"

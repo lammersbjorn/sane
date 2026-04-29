@@ -50,9 +50,7 @@ describe("ts cli command parsing", () => {
     expectBackendCommand(["preview", "integrations-profile"], "preview_integrations_profile");
     expectBackendCommand(["apply", "statusline-profile"], "apply_statusline_profile");
     expectBackendCommand(["outcome-readiness"], "show_outcome_readiness");
-    expectBackendCommand(["export", "plugin"], "export_plugin");
     expectBackendCommand(["export", "opencode"], "export_opencode_all");
-    expectBackendCommand(["uninstall", "plugin"], "uninstall_plugin");
   });
 
   it("routes managed hook aliases onto hook commands", () => {
@@ -60,11 +58,17 @@ describe("ts cli command parsing", () => {
       kind: "hook",
       event: "session-start"
     });
-    expect(parseCliArgs(["hook", "tokscale-submit", "--event", "session-end", "--dry-run"])).toMatchObject({
+    expect(parseCliArgs(["hook", "tokscale-submit", "--event", "stop", "--dry-run"])).toMatchObject({
       kind: "hook",
       event: "tokscale-submit",
-      submitEvent: "session-end",
+      submitEvent: "stop",
       dryRun: true
+    });
+    expect(parseCliArgs(["hook", "tokscale-submit", "--event", "session-end"])).toMatchObject({
+      kind: "hook",
+      event: "tokscale-submit",
+      submitEvent: "stop",
+      dryRun: false
     });
     expect(() => parseCliArgs(["hook", "tokscale-submit", "--event", "session-start"])).toThrow(
       /invalid tokscale hook event: session-start/
@@ -153,25 +157,6 @@ describe("ts cli command execution", () => {
     expect(existsSync(join(projectRoot, ".sane"))).toBe(true);
   });
 
-  it("runs optional plugin artifact aliases through discovery", () => {
-    const projectRoot = makeTempDir();
-    const homeDir = makeTempDir();
-    writeFileSync(join(projectRoot, "pnpm-workspace.yaml"), 'packages:\n  - "apps/*"\n');
-
-    const exported = runCliCommandFromDiscovery(["export", "plugin"], projectRoot, { HOME: homeDir });
-
-    expect(exported.exitCode).toBe(0);
-    expect(exported.output).toContain("export plugin: installed Sane Codex plugin artifact");
-    expect(existsSync(join(homeDir, ".codex", "plugins", "sane", ".codex-plugin", "plugin.json"))).toBe(true);
-    expect(existsSync(join(homeDir, ".agents", "plugins", "marketplace.json"))).toBe(true);
-
-    const uninstalled = runCliCommandFromDiscovery(["uninstall", "plugin"], projectRoot, { HOME: homeDir });
-
-    expect(uninstalled.exitCode).toBe(0);
-    expect(uninstalled.output).toContain("uninstall plugin: removed Sane Codex plugin artifact");
-    expect(existsSync(join(homeDir, ".codex", "plugins", "sane"))).toBe(false);
-  });
-
   it("prints the managed session-start hook event contract", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
@@ -193,9 +178,22 @@ describe("ts cli command execution", () => {
       HOME: homeDir
     });
 
-    const hook = expectHookOutput(result, "SessionEnd");
+    const hook = expectHookOutput(result, "Stop");
     expect(hook.additionalContext).toMatch(/rate-limit/i);
     expect(hook.additionalContext).toMatch(/resume/i);
+  });
+
+  it("prints the managed tokscale Stop hook event contract", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    writeFileSync(join(projectRoot, "pnpm-workspace.yaml"), 'packages:\n  - "apps/*"\n');
+
+    const result = runCliCommandFromDiscovery(["hook", "tokscale-submit", "--event", "stop", "--dry-run"], projectRoot, {
+      HOME: homeDir,
+      PATH: ""
+    });
+
+    expectEmptyHookOutput(result);
   });
 });
 
@@ -256,7 +254,7 @@ function expectRenderedLineCountAtMost(output: string, maxLines: number): void {
 
 function expectHookOutput(
   result: CliRunResult,
-  hookEventName: "SessionStart" | "SessionEnd"
+  hookEventName: "SessionStart" | "Stop"
 ): { hookEventName: string; additionalContext: string } {
   expect(result.exitCode).toBe(0);
   const parsed = JSON.parse(result.output) as {
@@ -270,4 +268,9 @@ function expectHookOutput(
     additionalContext: expect.any(String)
   });
   return parsed.hookSpecificOutput as { hookEventName: string; additionalContext: string };
+}
+
+function expectEmptyHookOutput(result: CliRunResult): void {
+  expect(result.exitCode).toBe(0);
+  expect(JSON.parse(result.output)).toEqual({});
 }

@@ -1,10 +1,30 @@
 {
   "name": "@sane/sane-tui",
   "private": true,
+  "description": "Terminal onboarding and setup surface for Codex.",
+  "license": "MIT OR Apache-2.0",
   "type": "module",
-  "version": "0.1.0",
+  "version": "1.0.0-beta.1",
   "bin": {
     "sane": "./bin/sane.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lammersbjorn/sane.git",
+    "directory": "apps/sane-tui"
+  },
+  "homepage": "https://github.com/lammersbjorn/sane#readme",
+  "bugs": {
+    "url": "https://github.com/lammersbjorn/sane/issues"
+  },
+  "keywords": [
+    "codex",
+    "agents",
+    "cli",
+    "tui"
+  ],
+  "engines": {
+    "node": ">=22"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -28,7 +48,6 @@
     "./section-action-rows.js": "./src/section-action-rows.ts",
     "./settings-screen.js": "./src/settings-screen.ts",
     "./shell.js": "./src/shell.ts",
-    "./shell-layer.js": "./src/shell-layer.ts",
     "./status-screen.js": "./src/status-screen.ts",
     "./terminal-driver.js": "./src/terminal-driver.ts",
     "./terminal-keys.js": "./src/terminal-keys.ts",
@@ -56,8 +75,7 @@
     "@sane/platform": "workspace:*",
     "@sane/state": "workspace:*",
     "ink": "7.0.1",
-    "react": "19.2.5",
-    "react-devtools-core": "^6.1.5"
+    "react": "19.2.5"
   },
   "devDependencies": {
     "@types/react": "19.2.14",

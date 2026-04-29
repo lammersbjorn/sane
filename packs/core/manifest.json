@@ -24,11 +24,13 @@
         {
           "name": "sane-caveman",
           "path": "skills/optional/sane-caveman.md",
-          "taskKinds": ["communication-style", "caveman-prose", "brevity"]
+          "taskKinds": [
+            "communication-style",
+            "caveman-prose",
+            "brevity"
+          ]
         }
       ],
-      "routerNote": "- Caveman pack active: load `sane-caveman` for prose rules",
-      "overlayNote": "- Caveman pack active: load `sane-caveman` for prose rules",
       "provenance": {
         "kind": "derived",
         "note": "Pinned curated mirror of the upstream Caveman skill, exported under a Sane-managed name to avoid collisions with user-installed plugin skills.",
@@ -43,7 +45,8 @@
             "license": "MIT"
           }
         ]
-      }
+      },
+      "policyNote": "- Caveman pack active: load `sane-caveman` for prose rules"
     },
     "rtk": {
       "skillName": "sane-rtk",
@@ -52,16 +55,20 @@
         {
           "name": "sane-rtk",
           "path": "skills/optional/sane-rtk.md",
-          "taskKinds": ["shell", "search", "test", "logs"]
+          "taskKinds": [
+            "shell",
+            "search",
+            "test",
+            "logs"
+          ]
         }
       ],
-      "routerNote": "- RTK pack active: load `sane-rtk` for shell/search/test/log routing",
-      "overlayNote": "- RTK pack active: load `sane-rtk` for shell/search/test/log routing",
       "provenance": {
         "kind": "internal",
         "note": "Internal workflow pack for RTK-aware shell routing. The skill teaches native RTK command selection instead of a raw-shell wrapper ritual.",
         "updateStrategy": "manual-curated"
-      }
+      },
+      "policyNote": "- RTK pack active: load `sane-rtk` for shell/search/test/log routing"
     },
     "frontend-craft": {
       "skillName": "sane-frontend-craft",
@@ -70,21 +77,34 @@
         {
           "name": "sane-frontend-craft",
           "path": "skills/optional/frontend-craft/sane-frontend-craft.md",
-          "taskKinds": ["frontend-build", "redesign", "ui-implementation", "visual-polish"]
+          "taskKinds": [
+            "frontend-build",
+            "redesign",
+            "ui-implementation",
+            "visual-polish"
+          ]
         },
         {
           "name": "sane-frontend-visual-assets",
           "path": "skills/optional/frontend-craft/sane-frontend-visual-assets.md",
-          "taskKinds": ["image-generation", "visual-assets", "hero-media", "art-direction"]
+          "taskKinds": [
+            "image-generation",
+            "visual-assets",
+            "hero-media",
+            "art-direction"
+          ]
         },
         {
           "name": "sane-frontend-review",
           "path": "skills/optional/frontend-craft/sane-frontend-review.md",
-          "taskKinds": ["frontend-review", "responsive-qa", "visual-audit", "polish"]
+          "taskKinds": [
+            "frontend-review",
+            "responsive-qa",
+            "visual-audit",
+            "polish"
+          ]
         }
       ],
-      "routerNote": "- Frontend-craft pack active: load the matching frontend skill for UI, asset, or visual-review work",
-      "overlayNote": "- Frontend-craft pack active: load the matching frontend skill for UI, asset, or visual-review work",
       "provenance": {
         "kind": "derived",
         "note": "Sane-owned compact frontend craft pack informed by Taste Skill, Impeccable, make-interfaces-feel-better, and current Codex image-generation workflows; upstream mirrors remain reference material, not exported v1 surface.",
@@ -115,7 +135,8 @@
             "license": null
           }
         ]
-      }
+      },
+      "policyNote": "- Frontend-craft pack active: load the matching frontend skill for UI, asset, or visual-review work"
     }
   },
   "assetSources": {
@@ -187,6 +208,20 @@
       "agents/sane-explorer.toml.tmpl": {
         "repo": "https://github.com/lammersbjorn/sane",
         "path": "packs/core/agents/sane-explorer.toml.tmpl",
+        "ref": "workspace",
+        "license": "MIT OR Apache-2.0",
+        "updateStrategy": "pinned-manual"
+      },
+      "agents/sane-implementation.toml.tmpl": {
+        "repo": "https://github.com/lammersbjorn/sane",
+        "path": "packs/core/agents/sane-implementation.toml.tmpl",
+        "ref": "workspace",
+        "license": "MIT OR Apache-2.0",
+        "updateStrategy": "pinned-manual"
+      },
+      "agents/sane-realtime.toml.tmpl": {
+        "repo": "https://github.com/lammersbjorn/sane",
+        "path": "packs/core/agents/sane-realtime.toml.tmpl",
         "ref": "workspace",
         "license": "MIT OR Apache-2.0",
         "updateStrategy": "pinned-manual"

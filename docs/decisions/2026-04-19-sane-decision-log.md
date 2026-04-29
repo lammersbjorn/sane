@@ -5,7 +5,7 @@ Last updated: 2026-04-27
 This file is the durable source of truth for decisions already made in the April 19, 2026 session.
 
 Primary source:
-- `/Users/bjorn/.codex/sessions/2026/04/19/rollout-2026-04-19T14-42-32-019da5c3-973f-7a62-9339-823069e71ac6.jsonl`
+- `~/.codex/sessions/2026/04/19/rollout-2026-04-19T14-42-32-019da5c3-973f-7a62-9339-823069e71ac6.jsonl` (local session path, user-specific)
 
 ## How To Use This File
 
@@ -51,7 +51,7 @@ Primary source:
 - Implemented TypeScript package boundaries now include `@sane/sane-tui`, `@sane/config`, `@sane/control-plane`, `@sane/core`, `@sane/framework-assets`, `@sane/platform`, `@sane/policy`, and `@sane/state`
 - File-first framework assets should render from checked-in `packs/core` sources through `packages/framework-assets`
 - Codex-native installation targets are the main product surface
-- Current managed Codex surfaces include the user skill, optional repo skills, optional repo `AGENTS.md` block, global `AGENTS.md` block, hooks, custom agents, optional Sane Codex plugin artifact, and narrow Codex config profiles
+- Current managed Codex surfaces include the user skill, optional repo skills, optional repo `AGENTS.md` block, global `AGENTS.md` block, hooks, custom agents, and narrow Codex config profiles
 - Optional user-level Codex settings management is allowed later, but only as an explicit opt-in surface with preserve / backup / restore behavior
 - Local state may exist, but it must stay thin and operational rather than becoming a separate day-to-day runtime
 
@@ -65,7 +65,8 @@ Primary source:
 - Subagent-first default for all non-tiny work
 - Stay single-agent only for tiny direct answers
 - Broad work needs a lane plan and successful subagent handoff before deep work
-- Broad review needs explorer/reviewer lanes; if higher-priority tool rules require explicit subagent authorization and it is missing, ask and pause
+- A research/planning handoff does not carry into a later implementation turn; broad follow-up edits need a fresh implementation/review handoff before edits
+- Broad review needs explorer/reviewer lanes; if higher-priority tool rules require explicit subagent authorization and it is missing, ask and stop
 - Broad editing needs an implementation lane with a disjoint write scope
 - One central verifier / reviewer authority
 - No agent democracy or chatter loops
@@ -116,19 +117,17 @@ Primary source:
 - Targets: `macOS`, `Linux`, `Windows`
 - TypeScript-first for implementation
 - Architecture should be ready for Codex plugin packaging, while keeping Sane's internal pack model private
-- `v1` should ship a Sane Codex plugin package/marketplace artifact alongside the TUI/control plane when feasible
+- Codex plugin packaging is deferred until Plugins support richer product surfaces.
 - `v1` does not need a public third-party Sane plugin API yet
 - `v1` should be pack-system ready internally, not pack-system complete
 - Built-in packs in `v1`
 - No third-party Sane extension contract in `v1`
 - No compatibility promises for a Sane plugin API in `v1`
-- Official Codex shape as of 2026-04-25: skills are the authoring format for reusable workflows, and Codex plugins are the installable distribution unit for skills/apps/MCP servers.
-- Sane should therefore keep skills as the concrete workflow surface, and package them as a Codex plugin when the goal is installation/sharing.
-- The whole repository is not the plugin. The repo may contain a plugin package with `.codex-plugin/plugin.json` plus skills/MCP/app metadata, while the TUI/control plane remains the installer/config/inspect/repair surface.
+- Official Codex shape as of 2026-04-25: skills are the authoring format for reusable workflows, and Codex plugins are still not enough for the full Sane settings/TUI surface.
+- Sane should therefore keep skills as the concrete workflow surface and defer Codex plugin packaging.
+- The whole repository is not a plugin. The TUI/control plane remains the installer/config/inspect/repair surface.
 - TUI-managed core install/export remains the default setup path.
-- The Sane Codex plugin artifact is optional for distribution/install and must be managed through explicit plugin actions.
-- `export_all` remains unchanged and must not implicitly install or rewrite the Sane plugin artifact.
-- Inspect/doctor/uninstall have explicit plugin artifact awareness without treating unrelated Codex plugins as Sane-owned.
+- `export_all` remains the Codex-native install bundle and does not manage plugin artifacts.
 
 ### Built-in Packs
 
@@ -207,7 +206,7 @@ These are still undecided and should stay out of `Locked`.
 
 - Exact local runtime directory layout and names
 - Exact state file formats and compaction strategy
-- Any additional managed surfaces beyond the current skills, `AGENTS.md` blocks, hooks, custom agents, optional Sane Codex plugin artifact, and narrow Codex config profiles
+- Any additional managed surfaces beyond the current skills, `AGENTS.md` blocks, hooks, custom agents, and narrow Codex config profiles
 - Exact model preset matrix and routing rules
 - Exact control-surface implementation details within the TypeScript-first stack
 - Final product name for the later end-to-end outcome-runner flow

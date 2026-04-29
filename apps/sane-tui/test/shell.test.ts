@@ -14,7 +14,7 @@ import { executeOperation } from "@sane/control-plane/history.js";
 import * as inventory from "@sane/control-plane/inventory.js";
 import { saveConfig } from "@sane/control-plane/preferences.js";
 import * as preferencesControlPlane from "@sane/control-plane/preferences.js";
-import { createDefaultLocalConfig } from "@sane/config";
+import { createDefaultLocalConfig, readLocalConfig } from "@sane/config";
 import * as runtimeState from "@sane/control-plane/runtime-state.js";
 import { loadAppView } from "@sane/sane-tui/app-view.js";
 import {
@@ -261,28 +261,11 @@ describe("tui shell", () => {
 
     const result = runSelectedAction(shell);
 
-    expect(result?.summary).toBe("codex-profile preview: 2 recommended change(s)");
+    expect(result?.summary).toBe("codex-profile preview: 3 recommended change(s)");
     expect(result?.details).toContain("model: gpt-5.4 -> gpt-5.5");
     expect(result?.details).toContain("reasoning: high -> medium");
+    expect(result?.details).toContain("compact prompt: <missing> -> Sane continuity prompt");
     expect(result?.details).toContain("codex hooks: keep enabled");
-  });
-
-  it("executes optional plugin artifact commands through the shell command router", () => {
-    const projectRoot = makeTempDir();
-    const homeDir = makeTempDir();
-    const paths = createProjectPaths(projectRoot);
-    const codexPaths = createCodexPaths(homeDir);
-
-    const exported = executeUiCommand(paths, codexPaths, "export_plugin");
-
-    expect(exported.summary).toBe("export plugin: installed Sane Codex plugin artifact");
-    expect(existsSync(join(codexPaths.sanePluginDir, ".codex-plugin", "plugin.json"))).toBe(true);
-    expect(existsSync(codexPaths.userPluginsMarketplaceJson)).toBe(true);
-
-    const uninstalled = executeUiCommand(paths, codexPaths, "uninstall_plugin");
-
-    expect(uninstalled.summary).toBe("uninstall plugin: removed Sane Codex plugin artifact");
-    expect(existsSync(codexPaths.sanePluginDir)).toBe(false);
   });
 
   it("executes the OpenCode export command through the shell command router", () => {
@@ -297,6 +280,33 @@ describe("tui shell", () => {
     expect(result.details).toContain("export opencode-skills: installed core skills");
     expect(result.details).toContain("export opencode-agents: installed Sane OpenCode agents");
     expect(existsSync(join(homeDir, ".config", "opencode", "agents", "sane-agent.md"))).toBe(true);
+  });
+
+  it("executes portable settings export/import/install commands through the shell command router", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const config = createDefaultLocalConfig();
+    config.models.coordinator.model = "gpt-5.2";
+    saveConfig(paths, config);
+
+    const exported = executeUiCommand(paths, codexPaths, "export_portable_settings");
+    expect(exported.summary).toBe(`portable settings: exported to ${paths.runtimeRoot}/settings.portable.json`);
+
+    const changed = createDefaultLocalConfig();
+    changed.models.coordinator.model = "gpt-5.5";
+    saveConfig(paths, changed);
+
+    const imported = executeUiCommand(paths, codexPaths, "import_portable_settings");
+    expect(imported.summary).toBe(`portable settings: imported from ${paths.runtimeRoot}/settings.portable.json`);
+    expect(readLocalConfig(paths.configPath).models.coordinator.model).toBe("gpt-5.2");
+
+    rmSync(paths.configPath, { force: true });
+    const installed = executeUiCommand(paths, codexPaths, "install_from_portable_settings");
+    expect(installed.summary).toBe(`portable settings: imported from ${paths.runtimeRoot}/settings.portable.json`);
+    expect(existsSync(paths.runtimeRoot)).toBe(true);
+    expect(readLocalConfig(paths.configPath).models.coordinator.model).toBe("gpt-5.2");
   });
 
   it("wraps selection and resets action cursor when section changes", () => {

@@ -7,7 +7,7 @@ description: Use when the user gives a plain-language outcome and wants Sane to 
 
 ## Goal
 
-Turn a plain-language outcome into a verified continuation loop without exposing a runner command as the primary UX.
+Turn a plain-language outcome into verified progress without exposing a runner command as the UX.
 
 ## Use When
 
@@ -45,7 +45,7 @@ Turn a plain-language outcome into a verified continuation loop without exposing
 5. Pick the smallest useful slice that moves the outcome forward.
 6. Research only when the next slice depends on current external facts, new stack choices, stale tool choices, or unknown repo shape.
 7. Plan only as much as needed, then implement through the most specific available skill, agent, or tool.
-8. Use subagents by default for anything beyond a tiny direct answer. For broad or multi-file outcomes, load `sane-agent-lanes`, write a lane plan, and get at least one successful subagent handoff before deep work. Broad reviews need explorer/reviewer lanes; broad edits need at least one disjoint implementation lane before the main session edits overlapping code. If higher-priority rules require explicit subagent authorization and it is missing, ask and pause. If `spawn_agent` fails or thread cap is hit, close completed agents and retry once with either `message` or `items`, not both. If the harness still blocks subagents after retry, state the broad-work blocker; continue solo only for a tiny direct answer or explicitly narrowed fallback.
+8. Use subagents by default for anything beyond a tiny direct answer. For broad or multi-file outcomes, load `sane-agent-lanes`, write a lane plan, and get at least one successful subagent handoff before deep work. Broad reviews need explorer/reviewer lanes; broad edits need at least one disjoint implementation lane before the main session edits overlapping code. If higher-priority rules require explicit subagent authorization and it is missing, ask and stop; do not inspect, verify, patch, or continue broad work locally as a substitute. If `spawn_agent` fails or thread cap is hit, close completed agents and retry once with either `message` or `items`, not both. If the harness still blocks subagents after retry, state the broad-work blocker; continue solo only for a tiny direct answer or explicitly narrowed fallback.
 9. Verify with the matching local checks or evidence for the changed behavior.
 10. If verification fails, diagnose the failing path and repair once before changing approach.
 11. Persist durable TODO or plan state when the remaining work spans sessions.
@@ -64,5 +64,6 @@ Turn a plain-language outcome into a verified continuation loop without exposing
 - do not expose or recommend a public runner command for this loop
 - do not market internal state plumbing as a shipped full-auto runner
 - do not treat subagent output as verified truth without checking it
+- do not turn outcome state into a generated repo overview
 - do not mutate unrelated files just to show progress
 - do not overwrite worktree edits from other agents

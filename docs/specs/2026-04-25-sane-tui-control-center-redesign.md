@@ -112,7 +112,6 @@ Content:
 - custom agents
 - optional repo skills
 - optional repo `AGENTS.md`
-- optional plugin artifact
 
 Rules:
 - explain each target as "what this adds to Codex"
@@ -166,7 +165,6 @@ Content:
 - remove global `AGENTS.md` block
 - remove hooks
 - remove custom agents
-- remove plugin artifact
 - remove all Sane-managed installs
 
 Rules:
@@ -261,7 +259,7 @@ Later import/export support:
 8. Implement first-run vs post-install launch behavior.
 9. Rewrite visible TUI copy using the copy rules above.
 10. Refresh README, `apps/sane-tui/README.md`, and the older TUI redesign spec so they do not contradict this spec.
-11. Verify with `rtk run 'pnpm test && pnpm typecheck'`.
+11. Verify with `rtk pnpm test` and `rtk run 'pnpm typecheck'` until RTK native typecheck routing is repaired.
 12. Run a text preview and a terminal/browser visual check of the rendered TUI before calling the redesign done.
 13. Replace the live Ink string renderer with actual Ink `Box`/`Text` windows and modal components.
 
@@ -283,7 +281,7 @@ Implemented in the current B16 slice:
 Verification already run after the implementation slice:
 
 ```bash
-rtk run 'pnpm test'
+rtk pnpm test
 rtk run 'pnpm typecheck'
 ```
 

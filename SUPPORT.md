@@ -1,13 +1,13 @@
 # Support
 
-`Sane` is pre-release, but detailed reports still help us resolve issues faster.
+`Sane` is young, and detailed reports help us resolve issues faster.
 
 ## Before You Open An Issue
 
 Try this order first:
 
 1. Run `status`
-2. Run `doctor`
+2. Run the setup check in the TUI
 3. If config changed recently, use `backup`, `restore`, or `uninstall`
 4. Re-run the exact export or apply step that failed
 
@@ -58,8 +58,8 @@ It also helps to say which Sane surface failed:
 
 | Problem | First thing to try |
 | --- | --- |
-| Local runtime missing or half-created | `install`, then `doctor` |
-| Exported assets look stale | re-export the relevant asset or `export all` |
+| Local runtime missing or half-created | `install`, then run the setup check |
+| Exported files look stale | re-export the relevant install or run `export all` |
 | Codex config looks wrong after apply | `restore codex-config` |
 | You want to back out completely | `uninstall all` |
-| You are not sure what changed | `status`, then `doctor` |
+| You are not sure what changed | `status`, then run the setup check |

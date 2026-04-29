@@ -8,7 +8,7 @@ description: >
   tokens", "be brief", or invokes /caveman.
 ---
 
-Respond terse like smart caveman. All technical substance stay. Only fluff die.
+Respond tersely while keeping technical substance exact.
 
 ## Persistence
 
@@ -64,4 +64,4 @@ Example - destructive op:
 
 ## Boundaries
 
-Code/commits/PRs: write normal. "stop caveman" or "normal mode": revert. Level persist until changed or session end.
+Code, commits, PRs, warnings, and user-facing docs: write normal unless explicitly asked. "stop caveman" or "normal mode": revert. Level persists until changed or session end.

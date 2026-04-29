@@ -1,11 +1,17 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 import {
   createRecommendedLocalConfig,
+  createDefaultLocalConfig,
   createRecommendedModelRoutingPresets,
   createRecommendedSubagentRoutingPresets,
+  createPortableSettingsFile,
   detectCodexEnvironment,
   enabledPackNames,
+  parsePortableSettingsJson,
+  stringifyPortableSettings,
   stringifyLocalConfig,
   type CodexEnvironment,
   type DetectedAvailableModel,
@@ -79,6 +85,8 @@ export interface PrivacyTransparencySnapshot {
   eventsPath: string;
   queuePath: string;
 }
+
+const PORTABLE_SETTINGS_FILE = "settings.portable.json";
 
 export function showConfig(paths: ProjectPaths, codexPaths?: CodexPaths): OperationResult {
   const configState = inspectSavedLocalConfig(paths);
@@ -199,6 +207,43 @@ export function resetTelemetryData(paths: ProjectPaths): OperationResult {
     details: [],
     pathsTouched: [paths.telemetryDir],
     inventory: []
+  });
+}
+
+export function exportPortableSettings(paths: ProjectPaths): OperationResult {
+  ensureRuntimeDirs(paths);
+  const portablePath = portableSettingsPath(paths);
+  const saved = inspectSavedLocalConfig(paths);
+  const config = saved.kind === "loaded" ? saved.config : createDefaultLocalConfig();
+  const payload = createPortableSettingsFile(config);
+  writeFileSync(portablePath, stringifyPortableSettings(payload), "utf8");
+
+  return new OperationResult({
+    kind: OperationKind.ShowConfig,
+    summary: `portable settings: exported to ${portablePath}`,
+    details: [
+      `source: ${saved.kind === "loaded" ? "local config" : "recommended defaults"}`,
+      `exported at: ${payload.exportedAt}`
+    ],
+    pathsTouched: [portablePath]
+  });
+}
+
+export function importPortableSettings(paths: ProjectPaths): OperationResult {
+  const portablePath = portableSettingsPath(paths);
+  const payload = parsePortableSettingsJson(readFileSync(portablePath, "utf8"), portablePath);
+  const saved = saveConfig(paths, payload.config);
+
+  return new OperationResult({
+    kind: OperationKind.ShowConfig,
+    summary: `portable settings: imported from ${portablePath}`,
+    rewrite: saved.rewrite,
+    details: [
+      `imported export timestamp: ${payload.exportedAt}`,
+      ...saved.details
+    ],
+    pathsTouched: unique([portablePath, ...saved.pathsTouched]),
+    inventory: saved.inventory
   });
 }
 
@@ -442,6 +487,10 @@ function ensureFileWithDefault(path: string, body: string): void {
   if (!existsSync(path)) {
     writeFileSync(path, body, "utf8");
   }
+}
+
+function portableSettingsPath(paths: ProjectPaths): string {
+  return join(paths.runtimeRoot, PORTABLE_SETTINGS_FILE);
 }
 
 function operationRewriteMetadata(rewrite: {

@@ -252,7 +252,6 @@ Already shipped or explicitly covered in the current repo:
 - worktree readiness and lane ownership:
   - `packages/control-plane/src/worktree-readiness.ts`
   - `packs/core/skills/sane-agent-lanes.md`
-  - `plugins/sane/skills/sane-agent-lanes/SKILL.md`
 - browser-backed frontend verification:
   - `packs/core/skills/optional/frontend-craft/sane-frontend-review.md`
   - `docs/research/2026-04-25-codex-plugin-and-frontend-craft-shape.md`

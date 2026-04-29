@@ -6,9 +6,12 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import {
   createDefaultLocalConfig,
+  createPortableSettingsFile,
   enabledPackNames,
+  parsePortableSettingsJson,
   parseLocalConfigToml,
   readLocalConfig,
+  stringifyPortableSettings,
   stringifyLocalConfig,
   writeLocalConfig,
 } from '../src/index.js';
@@ -130,5 +133,25 @@ reasoning_effort = "low"
       model: 'gpt-5.5',
       reasoningEffort: 'high',
     });
+  });
+
+  it('round trips portable settings JSON', () => {
+    const config = createDefaultLocalConfig();
+    const portable = createPortableSettingsFile(config, '2026-04-29T12:00:00.000Z');
+    const decoded = parsePortableSettingsJson(stringifyPortableSettings(portable));
+
+    expect(decoded).toEqual(portable);
+  });
+
+  it('rejects unsupported portable settings version', () => {
+    expect(() =>
+      parsePortableSettingsJson(
+        JSON.stringify({
+          version: 2,
+          exportedAt: '2026-04-29T12:00:00.000Z',
+          config: createDefaultLocalConfig(),
+        }),
+      ),
+    ).toThrow(/unsupported version/);
   });
 });

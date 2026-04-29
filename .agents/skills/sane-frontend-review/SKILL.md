@@ -7,7 +7,7 @@ description: Use when reviewing, auditing, or polishing frontend UI for visual q
 
 ## Goal
 
-Catch frontend defects that normal code checks miss.
+Catch visual, interaction, responsive, and asset defects that code checks miss.
 
 ## Use When
 

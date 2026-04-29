@@ -4,6 +4,9 @@ export default defineConfig({
   entry: {
     "bin/sane": "bin/sane-preview.ts"
   },
+  banner: {
+    js: "#!/usr/bin/env node"
+  },
   format: ["cjs"],
   platform: "node",
   target: "node20",

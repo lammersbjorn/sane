@@ -91,7 +91,7 @@ describe("input driver", () => {
     expect(shell.lastResult.lines).toContain("Closed editor. Nothing changed.");
   });
 
-  it("toggles packs and resets telemetry from editor-specific keys", () => {
+  it("toggles packs and routes privacy telemetry delete through confirmation keys", () => {
     const paths = createProjectPaths(makeTempDir());
     const codexPaths = createCodexPaths(makeTempDir());
     const shell = createTuiShell(paths, codexPaths, "settings");
@@ -123,7 +123,9 @@ describe("input driver", () => {
     handleTuiInput(shell, "down");
     handleTuiInput(shell, "enter");
     expect(shell.activeEditor?.kind).toBe("privacy");
-    expect(handleTuiInput(shell, "d")?.summary).toBe("telemetry reset: removed local telemetry data");
+    expect(handleTuiInput(shell, "d")).toBeNull();
+    expect(shell.pendingConfirmation?.commandId).toBe("reset_telemetry_data");
+    expect(handleTuiInput(shell, "y")?.summary).toBe("telemetry reset: removed local telemetry data");
     expect(existsSync(paths.telemetryDir)).toBe(false);
     selectSection(shell, "repair");
     expect(loadAppView(shell).sectionOverviewLines.join("\n")).toContain("local telemetry data: missing");

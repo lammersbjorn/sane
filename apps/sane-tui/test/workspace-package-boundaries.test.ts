@@ -34,6 +34,55 @@ interface PackageJson {
   scripts?: Record<string, string>;
 }
 
+const expectedControlPlaneExports = [
+  ".",
+  "./bundles.js",
+  "./codex-config.js",
+  "./codex-native.js",
+  "./history.js",
+  "./hooks-custom-agents.js",
+  "./index.js",
+  "./install-status.js",
+  "./inventory.js",
+  "./policy-preview.js",
+  "./preferences.js",
+  "./repair-status.js",
+  "./runtime-state.js",
+  "./session-start-hook.js",
+  "./status-presenter.js",
+  "./tokscale-submit-hook.js"
+].sort();
+
+const expectedSaneTuiExports = [
+  ".",
+  "./add-to-codex-screen.js",
+  "./app-view.js",
+  "./cli.js",
+  "./command-registry.js",
+  "./dashboard.js",
+  "./home-screen.js",
+  "./index.js",
+  "./ink-terminal.js",
+  "./input-driver.js",
+  "./main.js",
+  "./overlay-models.js",
+  "./preferences-editor-state.js",
+  "./presentation-normalizer.js",
+  "./preview-launch.js",
+  "./repair-screen.js",
+  "./result-panel-layer.js",
+  "./result-panel.js",
+  "./section-action-rows.js",
+  "./settings-screen.js",
+  "./shell.js",
+  "./status-screen.js",
+  "./terminal-driver.js",
+  "./terminal-keys.js",
+  "./terminal-loop.js",
+  "./text-driver.js",
+  "./text-renderer.js"
+].sort();
+
 describe("workspace package boundaries", () => {
   it("keeps the active Sane package split explicit and TypeScript-first", () => {
     const packages = sanePackageJsonPaths.map((path) => readPackageJson(path));
@@ -65,10 +114,23 @@ describe("workspace package boundaries", () => {
       expect(exportKeys).not.toContain("./*.js");
       expect(exportKeys.every((key) => key === "." || key.endsWith(".js"))).toBe(true);
 
-      if (path !== "apps/sane-tui/package.json" && path !== "packages/control-plane/package.json") {
+      if (path === "packages/control-plane/package.json") {
+        expect(exportKeys.sort()).toEqual(expectedControlPlaneExports);
+      } else if (path === "apps/sane-tui/package.json") {
+        expect(exportKeys.sort()).toEqual(expectedSaneTuiExports);
+      } else {
         expect(exportKeys.sort()).toEqual([".", "./index.js"]);
       }
     }
+  });
+
+  it("keeps @sane/sane-tui root barrel stable and minimal", () => {
+    const rootBarrel = readFileSync(join(workspaceRoot, "apps/sane-tui/src/index.ts"), "utf8");
+    const publicReExports = [...rootBarrel.matchAll(/export \* from "@sane\/sane-tui\/([^"]+)";/g)].map(
+      (match) => match[1]
+    );
+
+    expect(publicReExports.sort()).toEqual(["command-registry.js", "main.js", "preview-launch.js"]);
   });
 
   it("keeps public root scripts on the packaged TypeScript entrypoint", () => {

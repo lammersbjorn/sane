@@ -1,4 +1,4 @@
-import { copyFileSync, cpSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -12,21 +12,38 @@ const sourcePackage = JSON.parse(readFileSync(join(packageRoot, "package.json"),
 mkdirSync(distDir, { recursive: true });
 
 const distPackage = {
-  name: sourcePackage.name,
+  name: "sane-codex",
   version: sourcePackage.version,
   private: false,
   type: "commonjs",
   bin: {
     sane: "./bin/sane.cjs"
   },
-  files: ["bin", "packs", "plugins", "README.md"],
+  files: ["bin", "packs", "README.md", "NOTICE", "LICENSE-MIT", "LICENSE-APACHE"],
   license: "MIT OR Apache-2.0",
-  description: "Sane terminal onboarding and setup surface for Codex."
+  description: "Sane terminal onboarding and setup surface for Codex.",
+  engines: {
+    node: ">=22"
+  },
+  publishConfig: {
+    access: "public"
+  },
+  repository: {
+    type: "git",
+    url: "git+https://github.com/lammersbjorn/sane.git"
+  },
+  homepage: "https://github.com/lammersbjorn/sane#readme",
+  bugs: {
+    url: "https://github.com/lammersbjorn/sane/issues"
+  },
+  keywords: ["codex", "agents", "cli", "sane"]
 };
 
 writeFileSync(join(distDir, "package.json"), `${JSON.stringify(distPackage, null, 2)}\n`, "utf8");
-copyFileSync(join(packageRoot, "README.md"), join(distDir, "README.md"));
+copyFileSync(join(repoRoot, "README.md"), join(distDir, "README.md"));
+copyFileSync(join(repoRoot, "NOTICE"), join(distDir, "NOTICE"));
+copyFileSync(join(repoRoot, "LICENSE-MIT"), join(distDir, "LICENSE-MIT"));
+copyFileSync(join(repoRoot, "LICENSE-APACHE"), join(distDir, "LICENSE-APACHE"));
 mkdirSync(join(distDir, "packs"), { recursive: true });
-mkdirSync(join(distDir, "plugins"), { recursive: true });
 cpSync(join(repoRoot, "packs", "core"), join(distDir, "packs", "core"), { recursive: true });
-cpSync(join(repoRoot, "plugins", "sane"), join(distDir, "plugins", "sane"), { recursive: true });
+rmSync(join(distDir, "packs", "core", "skills", "vendor"), { recursive: true, force: true });

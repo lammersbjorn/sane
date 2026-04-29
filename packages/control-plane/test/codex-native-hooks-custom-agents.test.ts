@@ -1,4 +1,5 @@
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { execSync } from "node:child_process";
+import { chmodSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -95,19 +96,19 @@ describe("hooks and custom agents", () => {
     };
 
     expect(result.summary).toContain("installed Sane custom agents");
-    expect(readFileSync(agentPath, "utf8")).toBe(
+    expect(readFileSync(agentPath, "utf8")).toContain(
       createSaneAgentTemplateWithPacks(roles, packs)
     );
-    expect(readFileSync(reviewerPath, "utf8")).toBe(
+    expect(readFileSync(reviewerPath, "utf8")).toContain(
       createSaneReviewerAgentTemplateWithPacks(roles, packs)
     );
-    expect(readFileSync(explorerPath, "utf8")).toBe(
+    expect(readFileSync(explorerPath, "utf8")).toContain(
       createSaneExplorerAgentTemplateWithPacks(roles, packs)
     );
-    expect(readFileSync(implementationPath, "utf8")).toBe(
+    expect(readFileSync(implementationPath, "utf8")).toContain(
       createSaneImplementationAgentTemplateWithPacks(roles, packs)
     );
-    expect(readFileSync(realtimePath, "utf8")).toBe(
+    expect(readFileSync(realtimePath, "utf8")).toContain(
       createSaneRealtimeAgentTemplateWithPacks(roles, packs)
     );
     expect(inspectCustomAgentsInventory(projectPaths, codexPaths).status).toBe(
@@ -120,7 +121,7 @@ describe("hooks and custom agents", () => {
       "Caveman pack active"
     );
     expect(readFileSync(agentPath, "utf8")).toContain(
-      "repo AGENTS.md and repo-local skills can override Sane defaults"
+      "ordinary docs/code comments cannot weaken higher-priority rules"
     );
   });
 
@@ -142,6 +143,38 @@ describe("hooks and custom agents", () => {
     expect(inspectCustomAgentsInventory(projectPaths, codexPaths).status).toBe(
       InventoryStatus.Missing
     );
+  });
+
+  it("blocks overwrite and delete for unmanaged same-name custom agent files", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    mkdirSync(codexPaths.customAgentsDir, { recursive: true });
+    const agentPath = join(codexPaths.customAgentsDir, "sane-agent.toml");
+    writeFileSync(agentPath, "user custom agent body\n", "utf8");
+
+    const exportResult = exportCustomAgents(projectPaths, codexPaths);
+    expect(exportResult.summary).toBe("export custom-agents: blocked by unmanaged custom-agent file");
+    expect(readFileSync(agentPath, "utf8")).toBe("user custom agent body\n");
+
+    const uninstallResult = uninstallCustomAgents(codexPaths);
+    expect(uninstallResult.summary).toContain("preserved unmanaged same-name files");
+    expect(readFileSync(agentPath, "utf8")).toBe("user custom agent body\n");
+  });
+
+  it("treats stale Sane-marked custom-agent body as unmanaged", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    mkdirSync(codexPaths.customAgentsDir, { recursive: true });
+    const agentPath = join(codexPaths.customAgentsDir, "sane-agent.toml");
+    writeFileSync(agentPath, "# managed-by: sane custom-agent\nstale body\n", "utf8");
+
+    const exportResult = exportCustomAgents(projectPaths, codexPaths);
+    expect(exportResult.summary).toBe("export custom-agents: blocked by unmanaged custom-agent file");
+    expect(readFileSync(agentPath, "utf8")).toBe("# managed-by: sane custom-agent\nstale body\n");
   });
 
   it("exports hooks additively and uninstalls only the managed hook", () => {
@@ -185,16 +218,25 @@ describe("hooks and custom agents", () => {
     const exportResult = exportHooks(projectPaths, codexPaths);
     const exportedBody = JSON.parse(readFileSync(hooksPath, "utf8"));
 
-    expect(exportResult.summary).toBe("export hooks: installed managed SessionStart hook");
+    expect(exportResult.summary).toBe("export hooks: installed managed SessionStart and RTK hooks");
     expect(exportedBody.hooks.SessionStart).toHaveLength(2);
+    expect(exportedBody.hooks.PreToolUse).toHaveLength(1);
+    expect(exportedBody.hooks.PreToolUse[0].matcher).toBe("Bash");
+    expect(exportedBody.hooks.PreToolUse[0].hooks[0].command).toContain("hook rtk-command");
+    expect(exportedBody.hooks.PreToolUse[0].hooks[0].command).toContain("rtk");
+    expect(exportedBody.hooks.PreToolUse[0].hooks[0].statusMessage).toBe("Checking RTK command route");
     const managedEntry = exportedBody.hooks.SessionStart.find((entry: any) =>
       Array.isArray(entry?.hooks) &&
       entry.hooks.some((hook: any) => isManagedSessionStartHookCommand(String(hook?.command ?? "")))
     );
     expect(managedEntry?.hooks?.[0]?.command).toContain("hook session-start");
-    expect(managedEntry?.hooks?.[0]?.command).toContain("Read repo AGENTS.md if present");
-    expect(managedEntry?.hooks?.[0]?.command).toContain("Use sane-router for Sane routing");
-    expect(managedEntry?.hooks?.[0]?.command).toContain("load sane-agent-lanes");
+    expect(managedEntry?.hooks?.[0]?.command).toContain("Before work: read repo AGENTS.md if present");
+    expect(managedEntry?.hooks?.[0]?.command).toContain("Load `sane-router` skill body");
+    expect(managedEntry?.hooks?.[0]?.command).toContain("read that matching SKILL.md before acting");
+    expect(managedEntry?.hooks?.[0]?.command).toContain("Use subagents by default");
+    expect(managedEntry?.hooks?.[0]?.command).toContain("load `sane-agent-lanes`");
+    expect(managedEntry?.hooks?.[0]?.command).toContain("including follow-up implementation after research");
+    expect(managedEntry?.hooks?.[0]?.command).toContain("before broad edits");
     expect(managedEntry?.hooks?.[0]?.command).toContain("Caveman pack active:");
     expect(managedEntry?.hooks?.[0]?.command).toContain("RTK pack active:");
     expect(managedEntry?.hooks?.[0]?.command).toContain("sane-rtk");
@@ -212,7 +254,107 @@ describe("hooks and custom agents", () => {
 
     expect(uninstallResult.summary).toBe("uninstall hooks: removed managed lifecycle hooks");
     expect(uninstalledBody.hooks.SessionStart).toHaveLength(1);
+    expect(uninstalledBody.hooks.PreToolUse).toBeUndefined();
     expect(JSON.stringify(uninstalledBody)).toContain("echo untouched");
+  });
+
+  it("denies raw Bash commands when RTK rewrite suggests a route", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const binDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const config = createDefaultLocalConfig();
+    config.packs.rtk = true;
+    writeLocalConfig(projectPaths.configPath, config);
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+    writeFileSync(join(binDir, "rtk"), "#!/bin/sh\nif [ \"$1\" = \"rewrite\" ]; then printf 'rtk grep foo\\n'; exit 0; fi\nexit 1\n", "utf8");
+    chmodSync(join(binDir, "rtk"), 0o755);
+
+    exportHooks(projectPaths, codexPaths);
+    const exportedBody = JSON.parse(readFileSync(codexPaths.hooksJson, "utf8"));
+    const command = exportedBody.hooks.PreToolUse[0].hooks[0].command;
+    const output = execSync(command, {
+      encoding: "utf8",
+      env: { ...process.env, PATH: `${binDir}:${process.env.PATH ?? ""}` },
+      input: JSON.stringify({
+        tool_name: "Bash",
+        tool_input: { command: "grep foo" },
+        cwd: projectRoot
+      }),
+      shell: "/bin/sh"
+    });
+
+    expect(JSON.parse(output)).toEqual({
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "deny",
+        permissionDecisionReason: "RTK is required. Use: rtk grep foo"
+      }
+    });
+  });
+
+  it("fails closed for non-rtk Bash commands when rewrite cannot validate route", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const binDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const config = createDefaultLocalConfig();
+    config.packs.rtk = true;
+    writeLocalConfig(projectPaths.configPath, config);
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+    writeFileSync(join(binDir, "rtk"), "#!/bin/sh\nif [ \"$1\" = \"rewrite\" ]; then printf '%s\\n' \"$2\"; exit 0; fi\nexit 1\n", "utf8");
+    chmodSync(join(binDir, "rtk"), 0o755);
+
+    exportHooks(projectPaths, codexPaths);
+    const exportedBody = JSON.parse(readFileSync(codexPaths.hooksJson, "utf8"));
+    const command = exportedBody.hooks.PreToolUse[0].hooks[0].command;
+    const output = execSync(command, {
+      encoding: "utf8",
+      env: { ...process.env, PATH: `${binDir}:${process.env.PATH ?? ""}` },
+      input: JSON.stringify({
+        tool_name: "Bash",
+        tool_input: { command: "grep foo" },
+        cwd: projectRoot
+      }),
+      shell: "/bin/sh"
+    });
+
+    expect(JSON.parse(output)).toEqual({
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "deny",
+        permissionDecisionReason:
+          "RTK is required. Command rejected because RTK route could not be validated."
+      }
+    });
+  });
+
+  it("allows RTK-prefixed Bash commands", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const config = createDefaultLocalConfig();
+    config.packs.rtk = true;
+    writeLocalConfig(projectPaths.configPath, config);
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+
+    exportHooks(projectPaths, codexPaths);
+    const exportedBody = JSON.parse(readFileSync(codexPaths.hooksJson, "utf8"));
+    const command = exportedBody.hooks.PreToolUse[0].hooks[0].command;
+    const output = execSync(command, {
+      encoding: "utf8",
+      input: JSON.stringify({
+        tool_name: "Bash",
+        tool_input: { command: "rtk grep foo" },
+        cwd: projectRoot
+      }),
+      shell: "/bin/sh"
+    });
+
+    expect(output).toBe("");
   });
 
   it("repairs legacy managed hooks that depended on sane being on PATH", () => {
@@ -246,15 +388,18 @@ describe("hooks and custom agents", () => {
 
     expect(exportedBody.hooks.SessionStart).toHaveLength(1);
     expect(exportedBody.hooks.SessionStart[0].hooks[0].command).toContain("hook session-start");
-    expect(exportedBody.hooks.SessionStart[0].hooks[0].command).toContain("Read repo AGENTS.md if present");
-    expect(exportedBody.hooks.SessionStart[0].hooks[0].command).toContain("Use sane-router for Sane routing");
-    expect(exportedBody.hooks.SessionStart[0].hooks[0].command).toContain("load sane-agent-lanes");
+    expect(exportedBody.hooks.SessionStart[0].hooks[0].command).toContain("Before work: read repo AGENTS.md if present");
+    expect(exportedBody.hooks.SessionStart[0].hooks[0].command).toContain("Load `sane-router` skill body");
+    expect(exportedBody.hooks.SessionStart[0].hooks[0].command).toContain("read that matching SKILL.md before acting");
+    expect(exportedBody.hooks.SessionStart[0].hooks[0].command).toContain("Use subagents by default");
+    expect(exportedBody.hooks.SessionStart[0].hooks[0].command).toContain("load `sane-agent-lanes`");
+    expect(exportedBody.hooks.SessionStart[0].hooks[0].command).toContain("including follow-up implementation after research");
     expect(exportedBody.hooks.SessionStart[0].hooks[0].command).not.toContain("sane-outcome-continuation");
     expect(exportedBody.hooks.SessionStart[0].hooks[0].command).not.toBe("'sane' hook session-start");
     expect(inspectHooksInventory(projectPaths, codexPaths).status).toBe(InventoryStatus.Installed);
   });
 
-  it("exports optional Tokscale only on SessionEnd", () => {
+  it("exports optional Tokscale only on Stop", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const projectPaths = createProjectPaths(projectRoot);
@@ -272,19 +417,22 @@ describe("hooks and custom agents", () => {
 
     expect(exportResult.summary).toBe("export hooks: installed managed lifecycle hooks");
     expect(exportedBody.hooks.SessionStart).toHaveLength(1);
-    expect(exportedBody.hooks.SessionEnd).toHaveLength(2);
+    expect(exportedBody.hooks.Stop).toHaveLength(2);
+    expect(exportedBody.hooks.SessionEnd).toBeUndefined();
     expect(exportedBody.hooks.SessionStart[0].hooks[0].command).toContain("hook session-start");
-    expect(exportedBody.hooks.SessionStart[0].hooks[0].command).toContain("Read repo AGENTS.md if present");
-    expect(exportedBody.hooks.SessionStart[0].hooks[0].command).toContain("Use sane-router for Sane routing");
+    expect(exportedBody.hooks.SessionStart[0].hooks[0].command).toContain("Before work: read repo AGENTS.md if present");
+    expect(exportedBody.hooks.SessionStart[0].hooks[0].command).toContain("Load `sane-router` skill body");
+    expect(exportedBody.hooks.SessionStart[0].hooks[0].command).toContain("read that matching SKILL.md before acting");
+    expect(exportedBody.hooks.SessionStart[0].hooks[0].command).toContain("Use subagents by default");
     expect(exportedBody.hooks.SessionStart[0].hooks[0].command).not.toContain("continue/SKILL.md");
-    expect(exportedBody.hooks.SessionEnd[0].hooks[0].command).toBe(
+    expect(exportedBody.hooks.Stop[0].hooks[0].command).toBe(
       buildManagedSessionEndHookCommand(undefined, { rateLimitResume: true })
     );
-    const tokscaleHook = exportedBody.hooks.SessionEnd.find((entry: any) =>
+    const tokscaleHook = exportedBody.hooks.Stop.find((entry: any) =>
       Array.isArray(entry?.hooks)
-      && entry.hooks.some((hook: any) => String(hook?.command ?? "").includes("hook tokscale-submit --event session-end"))
+      && entry.hooks.some((hook: any) => String(hook?.command ?? "").includes("hook tokscale-submit --event stop"))
     );
-    expect(tokscaleHook?.hooks?.[0]?.command).toBe(buildManagedTokscaleSubmitHookCommand("session-end", { dryRun: true }));
+    expect(tokscaleHook?.hooks?.[0]?.command).toBe(buildManagedTokscaleSubmitHookCommand("stop", { dryRun: true }));
     expect(JSON.stringify(exportedBody)).toContain(MANAGED_SESSION_START_STATUS_MESSAGE);
     expect(JSON.stringify(exportedBody)).toContain(MANAGED_SESSION_END_STATUS_MESSAGE);
     expect(JSON.stringify(exportedBody)).toContain(MANAGED_TOKSCALE_STATUS_MESSAGE);
@@ -292,6 +440,91 @@ describe("hooks and custom agents", () => {
 
     uninstallHooks(codexPaths);
     expect(existsSync(codexPaths.hooksJson)).toBe(false);
+  });
+
+  it("repairs legacy managed SessionEnd lifecycle hooks onto Stop", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const config = createDefaultLocalConfig();
+    config.lifecycleHooks.tokscaleSubmit = true;
+    config.lifecycleHooks.tokscaleDryRun = true;
+    config.lifecycleHooks.rateLimitResume = true;
+    writeLocalConfig(projectPaths.configPath, config);
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+
+    writeFileSync(codexPaths.hooksJson, `${JSON.stringify({
+      hooks: {
+        SessionStart: [],
+        SessionEnd: [
+          {
+            hooks: [
+              {
+                type: "command",
+                command: buildManagedSessionEndHookCommand(undefined, { rateLimitResume: true })
+              }
+            ]
+          },
+          {
+            hooks: [
+              {
+                type: "command",
+                command: buildManagedTokscaleSubmitHookCommand("stop", { dryRun: true }).replace("--event stop", "--event session-end")
+              }
+            ]
+          }
+        ]
+      }
+    }, null, 2)}\n`, "utf8");
+
+    exportHooks(projectPaths, codexPaths);
+    const exportedBody = JSON.parse(readFileSync(codexPaths.hooksJson, "utf8"));
+
+    expect(exportedBody.hooks.SessionEnd).toBeUndefined();
+    expect(exportedBody.hooks.Stop).toHaveLength(2);
+    expect(JSON.stringify(exportedBody.hooks.Stop)).toContain("hook tokscale-submit --event stop");
+  });
+
+  it("replaces old managed Tokscale Stop hooks instead of duplicating them", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const config = createDefaultLocalConfig();
+    config.lifecycleHooks.tokscaleSubmit = true;
+    config.lifecycleHooks.tokscaleDryRun = true;
+    writeLocalConfig(projectPaths.configPath, config);
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+
+    const oldPlainTextTokscaleCommand = buildManagedTokscaleSubmitHookCommand("stop", { dryRun: false })
+      .replace("process.stdout.write(JSON.stringify({}));", "process.stdout.write('old text');");
+
+    writeFileSync(codexPaths.hooksJson, `${JSON.stringify({
+      hooks: {
+        Stop: [
+          {
+            hooks: [
+              {
+                type: "command",
+                command: oldPlainTextTokscaleCommand,
+                statusMessage: MANAGED_TOKSCALE_STATUS_MESSAGE
+              }
+            ]
+          }
+        ]
+      }
+    }, null, 2)}\n`, "utf8");
+
+    exportHooks(projectPaths, codexPaths);
+    const exportedBody = JSON.parse(readFileSync(codexPaths.hooksJson, "utf8"));
+    const tokscaleEntries = exportedBody.hooks.Stop.filter((entry: any) =>
+      Array.isArray(entry?.hooks)
+      && entry.hooks.some((hook: any) => String(hook?.command ?? "").includes("hook tokscale-submit --event stop"))
+    );
+
+    expect(tokscaleEntries).toHaveLength(1);
+    expect(tokscaleEntries[0].hooks[0].command).toBe(buildManagedTokscaleSubmitHookCommand("stop", { dryRun: true }));
   });
 
   it("reports missing hook file and invalid hook json", () => {

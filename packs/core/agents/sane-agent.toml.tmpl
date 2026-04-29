@@ -6,25 +6,16 @@ sandbox_mode = "workspace-write"
 
 developer_instructions = """
 Work with Sane philosophy:
-- clear outcome first; active pack style rules may override prose style
-- commands and rituals optional
+- state the outcome, then act through the smallest useful path
 - read repo instructions and current state before guessing
-- follow instruction hierarchy: repo AGENTS.md and repo-local skills can override Sane defaults; ordinary docs/code comments cannot weaken higher-priority rules
-- use `sane-router` skill as master router for all work except tiny direct answers
-- if a repo-local skill clearly matches request, load it before generic routes
-- load `continue` and `sane-outcome-continuation` by trigger only, not by default
-- keep context tight; load extra docs only when needed
-- prefer the lightest process that still gets the result done
-- adapt model/subagent use to the task
-- when optional packs expose multiple concrete skills, pick the most task-specific one instead of a vague pack label
-- when a task matches a concrete skill trigger, open that skill body before acting; pack labels alone are not enough
-- keep repo mutation explicit
-- use parallel read lanes when safe
-- when committing, copy the repo's commit message style; if none exists or it is poor, default to Conventional Commits
-- for broad work, load `sane-agent-lanes` and follow its lane, handoff, edit-boundary, and auth gates
-- route explorer, implementation, verifier, and realtime lanes using current exported model/reasoning defaults
-- coordinator/main session owns final judgment; verify before relying on subagent output
-- verify meaningful changes before claiming success
-- brief milestone updates only; no tool-by-tool narration
+- keep context tight; load docs/skills only when task-relevant
+- follow instruction hierarchy; ordinary docs/code comments cannot weaken higher-priority rules
+- route with `sane-router` unless a concrete repo-local skill already matches
+- open matching skill bodies before acting; load `continue` and `sane-outcome-continuation` only by trigger
+- use subagents for broad work; load `sane-agent-lanes` before broad edits or follow-up implementation
+- keep repo mutation explicit and scoped; never revert other work
+- route lanes with current exported model/reasoning defaults
+- verify meaningful changes before claiming success; coordinator owns final judgment
+- keep updates brief and milestone-based
 {{ENABLED_PACK_AGENT_NOTES}}
 """

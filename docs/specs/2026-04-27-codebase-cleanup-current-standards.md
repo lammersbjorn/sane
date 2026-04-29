@@ -81,8 +81,9 @@ Use in this order:
    - allow compatibility alias notes
    - fix public-facing leaks
 3. Run verification:
-   - `rtk pnpm test`
-   - `rtk pnpm typecheck`
+   - release-bound changes: `rtk pnpm run release:verify`
+   - narrow non-package changes: `rtk pnpm test`
+   - typecheck until RTK native routing is repaired: `rtk run 'pnpm typecheck'`
 4. Repair only failures caused by cleanup or obvious current-standard drift.
 5. Leave B17 visual QA as next slice unless verification exposes a blocking TUI issue.
 
@@ -96,8 +97,8 @@ Use in this order:
 
 ## Managed-Surface Drift Checklist
 
-- [x] Managed-surface docs include optional plugin artifact paths: `~/.codex/plugins/sane/` and `~/.agents/plugins/marketplace.json`.
-- [x] `What Sane Writes` / managed-surface tables match backend managed targets and `export_all` vs `export_plugin` boundary.
+- [x] Managed-surface docs omit deferred Codex plugin artifact paths.
+- [x] `What Sane Writes` / managed-surface tables match backend managed targets and current `export_all` behavior.
 - [x] Public docs keep internal runner/state-plumbing details out of current shipped capability lists.
 - [x] User-facing docs use current TUI labels (`Status`, `Settings`) and keep `inspect*` wording internal or historical-only.
 - [ ] Any managed-surface addition ships with preview/status visibility, uninstall behavior, and docs update in same slice.

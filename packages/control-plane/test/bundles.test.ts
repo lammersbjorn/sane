@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -8,7 +8,6 @@ import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { exportAll, uninstallAll } from "../src/bundles.js";
-import { exportPlugin } from "../src/codex-plugin.js";
 import { CORE_INSTALL_BUNDLE_TARGETS } from "../src/core-install-bundle-targets.js";
 import { saveConfig } from "../src/preferences.js";
 
@@ -104,14 +103,13 @@ describe("bundled install/remove operations", () => {
     expect(result.inventory.find((item) => item.name === "hooks")).toBeUndefined();
   });
 
-  it("uninstalls current managed user-level targets and optional plugin together", () => {
+  it("uninstalls current managed user-level targets together", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const paths = createProjectPaths(projectRoot);
     const codexPaths = createCodexPaths(homeDir);
 
     exportAll(paths, codexPaths);
-    exportPlugin(codexPaths);
     const result = uninstallAll(codexPaths);
 
     expect(result.kind).toBe(OperationKind.UninstallAll);
@@ -121,9 +119,6 @@ describe("bundled install/remove operations", () => {
     expect(result.details).toContain("uninstall hooks: removed managed lifecycle hooks");
     expect(result.details).toContain(
       "uninstall custom-agents: removed Sane custom agents"
-    );
-    expect(result.details).toContain(
-      "uninstall plugin: removed Sane Codex plugin artifact"
     );
     expect(result.inventory.find((item) => item.name === "user-skills")?.status).toBe(
       InventoryStatus.Removed
@@ -137,11 +132,6 @@ describe("bundled install/remove operations", () => {
     expect(result.inventory.find((item) => item.name === "custom-agents")?.status).toBe(
       InventoryStatus.Removed
     );
-    expect(result.inventory.find((item) => item.name === "plugin")?.status).toBe(
-      InventoryStatus.Removed
-    );
-    expect(existsSync(codexPaths.sanePluginDir)).toBe(false);
-    expect(existsSync(codexPaths.userPluginsMarketplaceJson)).toBe(false);
     expect(result.details).not.toContain("uninstall repo-skills: removed core skills");
     expect(result.details).not.toContain("uninstall repo-agents: removed managed block");
     expect(result.inventory.find((item) => item.name === "repo-skills")).toBeUndefined();

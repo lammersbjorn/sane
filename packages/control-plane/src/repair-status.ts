@@ -4,6 +4,7 @@ import { type CodexPaths, type ProjectPaths } from "@sane/platform";
 import { inspectCodexConfigBackupSnapshot } from "./codex-config.js";
 import { CORE_INSTALL_BUNDLE_TARGETS } from "./core-install-bundle-targets.js";
 import { inspectStatusBundle } from "./inventory.js";
+import { RTK_BINARY_INVENTORY_NAME } from "./rtk-binary.js";
 import { inspectTelemetrySnapshot } from "./preferences.js";
 import {
   isUnsupportedNativeWindowsHooks,
@@ -107,7 +108,7 @@ function uninstallAllStatus(
 ): RepairActionStatus {
   return CORE_INSTALL_BUNDLE_TARGETS.some(
     (name) => inventory.find((item) => item.name === name)?.status === InventoryStatus.Installed
-  ) || inventory.find((item) => item.name === "plugin")?.status === InventoryStatus.Installed
+  )
     ? statusDto("installed")
     : statusDto("missing");
 }
@@ -118,14 +119,10 @@ function removableInstalls(statusBundle: ReturnType<typeof inspectStatusBundle>)
   );
 
   const installedCompatibilityTargets = statusBundle.compatibility
-    .filter((item) => item.status === InventoryStatus.Installed)
+    .filter((item) => item.status === InventoryStatus.Installed && item.name !== RTK_BINARY_INVENTORY_NAME)
     .map((item) => item.name);
 
-  const installedPluginTargets = statusBundle.codexNative
-    .filter((item) => item.name === "plugin" && item.status === InventoryStatus.Installed)
-    .map((item) => item.name);
-
-  return [...installedCoreTargets, ...installedPluginTargets, ...installedCompatibilityTargets];
+  return [...installedCoreTargets, ...installedCompatibilityTargets];
 }
 
 function fromInventoryStatus(status: InventoryStatus | undefined): RepairActionStatus {

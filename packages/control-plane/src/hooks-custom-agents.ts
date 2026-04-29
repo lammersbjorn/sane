@@ -6,7 +6,7 @@ import {
   type LifecycleHooksConfig,
   detectCodexEnvironment
 } from "@sane/config";
-import { InventoryScope, InventoryStatus, OperationKind, OperationResult } from "@sane/core";
+import { InventoryScope, InventoryStatus, OperationKind, OperationResult, type InventoryItem } from "@sane/core";
 import {
   SANE_AGENT_NAME,
   SANE_EXPLORER_AGENT_NAME,
@@ -29,11 +29,16 @@ import {
   MANAGED_SESSION_END_STATUS_MESSAGE,
   buildManagedSessionEndHookCommand,
   buildManagedSessionStartHookCommand,
+  buildSaneContinuityContext,
   isManagedLifecycleHookCommand,
   isManagedSessionEndHookCommand,
   isManagedSessionStartHookCommand,
-  SESSION_START_BASE_GUIDANCE
 } from "./session-start-hook.js";
+import {
+  MANAGED_RTK_COMMAND_STATUS_MESSAGE,
+  buildManagedRtkCommandHookCommand,
+  isManagedRtkCommandHookCommand
+} from "./rtk-command-hook.js";
 import { recommendedLocalConfigFromEnvironment } from "./local-config.js";
 import {
   MANAGED_TOKSCALE_STATUS_MESSAGE,
@@ -41,34 +46,60 @@ import {
   isManagedTokscaleSubmitHookCommand
 } from "./tokscale-submit-hook.js";
 
+const CUSTOM_AGENT_OWNERSHIP_MARKER = "# managed-by: sane custom-agent\n";
+
 export function exportCustomAgents(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
   const { packs, roles } = activeGuidance(paths, codexPaths);
   mkdirSync(codexPaths.customAgentsDir, { recursive: true });
 
-  const agentPath = join(codexPaths.customAgentsDir, `${SANE_AGENT_NAME}.toml`);
-  const reviewerPath = join(codexPaths.customAgentsDir, `${SANE_REVIEWER_AGENT_NAME}.toml`);
-  const explorerPath = join(codexPaths.customAgentsDir, `${SANE_EXPLORER_AGENT_NAME}.toml`);
-  const implementationPath = join(codexPaths.customAgentsDir, `${SANE_IMPLEMENTATION_AGENT_NAME}.toml`);
-  const realtimePath = join(codexPaths.customAgentsDir, `${SANE_REALTIME_AGENT_NAME}.toml`);
+  const rendered = [
+    [join(codexPaths.customAgentsDir, `${SANE_AGENT_NAME}.toml`), createSaneAgentTemplateWithPacks(roles, packs)],
+    [
+      join(codexPaths.customAgentsDir, `${SANE_REVIEWER_AGENT_NAME}.toml`),
+      createSaneReviewerAgentTemplateWithPacks(roles, packs)
+    ],
+    [
+      join(codexPaths.customAgentsDir, `${SANE_EXPLORER_AGENT_NAME}.toml`),
+      createSaneExplorerAgentTemplateWithPacks(roles, packs)
+    ],
+    [
+      join(codexPaths.customAgentsDir, `${SANE_IMPLEMENTATION_AGENT_NAME}.toml`),
+      createSaneImplementationAgentTemplateWithPacks(roles, packs)
+    ],
+    [
+      join(codexPaths.customAgentsDir, `${SANE_REALTIME_AGENT_NAME}.toml`),
+      createSaneRealtimeAgentTemplateWithPacks(roles, packs)
+    ]
+  ] as const;
+  const blocked = rendered
+    .map(([path, body]) => ({ path, body }))
+    .filter(({ path, body }) => fileExists(path) && !isManagedCustomAgentBody(readFileSync(path, "utf8"), body))
+    .map(({ path }) => path);
+  if (blocked.length > 0) {
+    return new OperationResult({
+      kind: OperationKind.ExportCustomAgents,
+      summary: "export custom-agents: blocked by unmanaged custom-agent file",
+      details: [
+        "refusing to overwrite same-name custom-agent files without Sane ownership marker or expected managed body",
+        ...blocked.map((path) => `blocked: ${path}`)
+      ],
+      pathsTouched: blocked,
+      inventory: [inspectCustomAgentsInventory(paths, codexPaths)]
+    });
+  }
 
-  writeAtomicTextFile(agentPath, createSaneAgentTemplateWithPacks(roles, packs));
-  writeAtomicTextFile(reviewerPath, createSaneReviewerAgentTemplateWithPacks(roles, packs));
-  writeAtomicTextFile(explorerPath, createSaneExplorerAgentTemplateWithPacks(roles, packs));
-  writeAtomicTextFile(implementationPath, createSaneImplementationAgentTemplateWithPacks(roles, packs));
-  writeAtomicTextFile(realtimePath, createSaneRealtimeAgentTemplateWithPacks(roles, packs));
+  for (const [path, body] of rendered) {
+    writeAtomicTextFile(path, `${CUSTOM_AGENT_OWNERSHIP_MARKER}${body}`);
+  }
 
   return new OperationResult({
     kind: OperationKind.ExportCustomAgents,
     summary: "export custom-agents: installed Sane custom agents",
     details: [
-      `path: ${agentPath}`,
-      `path: ${reviewerPath}`,
-      `path: ${explorerPath}`,
-      `path: ${implementationPath}`,
-      `path: ${realtimePath}`,
+      ...rendered.map(([path]) => `path: ${path}`),
       "role defaults: coordinator->sane-agent, verifier->sane-reviewer, explorer->sane-explorer, implementation->sane-implementation, realtime->sane-realtime"
     ],
-    pathsTouched: [agentPath, reviewerPath, explorerPath, implementationPath, realtimePath],
+    pathsTouched: rendered.map(([path]) => path),
     inventory: [inspectCustomAgentsInventory(paths, codexPaths)]
   });
 }
@@ -80,7 +111,9 @@ export function uninstallCustomAgents(codexPaths: CodexPaths): OperationResult {
   const implementationPath = join(codexPaths.customAgentsDir, `${SANE_IMPLEMENTATION_AGENT_NAME}.toml`);
   const realtimePath = join(codexPaths.customAgentsDir, `${SANE_REALTIME_AGENT_NAME}.toml`);
   const managedPaths = [agentPath, reviewerPath, explorerPath, implementationPath, realtimePath];
-  const hadAny = managedPaths.some(fileExists);
+  const managed = managedPaths.filter((path) => fileExists(path) && isManagedCustomAgentFile(path));
+  const preserved = managedPaths.filter((path) => fileExists(path) && !isManagedCustomAgentFile(path));
+  const hadAny = managed.length + preserved.length > 0;
 
   if (!hadAny) {
     return new OperationResult({
@@ -100,10 +133,8 @@ export function uninstallCustomAgents(codexPaths: CodexPaths): OperationResult {
     });
   }
 
-  for (const path of managedPaths) {
-    if (fileExists(path)) {
-      rmSync(path, { force: true });
-    }
+  for (const path of managed) {
+    rmSync(path, { force: true });
   }
 
   if (fileExists(codexPaths.customAgentsDir) && readdirSync(codexPaths.customAgentsDir).length === 0) {
@@ -112,14 +143,17 @@ export function uninstallCustomAgents(codexPaths: CodexPaths): OperationResult {
 
   return new OperationResult({
     kind: OperationKind.UninstallCustomAgents,
-    summary: "uninstall custom-agents: removed Sane custom agents",
-    details: [],
-    pathsTouched: managedPaths,
+    summary:
+      preserved.length > 0
+        ? "uninstall custom-agents: removed managed Sane custom agents; preserved unmanaged same-name files"
+        : "uninstall custom-agents: removed Sane custom agents",
+    details: preserved.map((path) => `preserved: ${path}`),
+    pathsTouched: managed.length > 0 ? managed : [codexPaths.customAgentsDir],
     inventory: [
       {
         name: "custom-agents",
         scope: InventoryScope.CodexNative,
-        status: InventoryStatus.Removed,
+        status: preserved.length > 0 ? InventoryStatus.Invalid : InventoryStatus.Removed,
         path: codexPaths.customAgentsDir,
         repairHint: null
       }
@@ -127,7 +161,7 @@ export function uninstallCustomAgents(codexPaths: CodexPaths): OperationResult {
   });
 }
 
-export function inspectCustomAgentsInventory(paths: ProjectPaths, codexPaths: CodexPaths) {
+export function inspectCustomAgentsInventory(paths: ProjectPaths, codexPaths: CodexPaths): InventoryItem {
   const { packs, roles } = activeGuidance(paths, codexPaths);
   const expected = [
     [join(codexPaths.customAgentsDir, `${SANE_AGENT_NAME}.toml`), createSaneAgentTemplateWithPacks(roles, packs)],
@@ -154,7 +188,7 @@ export function inspectCustomAgentsInventory(paths: ProjectPaths, codexPaths: Co
     missingCount === expected.length
       ? InventoryStatus.Missing
       : missingCount === 0
-        ? expected.every(([path, body]) => readFileSync(path, "utf8") === body)
+        ? expected.every(([path, body]) => isManagedCustomAgentBody(readFileSync(path, "utf8"), body))
           ? InventoryStatus.Installed
           : InventoryStatus.Invalid
         : InventoryStatus.Invalid;
@@ -194,7 +228,7 @@ export function exportHooks(
     additionalContext: managedSessionStartContext(packs, roles)
   });
   mkdirSync(join(codexPaths.homeDir, ".codex"), { recursive: true });
-  let root: Record<string, any>;
+  let root: JsonObject;
   try {
     root = readHooksJson(codexPaths.hooksJson);
   } catch {
@@ -234,6 +268,7 @@ export function exportHooks(
   }
   const hooksRoot = ensureObjectProperty(root, "hooks");
   const sessionStart = ensureArrayProperty(hooksRoot, "SessionStart");
+  const preToolUse = packs.rtk ? ensureArrayProperty(hooksRoot, "PreToolUse") : null;
 
   upsertHookEntry(sessionStart, containsManagedSessionStartHook, {
     matcher: "startup|resume",
@@ -246,10 +281,36 @@ export function exportHooks(
     ]
   });
 
+  if (preToolUse) {
+    upsertHookEntry(preToolUse, containsManagedRtkCommandHook, {
+      matcher: "Bash",
+      hooks: [
+        {
+          type: "command",
+          command: buildManagedRtkCommandHookCommand(),
+          statusMessage: MANAGED_RTK_COMMAND_STATUS_MESSAGE,
+          timeout: 10
+        }
+      ]
+    });
+  } else if (Array.isArray(hooksRoot.PreToolUse)) {
+    removeMatchingHookEntries(hooksRoot.PreToolUse, containsManagedRtkCommandHook);
+    if (hooksRoot.PreToolUse.length === 0) {
+      delete hooksRoot.PreToolUse;
+    }
+  }
+
   if (lifecycleHooks.rateLimitResume || lifecycleHooks.tokscaleSubmit) {
-    const sessionEnd = ensureArrayProperty(hooksRoot, "SessionEnd");
+    const stop = ensureArrayProperty(hooksRoot, "Stop");
+    const legacySessionEnd = Array.isArray(hooksRoot.SessionEnd) ? hooksRoot.SessionEnd : null;
+    if (legacySessionEnd) {
+      removeMatchingHookEntries(legacySessionEnd, containsManagedLifecycleHook);
+      if (legacySessionEnd.length === 0) {
+        delete hooksRoot.SessionEnd;
+      }
+    }
     if (lifecycleHooks.rateLimitResume) {
-      upsertHookEntry(sessionEnd, containsManagedSessionEndHook, {
+      upsertHookEntry(stop, containsManagedSessionEndHook, {
         hooks: [
           {
             type: "command",
@@ -260,11 +321,11 @@ export function exportHooks(
       });
     }
     if (lifecycleHooks.tokscaleSubmit) {
-      pushHookEntry(sessionEnd, {
+      upsertHookEntry(stop, containsManagedTokscaleHook, {
         hooks: [
           {
             type: "command",
-            command: buildManagedTokscaleSubmitHookCommand("session-end", {
+            command: buildManagedTokscaleSubmitHookCommand("stop", {
               dryRun: lifecycleHooks.tokscaleDryRun
             }),
             statusMessage: MANAGED_TOKSCALE_STATUS_MESSAGE,
@@ -279,13 +340,22 @@ export function exportHooks(
 
   return new OperationResult({
     kind: OperationKind.ExportHooks,
-    summary: lifecycleHooks.tokscaleSubmit || lifecycleHooks.rateLimitResume
-      ? "export hooks: installed managed lifecycle hooks"
-      : "export hooks: installed managed SessionStart hook",
+    summary: exportHooksSummary(lifecycleHooks, packs),
     details: [`path: ${codexPaths.hooksJson}`],
     pathsTouched: [codexPaths.hooksJson],
     inventory: [inspectHooksInventory(paths, codexPaths)]
   });
+}
+
+function exportHooksSummary(lifecycleHooks: LifecycleHooksConfig, packs: GuidancePacks): string {
+  if (lifecycleHooks.tokscaleSubmit || lifecycleHooks.rateLimitResume) {
+    return packs.rtk
+      ? "export hooks: installed managed lifecycle and RTK hooks"
+      : "export hooks: installed managed lifecycle hooks";
+  }
+  return packs.rtk
+    ? "export hooks: installed managed SessionStart and RTK hooks"
+    : "export hooks: installed managed SessionStart hook";
 }
 
 export function uninstallHooks(codexPaths: CodexPaths): OperationResult {
@@ -299,7 +369,7 @@ export function uninstallHooks(codexPaths: CodexPaths): OperationResult {
     });
   }
 
-  let root: Record<string, any>;
+  let root: JsonObject;
   try {
     root = readHooksJson(codexPaths.hooksJson);
   } catch {
@@ -321,19 +391,41 @@ export function uninstallHooks(codexPaths: CodexPaths): OperationResult {
   }
   const hooks = asObject(root.hooks);
   const sessionStart = Array.isArray(hooks?.SessionStart) ? hooks.SessionStart : null;
+  const preToolUse = Array.isArray(hooks?.PreToolUse) ? hooks.PreToolUse : null;
   const sessionEnd = Array.isArray(hooks?.SessionEnd) ? hooks.SessionEnd : null;
-  const before = (sessionStart?.length ?? 0) + (sessionEnd?.length ?? 0);
+  const stop = Array.isArray(hooks?.Stop) ? hooks.Stop : null;
+  const before = (sessionStart?.length ?? 0) + (preToolUse?.length ?? 0) + (sessionEnd?.length ?? 0) + (stop?.length ?? 0);
 
-  if (sessionStart) {
-    hooks!.SessionStart = sessionStart.filter((entry) => !containsManagedLifecycleHook(entry));
-    if (hooks!.SessionStart.length === 0) {
-      delete hooks!.SessionStart;
+  if (hooks && sessionStart) {
+    const retained = sessionStart.filter((entry) => !containsManagedLifecycleHook(entry));
+    if (retained.length === 0) {
+      delete hooks.SessionStart;
+    } else {
+      hooks.SessionStart = retained;
     }
   }
-  if (sessionEnd) {
-    hooks!.SessionEnd = sessionEnd.filter((entry) => !containsManagedLifecycleHook(entry));
-    if (hooks!.SessionEnd.length === 0) {
-      delete hooks!.SessionEnd;
+  if (hooks && preToolUse) {
+    const retained = preToolUse.filter((entry) => !containsManagedLifecycleHook(entry));
+    if (retained.length === 0) {
+      delete hooks.PreToolUse;
+    } else {
+      hooks.PreToolUse = retained;
+    }
+  }
+  if (hooks && sessionEnd) {
+    const retained = sessionEnd.filter((entry) => !containsManagedLifecycleHook(entry));
+    if (retained.length === 0) {
+      delete hooks.SessionEnd;
+    } else {
+      hooks.SessionEnd = retained;
+    }
+  }
+  if (hooks && stop) {
+    const retained = stop.filter((entry) => !containsManagedLifecycleHook(entry));
+    if (retained.length === 0) {
+      delete hooks.Stop;
+    } else {
+      hooks.Stop = retained;
     }
   }
   if (hooks && Object.keys(hooks).length === 0) {
@@ -342,7 +434,9 @@ export function uninstallHooks(codexPaths: CodexPaths): OperationResult {
 
   const after =
     (Array.isArray(hooks?.SessionStart) ? hooks.SessionStart.length : 0)
-    + (Array.isArray(hooks?.SessionEnd) ? hooks.SessionEnd.length : 0);
+    + (Array.isArray(hooks?.PreToolUse) ? hooks.PreToolUse.length : 0)
+    + (Array.isArray(hooks?.SessionEnd) ? hooks.SessionEnd.length : 0)
+    + (Array.isArray(hooks?.Stop) ? hooks.Stop.length : 0);
   if (before === after) {
     return new OperationResult({
       kind: OperationKind.UninstallHooks,
@@ -380,7 +474,7 @@ export function inspectHooksInventory(
   paths: ProjectPaths,
   codexPaths: CodexPaths,
   hostPlatform: HostPlatform = detectPlatform()
-) {
+): InventoryItem {
   if (hostPlatform === "windows") {
     return {
       name: "hooks",
@@ -427,7 +521,8 @@ export function inspectHooksInventory(
 
   const hooks = asObject(root.hooks);
   const sessionStart = Array.isArray(hooks?.SessionStart) ? hooks.SessionStart : [];
-  const sessionEnd = Array.isArray(hooks?.SessionEnd) ? hooks.SessionEnd : [];
+  const preToolUse = Array.isArray(hooks?.PreToolUse) ? hooks.PreToolUse : [];
+  const stop = Array.isArray(hooks?.Stop) ? hooks.Stop : [];
   const hasAnyManagedSessionStart = sessionStart.some((hook: unknown) => containsManagedSessionStartHook(hook));
   const { packs, roles } = activeGuidance(paths, codexPaths);
   const hasSessionStart = sessionStart.some((hook: unknown) =>
@@ -435,21 +530,25 @@ export function inspectHooksInventory(
       additionalContext: managedSessionStartContext(packs, roles)
     }))
   );
-  const hasRateLimitSessionEnd =
+  const hasRateLimitStop =
     !lifecycleHooks.rateLimitResume
-    || sessionEnd.some((hook: unknown) =>
+    || stop.some((hook: unknown) =>
       containsExpectedHookCommand(hook, buildManagedSessionEndHookCommand(undefined, { rateLimitResume: true }))
     );
-  const hasTokscaleSessionEnd =
-    !lifecycleHooks.tokscaleSubmit || sessionEnd.some((hook: unknown) => containsManagedTokscaleHook(hook));
-  const installed = hasSessionStart && hasRateLimitSessionEnd && hasTokscaleSessionEnd;
+  const hasTokscaleStop =
+    !lifecycleHooks.tokscaleSubmit || stop.some((hook: unknown) => containsManagedTokscaleHook(hook));
+  const hasRtkCommandHook =
+    !packs.rtk || preToolUse.some((hook: unknown) => containsManagedRtkCommandHook(hook));
+  const hasAnyManagedHook =
+    hasAnyManagedSessionStart || preToolUse.some((hook: unknown) => containsManagedRtkCommandHook(hook));
+  const installed = hasSessionStart && hasRtkCommandHook && hasRateLimitStop && hasTokscaleStop;
 
   return {
     name: "hooks",
     scope: InventoryScope.CodexNative,
-    status: installed ? InventoryStatus.Installed : hasAnyManagedSessionStart ? InventoryStatus.Invalid : InventoryStatus.Missing,
+    status: installed ? InventoryStatus.Installed : hasAnyManagedHook ? InventoryStatus.Invalid : InventoryStatus.Missing,
     path: codexPaths.hooksJson,
-    repairHint: installed ? null : hasAnyManagedSessionStart ? "rerun `export hooks`" : "run `export hooks`"
+    repairHint: installed ? null : hasAnyManagedHook ? "rerun `export hooks`" : "run `export hooks`"
   };
 }
 
@@ -459,17 +558,11 @@ function loadLifecycleHooks(paths: ProjectPaths, codexPaths: CodexPaths): Lifecy
 }
 
 function managedSessionStartContext(packs: GuidancePacks, _roles: ModelRoutingGuidance): string {
-  const lines = [
-    SESSION_START_BASE_GUIDANCE
-  ];
-
-  if (packs.caveman) {
-    lines.push("Caveman pack active: load `sane-caveman` for prose rules.");
-  }
-  if (packs.rtk) {
-    lines.push("RTK pack active: load `sane-rtk` for shell/search/test/log routing.");
-  }
-  return lines.join(" ");
+  return buildSaneContinuityContext({
+    caveman: packs.caveman,
+    rtk: packs.rtk,
+    frontendCraft: packs.frontendCraft
+  });
 }
 
 function activeGuidance(paths: ProjectPaths, codexPaths: CodexPaths): {
@@ -510,68 +603,77 @@ function loadOrDefaultConfig(
   );
 }
 
-function readHooksJson(path: string): Record<string, any> {
+type JsonObject = Record<string, unknown>;
+
+function readHooksJson(path: string): JsonObject {
   if (!fileExists(path)) {
     return {};
   }
 
-  return JSON.parse(readFileSync(path, "utf8")) as Record<string, any>;
+  return JSON.parse(readFileSync(path, "utf8")) as JsonObject;
 }
 
 function writeHooksJson(path: string, value: unknown): void {
   writeAtomicTextFile(path, `${JSON.stringify(value, null, 2)}\n`);
 }
 
-function ensureObjectProperty(root: Record<string, any>, key: string): Record<string, any> {
+function ensureObjectProperty(root: JsonObject, key: string): JsonObject {
   if (!asObject(root[key])) {
     root[key] = {};
   }
-  return root[key];
+  return root[key] as JsonObject;
 }
 
-function ensureArrayProperty(root: Record<string, any>, key: string): any[] {
+function ensureArrayProperty(root: JsonObject, key: string): unknown[] {
   if (!Array.isArray(root[key])) {
     root[key] = [];
   }
-  return root[key];
+  return root[key] as unknown[];
 }
 
 function containsManagedSessionStartHook(entry: unknown): boolean {
-  const hooks = Array.isArray(asObject(entry)?.hooks) ? asObject(entry)!.hooks : [];
-  return hooks.some((hook: unknown) => {
+  return hookEntries(entry).some((hook: unknown) => {
     const command = asObject(hook)?.command;
     return typeof command === "string" && isManagedSessionStartHookCommand(command);
   });
 }
 
 function containsManagedSessionEndHook(entry: unknown): boolean {
-  const hooks = Array.isArray(asObject(entry)?.hooks) ? asObject(entry)!.hooks : [];
-  return hooks.some((hook: unknown) => {
+  return hookEntries(entry).some((hook: unknown) => {
     const command = asObject(hook)?.command;
     return typeof command === "string" && isManagedSessionEndHookCommand(command);
   });
 }
 
 function containsManagedTokscaleHook(entry: unknown): boolean {
-  const hooks = Array.isArray(asObject(entry)?.hooks) ? asObject(entry)!.hooks : [];
-  return hooks.some((hook: unknown) => {
+  return hookEntries(entry).some((hook: unknown) => {
     const command = asObject(hook)?.command;
     return typeof command === "string"
       && isManagedTokscaleSubmitHookCommand(command)
-      && command.includes("--event session-end");
+      && (command.includes("--event stop") || command.includes("--event session-end"));
+  });
+}
+
+function containsManagedRtkCommandHook(entry: unknown): boolean {
+  return hookEntries(entry).some((hook: unknown) => {
+    const command = asObject(hook)?.command;
+    return typeof command === "string" && isManagedRtkCommandHookCommand(command);
   });
 }
 
 function containsManagedLifecycleHook(entry: unknown): boolean {
-  const hooks = Array.isArray(asObject(entry)?.hooks) ? asObject(entry)!.hooks : [];
-  return hooks.some((hook: unknown) => {
+  return hookEntries(entry).some((hook: unknown) => {
     const command = asObject(hook)?.command;
     return typeof command === "string"
-      && (isManagedLifecycleHookCommand(command) || isManagedTokscaleSubmitHookCommand(command));
+      && (
+        isManagedLifecycleHookCommand(command)
+        || isManagedTokscaleSubmitHookCommand(command)
+        || isManagedRtkCommandHookCommand(command)
+      );
   });
 }
 
-function pushHookEntry(target: any[], entry: Record<string, any>): void {
+function pushHookEntry(target: unknown[], entry: JsonObject): void {
   const expectedCommands = hookCommands(entry);
   const alreadyPresent = target.some((candidate) => {
     const candidateCommands = hookCommands(candidate);
@@ -583,9 +685,9 @@ function pushHookEntry(target: any[], entry: Record<string, any>): void {
 }
 
 function upsertHookEntry(
-  target: any[],
+  target: unknown[],
   isManagedEntry: (entry: unknown) => boolean,
-  entry: Record<string, any>
+  entry: JsonObject
 ): void {
   const existingIndex = target.findIndex(isManagedEntry);
   if (existingIndex >= 0) {
@@ -595,7 +697,7 @@ function upsertHookEntry(
   target.push(entry);
 }
 
-function removeMatchingHookEntries(target: any[], shouldRemove: (entry: unknown) => boolean): void {
+function removeMatchingHookEntries(target: unknown[], shouldRemove: (entry: unknown) => boolean): void {
   const retained = target.filter((entry) => !shouldRemove(entry));
   target.splice(0, target.length, ...retained);
 }
@@ -605,24 +707,40 @@ function containsExpectedHookCommand(entry: unknown, expectedCommand: string): b
 }
 
 function hookCommands(entry: unknown): string[] {
-  const hooks = Array.isArray(asObject(entry)?.hooks) ? asObject(entry)!.hooks : [];
-  return hooks.flatMap((hook: unknown) => {
+  return hookEntries(entry).flatMap((hook: unknown) => {
     const command = asObject(hook)?.command;
     return typeof command === "string" ? [command] : [];
   });
+}
+
+function hookEntries(entry: unknown): unknown[] {
+  const hooks = asObject(entry)?.hooks;
+  return Array.isArray(hooks) ? hooks : [];
 }
 
 function fileExists(path: string): boolean {
   return existsSync(path);
 }
 
-function asObject(value: unknown): Record<string, any> | null {
+function isManagedCustomAgentFile(path: string): boolean {
+  return readFileSync(path, "utf8").startsWith(CUSTOM_AGENT_OWNERSHIP_MARKER);
+}
+
+function isManagedCustomAgentBody(current: string, expected: string): boolean {
+  return (
+    current === expected ||
+    current === `${CUSTOM_AGENT_OWNERSHIP_MARKER}${expected}`
+  );
+}
+
+
+function asObject(value: unknown): JsonObject | null {
   return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, any>)
+    ? (value as JsonObject)
     : null;
 }
 
-function validateHooksShapeForManagedUpdate(root: Record<string, any>): string | null {
+function validateHooksShapeForManagedUpdate(root: JsonObject): string | null {
   if (root.hooks === undefined) {
     return null;
   }
@@ -633,8 +751,14 @@ function validateHooksShapeForManagedUpdate(root: Record<string, any>): string |
   if (hooks.SessionStart !== undefined && !Array.isArray(hooks.SessionStart)) {
     return "hooks.json must use array at `hooks.SessionStart`";
   }
+  if (hooks.PreToolUse !== undefined && !Array.isArray(hooks.PreToolUse)) {
+    return "hooks.json must use array at `hooks.PreToolUse`";
+  }
   if (hooks.SessionEnd !== undefined && !Array.isArray(hooks.SessionEnd)) {
     return "hooks.json must use array at `hooks.SessionEnd`";
+  }
+  if (hooks.Stop !== undefined && !Array.isArray(hooks.Stop)) {
+    return "hooks.json must use array at `hooks.Stop`";
   }
   return null;
 }

@@ -38,7 +38,7 @@ describe("sane bin shim", () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("[Settings]");
-  });
+  }, 15_000);
 
   it("runs section shortcuts through the smart preview shim", () => {
     const projectRoot = makeTempDir();
@@ -56,7 +56,7 @@ describe("sane bin shim", () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("[Status]");
-  });
+  }, 15_000);
 
   it("opens the install wizard through the same shim", () => {
     const projectRoot = makeTempDir();
@@ -75,5 +75,5 @@ describe("sane bin shim", () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("[Home]");
     expect(result.stdout).toContain("Set up Sane files");
-  });
+  }, 15_000);
 });

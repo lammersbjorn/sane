@@ -60,9 +60,10 @@ describe("codex config control plane", () => {
 
     const result = previewCodexProfile(codexPaths);
 
-    expect(result.summary).toBe("codex-profile preview: 3 recommended change(s)");
+    expect(result.summary).toBe("codex-profile preview: 4 recommended change(s)");
     expect(result.details).toContain("model: <missing> -> gpt-5.5");
     expect(result.details).toContain("reasoning: <missing> -> medium");
+    expect(result.details).toContain("compact prompt: <missing> -> Sane continuity prompt");
     expect(result.details).toContain("codex hooks: <missing> -> enabled");
     expect(result.details).toContain("note: this writes the single-session Codex baseline only");
     expect(result.details).toContain(
@@ -149,11 +150,14 @@ describe("codex config control plane", () => {
     const body = readFileSync(codexPaths.configToml, "utf8");
 
     expect(result.summary).toBe("codex-profile apply: wrote recommended core profile");
-    expect(result.details).toContain("applied keys: model, model_reasoning_effort, features.codex_hooks");
+    expect(result.details).toContain("applied keys: model, model_reasoning_effort, compact_prompt, features.codex_hooks");
     expect(result.details).toContain("note: this writes the single-session Codex baseline only");
     expect(result.details).toContain("backup: skipped (no prior config existed)");
     expect(body).toContain('model = "gpt-5.5"');
     expect(body).toContain('model_reasoning_effort = "medium"');
+    expect(body).toContain("compact_prompt =");
+    expect(body).toContain("Fresh Rules");
+    expect(body).toContain("Do not add generated repo overviews");
     expect(body).toContain("[features]");
     expect(body).toContain("codex_hooks = true");
   });
@@ -350,10 +354,10 @@ describe("codex config control plane", () => {
     const codexPaths = createCodexPaths(homeDir);
 
     expect(inspectCodexProfileSnapshot(codexPaths)).toMatchObject({
-      audit: expect.objectContaining({ status: "missing", recommendedChangeCount: 3 }),
-      apply: expect.objectContaining({ status: "ready", recommendedChangeCount: 3 }),
+      audit: expect.objectContaining({ status: "missing", recommendedChangeCount: 4 }),
+      apply: expect.objectContaining({ status: "ready", recommendedChangeCount: 4 }),
       preview: expect.objectContaining({
-        summary: "codex-profile preview: 3 recommended change(s)"
+        summary: "codex-profile preview: 4 recommended change(s)"
       })
     });
     expect(inspectIntegrationsProfileSnapshot(codexPaths)).toMatchObject({
@@ -604,10 +608,11 @@ describe("codex config control plane", () => {
 
     expect(inspectCodexProfileAudit(codexPaths)).toMatchObject({
       status: "missing",
-      recommendedChangeCount: 3,
+      recommendedChangeCount: 4,
       changes: [
         { key: "model", current: null, recommended: "gpt-5.5" },
         { key: "model_reasoning_effort", current: null, recommended: "medium" },
+        { key: "compact_prompt", current: null, recommended: "Sane continuity prompt" },
         { key: "features.codex_hooks", current: null, recommended: "enabled" }
       ]
     });
@@ -642,8 +647,8 @@ describe("codex config control plane", () => {
 
     expect(inspectCodexProfileApplyResult(codexPaths)).toMatchObject({
       status: "ready",
-      recommendedChangeCount: 3,
-      appliedKeys: ["model", "model_reasoning_effort", "features.codex_hooks"]
+      recommendedChangeCount: 4,
+      appliedKeys: ["model", "model_reasoning_effort", "compact_prompt", "features.codex_hooks"]
     });
 
     applyCodexProfile(projectPaths, codexPaths);
@@ -673,13 +678,14 @@ describe("codex config control plane", () => {
 
     expect(audit).toMatchObject({
       status: "missing",
-      recommendedChangeCount: 2,
+      recommendedChangeCount: 3,
       changes: [
         { key: "model", current: "gpt-5.4", recommended: "gpt-5.5" },
-        { key: "model_reasoning_effort", current: "low", recommended: "medium" }
+        { key: "model_reasoning_effort", current: "low", recommended: "medium" },
+        { key: "compact_prompt", current: null, recommended: "Sane continuity prompt" }
       ]
     });
-    expect(preview.summary).toBe("codex-profile preview: 2 recommended change(s)");
+    expect(preview.summary).toBe("codex-profile preview: 3 recommended change(s)");
   });
 
   it("keeps cloudflare-profile preview summary count aligned with structured audit", () => {

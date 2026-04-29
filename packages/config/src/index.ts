@@ -105,6 +105,12 @@ export interface LocalConfig {
   lifecycleHooks: LifecycleHooksConfig;
 }
 
+export interface PortableSettingsFile {
+  version: 1;
+  exportedAt: string;
+  config: LocalConfig;
+}
+
 const reasoningEffortSchema = z.enum(REASONING_EFFORTS);
 const telemetryLevelSchema = z.enum(TELEMETRY_LEVELS);
 const COORDINATOR_PRIORITY = [
@@ -585,6 +591,59 @@ export function stringifyLocalConfig(config: LocalConfig): string {
   ].join('\n');
 }
 
+export function createPortableSettingsFile(
+  config: LocalConfig,
+  exportedAt = new Date().toISOString(),
+): PortableSettingsFile {
+  return {
+    version: 1,
+    exportedAt,
+    config: validateLocalConfig(config),
+  };
+}
+
+export function parsePortableSettingsJson(
+  raw: string,
+  path = 'sane-settings-portable.json',
+): PortableSettingsFile {
+  let decoded: unknown;
+  try {
+    decoded = JSON.parse(raw) as unknown;
+  } catch (error) {
+    throw new Error(`failed to parse portable settings from ${path}: ${messageOf(error)}`);
+  }
+
+  if (!isRecord(decoded)) {
+    throw new Error(`invalid portable settings at ${path}: expected object`);
+  }
+
+  if (decoded.version !== 1) {
+    throw new Error(`invalid portable settings at ${path}: unsupported version`);
+  }
+
+  if (typeof decoded.exportedAt !== 'string' || decoded.exportedAt.trim().length === 0) {
+    throw new Error(`invalid portable settings at ${path}: exportedAt is required`);
+  }
+
+  return {
+    version: 1,
+    exportedAt: decoded.exportedAt,
+    config: validateLocalConfig(decoded.config, `${path}#config`),
+  };
+}
+
+export function stringifyPortableSettings(settings: PortableSettingsFile): string {
+  return `${JSON.stringify(
+    {
+      version: 1,
+      exportedAt: settings.exportedAt,
+      config: validateLocalConfig(settings.config),
+    },
+    null,
+    2,
+  )}\n`;
+}
+
 export function enabledPackNames(config: PackConfig): string[] {
   const enabled: string[] = [];
   if (config.core) {
@@ -602,7 +661,7 @@ export function enabledPackNames(config: PackConfig): string[] {
   return enabled;
 }
 
-export function validateLocalConfig(config: LocalConfig, path = 'config.local.toml'): LocalConfig {
+export function validateLocalConfig(config: unknown, path = 'config.local.toml'): LocalConfig {
   return validateNormalizedLocalConfig(normalizeLocalConfigInput(config), path);
 }
 

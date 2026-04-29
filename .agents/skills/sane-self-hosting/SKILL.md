@@ -31,7 +31,7 @@ Work on `Sane` itself without turning this repo's self-hosting setup into a gene
 - `docs/decisions/2026-04-19-sane-decision-log.md`
 - `docs/specs/2026-04-19-sane-design.md`
 - `docs/specs/2026-04-19-sane-backend-contract.md`
-- `docs/specs/2026-04-20-sane-tui-redesign.md`
+- `docs/specs/2026-04-25-sane-tui-control-center-redesign.md`
 - `docs/plans/2026-04-19-sane-strict-implementation-plan.md` when implementation order matters
 - `docs/research/2026-04-23-codex-instruction-surface-rules.md` when changing repo-local skills, overlays, agents, or `AGENTS.md`
 - `TODO.md`
@@ -48,7 +48,7 @@ Work on `Sane` itself without turning this repo's self-hosting setup into a gene
 1. Start from repo truth and local state, not memory alone.
 2. RTK is mandatory in this repo. Prefer RTK-native commands (`rtk grep`, `rtk read`, `rtk diff`, `rtk test`, `rtk pnpm`, `rtk git`); use `rtk run '<command>'` only when no native command fits.
 3. Keep root `AGENTS.md` small. Put recurring procedure detail here or in docs, not in always-on startup context.
-4. Treat `Sane` as an agent framework for Codex, not a daily wrapper. The TUI remains install/config/update/export/inspect/repair/doctor.
+4. Treat `Sane` as an agent framework for Codex, not a daily wrapper. The TUI remains install/config/update/export/status/repair/doctor.
 5. When self-hosting on the Sane repo itself, use the repo's own local-state-defined agents, tools, skills, and routing where they exist.
 6. Prefer Sane-owned routing/export changes before editing vendored upstream mirrors.
 7. For repo-local skills and instruction surfaces, follow `docs/research/2026-04-23-codex-instruction-surface-rules.md`:
@@ -65,7 +65,8 @@ Work on `Sane` itself without turning this repo's self-hosting setup into a gene
 ## Verification
 
 - docs or instruction-surface-only changes: inspect diff for the touched files
-- TS or exported-template changes: `rtk pnpm test` and `rtk pnpm typecheck`
+- release/package changes: `rtk pnpm run release:verify`
+- TS or exported-template changes: `rtk pnpm test` and `rtk run 'pnpm typecheck'` while RTK native typecheck routing false-exits
 
 ## Gotchas / Safety
 

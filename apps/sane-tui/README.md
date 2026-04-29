@@ -21,7 +21,7 @@ Current role:
 Public API barrel:
 
 - package barrel is `@sane/sane-tui/index.js` (`src/index.ts`)
-- barrel exports are intentionally explicit and review-gated
+- stable barrel exports: `command-registry`, `main`, and `preview-launch`
 - for stable imports, prefer the barrel; subpath exports are explicit compatibility entries, not a wildcard API
 - internal-only modules are not in the barrel even when a compatibility subpath exists (for example `cli`, `input-driver`, `ink-terminal`, `section-action-rows`, `shell-layer`)
 

@@ -26,7 +26,6 @@ import {
   uninstallGlobalAgents,
   uninstallUserSkills
 } from "@sane/control-plane/codex-native.js";
-import { exportPlugin, uninstallPlugin } from "@sane/control-plane/codex-plugin.js";
 import {
   uninstallCustomAgents,
   uninstallHooks,
@@ -45,6 +44,8 @@ import { inspectInstallStatusFromStatusBundle } from "@sane/control-plane/instal
 import { showStatus } from "@sane/control-plane";
 import { previewPolicy, previewPolicyForCurrentRun } from "@sane/control-plane/policy-preview.js";
 import {
+  exportPortableSettings,
+  importPortableSettings,
   inspectEditablePreferencesConfig,
   inspectPreferencesFamilySnapshot,
   resetTelemetryData,
@@ -357,6 +358,21 @@ export function resetLocalTelemetry(shell: TuiShell): OperationResult {
   return result;
 }
 
+export function requestTelemetryResetConfirmation(shell: TuiShell): void {
+  const action: SectionActionMetadata = {
+    ...getCommandSpec("reset_telemetry_data", shell.hostPlatform),
+    label: "Delete local telemetry files",
+    order: 0,
+    section: shell.activeSectionId
+  };
+  shell.pendingConfirmation = buildPendingConfirmation(shell, action);
+  shell.lastResult = buildLastResultView(
+    null,
+    "Review `Delete local telemetry files`. Enter or y confirms. Esc or n cancels."
+  );
+  shell.notice = null;
+}
+
 function runCommand(shell: TuiShell, commandId: UiCommandId): OperationResult | null {
   switch (commandId) {
     case "open_config_editor":
@@ -436,6 +452,15 @@ export function executeUiCommand(
       return executeOperation(paths, () => installRuntime(paths, codexPaths));
     case "show_config":
       return executeOperation(paths, () => showConfig(paths, codexPaths));
+    case "export_portable_settings":
+      return executeOperation(paths, () => exportPortableSettings(paths));
+    case "import_portable_settings":
+      return executeOperation(paths, () => importPortableSettings(paths));
+    case "install_from_portable_settings":
+      return executeOperation(paths, () => {
+        installRuntime(paths, codexPaths);
+        return importPortableSettings(paths);
+      });
     case "show_codex_config":
       return executeOperation(paths, () => showCodexConfig(codexPaths));
     case "show_runtime_summary":
@@ -484,8 +509,6 @@ export function executeUiCommand(
       return executeOperation(paths, () => exportHooks(paths, codexPaths));
     case "export_custom_agents":
       return executeOperation(paths, () => exportCustomAgents(paths, codexPaths));
-    case "export_plugin":
-      return executeOperation(paths, () => exportPlugin(codexPaths));
     case "export_opencode_all":
       return executeOperation(paths, () => exportOpencodeCore(paths, codexPaths));
     case "export_all":
@@ -502,8 +525,6 @@ export function executeUiCommand(
       return executeOperation(paths, () => uninstallHooks(codexPaths));
     case "uninstall_custom_agents":
       return executeOperation(paths, () => uninstallCustomAgents(codexPaths));
-    case "uninstall_plugin":
-      return executeOperation(paths, () => uninstallPlugin(codexPaths));
     case "uninstall_all":
       return executeOperation(paths, () => uninstallAll(codexPaths));
   }

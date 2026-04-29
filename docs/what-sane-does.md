@@ -67,27 +67,26 @@ It also keeps recommended integrations separate, so "better defaults" does not h
 Routing note:
 - `Sane` uses task-shaped routing, not one static fallback chain.
 - Policy/docs routing classes are: `explorer`, `implementation`, `verifier`, and `realtime` (with coordinator authority kept at session level).
-- Candidate ordering inside those classes is a Sane operating heuristic from documented positioning plus runtime findings, not benchmark certainty.
-- Current runtime caveat matters too: documented model availability, picker visibility, and actually spawnable-here worker support are not always identical.
-- Settings now shows detected Codex model availability, plan hints, supported reasoning efforts, and the capability line behind each selected routing default.
+- Documented model availability, picker visibility, and actually spawnable worker support can drift over time; dated research notes capture those moving details.
+- Settings shows the configured routing defaults, plan hints, supported reasoning efforts when known, and the capability line behind each selected routing default.
 
 ### 3. You can install Codex-native pieces without hand-wiring them
 
 Today, `Sane` can manage:
 
 - the core skills `sane-router`, `sane-bootstrap-research`, `sane-agent-lanes`, `sane-outcome-continuation`, and `continue`
-- a fixed built-in pack set today: always-on `core` plus optional `caveman`, `rtk`, and `frontend-craft`
+- a fixed built-in pack set: always-on `core` plus optional `caveman`, `rtk`, and `frontend-craft`
 - concrete optional skill exports where applicable: `sane-caveman` from `caveman`, `sane-rtk` from `rtk`, plus the Sane-owned frontend skills `sane-frontend-craft`, `sane-frontend-visual-assets`, and `sane-frontend-review` from `frontend-craft`
 - optional packs can also change Sane's exported always-on guidance, router guidance, hooks, and custom-agent templates
 - installed `caveman` pack guidance is enforced in Sane's exported always-on guidance, not left as an optional soft note
 - the separate recommended integrations profile for Codex tools like `Context7`, `Playwright`, and `grep.app`
 - structured integrations audit output in add/apply/status flows so recommended adds are reviewable before write without summary-string guessing
+- a compact Sane continuity prompt in the managed Codex profile so automatic compaction preserves current objective, verified state, active rules, next actions, and blocker state without turning summaries into repo overviews
 - warning-only conflict visibility for invalid Codex config, disabled `features.codex_hooks`, unmanaged `mcp_servers.*`, managed MCP drift, explicit model/reasoning drift, explicit statusline drift, native Codex memories enabled, enabled `plugins.*` entries, and oversized always-loaded guidance files, so users can see possible interference without Sane auto-fixing their setup
 - optional repo-local shared skills when a repo actually needs shared targeted behavior
 - optional additive guidance blocks in global or repo `AGENTS.md`, with repo `AGENTS.md` reserved for explicit broad guidance
 - Sane-managed hook entries
 - Sane-managed custom agents
-- optional Sane-managed Codex plugin artifact (`~/.codex/plugins/sane/`) and marketplace entry (`~/.agents/plugins/marketplace.json`)
 - optional full OpenCode export under `~/.config/opencode/`, with Sane skills, a global guidance block, and Sane agents mapped to OpenCode Go models by task
 
 Those are the things that actually change Codex behavior.
@@ -119,21 +118,22 @@ Important continuity boundary:
 
 ## What Users Actually Get Today
 
-| Need | What `Sane` gives you now |
+| Need | What `Sane` gives you |
 | --- | --- |
-| Better starting defaults | Task-shaped routing classes (`explorer` / `implementation` / `verifier` / `realtime`) with detected model availability and capability constraints shown in Settings. |
+| Better starting defaults | Task-shaped routing classes (`explorer` / `implementation` / `verifier` / `realtime`) with configured defaults and capability constraints shown in Settings; dated research tracks fast-moving model availability details. |
 | Safer changes | Preview, backup, apply, restore, uninstall, and local telemetry reset. |
 | Runtime and surface truth | Read-only Status view for managed runtime and Codex-native surfaces. |
-| Optional guidance packs | Fixed built-in set today: `core` + optional `caveman`, `rtk`, `frontend-craft`. `caveman` exports `sane-caveman`, `rtk` exports `sane-rtk`, and `frontend-craft` exports compact Sane-owned build, visual-assets, and review skills. |
+| Optional guidance packs | Fixed built-in set today: `core` + optional `caveman`, `rtk`, `frontend-craft`. `caveman` exports `sane-caveman`, `rtk` exports `sane-rtk`, and `frontend-craft` exports compact Sane-owned build, visual-assets, and review skills. When `rtk` is enabled, Status also checks for the companion `rtk` binary on `PATH`. |
 | Useful integrations | Separate recommended integrations profile for `Context7`, `Playwright`, and `grep.app`, with structured audit details shown before apply. |
 | Native Codex TUI polish | Optional native Codex statusline/title profile over `tui.status_line`, `tui.terminal_title`, and `tui.notification_condition`. |
 | Provider-specific add-ons | Separate opt-in Cloudflare profile. |
-| Shared or personal installs | Mostly user-level exports, plus explicit repo-local installs when needed, optional Codex plugin artifact export outside the default bundle, and optional OpenCode export. |
+| Shared or personal installs | Mostly user-level exports, plus explicit repo-local installs when needed and optional OpenCode export. |
 | Repair visibility | Status and setup checks for managed runtime and Codex-native surfaces, plus explicit repair/remove actions in the TUI. |
 
 What `Sane` does not currently try to own:
 - Codex native `memories` as the canonical continuity layer
 - a custom status-bar system on top of Codex
+- RTK binary distribution; Sane checks for upstream [`rtk`](https://github.com/rtk-ai/rtk) on `PATH`, but does not own or publish RTK. Upstream install paths are Homebrew, install script, Cargo, or release binaries. Future Sane Homebrew packaging should depend on upstream `rtk`.
 
 ## How It Works Under The Hood
 
@@ -143,7 +143,7 @@ At a high level, `Sane` has three layers:
 | --- | --- |
 | TUI | Current control surface for Home, Settings, Add to Codex, Status, Repair, and Uninstall flows. |
 | Local `.sane/` runtime | Stores just enough local config, state, and backups for repair and handoff. |
-| Codex-native surfaces | Skills, overlays, hooks, custom agents, optional plugin artifact exports, and narrow config writes that carry the framework behavior. |
+| Codex-native surfaces | Skills, overlays, hooks, custom agents, and narrow config writes that carry the framework behavior. |
 
 This structure is what lets `Sane` stay framework-first without becoming a wrapper-first product.
 
@@ -151,7 +151,7 @@ This structure is what lets `Sane` stay framework-first without becoming a wrapp
 
 | Already in place | Planned later |
 | --- | --- |
-| Control-center TUI with first-launch setup | Public release packaging and distribution automation after `v1` |
+| Control-center TUI with first-launch setup | Homebrew, winget, and Scoop rollout after the `v1` artifact shape is stable |
 | Settings flow | Post-`v1` pack expansion/contraction execution |
 | Preview/apply/restore for narrow Codex config | Broader adaptive orchestration |
 | Recommended integrations profile | Broader adaptive orchestration beyond the current framework state transition |

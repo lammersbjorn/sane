@@ -187,7 +187,8 @@ The state model should separate stable policy, thin operational state, and human
 - subagent-first for all non-tiny work
 - stay single-agent only for tiny direct answers
 - broad work needs a lane plan and successful subagent handoff before deep work
-- broad review needs explorer/reviewer lanes; if higher-priority tool rules require explicit subagent authorization and it is missing, ask and pause
+- research/planning lanes do not authorize later broad implementation; follow-up edits need a fresh implementation or reviewer handoff before edits
+- broad review needs explorer/reviewer lanes; if higher-priority tool rules require explicit subagent authorization and it is missing, ask and stop
 - broad editing needs an implementation lane with a disjoint write scope
 - keep subagent lanes bounded and independently owned so coordinator can merge safely
 - choose model and reasoning settings per subtask using task-shaped presets:

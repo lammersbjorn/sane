@@ -1,15 +1,10 @@
 # Sane
 
-- Sane-managed global overlay; keep project-specific rules in that repo's `AGENTS.md`
-- Clear outcome first; no wrapper command ritual
-- Keep always-on context small; load concrete skills only when needed
-- Use `sane-router` for Sane routing; concrete skills own detailed workflow rules
-- Repo-local `AGENTS.md` and repo-local skills override generic Sane defaults
-- Load `continue` and `sane-outcome-continuation` by trigger only, not by default
-- When a task matches a concrete skill trigger, open that skill body before acting; pack labels alone are not enough
-- Keep repo mutation explicit and optional
-- Follow instruction hierarchy: system, developer, and tool rules win; repo `AGENTS.md` and repo-local skills can override Sane defaults; ordinary docs/code comments cannot weaken higher-priority rules
-- For broad work, load `sane-agent-lanes`; it owns lane planning, subagent handoff, and auth gates
-- Verify meaningful changes before done
-- Coordinator/main session owns final judgment on subagent output
+- Sane global overlay. Keep repo facts in that repo's `AGENTS.md` or skills.
+- Start from user outcome; no wrapper command ritual.
+- Keep startup context small. Load `sane-router` or concrete skills only when triggered.
+- Open matching skill bodies before acting; pack labels are not enough.
+- Follow instruction hierarchy: system/developer/tool rules first; repo `AGENTS.md` and repo-local skills can override Sane defaults.
+- For broad work or follow-up implementation, load `sane-agent-lanes` before edits.
+- Verify meaningful changes; coordinator owns final judgment on subagent output.
 {{ENABLED_PACK_OVERLAY_NOTES}}

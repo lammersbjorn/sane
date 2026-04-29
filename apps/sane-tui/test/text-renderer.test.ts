@@ -6,7 +6,7 @@ import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { loadAppView } from "@sane/sane-tui/app-view.js";
-import { createTuiShell, runSelectedAction } from "@sane/sane-tui/shell.js";
+import { createTuiShell, moveSelection, runSelectedAction, selectSection } from "@sane/sane-tui/shell.js";
 import { renderTextAppView } from "@sane/sane-tui/text-renderer.js";
 
 const tempDirs: string[] = [];
@@ -100,9 +100,31 @@ describe("text renderer", () => {
     expect(output).toContain("mode browse | rt miss cx miss sk miss hk miss dr 1");
     expect(output).toContain("Home Focus");
     expect(output).toContain("Status: Ready.");
+    expect(output).toContain("runtime missing");
     expect(output).not.toContain("Project ");
     expect(output).not.toContain("Project ");
     expect(output).not.toContain("Home Details");
+  });
+
+  it("keeps install/default/settings/status surfaces visible across compact, normal, and wide text viewports", () => {
+    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
+    const viewports = [
+      { width: 56, height: 20 },
+      { width: 96, height: 26 },
+      { width: 132, height: 34 }
+    ] as const;
+
+    selectSection(shell, "home");
+    expect(renderTextAppView(loadAppView(shell), viewports[0])).toContain("runtime missing");
+
+    selectSection(shell, "add_to_codex");
+    expect(renderTextAppView(loadAppView(shell), viewports[1])).toContain("Current install bundle:");
+
+    selectSection(shell, "settings");
+    expect(renderTextAppView(loadAppView(shell), viewports[2])).toContain("Edit model and agent defaults");
+
+    selectSection(shell, "status");
+    expect(renderTextAppView(loadAppView(shell), viewports[1])).toContain("status counts:");
   });
 
   it("shortens absolute runtime paths in compact focus status", () => {
@@ -134,6 +156,25 @@ describe("text renderer", () => {
     expect(output).toContain("| saved body");
     expect(output).toContain("Enter, Space, or Esc closes this message.");
     expect(output).toContain("mode notice");
+  });
+
+  it("keeps overlay lines within viewport width at compact sizes", () => {
+    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()), "settings");
+    shell.notice = {
+      title: "Saved",
+      body: "saved body with extra words to exercise wrapping behavior in compact mode",
+      footer: "Enter, Space, or Esc closes this message.",
+      section: "settings"
+    };
+
+    const output = renderTextAppView(loadAppView(shell), {
+      width: 40,
+      height: 18
+    });
+    const lines = output.split("\n");
+
+    expect(lines.every((line) => line.length <= 40)).toBe(true);
+    expect(output).toContain("[Overlay: Saved]");
   });
 
   it("shows selection changes in the rendered action list", () => {
@@ -202,5 +243,35 @@ describe("text renderer", () => {
     expect(output).toContain("mode edit models");
     expect(output).toContain("Fields");
     expect(output).toContain("Field Help");
+  });
+
+  it("keeps modal-like states legible at compact, normal, and wide sizes", () => {
+    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()), "settings");
+    runSelectedAction(shell);
+
+    const compactEditor = renderTextAppView(loadAppView(shell), { width: 56, height: 20 });
+    expect(compactEditor).toContain("[Overlay: Model Defaults]");
+    expect(compactEditor).toContain("Fields");
+    expect(compactEditor).toContain("> Main session model:");
+
+    shell.activeEditor = null;
+    shell.notice = {
+      title: "Saved",
+      body: "saved body",
+      footer: "Enter, Space, or Esc closes this message.",
+      section: "settings"
+    };
+    const normalNotice = renderTextAppView(loadAppView(shell), { width: 96, height: 26 });
+    expect(normalNotice).toContain("[Overlay: Saved]");
+
+    shell.notice = null;
+    selectSection(shell, "home");
+    for (let index = 0; index < 4; index += 1) {
+      moveSelection(shell, "action", 1);
+    }
+    runSelectedAction(shell);
+    const wideConfirm = renderTextAppView(loadAppView(shell), { width: 132, height: 34 });
+    expect(wideConfirm).toContain("[Overlay: Confirm]");
+    expect(wideConfirm).toContain("Confirm This Action");
   });
 });

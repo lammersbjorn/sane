@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  computeOverlayWidth,
   focusHelpLines,
   focusSnapshotLines,
   inkInputToTuiKey,
@@ -101,5 +102,11 @@ describe("ink terminal renderer", () => {
 
   it("truncates action labels before Ink can wrap them", () => {
     expect(truncateEnd("> Preview optional recommended Codex tools", 18)).toBe("> Preview optio...");
+  });
+
+  it("bounds overlay width to viewport at compact sizes", () => {
+    expect(computeOverlayWidth(40, 70, 6, 120)).toBe(40);
+    expect(computeOverlayWidth(56, 50, 6, 96)).toBe(50);
+    expect(computeOverlayWidth(120, 70, 6, 120)).toBe(114);
   });
 });

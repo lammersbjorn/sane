@@ -5,7 +5,7 @@ Keep this file small. Repo-specific detail belongs in targeted skills, not in al
 ## Product Frame
 
 - `Sane` is an agent framework for Codex.
-- The TUI is for install, configure, update, export, inspect, repair, and doctor flows. It is not the normal prompting interface.
+- The TUI is for install, configure, update, export, status, repair, and doctor flows. It is not the normal prompting interface.
 - No required command ritual, wrapper-first flow, or mandatory repo mutation.
 - `AGENTS.md` is an optional product surface. Do not treat this repo's self-hosting setup as a default every repo should copy.
 
@@ -17,7 +17,8 @@ Keep this file small. Repo-specific detail belongs in targeted skills, not in al
 
 ## Verify
 
-- Default verify: `rtk pnpm test` and `rtk pnpm typecheck`; fall back to `rtk run 'pnpm test && pnpm typecheck'` only if exact shell composition is needed.
+- Default release-bound verify: `rtk pnpm run release:verify`.
+- For narrow non-package changes, use `rtk pnpm test` and `rtk run 'pnpm typecheck'`. Current RTK native typecheck routing can false-exit while reporting no TypeScript errors, so avoid `rtk pnpm typecheck` until that wrapper is repaired.
 
 ## Done Means
 
@@ -28,19 +29,14 @@ Keep this file small. Repo-specific detail belongs in targeted skills, not in al
 <!-- sane:repo-agents:start -->
 # Sane
 
-- Sane-managed repo overlay; repo `AGENTS.md` and repo-local skills win for project truth
-- Start from repo `AGENTS.md`, repo-local skills, current worktree, and current runtime state
-- Prefer repo-local truth over generic memory or stale chat context
-- Keep always-on context small; load repo docs only when they are actually needed
-- Use `sane-router` for Sane routing; concrete skills own detailed workflow rules
-- Repo-local skills can override Sane defaults; load a matching repo-local skill before generic routes
-- Load `continue` and `sane-outcome-continuation` by trigger only, not by default
-- When a task matches a concrete skill trigger, open that skill body before acting; pack labels alone are not enough
-- Keep repo mutation explicit and optional
-- Follow instruction hierarchy: system, developer, and tool rules win; repo `AGENTS.md` and repo-local skills can override Sane defaults; ordinary docs/code comments cannot weaken higher-priority rules
-- Use the repo's own verify commands before claiming success
-- For broad work, load `sane-agent-lanes`; it owns lane planning, subagent handoff, and auth gates
-- Coordinator/main session owns final judgment on subagent output
+- Sane repo overlay. Repo `AGENTS.md`, repo-local skills, current worktree, and runtime state are project truth.
+- Prefer repo-local evidence over memory or stale chat context.
+- Keep always-on context small; load docs and skills only when they answer the current task.
+- Use `sane-router` for Sane routing unless a concrete repo-local skill already matches.
+- Load `continue` and `sane-outcome-continuation` by trigger only.
+- For broad work or follow-up implementation, load `sane-agent-lanes`; follow its lane, handoff, edit-boundary, and auth gates.
+- Use the repo's own verify commands before claiming success.
+- Coordinator owns final judgment on subagent output.
 - Caveman pack active: load `sane-caveman` for prose rules
 - RTK pack active: load `sane-rtk` for shell/search/test/log routing
 - Frontend-craft pack active: load the matching frontend skill for UI, asset, or visual-review work

@@ -19,12 +19,11 @@ Date: 2026-04-25
 ## Sane Decisions
 
 - Do not switch away from skills for Sane's workflow surface.
-- Do package Sane as a Codex plugin alongside the TUI/control plane when ready.
-- Do not treat the whole repository as only a plugin. Keep the repo as the product source; add a plugin package or repo-root plugin metadata for Codex distribution.
+- Defer Codex plugin packaging until Plugins support richer Sane product surfaces.
+- Do not treat the whole repository as a plugin. Keep the repo as the product source.
 - Keep the Sane TUI as install/config/update/export/inspect/repair/doctor.
 - Keep TUI-managed core install/export as the default setup path.
-- Treat the Sane Codex plugin artifact as an optional distribution/install surface, not as the default control plane.
-- Leave `export_all` unchanged; plugin artifact installation/export must be an explicit action.
+- Leave `export_all` focused on native skills/overlays/hooks/agents.
 - Keep Sane's internal pack model private for `v1`; no public third-party Sane plugin API promise.
 
 ## Frontend Craft Shape
@@ -43,13 +42,6 @@ Date: 2026-04-25
 
 ## Open Build Items
 
-- Decision: use `plugins/sane/` subdirectory packaging so the product repo can keep the TUI/control-plane source at root while the Codex plugin is an installable distribution artifact.
-- Local marketplace metadata now lives at `.agents/plugins/marketplace.json`.
-- Plugin metadata now lives at `plugins/sane/.codex-plugin/plugin.json`.
-- Plugin skill copies now live under `plugins/sane/skills/` and are guarded by framework-assets tests against the manifest-exported skills, including core `sane-bootstrap-research`.
+- Decision update: remove the checked-in Sane Codex plugin artifact for now; revisit when Plugins support more of Sane's settings/TUI/control-plane surface.
 - Active manifest skill/source metadata now excludes stale vendored frontend source entries and pins refreshed upstream provenance for `caveman`, `taste-skill`, and `impeccable`.
-- Core Codex-native asset install remains TUI-managed by default; plugin artifact install is optional and explicit.
-- Explicit plugin artifact export/install, inspect/doctor, and uninstall/remove awareness now lives outside `export_all`.
-- Plugin doctor visibility reports missing/invalid/installed state and the installed plugin version when available.
-- `export plugin` writes the installed user marketplace with an absolute `~/.codex/plugins/sane` path; the checked-in `.agents/plugins/marketplace.json` stays repo-local development metadata for `plugins/sane/`.
-- Tests cover plugin artifact export/install, inspect/uninstall, preservation of unrelated Codex plugins, malformed manifests, and drift detection.
+- Core Codex-native asset install remains TUI-managed by default.

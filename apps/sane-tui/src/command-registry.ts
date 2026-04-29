@@ -7,6 +7,9 @@ export type LaunchShortcut = "default" | "install" | "settings" | "status" | "re
 export type BackendCommandId =
   | "install_runtime"
   | "show_config"
+  | "export_portable_settings"
+  | "import_portable_settings"
+  | "install_from_portable_settings"
   | "show_codex_config"
   | "show_runtime_summary"
   | "show_outcome_readiness"
@@ -29,7 +32,6 @@ export type BackendCommandId =
   | "export_global_agents"
   | "export_hooks"
   | "export_custom_agents"
-  | "export_plugin"
   | "export_opencode_all"
   | "export_all"
   | "uninstall_user_skills"
@@ -38,7 +40,6 @@ export type BackendCommandId =
   | "uninstall_global_agents"
   | "uninstall_hooks"
   | "uninstall_custom_agents"
-  | "uninstall_plugin"
   | "uninstall_all"
   | "show_status"
   | "doctor";
@@ -152,7 +153,6 @@ export const COMMAND_METADATA_REGISTRY = {
         "Current install bundle:",
         "core user skills (sane-router, sane-bootstrap-research, sane-agent-lanes, sane-outcome-continuation, continue), global AGENTS.md block, and custom agents (sane-agent, sane-reviewer, sane-explorer, sane-implementation, sane-realtime)",
         "On macOS/Linux, hooks can join that bundle. On native Windows, use WSL for hook-enabled flows.",
-        "The optional Codex plugin artifact is a separate action and stays outside the core bundle.",
         "User-level install changes your own Codex setup.",
         "Repo-level install is explicit and optional.",
         "Nothing here should silently take over a repo."
@@ -222,7 +222,59 @@ export const COMMAND_METADATA_REGISTRY = {
       confirmation: null,
       successNoticeTitle: null,
       repoMutation: false,
-      filesTouched: [".sane/config.toml"]
+      filesTouched: [".sane/config.local.toml"]
+    },
+    export_portable_settings: {
+      id: "export_portable_settings",
+      kind: "backend",
+      backendKind: OperationKind.ShowConfig,
+      help: [
+        "Export Sane settings to a portable file.",
+        "",
+        "This writes `.sane/settings.portable.json` from your current local config when present.",
+        "If local config is missing, Sane exports recommended defaults."
+      ],
+      confirmation: null,
+      successNoticeTitle: "Saved",
+      repoMutation: false,
+      filesTouched: [".sane/settings.portable.json"]
+    },
+    import_portable_settings: {
+      id: "import_portable_settings",
+      kind: "backend",
+      backendKind: OperationKind.ShowConfig,
+      help: [
+        "Import Sane settings from the portable file.",
+        "",
+        "This reads `.sane/settings.portable.json` and saves values into `.sane/config.local.toml`."
+      ],
+      confirmation: {
+        required: true,
+        impactCopy: "This overwrites your local Sane config with values from `.sane/settings.portable.json`.",
+        remindPreviewOrBackup: true
+      },
+      successNoticeTitle: "Saved",
+      repoMutation: false,
+      filesTouched: [".sane/settings.portable.json", ".sane/config.local.toml"]
+    },
+    install_from_portable_settings: {
+      id: "install_from_portable_settings",
+      kind: "backend",
+      backendKind: OperationKind.InstallRuntime,
+      help: [
+        "Install runtime files, then import portable settings.",
+        "",
+        "This is a bootstrap path for moving Sane settings into a fresh repo.",
+        "It reads `.sane/settings.portable.json` and applies it after runtime setup."
+      ],
+      confirmation: {
+        required: true,
+        impactCopy: "This installs/repairs `.sane` runtime files and overwrites local config from portable settings.",
+        remindPreviewOrBackup: true
+      },
+      successNoticeTitle: "Installed",
+      repoMutation: true,
+      filesTouched: [".sane/", ".sane/settings.portable.json"]
     },
     show_codex_config: {
       id: "show_codex_config",
@@ -625,21 +677,6 @@ export const COMMAND_METADATA_REGISTRY = {
       repoMutation: false,
       filesTouched: ["~/.codex/agents/"]
     },
-    export_plugin: {
-      id: "export_plugin",
-      kind: "backend",
-      backendKind: OperationKind.ExportPlugin,
-      help: [
-        "Install the optional Sane Codex plugin artifact.",
-        "",
-        "This copies Sane's plugin artifact into `~/.codex/plugins/sane` and registers it in `~/.agents/plugins/marketplace.json`.",
-        "This stays outside `export_all`; the core Codex install bundle remains unchanged."
-      ],
-      confirmation: null,
-      successNoticeTitle: "Installed",
-      repoMutation: false,
-      filesTouched: ["~/.codex/plugins/sane", "~/.agents/plugins/marketplace.json"]
-    },
     export_opencode_all: {
       id: "export_opencode_all",
       kind: "backend",
@@ -807,28 +844,6 @@ export const COMMAND_METADATA_REGISTRY = {
       repoMutation: false,
       filesTouched: ["~/.codex/agents/"]
     },
-    uninstall_plugin: {
-      id: "uninstall_plugin",
-      kind: "backend",
-      backendKind: OperationKind.UninstallPlugin,
-      help: [
-        "Remove the optional Sane Codex plugin artifact.",
-        "",
-        "Only the Sane plugin artifact and Sane marketplace entry should be removed.",
-        "Unrelated Codex plugins are preserved.",
-        "",
-        "Safety",
-        "Confirmation required before this action runs."
-      ],
-      confirmation: {
-        required: true,
-        impactCopy: "This removes Sane's optional Codex plugin artifact.",
-        remindPreviewOrBackup: false
-      },
-      successNoticeTitle: "Uninstalled",
-      repoMutation: false,
-      filesTouched: ["~/.codex/plugins/sane", "~/.agents/plugins/marketplace.json"]
-    },
     uninstall_all: {
       id: "uninstall_all",
       kind: "backend",
@@ -836,7 +851,7 @@ export const COMMAND_METADATA_REGISTRY = {
       help: [
         "Remove everything Sane manages in Codex.",
         "",
-        "This removes the core Codex bundle and the optional Sane Codex plugin artifact if present.",
+        "This removes the core Codex bundle.",
         "Only Sane-managed content should be removed; unrelated user content should stay.",
         "",
         "Safety",
@@ -844,12 +859,12 @@ export const COMMAND_METADATA_REGISTRY = {
       ],
       confirmation: {
         required: true,
-        impactCopy: "This removes all Sane-managed Codex pieces, including the optional plugin artifact if present.",
+        impactCopy: "This removes all Sane-managed Codex pieces.",
         remindPreviewOrBackup: true
       },
       successNoticeTitle: "Uninstalled",
       repoMutation: false,
-      filesTouched: ["~/.agents/skills/sane-router", "~/.agents/skills/sane-bootstrap-research", "~/.agents/skills/sane-agent-lanes", "~/.agents/skills/sane-outcome-continuation", "~/.agents/skills/continue", "~/.codex/AGENTS.md", "~/.codex/hooks.json", "~/.codex/agents/", "~/.codex/plugins/sane", "~/.agents/plugins/marketplace.json"]
+      filesTouched: ["~/.agents/skills/sane-router", "~/.agents/skills/sane-bootstrap-research", "~/.agents/skills/sane-agent-lanes", "~/.agents/skills/sane-outcome-continuation", "~/.agents/skills/continue", "~/.codex/AGENTS.md", "~/.codex/hooks.json", "~/.codex/agents/"]
     },
     show_status: {
       id: "show_status",
@@ -960,8 +975,7 @@ export const COMMAND_METADATA_REGISTRY = {
     { commandId: "export_hooks", section: "add_to_codex", order: 6, label: "Install Sane Codex hooks" },
     { commandId: "export_custom_agents", section: "add_to_codex", order: 7, label: "Install Sane custom agents for Codex" },
     { commandId: "export_all", section: "add_to_codex", order: 8, label: "Install Sane core Codex bundle" },
-    { commandId: "export_plugin", section: "add_to_codex", order: 9, label: "Install optional Sane Codex plugin artifact" },
-    { commandId: "export_opencode_all", section: "add_to_codex", order: 10, label: "Install full Sane bundle into OpenCode" },
+    { commandId: "export_opencode_all", section: "add_to_codex", order: 9, label: "Install full Sane bundle into OpenCode" },
     { commandId: "show_status", section: "status", order: 1, label: "Show everything Sane currently manages" },
     { commandId: "doctor", section: "status", order: 2, label: "Check Sane-managed setup for problems" },
     { commandId: "show_runtime_summary", section: "status", order: 3, label: "View saved Sane handoff notes" },
@@ -979,10 +993,9 @@ export const COMMAND_METADATA_REGISTRY = {
     { commandId: "uninstall_global_agents", section: "uninstall", order: 2, label: "Remove Sane block from global AGENTS.md" },
     { commandId: "uninstall_hooks", section: "uninstall", order: 3, label: "Remove Sane Codex hooks" },
     { commandId: "uninstall_custom_agents", section: "uninstall", order: 4, label: "Remove Sane custom agents from Codex" },
-    { commandId: "uninstall_plugin", section: "uninstall", order: 5, label: "Remove optional Sane Codex plugin artifact" },
-    { commandId: "uninstall_repo_skills", section: "uninstall", order: 6, label: "Advanced repo mutation: remove Sane repo skills from this project" },
-    { commandId: "uninstall_repo_agents", section: "uninstall", order: 7, label: "Advanced repo mutation: remove Sane block from this repo's AGENTS.md" },
-    { commandId: "uninstall_all", section: "uninstall", order: 8, label: "Remove all Sane-managed Codex installs" }
+    { commandId: "uninstall_repo_skills", section: "uninstall", order: 5, label: "Advanced repo mutation: remove Sane repo skills from this project" },
+    { commandId: "uninstall_repo_agents", section: "uninstall", order: 6, label: "Advanced repo mutation: remove Sane block from this repo's AGENTS.md" },
+    { commandId: "uninstall_all", section: "uninstall", order: 7, label: "Remove all Sane-managed Codex installs" }
   ] satisfies CommandPlacement[]
 } as const;
 
@@ -1007,7 +1020,6 @@ export function getSectionMetadata(
       "Current install bundle:",
       "core user skills (sane-router, sane-bootstrap-research, sane-agent-lanes, sane-outcome-continuation, continue), global AGENTS.md block, and custom agents (sane-agent, sane-reviewer, sane-explorer, sane-implementation, sane-realtime)",
       "On native Windows, hooks stay outside the default bundle. Use WSL for hook-enabled flows.",
-      "The optional Codex plugin artifact is a separate action and stays outside the core bundle.",
       "User-level install changes your own Codex setup.",
       "Repo-level install is explicit and optional.",
       "Nothing here should silently take over a repo."

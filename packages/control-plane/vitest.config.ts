@@ -8,6 +8,6 @@ export default defineConfig({
     environment: "node",
     include: ["test/**/*.test.ts"],
     name: "@sane/control-plane",
-    passWithNoTests: true
+    passWithNoTests: false
   }
 });

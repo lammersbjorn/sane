@@ -8,6 +8,8 @@ import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
+  exportPortableSettings,
+  importPortableSettings,
   inspectEditablePreferencesConfig,
   inspectTelemetrySnapshot,
   inspectPreferencesFamilySnapshot,
@@ -465,5 +467,23 @@ describe("preferences control plane", () => {
       eventsPath: paths.telemetryEventsPath,
       queuePath: paths.telemetryQueuePath
     });
+  });
+
+  it("exports then imports portable settings", () => {
+    const projectRoot = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const config = createDefaultLocalConfig();
+    config.models.coordinator.model = "gpt-5.2";
+    saveConfig(paths, config);
+
+    const exported = exportPortableSettings(paths);
+    const importedConfig = createDefaultLocalConfig();
+    importedConfig.models.coordinator.model = "gpt-5.5";
+    saveConfig(paths, importedConfig);
+    const imported = importPortableSettings(paths);
+
+    expect(exported.summary).toBe(`portable settings: exported to ${paths.runtimeRoot}/settings.portable.json`);
+    expect(imported.summary).toBe(`portable settings: imported from ${paths.runtimeRoot}/settings.portable.json`);
+    expect(readLocalConfig(paths.configPath).models.coordinator.model).toBe("gpt-5.2");
   });
 });

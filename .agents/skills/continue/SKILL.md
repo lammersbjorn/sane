@@ -7,7 +7,7 @@ description: Use when the user says continue, keep going, resume, don't stop, or
 
 ## Goal
 
-Keep the current mainline moving until there is a real blocker. Delegate side tasks when possible, then resume automatically.
+Keep the current mainline moving through verified slices until done or truly blocked.
 
 ## Use When
 
@@ -45,7 +45,7 @@ Keep the current mainline moving until there is a real blocker. Delegate side ta
 5. Use repo-local agents, tools, skills, local state, and routing defaults when present.
 6. Preserve the repo's own terminology and current surface names. If the user points at a file, command, path, screen, or label, inspect it before arguing from memory.
 7. Use parallel read/research lanes aggressively when safe.
-8. For broad or multi-file work, load `sane-agent-lanes`, make a lane plan, and get a successful subagent handoff before deep work. Broad reviews need explorer/reviewer lanes; broad edits need at least one implementation lane with a disjoint write scope. If higher-priority rules require explicit subagent authorization and it is missing, ask and pause instead of doing a tiny solo substitute.
+8. For broad or multi-file work, load `sane-agent-lanes`, make a lane plan, and get a successful subagent handoff before deep work. Broad reviews need explorer/reviewer lanes; broad edits need at least one implementation lane with a disjoint write scope. If higher-priority rules require explicit subagent authorization and it is missing, ask and stop instead of doing a tiny solo substitute.
 9. Delegate side tasks and bounded side lanes by default when possible so mainline progress does not stall.
 10. If the user injects a side task:
    - delegate it when possible
@@ -82,6 +82,7 @@ Keep the current mainline moving until there is a real blocker. Delegate side ta
 - finishing research is not a blocker if implementation can continue from it
 - do not keep asking whether to continue
 - do not over-tool trivial asks just because you are in continuation mode
+- do not replace current evidence with a generated repo overview
 - do not leave idle subagents open after their result is no longer needed
 
 ## Examples

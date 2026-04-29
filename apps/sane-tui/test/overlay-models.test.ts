@@ -35,14 +35,13 @@ describe("overlay models", () => {
       throw new Error("expected config overlay");
     }
     expect(overlay.title).toBe("Model Defaults");
-    expect(overlay.headerLines[1]).toContain("Up/down row");
+    expect(overlay.headerLines[1]).toContain("Up/down field");
     expect(overlay.fieldLines[0]).toContain("> Main session model:");
     expect(overlay.fieldLines.some((line) => line.includes("Explorer agent model:"))).toBe(true);
     expect(overlay.fieldLines.some((line) => line.includes("Implementation agent model:"))).toBe(true);
     expect(overlay.detailsLines[0]).toBe("Main session model");
     expect(overlay.detailsLines).toContain("Recommended: gpt-5.5");
-    expect(overlay.detailsLines).toContain("Routing behavior");
-    expect(overlay.detailsLines).toContain("These rows are saved in Sane config.");
+    expect(overlay.detailsLines).toContain("Saved to Sane config.");
   });
 
   it("builds privacy and pack modal side content", () => {

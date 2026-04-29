@@ -80,7 +80,7 @@ export function loadOverlayModel(shell: TuiShell): OverlayModel {
         title: "Model Defaults",
         headerLines: [
           "Model Defaults",
-          "Up/down row. Left/right value. Enter save. r reset. Esc close."
+          "Up/down field. Left/right value. Enter save. r reset. Esc close."
         ],
         fieldLines: configFieldLines(shell.activeEditor),
         outputLines: shell.lastResult.lines,
@@ -93,7 +93,7 @@ export function loadOverlayModel(shell: TuiShell): OverlayModel {
         title: "Privacy",
         headerLines: [
           "Privacy / Telemetry",
-          "Left/right consent. Enter save. d delete local telemetry. Esc close."
+          "Left/right consent. Enter save. d clear local telemetry. Esc close."
         ],
         fieldLines: privacyFieldLines(shell.activeEditor),
         outputLines: shell.lastResult.lines,
@@ -149,15 +149,14 @@ function configFieldHelpLines(editor: ConfigEditorState): string[] {
     metadata.explanation,
     "",
     "Editable defaults",
-    "Main session = top-level Codex baseline",
-    "Explorer agent = codebase discovery, no edits",
-    "Implementation agent = bounded code changes",
-    "Reviewer agent = review/checking",
-    "Realtime helper = fast iteration",
+    "Default = baseline model and effort",
+    "Explore = discovery/no edits",
+    "Build = bounded code changes",
+    "Review = checks and validation",
+    "Quick helper = fast iteration",
     "",
-    "Routing behavior",
-    "These rows are saved in Sane config.",
-    "Exports use these defaults where the target supports explicit agent models.",
+    "Saved to Sane config.",
+    "Exports reuse defaults where explicit model routing is supported.",
     "",
     "Choices"
   ];

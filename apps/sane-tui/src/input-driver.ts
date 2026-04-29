@@ -8,8 +8,8 @@ import {
   editActiveValue,
   moveEditorSelection,
   moveSelection,
+  requestTelemetryResetConfirmation,
   resetActiveEditor,
-  resetLocalTelemetry,
   runSelectedAction,
   saveActiveEditor,
   type TuiShell
@@ -150,7 +150,8 @@ function handlePrivacyEditorInput(shell: TuiShell, key: TuiInputKey): OperationR
       resetActiveEditor(shell);
       return null;
     case "d":
-      return resetLocalTelemetry(shell);
+      requestTelemetryResetConfirmation(shell);
+      return null;
     case "escape":
       cancelActiveEditor(shell);
       return null;

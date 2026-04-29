@@ -1,6 +1,6 @@
 # Sane Packaging / Distribution Audit
 
-Last updated: 2026-04-23
+Last updated: 2026-04-29
 
 Purpose:
 - decide how `Sane` should become broadly installable once `v1` is stable
@@ -47,23 +47,24 @@ Why:
 
 Important product implication:
 
-- end-user distribution should converge on one public binary name: `sane`
+- npm package name should be `sane-codex` because unscoped `sane` is occupied
+- installed public command should remain `sane`
 - do not publicly ship the product as `sane-tui`
 
 ### Direct Install Fallback
 
 Primary direct install recommendation:
 
-- publish a public npm package for `sane`
+- publish a public npm package for `sane-codex`
 
 Why:
 
 - matches the shipped TypeScript CLI
 - fits the current `build:package` / packaged `dist/bin/sane.cjs` path
 - gives low-friction install modes:
-  - `pnpm dlx sane`
-  - `npx sane`
-  - `npm i -g sane`
+  - `pnpm dlx sane-codex`
+  - `npm exec sane-codex`
+  - `npm i -g sane-codex`
 
 Important caution:
 
@@ -150,7 +151,7 @@ Why this order:
 
 ## Plan Impact
 
-Keep a dedicated post-`v1` packaging track:
+Keep a dedicated release packaging track:
 
 - release artifact matrix
 - binary/package naming cleanup
@@ -159,6 +160,11 @@ Keep a dedicated post-`v1` packaging track:
 - Homebrew tap automation
 - winget manifest automation
 - optional Scoop bucket automation
+
+`v1` should not wait for every package-manager channel to be live, but it should
+ship with a verified artifact path. That means `release:verify`, a packaged
+`sane-codex` tarball, checksums, and a clear manual gate before npm publish or
+downstream package-manager updates.
 
 ## Decision
 
@@ -189,7 +195,7 @@ is cut-ready, automate in this order:
    - keep GitHub Releases as the canonical artifact source for downstream package managers
 3. npm publish job
    - publish the generated `apps/sane-tui/dist` package, not the workspace package
-   - keep the public package/bin name `sane`
+   - keep public package name `sane-codex` and public bin name `sane`
    - require provenance/2FA-compatible release credentials before enabling unattended publish
 4. Homebrew tap update
    - consume the versioned GitHub Release artifact and checksum
@@ -209,3 +215,22 @@ Current source re-check on 2026-04-23:
 - Homebrew still expects maintainable formulae and strict audit/test discipline.
 - Microsoft still routes winget submissions through `microsoft/winget-pkgs`.
 - Scoop manifests still fit zip-based CLI tools and can later use autoupdate metadata.
+
+## Repo Rollout Status (2026-04-29)
+
+Packaging/distribution rollout scaffolding now present in-repo:
+
+- `.github/workflows/release-artifacts.yml`
+  - builds/verifies with `release:verify` on tags
+  - uploads release artifacts (`sane-codex-*.tgz`, `sane-codex-*.zip`, `SHA256SUMS.txt`)
+  - attaches same artifacts to GitHub Release for tagged versions
+- `.github/workflows/npm-publish.yml`
+  - manual-only npm publish gate for `sane-codex`
+  - requires `NPM_TOKEN` and protected `npm-publish` environment
+  - publishes only from built `apps/sane-tui/dist` package
+- `.github/workflows/distribution-channel-plan.yml`
+  - manual plan/checklist stub for Homebrew tap, winget, Scoop updates
+  - builds channel update URLs from tagged GitHub Release assets/checksums
+
+Non-goal (intended):
+- no unattended downstream channel publishing in this repo without explicit secrets + approval gates.

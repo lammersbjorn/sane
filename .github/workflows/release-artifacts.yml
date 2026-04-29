@@ -1,0 +1,68 @@
+name: Release Artifacts
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify release package
+        run: pnpm run release:verify
+
+      - name: Collect artifacts
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts tmp
+          TGZ_PATH="$(ls apps/sane-tui/dist/*.tgz | head -n1)"
+          TGZ_FILE="$(basename "$TGZ_PATH")"
+          TGZ_BASE="${TGZ_FILE%.tgz}"
+          cp "$TGZ_PATH" "artifacts/$TGZ_FILE"
+
+          tar -xzf "$TGZ_PATH" -C tmp
+          (
+            cd tmp/package
+            zip -r "../../artifacts/${TGZ_BASE}.zip" .
+          )
+
+          sha256sum artifacts/* > artifacts/SHA256SUMS.txt
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sane-release-artifacts
+          path: artifacts/
+
+      - name: Attach assets to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/*.tgz
+            artifacts/*.zip
+            artifacts/SHA256SUMS.txt
+          generate_release_notes: true

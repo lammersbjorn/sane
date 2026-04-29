@@ -259,7 +259,7 @@ export async function startInkTerminalLoop(
   function OverlayWindow({ view, width, height }: { view: SaneTuiAppView; width: number; height: number }): InkNode {
     const overlay = view.overlay!;
     if (overlay.kind !== "confirm" && overlay.kind !== "notice") {
-      const modalWidth = Math.max(70, Math.min(width - 6, 120));
+      const modalWidth = computeOverlayWidth(width, 70, 6, 120);
       const compactEditor = width < 110;
       if (compactEditor) {
         const lineWidth = Math.max(20, modalWidth - 8);
@@ -361,7 +361,7 @@ export async function startInkTerminalLoop(
           borderColor: overlay.kind === "confirm" ? "yellow" : "cyan",
           flexDirection: "column",
           paddingX: 2,
-          width: Math.max(50, Math.min(width - 6, 96))
+          width: computeOverlayWidth(width, 50, 6, 96)
         },
         React.createElement(Text, { bold: true, color: overlay.kind === "confirm" ? "yellow" : "cyan" }, overlay.title),
         ...compactLines(body, 16).map((line, index) =>
@@ -500,6 +500,17 @@ function windowAround<T>(items: T[], selectedIndex: number, slots: number): Arra
     ...items.slice(start, end),
     ...(end < items.length ? [null] : [])
   ];
+}
+
+export function computeOverlayWidth(
+  viewportWidth: number,
+  minWidth: number,
+  inset: number,
+  maxWidth: number
+): number {
+  const safeViewportWidth = Math.max(20, viewportWidth);
+  const usableWidth = Math.max(20, safeViewportWidth - Math.max(0, inset));
+  return Math.min(safeViewportWidth, Math.max(20, Math.min(maxWidth, Math.max(minWidth, usableWidth))));
 }
 
 export function truncateEnd(text: string, maxWidth: number): string {

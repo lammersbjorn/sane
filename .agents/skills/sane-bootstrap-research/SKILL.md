@@ -36,6 +36,7 @@ Choose a current, defensible project stack before code gets built around stale d
 - helper tools worth installing or enabling
 - risks, maturity notes, and why rejected options lost
 - one correction if the user's chosen stack is clearly a bad fit
+- durable decisions only when they will guide later work
 
 ## How To Run
 
@@ -49,7 +50,7 @@ Choose a current, defensible project stack before code gets built around stale d
    - Include stable choices and credible new tools.
    - Include helper tools: test runners, linters, UI libraries, browser tools, MCPs, plugins, deploy targets, and eval/debug tools.
 4. Pick the smallest stack that can ship the requested product.
-5. Record durable decisions in plan/TODO docs when the choice should survive the session.
+5. Record only durable decisions in plan/TODO docs when the choice should survive the session.
 
 ## Gotchas
 
@@ -57,3 +58,4 @@ Choose a current, defensible project stack before code gets built around stale d
 - Do not chase novelty when a boring stable choice fits better.
 - Do not ignore a user-selected stack unless it is clearly wrong for the task.
 - Do not cite trend claims without current evidence.
+- Do not write broad generated context files as a research output.

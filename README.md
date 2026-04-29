@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img alt="Status" src="https://img.shields.io/badge/status-pre--release-d97706?style=flat-square">
+  <img alt="Status" src="https://img.shields.io/badge/status-v1.0.0--beta.1-15803d?style=flat-square">
   <img alt="Platforms" src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-2563eb?style=flat-square">
   <img alt="TypeScript" src="https://img.shields.io/badge/built%20with-TypeScript-2563eb?style=flat-square">
   <img alt="License" src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-15803d?style=flat-square">
@@ -25,8 +25,8 @@
   <a href="#today-vs-later">Today vs Later</a>
 </p>
 
-> [!WARNING]
-> `Sane` is pre-release. The product direction is locked. The exact surface is still being refined.
+> [!NOTE]
+> Public npm package name is `sane-codex` because unscoped `sane` is already occupied. Installed CLI command stays `sane`.
 
 > [!NOTE]
 > Project note: `Sane` is being built in public for [BuildStory Hackathon #2](https://www.buildstory.com/projects/sane). This belongs here as project context, not as the main product story.
@@ -90,14 +90,15 @@ Not the point:
 
 - model
 - reasoning effort
+- compact prompt for Sane continuity after automatic compaction
 - hook support
 
 When no saved local config exists yet, `Sane` derives recommended defaults from the Codex models it can detect on that machine and falls back to stable defaults when detection is thin.
 
 Routing note:
 - `Sane` uses task-shaped model routing, not one static fallback chain.
-- Sane separates documented model availability, local picker visibility, and actually spawnable runtime support.
-- Dated model availability findings live in `docs/research/2026-04-19-model-subagent-matrix.md`; product docs should stay at the stable routing-class level.
+- `Sane` separates documented model availability, local picker visibility, and actual runtime support.
+- Detailed model availability findings live in `docs/research/2026-04-19-model-subagent-matrix.md`; product docs stay at routing-class level.
 
 ### Recommended integrations
 
@@ -113,7 +114,7 @@ And a separate opt-in native Codex statusline/title profile.
 
 ### Optional guidance packs
 
-Built-in packs currently exposed in `Sane`:
+Built-in packs exposed in `Sane`:
 
 - `core`
 - `caveman`
@@ -121,7 +122,19 @@ Built-in packs currently exposed in `Sane`:
 - `frontend-craft`
 
 These packs change guidance and behavior. They are not meant to turn the product into a command ritual.
-Optional packs export concrete skills where that keeps routing sharp (`sane-caveman`, `sane-rtk`, and the `frontend-craft` skill set today). Packs can also change router, overlay, hook, or agent guidance.
+Optional packs export concrete skills where that keeps routing clear (`sane-caveman`, `sane-rtk`, and the `frontend-craft` skill set). Packs can also change router, overlay, hook, or agent guidance.
+
+The `rtk` pack expects upstream [`rtk`](https://github.com/rtk-ai/rtk) on `PATH` for command rewrite enforcement. Status and Doctor report `rtk-binary` when the pack is enabled. Sane does not own or publish RTK, and the npm package named `rtk` is a different project, so Sane must not suggest `pnpm add --global rtk`.
+
+Use upstream RTK install paths instead:
+
+```bash
+brew install rtk
+# or: curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
+# or: cargo install --git https://github.com/rtk-ai/rtk
+```
+
+When Sane is packaged for Homebrew, the Sane formula should depend on upstream `rtk` instead of bundling or renaming it.
 
 ### Codex-native installs
 
@@ -133,7 +146,6 @@ Optional packs export concrete skills where that keeps routing sharp (`sane-cave
 - an additive global guidance block in `~/.codex/AGENTS.md`
 - Sane-managed entries in `~/.codex/hooks.json`
 - Sane-managed custom agents in `~/.codex/agents/`
-- optional Sane-managed Codex plugin artifact in `~/.codex/plugins/sane/` with marketplace entry in `~/.agents/plugins/marketplace.json`
 - optional full OpenCode export in `~/.config/opencode/`, including Sane skills, a global guidance block, and Sane agents using cost-aware OpenCode Go model IDs
 
 ### Local runtime and repair tools
@@ -168,7 +180,33 @@ This split matters because it keeps `Sane` useful without making it a wrapper yo
 
 ## Quick Start
 
-Right now, `Sane` still runs from source, but the default repo launcher now goes through the built TypeScript TUI path. The repo already has a local packaged-build path for the TUI (`build:package` / `build:smoke`), while public release automation stays post-`v1`.
+`Sane` supports both source usage and packaged CLI usage. Public package name is `sane-codex`; command name remains `sane`.
+
+Requires Node.js 22 or newer.
+
+Packaged CLI usage applies once `sane-codex` is published to npm:
+
+```bash
+pnpm dlx sane-codex
+# or
+npm exec sane-codex
+```
+
+Global install after npm publication:
+
+```bash
+npm i -g sane-codex
+sane
+```
+
+Release operators:
+
+- run `rtk pnpm run release:verify` before tagging
+- tag `vX.Y.Z` to trigger GitHub Release artifact upload (`.tgz`, `.zip`, `SHA256SUMS.txt`)
+- use manual `NPM Publish` workflow with `NPM_TOKEN` + protected `npm-publish` environment for npm release
+- update Homebrew / winget / Scoop only from tagged GitHub Release asset URLs and checksums
+
+Source workflow stays available:
 
 ```bash
 git clone https://github.com/lammersbjorn/sane.git
@@ -179,7 +217,13 @@ pnpm start
 
 That opens the TUI. On first launch, Home walks you through setup. After setup, normal launch opens as the control center.
 
-When using the installed CLI, `sane install` always opens the guided install/tune-up wizard.
+When using the installed CLI after npm publication, `sane install` opens the guided install/tune-up wizard.
+
+To verify the install, run:
+
+```bash
+sane status
+```
 
 If you already know you want the settings/configure area, run:
 
@@ -200,8 +244,9 @@ If you want the longer user-story version, read [docs/what-sane-does.md](./docs/
 
 | Status | Scope |
 | --- | --- |
-| In place today | Control-center TUI with first-launch setup, local `.sane/` runtime, read-only Status visibility, config preview/apply/restore, recommended integrations profile, opt-in Cloudflare profile, managed skills, additive `AGENTS.md` overlays, hooks, custom agents, optional Codex plugin artifact export, setup checks, and uninstall. |
-| Planned later | Public release packaging/distribution automation (GitHub Releases, npm publish, Homebrew, winget, Scoop), broader adaptive orchestration, post-`v1` pack expansion/contraction, and a later end-to-end outcome runner / one-shot flow. |
+| In place | Control-center TUI with first-launch setup, local `.sane/` runtime, read-only Status visibility, config preview/apply/restore, recommended integrations profile, opt-in Cloudflare profile, managed skills, additive `AGENTS.md` overlays, hooks, custom agents, setup checks, and uninstall. |
+| Release track | Public release packaging/distribution starts with verified GitHub Release/npm artifacts for `v1`, then Homebrew, winget, and Scoop after the tagged artifact shape is stable. |
+| Planned later | Broader adaptive orchestration, post-`v1` pack expansion/contraction, and a later end-to-end outcome runner / one-shot flow. |
 
 > [!IMPORTANT]
 > The later end-to-end outcome runner is future work. It is not the current product surface.
@@ -214,7 +259,7 @@ If you want the longer user-story version, read [docs/what-sane-does.md](./docs/
 | --- | --- |
 | Project-local runtime | `.sane/config.local.toml`, `.sane/state/*`, `.sane/BRIEF.md`, `.sane/backups/` |
 | Optional repo-local exports | `.agents/skills/`, `AGENTS.md` |
-| User-level Codex surfaces | `~/.agents/skills/`, `~/.codex/AGENTS.md`, `~/.codex/hooks.json`, `~/.codex/agents/`, `~/.codex/plugins/sane/`, `~/.agents/plugins/marketplace.json`, `~/.codex/config.toml` |
+| User-level Codex surfaces | `~/.agents/skills/`, `~/.codex/AGENTS.md`, `~/.codex/hooks.json`, `~/.codex/agents/`, `~/.codex/config.toml` |
 | Optional OpenCode surfaces | `~/.config/opencode/skills/`, `~/.config/opencode/AGENTS.md`, `~/.config/opencode/agents/` |
 
 Design rules:

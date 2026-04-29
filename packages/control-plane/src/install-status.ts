@@ -18,7 +18,6 @@ export type InstallActionStatusId =
   | "apply_integrations_profile"
   | "export_hooks"
   | "export_custom_agents"
-  | "export_plugin"
   | "export_all";
 
 export type InstallActionStatusKind = ManagedStatusKind;
@@ -87,7 +86,6 @@ export function inspectInstallStatusFromStatusBundle(
       apply_integrations_profile: integrationsStatusSnapshot,
       export_hooks: inventoryStatus(inventory, "hooks"),
       export_custom_agents: inventoryStatus(inventory, "custom-agents"),
-      export_plugin: inventoryStatus(inventory, "plugin"),
       export_all: installBundleStatus(bundleStatus)
     }
   };

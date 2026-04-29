@@ -104,7 +104,6 @@ describe("command metadata registry", () => {
       "export_hooks",
       "export_custom_agents",
       "export_all",
-      "export_plugin",
       "export_opencode_all"
     ]);
     expectSectionContainsInOrder("settings", [
@@ -170,15 +169,10 @@ describe("command metadata registry", () => {
     expectHelpMentions("doctor", ["managed surfaces"]);
     expectHelpMentions("export_hooks", ["native Windows", "WSL"]);
     expectHelpMentions("export_all", ["core user skills", "custom agents", "native Windows"]);
-    expectHelpMentions("export_plugin", ["optional Sane Codex plugin artifact", "outside `export_all`"]);
     expectHelpMentions("export_opencode_all", ["Install the full Sane bundle into OpenCode", "~/.config/opencode/", "OpenCode Go model IDs"]);
     expect(getCommandSpec("export_opencode_all").filesTouched).toEqual(["~/.config/opencode/"]);
-    expect(getCommandSpec("export_all").filesTouched).not.toContain("~/.codex/plugins/sane");
-    expect(getCommandSpec("export_all").includes).not.toContain("plugin");
-    expectHelpMentions("uninstall_all", ["optional Sane Codex plugin artifact"]);
-    expect(getCommandSpec("uninstall_all").filesTouched).toEqual(
-      expect.arrayContaining(["~/.codex/plugins/sane", "~/.agents/plugins/marketplace.json"])
-    );
+    expect(getCommandSpec("export_all").includes).toEqual(["user-skills", "global-agents", "hooks", "custom-agents"]);
+    expectHelpMentions("uninstall_all", ["core Codex bundle"]);
   });
 
   it("tracks risky confirmation copy and notice titles", () => {
@@ -190,12 +184,6 @@ describe("command metadata registry", () => {
     );
     expect(getCommandSpec("apply_integrations_profile").backendKind).toBe(
       OperationKind.ApplyIntegrationsProfile
-    );
-    expect(getCommandSpec("export_plugin").backendKind).toBe(
-      OperationKind.ExportPlugin
-    );
-    expect(getCommandSpec("uninstall_plugin").backendKind).toBe(
-      OperationKind.UninstallPlugin
     );
     expect(getCommandSpec("preview_statusline_profile").backendKind).toBe(
       OperationKind.PreviewStatuslineProfile
@@ -221,17 +209,12 @@ describe("command metadata registry", () => {
     expect(getCommandSpec("uninstall_hooks").confirmation?.impactCopy).toBe(
       "This removes Sane's managed Codex hook entry."
     );
-    expect(getCommandSpec("uninstall_plugin").confirmation?.impactCopy).toBe(
-      "This removes Sane's optional Codex plugin artifact."
-    );
     expect(getCommandSpec("uninstall_all").confirmation?.impactCopy).toBe(
-      "This removes all Sane-managed Codex pieces, including the optional plugin artifact if present."
+      "This removes all Sane-managed Codex pieces."
     );
     expect(getCommandSpec("open_config_editor").successNoticeTitle).toBe("Saved");
     expect(getCommandSpec("apply_integrations_profile").successNoticeTitle).toBe("Applied");
     expect(getCommandSpec("reset_telemetry_data").successNoticeTitle).toBe("Reset");
-    expect(getCommandSpec("export_plugin").successNoticeTitle).toBe("Installed");
-    expect(getCommandSpec("uninstall_plugin").successNoticeTitle).toBe("Uninstalled");
     expect(getCommandSpec("export_all").successNoticeTitle).toBe("Installed");
     expect(getCommandSpec("uninstall_all").successNoticeTitle).toBe("Uninstalled");
   });

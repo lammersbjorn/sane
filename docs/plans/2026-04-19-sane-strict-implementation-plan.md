@@ -16,7 +16,7 @@ It exists to stop three failure modes:
 - letting backend experiments become product direction by accident
 
 Source of truth:
-- `/Users/bjorn/Code/labs/betteragents/docs/decisions/2026-04-19-sane-decision-log.md`
+- `docs/decisions/2026-04-19-sane-decision-log.md`
 
 If this plan conflicts with the decision log, the decision log wins.
 
@@ -28,7 +28,8 @@ Never violate these:
 - commands/skills optional, not required
 - subagent-first for all non-tiny work; stay single-agent only for tiny direct answers
 - broad work needs a lane plan and successful subagent handoff before deep work
-- broad review needs explorer/reviewer lanes; if higher-priority tool rules require explicit subagent authorization and it is missing, ask and pause
+- broad follow-up implementation after research/planning needs a fresh implementation or reviewer handoff before edits
+- broad review needs explorer/reviewer lanes; if higher-priority tool rules require explicit subagent authorization and it is missing, ask and stop
 - broad editing needs an implementation lane with a disjoint write scope
 - must work without `AGENTS.md`
 - repo-local `AGENTS.md` + repo skill self-hosting is allowed only as a minimal dogfooding path for `Sane`'s own repo
@@ -313,11 +314,11 @@ Minimum TUI:
 - quit path
 
 Historical visual/interaction direction for the TUI lived in:
-- `/Users/bjorn/Code/labs/betteragents/docs/specs/2026-04-20-sane-tui-redesign.md`
-- `/Users/bjorn/Code/labs/betteragents/docs/research/2026-04-20-tui-tooling-and-ux-audit.md`
+- `docs/specs/2026-04-20-sane-tui-redesign.md`
+- `docs/research/2026-04-20-tui-tooling-and-ux-audit.md`
 
 Current active visual/interaction direction lives in:
-- `/Users/bjorn/Code/labs/betteragents/docs/specs/2026-04-25-sane-tui-control-center-redesign.md`
+- `docs/specs/2026-04-25-sane-tui-control-center-redesign.md`
 
 Current TUI sections:
 - Home
@@ -506,32 +507,20 @@ Goal:
 
 Current official Codex shape:
 - skills are the authoring format for reusable workflows
-- plugins are the installable distribution unit for skills, app integrations, and MCP servers
-- local plugin development uses a plugin manifest such as `.codex-plugin/plugin.json` plus marketplace metadata that can point at a repo root or subdirectory
+- plugins are not yet a good home for Sane's full settings/TUI/control-plane surface
 
 Accepted shape:
 - do not switch away from skills for workflow design
-- package Sane's exported skills/integrations as a Codex plugin when the goal is install/share
+- defer Codex plugin packaging until Plugins support richer product surfaces
 - keep the TUI/control plane as the local install/config/update/export/status/repair surface
 - keep TUI-managed core install/export as the default setup path
-- treat the Sane plugin artifact as an optional Codex distribution/install surface, not as the default control plane
-- keep `export_all` unchanged; it must not implicitly install or rewrite the Sane plugin artifact
+- keep `export_all` focused on native skills/overlays/hooks/agents
 - keep Sane's internal pack system private in `v1`; no third-party Sane plugin API promise
 
 Open implementation tasks:
-- chosen: `plugins/sane/` subdirectory packaging so the repo remains the product source and the plugin remains a distribution artifact
-- done: create local plugin manifest at `plugins/sane/.codex-plugin/plugin.json`
-- done: create repo-local marketplace artifact at `.agents/plugins/marketplace.json`
-- done: package current Sane skills under `plugins/sane/skills/`
-- done: add framework-assets tests that keep plugin skill copies aligned with manifest-exported skills and reject stale manifest asset sources
+- deferred: Codex plugin artifact packaging until Plugins support more of Sane's settings/TUI/control-plane surface
 - done: prune stale vendor skill source entries from active `packs/core/manifest.json`
 - done: refresh active upstream provenance refs for `caveman`, `taste-skill`, and `impeccable`
-- done: surface boundary decided: core installs stay TUI-managed by default; the plugin artifact is optional and explicit
-- done: add explicit TUI/control-plane export/install awareness for the plugin artifact outside `export_all`
-- done: add Status/doctor visibility for plugin artifact presence, source/path, installed version, and drift as separate plugin state
-- done: add explicit uninstall/remove awareness for the Sane plugin artifact while preserving unrelated Codex plugins
-- done: keep plugin package skill copies checked in for v1 and guarded by sync tests, including the generated router copy
-- note: `.agents/plugins/marketplace.json` is the repo-local marketplace artifact for development; `export plugin` writes the installed user marketplace with the absolute copied plugin path under `~/.codex/plugins/sane`.
 
 ## B11. Agent-Facing Outcome Continuation
 
@@ -550,7 +539,7 @@ Definition:
 
 Current status:
 - shipped as core skill `sane-outcome-continuation`
-- exported through core skill installs and the Sane Codex plugin package
+- exported through core skill installs
 - B8 still provides readiness/conflict/state plumbing only
 - `advance_outcome` remains internal plumbing, not a public full-auto command
 - public CLI/TUI/package surfaces are guarded against outcome-runner command rituals
@@ -587,8 +576,8 @@ Goal:
 - support optional start/stop/resume hooks without making Sane a hidden automation layer
 
 Accepted hooks:
-- optional SessionEnd Tokscale submit hook with dry-run/preview support before real submission
-- optional SessionEnd rate-limit detector that records reset timing when Codex exposes enough signal
+- optional Stop Tokscale submit hook with dry-run/preview support before real submission
+- optional Stop rate-limit detector that records reset timing when Codex exposes enough signal
 - optional resume scheduling when a reset time is known and the user opted in
 
 Rules:
@@ -601,8 +590,8 @@ Rules:
 Open implementation tasks:
 - done: Tokscale CLI supports `tokscale submit --codex --dry-run`; Sane wraps it through managed hook commands so failures do not block Codex
 - done: config shape is `[lifecycle-hooks]` with `tokscale-submit`, `tokscale-dry-run`, and `rate-limit-resume`, all opt-in except dry-run defaulting true
-- done: export/status/uninstall cover SessionStart, SessionEnd, Tokscale SessionEnd, and stale optional lifecycle drift
-- done: tests cover config parsing, command rendering, hook export/uninstall, and SessionEnd rate-limit context
+- done: export/status/uninstall cover SessionStart, Stop, Tokscale Stop, and stale optional lifecycle drift
+- done: tests cover config parsing, command rendering, hook export/uninstall, and Stop rate-limit context
 - remaining: automatic resume scheduling once Codex exposes a reset timestamp in hook payloads or another stable local signal
 
 ## B14. Agent-Flow Evals And Benchmarks

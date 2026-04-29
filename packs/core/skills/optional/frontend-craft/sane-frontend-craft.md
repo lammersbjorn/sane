@@ -7,7 +7,7 @@ description: Use when building, redesigning, or polishing frontend UI in a web a
 
 ## Goal
 
-Build frontend work that feels specific to the product, not like a generic AI UI.
+Build frontend work that fits the product, task, and existing design system.
 
 ## Use When
 

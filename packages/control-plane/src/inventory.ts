@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 
 import { createRecommendedLocalConfig } from "@sane/config";
 import { InventoryScope, InventoryStatus, OperationKind, OperationResult } from "@sane/core";
@@ -22,9 +22,14 @@ import {
   type CodexConfigConflictWarning
 } from "./codex-config.js";
 import { inspectCodexSkillsAndAgents } from "./codex-native.js";
-import { inspectPluginInventory } from "./codex-plugin.js";
 import { inspectCustomAgentsInventory, inspectHooksInventory } from "./hooks-custom-agents.js";
 import { inspectSavedLocalConfig } from "./local-config.js";
+import {
+  RTK_BINARY_INVENTORY_NAME,
+  RTK_HOMEBREW_INSTALL_HINT,
+  RTK_INSTALL_HINT,
+  inspectRtkBinaryInventory
+} from "./rtk-binary.js";
 import {
   isUnsupportedNativeWindowsHooks,
   presentManagedInventoryItem
@@ -56,7 +61,7 @@ type DoctorInventoryName =
   | "global-agents"
   | "hooks"
   | "custom-agents"
-  | "plugin";
+  | typeof RTK_BINARY_INVENTORY_NAME;
 
 type PackConfigState =
   | { kind: "missing" }
@@ -167,8 +172,7 @@ const DOCTOR_ROW_NAMES: DoctorInventoryName[] = [
   "repo-agents",
   "global-agents",
   "hooks",
-  "custom-agents",
-  "plugin"
+  "custom-agents"
 ];
 
 const DOCTOR_STATUS_FORMATTERS: Partial<Record<DoctorInventoryName, (item: InventoryItem) => string>> = {
@@ -203,7 +207,7 @@ const DOCTOR_STATUS_FORMATTERS: Partial<Record<DoctorInventoryName, (item: Inven
       : doctorExportLabel(item, "export global-agents"),
   hooks: (item) => doctorManagedConfigLabel(item, "export hooks", "~/.codex/hooks.json"),
   "custom-agents": (item) => doctorExportLabel(item, "export custom-agents"),
-  plugin: doctorPluginLabel
+  [RTK_BINARY_INVENTORY_NAME]: doctorRtkBinaryLabel
 };
 
 const PACK_INVENTORY_TARGETS: PackInventoryTarget[] = [
@@ -272,6 +276,7 @@ export function inspectDoctorSnapshot(
     ...OPTIONAL_PACK_INVENTORY_TARGETS.map(({ inventoryName }) =>
       doctorInventoryLine(bundle.inventory, inventoryName)
     ),
+    ...optionalDoctorInventoryLine(bundle.inventory, RTK_BINARY_INVENTORY_NAME),
     ...DOCTOR_ROW_NAMES.slice(6).map((name) => doctorInventoryLine(bundle.inventory, name)),
     `root: ${paths.runtimeRoot}`,
     `codex-home: ${codexPaths.codexHome}`
@@ -286,7 +291,8 @@ export function inspectDoctorSnapshot(
 export function inspectStatusBundle(
   paths: ProjectPaths,
   codexPaths: CodexPaths,
-  hostPlatform: HostPlatform = detectPlatform()
+  hostPlatform: HostPlatform = detectPlatform(),
+  env: NodeJS.ProcessEnv = process.env
 ): StatusBundle {
   const runtimeState = inspectRuntimeState(paths);
   const inventory = [
@@ -296,7 +302,7 @@ export function inspectStatusBundle(
     ...inspectCodexSkillsAndAgents(paths, codexPaths),
     inspectHooksInventory(paths, codexPaths, hostPlatform),
     inspectCustomAgentsInventory(paths, codexPaths),
-    inspectPluginInventory(codexPaths)
+    ...inspectCompatibilityInventory(paths, codexPaths, hostPlatform, env)
   ];
 
   const localRuntime = inventory.filter((item) => item.scope === InventoryScope.LocalRuntime);
@@ -345,6 +351,21 @@ export function inspectStatusBundle(
       }
     }
   };
+}
+
+function inspectCompatibilityInventory(
+  paths: ProjectPaths,
+  codexPaths: CodexPaths,
+  hostPlatform: HostPlatform,
+  env: NodeJS.ProcessEnv
+): InventoryItem[] {
+  const configState = loadConfigState(paths);
+  if (configState.kind !== "loaded") {
+    return [];
+  }
+
+  const rtkBinary = inspectRtkBinaryInventory(configState.config.packs.rtk, hostPlatform, env);
+  return rtkBinary ? [rtkBinary] : [];
 }
 
 export function inspectOnboardingSnapshot(
@@ -659,6 +680,11 @@ function doctorInventoryLine(inventory: InventoryItem[], name: string): string {
   return `${name}: ${doctorStatus(findInventory(inventory, name))}`;
 }
 
+function optionalDoctorInventoryLine(inventory: InventoryItem[], name: string): string[] {
+  const item = findInventoryOrNull(inventory, name);
+  return item ? [`${name}: ${doctorStatus(item)}`] : [];
+}
+
 function doctorManagedFallback(item: InventoryItem): string {
   return presentManagedInventoryItem(item).label;
 }
@@ -713,24 +739,12 @@ function doctorExportLabel(item: InventoryItem, exportCommand: string): string {
         : doctorManagedFallback(item);
 }
 
-function doctorPluginLabel(item: InventoryItem): string {
-  if (item.status !== InventoryStatus.Installed) {
-    return doctorExportLabel(item, "export plugin");
-  }
-
-  const version = installedPluginVersion(item.path);
-  return version ? `installed (version ${version})` : "installed";
-}
-
-function installedPluginVersion(pluginDir: string): string | null {
-  try {
-    const parsed = JSON.parse(
-      readFileSync(resolve(pluginDir, ".codex-plugin", "plugin.json"), "utf8")
-    ) as { version?: unknown };
-    return typeof parsed.version === "string" && parsed.version.length > 0 ? parsed.version : null;
-  } catch {
-    return null;
-  }
+function doctorRtkBinaryLabel(item: InventoryItem): string {
+  return item.status === InventoryStatus.Installed
+    ? "installed"
+    : item.status === InventoryStatus.Missing
+      ? `missing (${RTK_INSTALL_HINT}; Homebrew packaging: ${RTK_HOMEBREW_INSTALL_HINT})`
+      : item.status.asString();
 }
 
 function collectPathsTouched(inventory: InventoryItem[]): string[] {

@@ -47,11 +47,7 @@ export interface CodexPaths {
   configToml: string;
   modelsCacheJson: string;
   authJson: string;
-  codexPluginsDir: string;
-  sanePluginDir: string;
   userAgentsDir: string;
-  userPluginsDir: string;
-  userPluginsMarketplaceJson: string;
   userSkillsDir: string;
   customAgentsDir: string;
   globalAgentsMd: string;
@@ -183,11 +179,7 @@ export function createCodexPaths(homeDir: string): CodexPaths {
     configToml: join(codexHome, 'config.toml'),
     modelsCacheJson: join(codexHome, 'models_cache.json'),
     authJson: join(codexHome, 'auth.json'),
-    codexPluginsDir: join(codexHome, 'plugins'),
-    sanePluginDir: join(codexHome, 'plugins', 'sane'),
     userAgentsDir,
-    userPluginsDir: join(userAgentsDir, 'plugins'),
-    userPluginsMarketplaceJson: join(userAgentsDir, 'plugins', 'marketplace.json'),
     userSkillsDir: join(userAgentsDir, 'skills'),
     customAgentsDir: join(codexHome, 'agents'),
     globalAgentsMd: join(codexHome, 'AGENTS.md'),

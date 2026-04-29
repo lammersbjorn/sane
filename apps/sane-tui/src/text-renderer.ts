@@ -58,7 +58,7 @@ function renderOverlayLayout(
 ): string[] {
   const header = renderHeader(view, width, isCompactViewport(width, viewport.height));
   const footer = wrapLines(footerLine(view, width), width);
-  const modalWidth = Math.max(52, Math.min(width, width - 6));
+  const modalWidth = boundedOverlayWidth(width, 52, 6);
   const overlay = view.overlay;
 
   if (!overlay) {
@@ -79,15 +79,7 @@ function renderOverlayLayout(
         ]
       : overlay.kind === "notice"
         ? [...overlay.bodyLines, "", overlay.footer]
-        : [
-            ...overlay.headerLines,
-            "",
-            "Fields",
-            ...overlay.fieldLines,
-            "",
-            overlay.detailsTitle,
-            ...overlay.detailsLines
-          ];
+        : editorOverlayBodyLines(overlay);
 
   const box = renderBox(
     `[Overlay: ${overlay.title}]`,
@@ -96,6 +88,11 @@ function renderOverlayLayout(
   );
 
   return [...header, "", ...centerLines(box, width), "", ...footer];
+}
+
+function boundedOverlayWidth(viewportWidth: number, preferredWidth: number, inset: number): number {
+  const usableWidth = Math.max(20, viewportWidth - Math.max(0, inset));
+  return Math.min(viewportWidth, Math.max(20, Math.min(preferredWidth, usableWidth)));
 }
 
 function renderHeader(view: SaneTuiAppView, width: number, compact = false): string[] {
@@ -287,12 +284,42 @@ function selectedActionLabel(view: SaneTuiAppView): string {
 function compactFocusLines(view: SaneTuiAppView): string[] {
   const selectedIndex = view.actions.findIndex((action) => action.id === view.selectedAction.id);
   const nextAction = view.actions[selectedIndex + 1] ?? null;
+  const setupLines = compactHomeSetupLines(view);
 
   return [
     `Selected: ${compactActionLabel(view.selectedAction.label)}`,
     nextAction ? `Next: ${compactActionLabel(nextAction.label)}` : `Next: none`,
     `Status: ${compactStatusSummary(view.latestStatusLines[0] ?? "ready")}`,
-    "Use a wider terminal for the full rail and detail view."
+    ...setupLines
+  ];
+}
+
+function compactHomeSetupLines(view: SaneTuiAppView): string[] {
+  if (view.activeSection.id !== "home") {
+    return ["Use wider terminal for full detail view."];
+  }
+
+  const setup = view.sectionOverviewLines.filter((line) =>
+    line.startsWith("runtime ")
+    || line.startsWith("codex-config ")
+    || line.startsWith("user-skills ")
+    || line.startsWith("hooks ")
+  );
+  if (setup.length === 0) {
+    return ["Use wider terminal for full detail view."];
+  }
+  return setup.slice(0, 2);
+}
+
+function editorOverlayBodyLines(overlay: Extract<NonNullable<SaneTuiAppView["overlay"]>, { kind: "config" | "packs" | "privacy" }>): string[] {
+  return [
+    ...overlay.headerLines,
+    "",
+    "Fields",
+    ...overlay.fieldLines,
+    "",
+    overlay.detailsTitle,
+    ...compactLines(overlay.detailsLines, 4).filter((line) => !line.trim().startsWith("... "))
   ];
 }
 

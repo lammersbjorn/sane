@@ -1,0 +1,47 @@
+name: Distribution Channel Plan
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version without v prefix (for example 1.0.0)"
+        required: true
+        type: string
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Print Homebrew / winget / Scoop rollout checklist
+        run: |
+          set -euo pipefail
+          VERSION="${{ inputs.version }}"
+          TAG="v${VERSION}"
+          TGZ_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/sane-codex-${VERSION}.tgz"
+          ZIP_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/sane-codex-${VERSION}.zip"
+          CHECKSUM_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/SHA256SUMS.txt"
+
+          cat <<EOF
+          Distribution plan for ${TAG}
+
+          Homebrew tap (manual gate):
+          - Update formula in tap repo to use:
+            - url: ${TGZ_URL}
+            - sha256: <from SHA256SUMS.txt>
+          - Run: brew audit --strict sane
+          - Run: brew install --build-from-source ./Formula/sane.rb && sane status
+
+          winget manifest (manual gate):
+          - Use artifact URL: ${ZIP_URL}
+          - Generate/update manifests with wingetcreate.
+          - Submit PR to microsoft/winget-pkgs.
+
+          Scoop manifest (manual gate):
+          - Update bucket manifest URL: ${ZIP_URL}
+          - Update hash from SHA256SUMS.txt.
+          - Keep Scoop secondary to winget.
+
+          Canonical checksums:
+          - ${CHECKSUM_URL}
+          EOF

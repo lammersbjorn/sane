@@ -7,7 +7,7 @@ description: Use as Sane routing switchboard for concrete skills, lane classes, 
 
 ## Goal
 
-Choose the concrete skill, lane class, or Sane-managed command path without becoming a second workflow manual.
+Choose the next Sane surface with minimal context: concrete skill, lane class, or managed command.
 
 ## Use When
 
@@ -39,12 +39,14 @@ Choose the concrete skill, lane class, or Sane-managed command path without beco
 
 ## How To Run
 
-Use `sane-router` to choose the next Sane surface. Do not restate the full workflow when a concrete skill owns it.
+Make one routing decision. Do not restate workflows owned by concrete skills.
 
 Broad work route:
 - Broad work means multi-file cleanup, refactor, feature work, product pass, research pass, repair loop, or ambiguous repo work.
-- Load `sane-agent-lanes`; that skill owns lane planning, subagent handoff, edit-lane boundaries, and explicit authorization gates.
-- The coordinator/main session owns final judgment and verification.
+- Load `sane-agent-lanes`; it owns lane planning, subagent handoff, edit boundaries, and auth gates.
+- If subagent authorization is required but missing, do not route broad work to "main session only"; `sane-agent-lanes` must ask and stop.
+- Follow-up implementation after research/planning is broad work again; prior research lanes do not satisfy the implementation handoff.
+- Coordinator owns final judgment and verification.
 
 Route subagent classes with current exported defaults:
 - coordinator/main session: {{COORDINATOR_MODEL}} ({{COORDINATOR_REASONING}})
@@ -77,7 +79,7 @@ Command lane for Sane-managed operations:
 
 ## Verification
 
-- confirm selected subagent class and concrete skill route
+- confirm the selected route
 - for broad work, confirm `sane-agent-lanes` was loaded and followed
 - for managed operations, preview before apply when possible and confirm touched managed paths
 
@@ -85,4 +87,5 @@ Command lane for Sane-managed operations:
 
 - do not pre-load `continue` or `sane-outcome-continuation` on every task
 - do not route by vague pack umbrella when a concrete skill exists
+- do not add repo overviews or discoverable facts to startup context
 - keep managed exports additive and reversible

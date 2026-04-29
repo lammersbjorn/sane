@@ -24,7 +24,7 @@ Do not re-litigate locked product philosophy unless a new decision log changes i
 - Current optional pack skill exports include `sane-caveman`, `sane-rtk`, `sane-frontend-craft`, `sane-frontend-visual-assets`, and `sane-frontend-review`.
 - Later end-to-end outcome runner is future work, not current product surface.
 - RTK is mandatory in this repo for shell/search/test/log work.
-- Verify meaningful changes with `rtk pnpm test` and `rtk pnpm typecheck`.
+- Verify release-bound changes with `rtk pnpm run release:verify`. For narrow non-package changes, use `rtk pnpm test` and `rtk run 'pnpm typecheck'` while RTK native typecheck routing false-exits.
 
 ## Verified Current State
 
@@ -34,9 +34,9 @@ Do not re-litigate locked product philosophy unless a new decision log changes i
 - TUI sections are `Home`, `Settings`, `Add to Codex`, `Status`, `Repair`, and `Uninstall`.
 - Launch behavior is part of the contract: first run opens guided Home, installed no-args opens Status, `sane install` opens the guided wizard, and `sane status` opens Status.
 - Compatibility aliases may remain for scripts/internal APIs, but user-facing docs should use `Status` naming.
-- Managed Codex surfaces include user skills, optional repo skills, optional repo `AGENTS.md`, global `AGENTS.md`, hooks, custom agents, optional Sane Codex plugin artifact, and narrow Codex config profiles.
+- Managed Codex surfaces include user skills, optional repo skills, optional repo `AGENTS.md`, global `AGENTS.md`, hooks, custom agents, and narrow Codex config profiles.
 - `.sane` state stays thin: local config, handoff/runtime state, history, summaries, backups, and optional telemetry state.
-- `export_all` does not install the optional plugin artifact.
+- Codex plugin artifact packaging is deferred from `v1`; `export_all` remains the core Codex-native install bundle.
 - The autonomous/end-to-end outcome runner is not shipped.
 
 ## Active Cleanup Spec
@@ -69,33 +69,40 @@ Acceptance:
 - [x] Remove unused TypeScript symbols found by strict unused check
 - [x] Mark vendored frontend skill mirrors as reference-only
 - [x] Add explicit API-boundary notes for TUI and control-plane barrels
+- [x] Fix Tokscale Stop hook stdout to emit valid Codex hook JSON
+
+## Done In Current Slice
+
+- [x] Larger API hardening:
+  - reduced `@sane/control-plane` and `@sane/sane-tui` exports toward stable public symbols
+  - kept compatibility aliases only at explicit subpath boundaries where needed
+  - added package boundary tests
+- [x] Pack prose generation hardening:
+  - manifest/router/overlay policy prose derives from one canonical `policyNote` source
+  - generated/exported surfaces are drift-tested
+- [x] Finish B17 TUI visual QA/polish:
+  - added text smoke checks for `sane install`, `sane`, `sane settings`, `sane status`, editor modal, read-only notice modal, and confirmation modal at compact, normal, and wide sizes
+  - fixed installed-repo `sane install` so Home shows current setup lines instead of dead filler
+  - shortened editor header/help copy for compact terminals
+  - kept Settings editor field list visible when width allows
+  - removed remaining user-facing internal agent terms from live TTY copy
+- [x] Add settings portability:
+  - export Sane settings to `.sane/settings.portable.json`
+  - import Sane settings from portable file
+  - support install from exported settings
+- [x] Prepare packaging/distribution rollout for `v1`:
+  - [x] GitHub Release artifact verification and asset upload (`.tgz`, `.zip`, `SHA256SUMS.txt`)
+  - [x] npm publish gate for `sane-codex` (manual workflow, secret + environment required)
+  - [x] Homebrew tap notes/workflow stub
+  - [x] winget artifact/update plan stub
+  - [x] Scoop artifact/update plan stub
 
 ## Next Slice
 
-- [ ] Larger API hardening:
-  - reduce `@sane/control-plane` and `@sane/sane-tui` barrel exports to stable public symbols
-  - add compatibility aliases only at parse/subpath boundaries where needed
-  - keep package tests green while tightening exports
-- [ ] Pack prose generation hardening:
-  - make manifest/router/overlay policy prose derive from one canonical source
-  - keep generated/exported surfaces drift-tested
-- [ ] Finish B17 TUI visual QA/polish:
-  - live TTY smoke/screenshot checks for `sane install`, `sane`, `sane settings`, `sane status`, editor modal, read-only notice modal, and confirmation modal at compact, normal, and wide sizes
-  - fix installed-repo `sane install` so Home does not look like a dead first-run step
-  - shorten Ink editor header/help copy so compact terminals do not show unreadable truncation
-  - ensure Home compact mode always shows meaningful current setup lines
-  - keep Settings editor field list visible when width allows
-  - remove remaining user-facing internal terms from live TTY copy
-- [ ] Add later settings portability:
-  - export Sane settings to portable file
-  - import Sane settings from portable file
-  - support install from exported settings
-- [ ] Prepare packaging/distribution rollout after `v1`:
-  - GitHub Releases
-  - npm publish
-  - Homebrew tap
-  - winget
-  - Scoop
+- [ ] Wire channel repos after first stable `v1` tag:
+  - Homebrew tap update PR
+  - winget manifest PR
+  - Scoop bucket update PR
 
 ## Agent Working Rules
 
