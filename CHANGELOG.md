@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-beta.3] - 2026-04-30
+
+### Changed
+
+- Moved install instructions near the top of the README with Homebrew as the primary macOS/Linux path.
+- Clarified npm as the direct `sane-codex` install path instead of future-only wording.
+- Hardened release automation so prerelease tags are marked prerelease and are not promoted to GitHub Latest.
+- Added npm publish validation to block prerelease tags from using the `latest` dist-tag.
+
 ## [1.0.0-beta.2] - 2026-04-30
 
 ### Added

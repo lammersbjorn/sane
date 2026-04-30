@@ -10,6 +10,47 @@ The `sane` command installs and maintains those pieces. Use it to choose what to
 
 > Project note: `Sane` is being built in public for [BuildStory Hackathon #2](https://www.buildstory.com/projects/sane).
 
+## Install And Run
+
+Requires Node.js 22 or newer.
+
+Primary macOS/Linux install path:
+
+```bash
+brew install lammersbjorn/sane/sane
+sane
+```
+
+Direct npm install is also available:
+
+```bash
+pnpm dlx sane-codex
+# or: npm exec sane-codex
+# or: pnpm add -g sane-codex
+sane
+```
+
+Source workflow:
+
+```bash
+git clone https://github.com/lammersbjorn/sane.git
+cd sane
+pnpm install
+pnpm start
+```
+
+Useful commands:
+
+```bash
+sane                # open the control surface
+sane install        # guided install/tune-up flow
+sane settings       # configure defaults and packs
+sane status         # inspect managed runtime and Codex surfaces
+sane repair         # restore or remove managed pieces
+sane update-check   # check registry for a newer sane-codex release
+sane updates auto   # toggle opt-in automatic Sane updates
+```
+
 ## What Changes
 
 After setup, Codex can lean on Sane for:
@@ -76,54 +117,6 @@ Sane's safety model is intentionally boring:
 - status and uninstall paths for managed surfaces
 - unrelated user content preserved
 
-## Install And Run
-
-Requires Node.js 22 or newer.
-
-Packaged CLI usage applies once `sane-codex` is published to npm:
-
-```bash
-pnpm dlx sane-codex
-# or
-npm exec sane-codex
-```
-
-Global install after npm publication:
-
-```bash
-pnpm add -g sane-codex
-sane
-```
-
-Source workflow:
-
-```bash
-git clone https://github.com/lammersbjorn/sane.git
-cd sane
-pnpm install
-pnpm start
-```
-
-Useful commands:
-
-```bash
-sane                # open the control surface
-sane install        # guided install/tune-up flow
-sane settings       # configure defaults and packs
-sane status         # inspect managed runtime and Codex surfaces
-sane repair         # restore or remove managed pieces
-sane update-check   # check registry for a newer sane-codex release
-sane updates auto   # toggle opt-in automatic Sane CLI updates
-```
-
-Source shortcuts:
-
-```bash
-pnpm run start:settings
-pnpm run start:status
-pnpm run start:repair
-```
-
 ## What Sane Writes
 
 | Scope | Paths |
@@ -148,9 +141,9 @@ Stable user preferences stay narrow and explicit: model/reasoning defaults, pack
 ## Release Operators
 
 - run `rtk pnpm run release:verify` before tagging
-- tag `vX.Y.Z` to trigger GitHub Release artifact upload
-- use manual `NPM Publish` workflow with `NPM_TOKEN` and protected `npm-publish` environment
-- update Homebrew, winget, and Scoop only from tagged GitHub Release asset URLs and checksums
+- tag `vX.Y.Z` to trigger GitHub Release artifact upload; beta tags stay prerelease and must not become Latest
+- use manual `NPM Publish` workflow with `NPM_TOKEN` and protected `npm-publish` environment; beta tags publish under `beta`, not `latest`
+- update the Homebrew tap first from tagged GitHub Release asset URLs and checksums, then winget and Scoop
 
 ## Privacy Boundary
 

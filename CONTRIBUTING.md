@@ -153,8 +153,10 @@ Before opening a PR, make sure you can explain:
 
 - Never enable unattended publish without secrets and environment approval.
 - Tag releases as `vX.Y.Z`; this triggers GitHub Release packaging.
+- Beta/prerelease tags must be marked prerelease and must not be marked GitHub Latest.
 - Publish `sane-codex` from `apps/sane-tui/dist` only after `release:verify` passes.
-- Use GitHub Release `SHA256SUMS.txt` as source of truth for Homebrew, winget, and Scoop updates.
+- Publish beta npm releases with the `beta` dist-tag, never `latest`.
+- Use GitHub Release `SHA256SUMS.txt` as source of truth for the Homebrew tap, winget, and Scoop updates.
 
 ## Commit Style
 

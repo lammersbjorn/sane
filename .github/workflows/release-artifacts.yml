@@ -66,3 +66,5 @@ jobs:
             artifacts/*.zip
             artifacts/SHA256SUMS.txt
           generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          make_latest: ${{ contains(github.ref_name, '-') && 'false' || 'true' }}

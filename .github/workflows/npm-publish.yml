@@ -55,6 +55,14 @@ jobs:
             exit 1
           fi
 
+      - name: Validate npm dist-tag
+        run: |
+          set -euo pipefail
+          if [[ "${{ inputs.tag }}" == *-* && "${{ inputs.npm_tag }}" == "latest" ]]; then
+            echo "Prerelease tags must not publish under npm latest."
+            exit 1
+          fi
+
       - name: Publish sane-codex package
         working-directory: apps/sane-tui/dist
         env:
