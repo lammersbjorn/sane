@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   InventoryScope,
   InventoryStatus,
+  inferOperationResultStatus,
   OperationKind,
   OperationResult,
   removeManagedBlock,
@@ -96,6 +97,13 @@ describe("operation result rendering", () => {
 
     expect(result.renderText()).toContain("exported skills\nwrote sane-router");
     expect(result.renderText()).toContain("paths: ~/.agents/skills/sane-router/SKILL.md");
+  });
+
+  it("infers operation status from summary/detail text", () => {
+    expect(inferOperationResultStatus("export complete")).toBe("ok");
+    expect(inferOperationResultStatus("export hooks: blocked by invalid hooks JSON")).toBe("blocked");
+    expect(inferOperationResultStatus("update check failed")).toBe("failed");
+    expect(inferOperationResultStatus("codex-config: invalid at ~/.codex/config.toml")).toBe("warning");
   });
 });
 

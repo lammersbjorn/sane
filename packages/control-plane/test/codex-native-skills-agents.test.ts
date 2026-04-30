@@ -87,7 +87,8 @@ describe("codex-native skills and agents", () => {
         {
           caveman: true,
           rtk: false,
-          frontendCraft: false
+          frontendCraft: false,
+          docsCraft: false
         },
         {
           coordinatorModel: config.models.coordinator.model,
@@ -191,7 +192,8 @@ describe("codex-native skills and agents", () => {
         {
           caveman: false,
           rtk: true,
-          frontendCraft: false
+          frontendCraft: false,
+          docsCraft: false
         },
         roles
       )
@@ -204,7 +206,8 @@ describe("codex-native skills and agents", () => {
         {
           caveman: false,
           rtk: true,
-          frontendCraft: false
+          frontendCraft: false,
+          docsCraft: false
         },
         roles
       )

@@ -57,6 +57,7 @@ describe("showRuntimeSummary", () => {
     expect(result.details).toContain("latest event (read-only local visibility): missing");
     expect(result.details).toContain("latest decision (read-only local visibility): missing");
     expect(result.details).toContain("latest artifact (read-only local visibility): missing");
+    expect(result.details).toContain("recent blockers (events): none");
     expect(result.details).toContain(
       "current policy preview: policy preview: rendered adaptive obligation scenarios; 5 scenarios"
     );
@@ -91,6 +92,7 @@ describe("showRuntimeSummary", () => {
     expect(result.details).toContain("latest event (read-only local visibility): missing");
     expect(result.details).toContain("latest decision (read-only local visibility): missing");
     expect(result.details).toContain("latest artifact (read-only local visibility): missing");
+    expect(result.details).toContain("recent blockers (events): none");
     expect(result.details).toContain("objective: initialize sane runtime");
     expect(result.details).toContain("phase: setup");
     expect(result.details).toContain("verification: pending (runtime scaffolding created)");
@@ -251,6 +253,7 @@ describe("showRuntimeSummary", () => {
     expect(result.details).toContain(
       `latest artifact (read-only local visibility): ts 1700000003, kind brief, path ${paths.briefPath}, summary regenerated concise brief`
     );
+    expect(result.details).toContain("recent blockers (events): none");
     expect(result.details).toContain(`events: 1 at ${paths.eventsPath}`);
     expect(result.details).toContain(`decisions: 1 at ${paths.decisionsPath}`);
     expect(result.details).toContain(`artifacts: 1 at ${paths.artifactsPath}`);

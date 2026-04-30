@@ -18,6 +18,8 @@ function expectOptionalPackProvenanceContract(line: string): void {
   expect(line).toContain("frontend-craft disabled");
   expect(line).toContain("derived from taste-skill");
   expect(line).toContain("impeccable");
+  expect(line).toContain("docs-craft disabled");
+  expect(line).toContain("google-gemini-docs-writer");
 }
 
 describe("inspect presenter", () => {
@@ -58,6 +60,22 @@ describe("inspect presenter", () => {
             { name: "taste-skill", url: "https://github.com/Leonxlnx/taste-skill", ref: "main" },
             { name: "impeccable", url: "https://github.com/pbakaus/impeccable", ref: "main" },
             { name: "make-interfaces-feel-better", url: "https://skills.sh/jakubkrehel/make-interfaces-feel-better/make-interfaces-feel-better", ref: null }
+          ]
+        }
+      },
+      {
+        name: "docs-craft",
+        inventoryName: "pack-docs-craft",
+        status: "disabled",
+        skillName: "sane-docs-writing",
+        skillNames: optionalPackSkillNames("docs-craft"),
+        provenance: {
+          kind: "derived",
+          note: "compact docs writing",
+          updateStrategy: "manual-curated",
+          upstreams: [
+            { name: "google-gemini-docs-writer", url: "https://github.com/google-gemini/gemini-cli", ref: null },
+            { name: "aiskillstore-writing-docs", url: "https://agentskill.sh/aiskillstore/writing-docs", ref: null }
           ]
         }
       }

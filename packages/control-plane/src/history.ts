@@ -91,7 +91,7 @@ function appendOperationRecord(paths: ProjectPaths, result: OperationResult): vo
     createEventRecord(
       "operation",
       operationKindLabel(result.kind),
-      "ok",
+      result.status,
       result.summary,
       result.pathsTouched
     ),
@@ -195,6 +195,10 @@ function operationKindLabel(kind: OperationKind): string {
       return "show_outcome_readiness";
     case OperationKind.AdvanceOutcome:
       return "advance_outcome";
+    case OperationKind.ReviewIssueDraft:
+      return "review_issue_draft";
+    case OperationKind.SubmitIssueDraft:
+      return "submit_issue_draft";
     case OperationKind.PreviewPolicy:
       return "preview_policy";
     case OperationKind.BackupCodexConfig:

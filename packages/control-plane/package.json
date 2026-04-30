@@ -15,13 +15,16 @@
     "./index.js": "./src/index.ts",
     "./install-status.js": "./src/install-status.ts",
     "./inventory.js": "./src/inventory.ts",
+    "./issue-relay.js": "./src/issue-relay.ts",
     "./policy-preview.js": "./src/policy-preview.ts",
     "./preferences.js": "./src/preferences.ts",
     "./repair-status.js": "./src/repair-status.ts",
     "./runtime-state.js": "./src/runtime-state.ts",
     "./session-start-hook.js": "./src/session-start-hook.ts",
     "./status-presenter.js": "./src/status-presenter.ts",
-    "./tokscale-submit-hook.js": "./src/tokscale-submit-hook.ts"
+    "./telemetry.js": "./src/telemetry.ts",
+    "./tokscale-submit-hook.js": "./src/tokscale-submit-hook.ts",
+    "./update-check.js": "./src/update-check.ts"
   },
   "scripts": {
     "test": "vitest run",

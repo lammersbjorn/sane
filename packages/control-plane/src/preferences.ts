@@ -46,6 +46,8 @@ export interface PreferencesSnapshot {
   subagents: SubagentRoutingPresets;
   modelCapabilities: ModelCapabilitySnapshot;
   telemetry: ReturnType<typeof createRecommendedLocalConfig>["privacy"]["telemetry"];
+  issueRelay: ReturnType<typeof createRecommendedLocalConfig>["issueRelay"]["mode"];
+  autoUpdates: boolean;
   telemetryFiles: TelemetrySnapshot;
   enabledPacks: string[];
 }
@@ -186,6 +188,25 @@ export function saveConfig(paths: ProjectPaths, config: LocalConfig): OperationR
         repairHint: null
       }
     ]
+  });
+}
+
+export function toggleAutoUpdates(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
+  const snapshot = inspectEditablePreferencesConfig(paths, codexPaths);
+  const config = structuredClone(snapshot.current);
+  config.updates.auto = !config.updates.auto;
+  const saved = saveConfig(paths, config);
+
+  return new OperationResult({
+    kind: OperationKind.ShowConfig,
+    summary: `auto updates: ${config.updates.auto ? "enabled" : "disabled"}`,
+    rewrite: saved.rewrite,
+    details: [
+      `auto updates: ${config.updates.auto ? "enabled" : "disabled"}`,
+      ...saved.details
+    ],
+    pathsTouched: saved.pathsTouched,
+    inventory: saved.inventory
   });
 }
 
@@ -355,6 +376,8 @@ function inspectPreferencesFamilySnapshotFromContext(
         context.subagents
       ),
       telemetry: context.localConfig.current.privacy.telemetry,
+      issueRelay: context.localConfig.current.issueRelay.mode,
+      autoUpdates: context.localConfig.current.updates.auto,
       telemetryFiles: telemetry,
       enabledPacks: enabledPackNames(context.localConfig.current.packs)
     },
@@ -429,6 +452,8 @@ function configDetails(
     `sidecar: ${config.models.sidecar.model} (${config.models.sidecar.reasoningEffort})`,
     `verifier: ${config.models.verifier.model} (${config.models.verifier.reasoningEffort})`,
     `telemetry: ${config.privacy.telemetry}`,
+    `auto updates: ${config.updates.auto ? "enabled" : "disabled"}`,
+    `issue relay: ${config.issueRelay.mode}`,
     `packs: ${enabledPackNames(config.packs).join(", ")}`
   ];
 
@@ -473,11 +498,6 @@ function ensureTelemetryFiles(paths: ProjectPaths, level: TelemetryLevel): strin
   mkdirSync(paths.telemetryDir, { recursive: true });
   ensureFileWithDefault(paths.telemetrySummaryPath, '{\n  "version": 1\n}\n');
   ensureFileWithDefault(paths.telemetryEventsPath, "");
-
-  if (level === "product-improvement") {
-    ensureFileWithDefault(paths.telemetryQueuePath, "");
-    return [paths.telemetrySummaryPath, paths.telemetryEventsPath, paths.telemetryQueuePath];
-  }
 
   rmSync(paths.telemetryQueuePath, { force: true });
   return [paths.telemetrySummaryPath, paths.telemetryEventsPath, paths.telemetryQueuePath];

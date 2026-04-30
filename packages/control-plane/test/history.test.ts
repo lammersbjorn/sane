@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createDefaultLocalConfig } from "@sane/config";
+import { OperationKind, OperationResult } from "@sane/core";
 import { createProjectPaths, createCodexPaths } from "@sane/platform";
 import {
   parseArtifactRecordJson,
@@ -99,6 +100,7 @@ describe("operation history plumbing", () => {
 
     expect(result.summary).toBe("export all: installed managed targets");
     expect(events.at(-1)?.action).toBe("export_all");
+    expect(events.at(-1)?.result).toBe("ok");
   });
 
   it("recordOperation keeps promoted summary entries unique across repeats", () => {
@@ -200,5 +202,23 @@ describe("operation history plumbing", () => {
         brief: "present"
       }
     });
+  });
+
+  it("records blocked operation results in events history", () => {
+    const projectRoot = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+
+    executeOperation(
+      paths,
+      () =>
+        new OperationResult({
+          kind: OperationKind.ExportHooks,
+          summary: "export hooks: blocked by invalid hooks JSON",
+          pathsTouched: [paths.eventsPath]
+        })
+    );
+
+    const events = readJsonlRecords(paths.eventsPath, parseEventRecordJson);
+    expect(events.at(-1)?.result).toBe("blocked");
   });
 });

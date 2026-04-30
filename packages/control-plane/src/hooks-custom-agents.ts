@@ -13,11 +13,14 @@ import {
   SANE_IMPLEMENTATION_AGENT_NAME,
   SANE_REALTIME_AGENT_NAME,
   SANE_REVIEWER_AGENT_NAME,
+  createDefaultGuidancePacks,
   createSaneAgentTemplateWithPacks,
   createSaneExplorerAgentTemplateWithPacks,
   createSaneImplementationAgentTemplateWithPacks,
   createSaneRealtimeAgentTemplateWithPacks,
   createSaneReviewerAgentTemplateWithPacks,
+  optionalPackConfigKey,
+  optionalPackNames,
   type GuidancePacks,
   type ModelRoutingGuidance
 } from "@sane/framework-assets";
@@ -558,11 +561,7 @@ function loadLifecycleHooks(paths: ProjectPaths, codexPaths: CodexPaths): Lifecy
 }
 
 function managedSessionStartContext(packs: GuidancePacks, _roles: ModelRoutingGuidance): string {
-  return buildSaneContinuityContext({
-    caveman: packs.caveman,
-    rtk: packs.rtk,
-    frontendCraft: packs.frontendCraft
-  });
+  return buildSaneContinuityContext(packs);
 }
 
 function activeGuidance(paths: ProjectPaths, codexPaths: CodexPaths): {
@@ -573,11 +572,7 @@ function activeGuidance(paths: ProjectPaths, codexPaths: CodexPaths): {
   const config = loadOrDefaultConfig(paths, environment);
 
   return {
-    packs: {
-      caveman: config.packs.caveman,
-      rtk: config.packs.rtk,
-      frontendCraft: config.packs.frontendCraft
-    },
+    packs: guidancePacksFromConfig(config.packs),
     roles: {
       coordinatorModel: config.models.coordinator.model,
       coordinatorReasoning: config.models.coordinator.reasoningEffort,
@@ -591,6 +586,15 @@ function activeGuidance(paths: ProjectPaths, codexPaths: CodexPaths): {
       realtimeReasoning: config.subagents.realtime.reasoningEffort
     }
   };
+}
+
+function guidancePacksFromConfig(config: Record<string, boolean>): GuidancePacks {
+  const packs = createDefaultGuidancePacks();
+  for (const packName of optionalPackNames()) {
+    const configKey = optionalPackConfigKey(packName);
+    packs[configKey] = Boolean(config[configKey]);
+  }
+  return packs;
 }
 
 function loadOrDefaultConfig(

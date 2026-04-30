@@ -17,7 +17,8 @@ import {
   inspectPrivacyTransparencySnapshot,
   resetTelemetryData,
   saveConfig,
-  showConfig
+  showConfig,
+  toggleAutoUpdates
 } from "../src/preferences.js";
 
 const tempDirs: string[] = [];
@@ -64,6 +65,8 @@ describe("preferences control plane", () => {
       "verifier: gpt-5.5 (high)",
       "derived routing: inspect Preferences for explorer, execution, realtime, and frontend-craft defaults from detected model availability",
       "telemetry: off",
+      "auto updates: disabled",
+      "issue relay: off",
       "packs: core, caveman"
     ]);
   });
@@ -99,6 +102,8 @@ describe("preferences control plane", () => {
       "frontend-craft: gpt-5.5 (high) (derived)",
       "telemetry files: summary missing, events missing, queue missing",
       "telemetry: off",
+      "auto updates: disabled",
+      "issue relay: off",
       "packs: core"
     ]);
   });
@@ -129,6 +134,21 @@ describe("preferences control plane", () => {
       ])
     );
     expect(readLocalConfig(paths.configPath)).toEqual(config);
+  });
+
+  it("toggles auto updates in local config", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    const enabled = toggleAutoUpdates(paths, codexPaths);
+    expect(enabled.summary).toBe("auto updates: enabled");
+    expect(readLocalConfig(paths.configPath).updates.auto).toBe(true);
+
+    const disabled = toggleAutoUpdates(paths, codexPaths);
+    expect(disabled.summary).toBe("auto updates: disabled");
+    expect(readLocalConfig(paths.configPath).updates.auto).toBe(false);
   });
 
   it("reports backup metadata on config rewrite and can reset telemetry data", () => {
@@ -165,7 +185,7 @@ describe("preferences control plane", () => {
     off.privacy.telemetry = "off";
 
     const enabled = saveConfig(paths, productImprovement);
-    expect(existsSync(paths.telemetryQueuePath)).toBe(true);
+    expect(existsSync(paths.telemetryQueuePath)).toBe(false);
     expect(enabled.pathsTouched).toEqual(
       expect.arrayContaining([
         paths.telemetrySummaryPath,
@@ -442,7 +462,7 @@ describe("preferences control plane", () => {
       dirPresent: true,
       summaryPresent: true,
       eventsPresent: true,
-      queuePresent: true
+      queuePresent: false
     });
 
     expect(inspectPreferencesSnapshot(paths, createCodexPaths(makeTempDir()))).toMatchObject({
@@ -450,7 +470,7 @@ describe("preferences control plane", () => {
         dirPresent: true,
         summaryPresent: true,
         eventsPresent: true,
-        queuePresent: true
+        queuePresent: false
       }
     });
 
@@ -461,7 +481,7 @@ describe("preferences control plane", () => {
         dirPresent: true,
         summaryPresent: true,
         eventsPresent: true,
-        queuePresent: true
+        queuePresent: false
       },
       summaryPath: paths.telemetrySummaryPath,
       eventsPath: paths.telemetryEventsPath,

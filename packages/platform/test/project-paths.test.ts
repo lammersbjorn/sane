@@ -148,7 +148,7 @@ describe('project path parity', () => {
     expect(discovered.runtimeRoot).toBe(runtimeRoot);
   });
 
-  it('creates runtime state and telemetry directories idempotently', () => {
+  it('creates runtime state directories idempotently without optional telemetry', () => {
     const dir = makeTempDir();
     const paths = createProjectPaths(dir);
 
@@ -162,7 +162,7 @@ describe('project path parity', () => {
     expect(existsSync(paths.codexConfigBackupsDir)).toBe(true);
     expect(existsSync(paths.logsDir)).toBe(true);
     expect(existsSync(paths.sessionsDir)).toBe(true);
-    expect(existsSync(paths.telemetryDir)).toBe(true);
+    expect(existsSync(paths.telemetryDir)).toBe(false);
   });
 
   it('preserves existing runtime files while ensuring directories', () => {

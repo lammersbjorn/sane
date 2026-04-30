@@ -5,10 +5,12 @@ import { join } from "node:path";
 import { createCodexPaths, createProjectPaths } from "@sane/platform";
 import {
   appendJsonlRecord,
+  createEventRecord,
   createMissingLatestPolicyPreviewSnapshot,
   createDecisionRecord,
   readCurrentRunState,
   readRunSummary,
+  stringifyEventRecord,
   stringifyDecisionRecord,
   writeCurrentRunState
 } from "@sane/state";
@@ -17,6 +19,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { installRuntime } from "../src/index.js";
 import {
   advanceOutcomeState,
+  inspectRecentBlockersFromStateEvents,
   inspectOutcomeRescueSignalFromRuntimeState,
   inspectRuntimeState,
   inspectOutcomeReadinessSnapshot,
@@ -371,6 +374,36 @@ describe("inspectRuntimeState", () => {
     expect(snapshot.latestPolicyPreview.scenarios).toHaveLength(32);
     expect(snapshot.latestPolicyPreview.scenarios[0]?.traceCount).toBe(16);
     expect(snapshot.latestPolicyPreview.scenarios[0]?.trace).toHaveLength(16);
+  });
+
+  it("summarizes recent blocker events from local state history with sanitized text", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+
+    installRuntime(paths, createCodexPaths(homeDir));
+    appendJsonlRecord(
+      paths.eventsPath,
+      createEventRecord("operation", "export_hooks", "ok", "exported hooks", []),
+      stringifyEventRecord
+    );
+    appendJsonlRecord(
+      paths.eventsPath,
+      createEventRecord("operation", "export_hooks", "blocked", "blocked by invalid hooks JSON", []),
+      stringifyEventRecord
+    );
+    appendJsonlRecord(
+      paths.eventsPath,
+      createEventRecord("operation", "update_check", "warning", "warning:\nunstable source", []),
+      stringifyEventRecord
+    );
+
+    const summary = inspectRecentBlockersFromStateEvents(paths, 2);
+    expect(summary.total).toBe(2);
+    expect(summary.items).toEqual([
+      "update_check: warning: unstable source",
+      "export_hooks: blocked by invalid hooks JSON"
+    ]);
   });
 });
 

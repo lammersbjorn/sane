@@ -5,6 +5,8 @@ export class OperationKind {
   static readonly ShowRuntimeSummary = new OperationKind("ShowRuntimeSummary");
   static readonly ShowOutcomeReadiness = new OperationKind("ShowOutcomeReadiness");
   static readonly AdvanceOutcome = new OperationKind("AdvanceOutcome");
+  static readonly ReviewIssueDraft = new OperationKind("ReviewIssueDraft");
+  static readonly SubmitIssueDraft = new OperationKind("SubmitIssueDraft");
   static readonly PreviewPolicy = new OperationKind("PreviewPolicy");
   static readonly BackupCodexConfig = new OperationKind("BackupCodexConfig");
   static readonly PreviewCodexProfile = new OperationKind("PreviewCodexProfile");
@@ -17,6 +19,7 @@ export class OperationKind {
   static readonly ApplyStatuslineProfile = new OperationKind("ApplyStatuslineProfile");
   static readonly RestoreCodexConfig = new OperationKind("RestoreCodexConfig");
   static readonly ResetTelemetryData = new OperationKind("ResetTelemetryData");
+  static readonly CheckUpdates = new OperationKind("CheckUpdates");
   static readonly ShowStatus = new OperationKind("ShowStatus");
   static readonly Doctor = new OperationKind("Doctor");
   static readonly ExportUserSkills = new OperationKind("ExportUserSkills");
@@ -132,6 +135,7 @@ export interface PolicyPreviewPayload {
 export interface OperationResultInput {
   kind: OperationKind;
   summary: string;
+  status?: OperationResultStatus;
   rewrite?: OperationRewriteMetadata | null;
   details?: string[];
   pathsTouched?: string[];
@@ -139,9 +143,12 @@ export interface OperationResultInput {
   policyPreview?: PolicyPreviewPayload | null;
 }
 
+export type OperationResultStatus = "ok" | "blocked" | "failed" | "warning";
+
 export class OperationResult {
   readonly kind: OperationKind;
   readonly summary: string;
+  readonly status: OperationResultStatus;
   readonly rewrite: OperationRewriteMetadata | null;
   readonly details: string[];
   readonly pathsTouched: string[];
@@ -151,6 +158,7 @@ export class OperationResult {
   constructor(input: OperationResultInput) {
     this.kind = input.kind;
     this.summary = input.summary;
+    this.status = input.status ?? inferOperationResultStatus(input.summary, input.details ?? []);
     this.rewrite = input.rewrite ?? null;
     this.details = input.details ?? [];
     this.pathsTouched = input.pathsTouched ?? [];
@@ -191,6 +199,24 @@ export class OperationResult {
 
     return lines.join("\n");
   }
+}
+
+export function inferOperationResultStatus(
+  summary: string,
+  details: string[] = []
+): OperationResultStatus {
+  const content = [summary, ...details].join("\n").toLowerCase();
+  if (content.includes("failed") || content.includes("error")) {
+    return "failed";
+  }
+  if (content.includes("blocked")) {
+    return "blocked";
+  }
+  if (content.includes("invalid") || content.includes("warning") || content.includes("warn")) {
+    return "warning";
+  }
+
+  return "ok";
 }
 
 export function upsertManagedBlock(

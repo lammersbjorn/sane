@@ -55,6 +55,7 @@ import {
   inspectSelfHostingShadowSnapshotFromRuntimeState,
   inspectOutcomeReadinessSnapshot,
   inspectOutcomeReadinessSnapshotFromRuntimeState,
+  inspectRecentBlockersFromStateEvents,
   inspectRuntimeState,
   runtimeHistoryPaths,
   runtimeStatePaths
@@ -371,7 +372,8 @@ function buildRuntimeSummary(
     `artifacts: ${historyCounts.artifacts} at ${paths.artifactsPath}`,
     `latest event (read-only local visibility): ${formatLatestHistoryEventPreview(historyPreview.latestEvent)}`,
     `latest decision (read-only local visibility): ${formatLatestHistoryDecisionPreview(historyPreview.latestDecision)}`,
-    `latest artifact (read-only local visibility): ${formatLatestHistoryArtifactPreview(historyPreview.latestArtifact)}`
+    `latest artifact (read-only local visibility): ${formatLatestHistoryArtifactPreview(historyPreview.latestArtifact)}`,
+    formatRecentBlockersSummary(paths)
   ];
 
   if (current) {
@@ -417,6 +419,15 @@ function buildRuntimeSummary(
   });
 }
 
+function formatRecentBlockersSummary(paths: ProjectPaths): string {
+  const recent = inspectRecentBlockersFromStateEvents(paths);
+  if (recent.total === 0) {
+    return "recent blockers (events): none";
+  }
+
+  return `recent blockers (events): ${recent.total} total; latest ${recent.items.join(" | ")}`;
+}
+
 export function inspectLatestPolicyPreview(paths: ProjectPaths): LatestPolicyPreviewSnapshot {
   return inspectRuntimeState(paths).latestPolicyPreview;
 }
@@ -426,6 +437,15 @@ export function inspectLatestPolicyPreview(paths: ProjectPaths): LatestPolicyPre
 export { applyCodexProfile } from "./codex-config.js";
 export { exportAll, exportOpencodeCore, uninstallAll, uninstallOpencodeCore } from "./bundles.js";
 export { showStatus, doctor } from "./inventory.js";
+export { checkForUpdates, inspectUpdateCheck } from "./update-check.js";
+export {
+  buildIssueRelayDraft,
+  setIssueRelayGhRunnerForTest,
+  submitIssueRelayDraft,
+  submitLatestIssueRelayDraft,
+  writeIssueRelayDraft
+} from "./issue-relay.js";
+export { inspectTelemetryLedger, recordTelemetryEvent } from "./telemetry.js";
 export {
   formatInspectOverviewLines,
   type InspectOverviewSnapshot

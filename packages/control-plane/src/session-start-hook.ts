@@ -1,3 +1,11 @@
+import {
+  createDefaultGuidancePacks,
+  enabledOptionalPackContinuityLines,
+  optionalPackConfigKey,
+  optionalPackNames,
+  type GuidancePacks,
+} from "@sane/framework-assets";
+
 const MANAGED_SESSION_START_HOOK_COMMAND_SUFFIX = "hook session-start";
 const MANAGED_SESSION_END_HOOK_COMMAND_SUFFIX = "hook session-end";
 const DEFAULT_MANAGED_SESSION_START_HOOK_EXECUTABLE = "sane";
@@ -18,27 +26,11 @@ export const SESSION_END_RATE_LIMIT_RESUME_CONTEXT =
 export type ManagedLifecycleHookEvent = "session-start" | "session-end";
 
 export interface SaneContinuityPackState {
-  caveman?: boolean;
-  rtk?: boolean;
-  frontendCraft?: boolean;
+  [configKey: string]: boolean | undefined;
 }
 
 export function buildSaneContinuityRules(packs: SaneContinuityPackState = {}): string[] {
-  const lines = [SESSION_START_BASE_GUIDANCE];
-
-  if (packs.caveman) {
-    lines.push("Caveman pack active: load `sane-caveman` skill body before normal narrative.");
-  }
-  if (packs.rtk) {
-    lines.push("RTK pack active: load `sane-rtk` skill body before shell/search/test/log work.");
-  }
-  if (packs.frontendCraft) {
-    lines.push(
-      "Frontend-craft pack active: load the matching frontend skill body before UI, asset, or visual-review work."
-    );
-  }
-
-  return lines;
+  return [SESSION_START_BASE_GUIDANCE, ...enabledOptionalPackContinuityLines(normalizeContinuityPacks(packs))];
 }
 
 export function buildSaneContinuityContext(packs: SaneContinuityPackState = {}): string {
@@ -63,6 +55,15 @@ export function buildSaneCompactPrompt(packs: SaneContinuityPackState = {}): str
     "",
     "Be terse, operational, and continuation-ready."
   ].join("\n");
+}
+
+function normalizeContinuityPacks(packs: SaneContinuityPackState): GuidancePacks {
+  const normalized = createDefaultGuidancePacks();
+  for (const pack of optionalPackNames()) {
+    const configKey = optionalPackConfigKey(pack);
+    normalized[configKey] = Boolean(packs[configKey]);
+  }
+  return normalized;
 }
 
 export function buildManagedSessionStartHookCommand(

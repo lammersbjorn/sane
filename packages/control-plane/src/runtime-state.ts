@@ -11,6 +11,8 @@ import {
   createCanonicalStatePaths,
   createMissingLatestPolicyPreviewSnapshot,
   loadLayeredStateBundle,
+  parseEventRecordJson,
+  readJsonlRecords,
   readCurrentRunState,
   writeCurrentRunState,
   readRunSummary,
@@ -55,6 +57,11 @@ export interface RuntimeInspectSnapshot {
   historyCounts: LayeredStateBundle["historyCounts"];
   historyPreview: LayeredStateHistoryPreview;
   latestPolicyPreview: LatestPolicyPreviewSnapshot;
+}
+
+export interface RecentBlockerSummary {
+  total: number;
+  items: string[];
 }
 
 export type SelfHostingShadowStatus = "ready" | "blocked";
@@ -399,6 +406,24 @@ export function inspectOutcomeRescueSignalFromRuntimeState(
     summary: activeSignals.map((signal) => signal.summary).join("; "),
     reasons: activeSignals.map((signal) => signal.summary)
   };
+}
+
+export function inspectRecentBlockersFromStateEvents(
+  paths: ProjectPaths,
+  limit = 3
+): RecentBlockerSummary {
+  if (limit <= 0) {
+    return { total: 0, items: [] };
+  }
+
+  const records = safeRead(() => readJsonlRecords(paths.eventsPath, parseEventRecordJson)) ?? [];
+  const blockers = records.filter(isBlockerEvent);
+  const items = blockers
+    .slice(-limit)
+    .reverse()
+    .map((record) => sanitizeBlockerSummary(`${record.action}: ${record.summary}`));
+
+  return { total: blockers.length, items };
 }
 
 function tryLoadRuntimeStateBundle(paths: ProjectPaths): LayeredStateBundle | null {
@@ -1003,6 +1028,32 @@ function latestPersistedOutcomeProgressTs(
   }
 
   return Math.max(...values);
+}
+
+function isBlockerEvent(record: { result: string; summary: string }): boolean {
+  const result = record.result.trim().toLowerCase();
+  if (result === "blocked" || result === "failed" || result === "warning") {
+    return true;
+  }
+
+  const summary = record.summary.toLowerCase();
+  return (
+    summary.includes("blocked")
+    || summary.includes("failed")
+    || summary.includes("invalid")
+    || summary.includes("warning")
+  );
+}
+
+function sanitizeBlockerSummary(value: string): string {
+  const withoutControl = value.replace(/[\u0000-\u001F\u007F]/g, " ");
+  const collapsed = withoutControl.replace(/\s+/g, " ").trim();
+
+  if (collapsed.length <= 180) {
+    return collapsed;
+  }
+
+  return `${collapsed.slice(0, 177)}...`;
 }
 
 function currentOutcomeLastAdvanceTsUnix(current: CurrentRunState): number | null {

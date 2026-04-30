@@ -62,7 +62,8 @@ describe("full inventory and doctor", () => {
       "pack-core",
       "pack-caveman",
       "pack-rtk",
-      "pack-frontend-craft"
+      "pack-frontend-craft",
+      "pack-docs-craft"
     ]);
     const codexNativeNames = bundle.codexNative.map((item) => item.name);
     expect(codexNativeNames).toEqual(
@@ -107,6 +108,16 @@ describe("full inventory and doctor", () => {
         status: "disabled",
         skillName: "sane-frontend-craft",
         skillNames: optionalPackSkillNames("frontend-craft"),
+        provenance: expect.objectContaining({
+          kind: "derived"
+        })
+      }),
+      expect.objectContaining({
+        name: "docs-craft",
+        inventoryName: "pack-docs-craft",
+        status: "disabled",
+        skillName: "sane-docs-writing",
+        skillNames: optionalPackSkillNames("docs-craft"),
         provenance: expect.objectContaining({
           kind: "derived"
         })

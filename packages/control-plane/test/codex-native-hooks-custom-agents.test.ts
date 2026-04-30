@@ -92,7 +92,8 @@ describe("hooks and custom agents", () => {
     const packs = {
       caveman: true,
       rtk: false,
-      frontendCraft: false
+      frontendCraft: false,
+      docsCraft: false
     };
 
     expect(result.summary).toContain("installed Sane custom agents");

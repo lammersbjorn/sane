@@ -28,10 +28,14 @@ import {
   SANE_REVIEWER_AGENT_NAME,
   SANE_ROUTER_SKILL_NAME,
   createCoreSkills,
+  createDefaultGuidancePacks,
   createOptionalPackSkills,
   createSaneGlobalAgentsOverlay,
+  enabledOptionalPackContinuityLines,
   enabledOptionalPackNames,
+  optionalPackConfigKey,
   optionalPackNames,
+  optionalPackPolicyLine,
   optionalPackSkillNames,
   type GuidancePacks,
   type ModelRoutingGuidance
@@ -774,17 +778,10 @@ function createOpencodeAgentTemplate(input: {
 }
 
 function opencodePackNotes(packs: GuidancePacks): string[] {
-  const lines: string[] = [];
-  if (packs.caveman) {
-    lines.push("- caveman prose active when enabled");
-  }
-  if (packs.rtk) {
-    lines.push("- RTK-first shell/search/test route");
-  }
-  if (packs.frontendCraft) {
-    lines.push("- frontend craft/review/asset skills required for UI work");
-  }
-  return lines;
+  return enabledOptionalPackNames(packs)
+    .map((pack) => optionalPackPolicyLine(pack))
+    .filter((line): line is string => Boolean(line))
+    .map((line) => `- ${line}`);
 }
 
 function createOpencodeSessionStartPluginBody(packs: GuidancePacks): string {
@@ -868,19 +865,7 @@ function createOpencodeSessionStartPluginBody(packs: GuidancePacks): string {
 }
 
 function opencodeSessionStartPackLines(packs: GuidancePacks): string[] {
-  const lines: string[] = [];
-  if (packs.caveman) {
-    lines.push("Caveman pack active: load `sane-caveman` skill body before normal narrative.");
-  }
-  if (packs.rtk) {
-    lines.push("RTK pack active: load `sane-rtk` skill body before shell/search/test/log work.");
-  }
-  if (packs.frontendCraft) {
-    lines.push(
-      "Frontend-craft pack active: load the matching frontend skill body before UI, asset, or visual-review work."
-    );
-  }
-  return lines;
+  return enabledOptionalPackContinuityLines(packs);
 }
 
 function readOpencodeConfigJson(path: string):
@@ -995,15 +980,20 @@ function activeGuidance(paths: ProjectPaths, codexPaths: CodexPaths): {
     createRecommendedLocalConfig(environment)
   );
   return {
-    packs: {
-      caveman: config.packs.caveman,
-      rtk: config.packs.rtk,
-      frontendCraft: config.packs.frontendCraft
-    },
+    packs: guidancePacksFromConfig(config.packs),
     roles: {
       ...OPENCODE_GO_MODEL_ROUTING
     }
   };
+}
+
+function guidancePacksFromConfig(config: Record<string, boolean>): GuidancePacks {
+  const packs = createDefaultGuidancePacks();
+  for (const packName of optionalPackNames()) {
+    const configKey = optionalPackConfigKey(packName);
+    packs[configKey] = Boolean(config[configKey]);
+  }
+  return packs;
 }
 
 function opencodeRoot(codexPaths: CodexPaths): string {

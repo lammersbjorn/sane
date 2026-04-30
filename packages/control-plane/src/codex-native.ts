@@ -23,9 +23,11 @@ import {
   SANE_REPO_AGENTS_BEGIN,
   SANE_REPO_AGENTS_END,
   createCoreSkills,
+  createDefaultGuidancePacks,
   createOptionalPackSkills,
   createSaneGlobalAgentsOverlay,
   createSaneRepoAgentsOverlay,
+  optionalPackConfigKey,
   optionalPackNames,
   optionalPackSkillNames,
   type OptionalPackName,
@@ -571,11 +573,7 @@ function activeGuidance(paths: ProjectPaths, codexPaths: CodexPaths): {
   const environment = detectCodexEnvironment(codexPaths.modelsCacheJson, codexPaths.authJson);
   const config = loadOrDefaultConfig(paths, codexPaths, environment);
   return {
-    packs: {
-      caveman: config.packs.caveman,
-      rtk: config.packs.rtk,
-      frontendCraft: config.packs.frontendCraft
-    },
+    packs: guidancePacksFromConfig(config.packs),
     roles: {
       coordinatorModel: config.models.coordinator.model,
       coordinatorReasoning: config.models.coordinator.reasoningEffort,
@@ -589,6 +587,15 @@ function activeGuidance(paths: ProjectPaths, codexPaths: CodexPaths): {
       realtimeReasoning: config.subagents.realtime.reasoningEffort
     }
   };
+}
+
+function guidancePacksFromConfig(config: Record<string, boolean>): GuidancePacks {
+  const packs = createDefaultGuidancePacks();
+  for (const packName of optionalPackNames()) {
+    const configKey = optionalPackConfigKey(packName);
+    packs[configKey] = Boolean(config[configKey]);
+  }
+  return packs;
 }
 
 function loadOrDefaultConfig(paths: ProjectPaths, codexPaths: CodexPaths, environment = detectCodexEnvironment(codexPaths.modelsCacheJson, codexPaths.authJson)) {

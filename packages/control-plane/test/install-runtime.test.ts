@@ -60,6 +60,7 @@ describe("installRuntime", () => {
     expect(existsSync(projectPaths.eventsPath)).toBe(true);
     expect(existsSync(projectPaths.decisionsPath)).toBe(true);
     expect(existsSync(projectPaths.artifactsPath)).toBe(true);
+    expect(existsSync(projectPaths.telemetryDir)).toBe(false);
     expect(currentRun.objective).toBe("initialize sane runtime");
     expect(currentRun.phase).toBe("setup");
     expect(currentRun.activeTasks).toEqual(["install sane runtime"]);

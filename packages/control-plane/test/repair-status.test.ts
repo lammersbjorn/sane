@@ -87,7 +87,7 @@ describe("repair status snapshot", () => {
     expect(inspectRepairStatus(paths, codexPaths)).toEqual({
       installBundle: "installed",
       telemetry: {
-        dirPresent: true,
+        dirPresent: false,
         summaryPresent: false,
         eventsPresent: false,
         queuePresent: false
@@ -102,7 +102,7 @@ describe("repair status snapshot", () => {
       actionStatus: expect.objectContaining({
         backup_codex_config: { kind: "installed", label: "installed" },
         restore_codex_config: { kind: "available", label: "available" },
-        reset_telemetry_data: { kind: "present", label: "present" },
+        reset_telemetry_data: { kind: "missing", label: "missing" },
         ...Object.fromEntries(
           CORE_INSTALL_BUNDLE_TARGETS.map((target) => [
             actionIdForTarget(target),

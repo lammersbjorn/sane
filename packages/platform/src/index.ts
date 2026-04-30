@@ -127,7 +127,6 @@ export function ensureRuntimeDirs(paths: ProjectPaths): void {
     paths.codexConfigBackupsDir,
     paths.logsDir,
     paths.sessionsDir,
-    paths.telemetryDir,
   ]) {
     mkdirSync(dir, { recursive: true });
   }
