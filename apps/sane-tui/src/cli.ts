@@ -6,6 +6,7 @@ import {
   renderSessionEndHookOutput,
   renderSessionStartHookOutput
 } from "@sane/control-plane/session-start-hook.js";
+import { submitIssueRelayDraft } from "@sane/control-plane/issue-relay.js";
 import {
   type ManagedTokscaleSubmitHookEvent,
   renderTokscaleSubmitHookOutput
@@ -25,6 +26,11 @@ export type ParsedCliCommand =
   | {
       kind: "backend";
       commandId: BackendCommandId;
+    }
+  | {
+      kind: "issue-submit";
+      draftPath: string;
+      repo?: string;
     }
   | {
       kind: "hook";
@@ -58,6 +64,8 @@ const BACKEND_COMMAND_ALIASES: ReadonlyArray<{
   { args: ["codex-config"], commandId: "show_codex_config" },
   { args: ["summary"], commandId: "show_runtime_summary" },
   { args: ["outcome-readiness"], commandId: "show_outcome_readiness" },
+  { args: ["issue", "draft"], commandId: "review_issue_draft" },
+  { args: ["updates", "auto"], commandId: "toggle_auto_updates" },
   { args: ["backup", "codex-config"], commandId: "backup_codex_config" },
   { args: ["preview", "policy"], commandId: "preview_policy" },
   { args: ["preview", "codex-profile"], commandId: "preview_codex_profile" },
@@ -69,6 +77,8 @@ const BACKEND_COMMAND_ALIASES: ReadonlyArray<{
   { args: ["apply", "cloudflare-profile"], commandId: "apply_cloudflare_profile" },
   { args: ["apply", "statusline-profile"], commandId: "apply_statusline_profile" },
   { args: ["restore", "codex-config"], commandId: "restore_codex_config" },
+  { args: ["update-check"], commandId: "check_updates" },
+  { args: ["check", "updates"], commandId: "check_updates" },
   { args: ["show", "status"], commandId: "show_status" },
   { args: ["doctor"], commandId: "doctor" },
   { args: ["export", "user-skills"], commandId: "export_user_skills" },
@@ -117,6 +127,10 @@ export function parseCliArgs(args: readonly string[]): ParsedCliCommand {
     return parseTokscaleSubmitHookArgs(normalizedArgs.slice(2));
   }
 
+  if (normalizedArgs[0] === "issue" && normalizedArgs[1] === "submit") {
+    return parseIssueSubmitArgs(normalizedArgs.slice(2));
+  }
+
   const backend = BACKEND_COMMAND_ALIASES.find((entry) => matchesArgs(normalizedArgs, entry.args));
   if (backend) {
     return {
@@ -162,10 +176,54 @@ export function runCliCommandFromDiscovery(
 
   const paths = discoverProjectPaths(startPath);
   const codexPaths = discoverCodexPaths(env);
+  if (parsed.kind === "issue-submit") {
+    const result = submitIssueRelayDraft(paths, {
+      draftPath: parsed.draftPath,
+      repo: parsed.repo
+    });
+    return {
+      exitCode: result.status === "ok" ? 0 : result.status === "blocked" ? 2 : 1,
+      output: result.renderText()
+    };
+  }
+
   const result = executeUiCommand(paths, codexPaths, parsed.commandId);
   return {
     exitCode: 0,
     output: result.renderText()
+  };
+}
+
+function parseIssueSubmitArgs(args: readonly string[]): ParsedCliCommand {
+  let draftPath: string | undefined;
+  let repo: string | undefined;
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--repo") {
+      const value = args[index + 1];
+      if (!value) {
+        throw new Error("missing value for --repo");
+      }
+      repo = value;
+      index += 1;
+      continue;
+    }
+    if (!draftPath) {
+      draftPath = arg;
+      continue;
+    }
+    throw new Error(`unsupported issue submit option: ${arg}`);
+  }
+
+  if (!draftPath) {
+    throw new Error("missing issue draft path");
+  }
+
+  return {
+    kind: "issue-submit",
+    draftPath,
+    repo
   };
 }
 

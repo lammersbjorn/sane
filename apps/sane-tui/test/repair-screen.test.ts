@@ -56,7 +56,9 @@ describe("repair screen model", () => {
       "install_runtime",
       "backup_codex_config",
       "restore_codex_config",
-      "reset_telemetry_data"
+      "reset_telemetry_data",
+      "review_issue_draft",
+      "submit_issue_draft"
     ]);
     expect(
       screen.actions.find((action) => action.id === "restore_codex_config")?.confirmation
@@ -83,7 +85,7 @@ describe("repair screen model", () => {
 
     expect(screen.installBundle).toBe("installed");
     expect(screen.telemetry).toEqual({
-      dirPresent: true,
+      dirPresent: false,
       summaryPresent: false,
       eventsPresent: false,
       queuePresent: false
@@ -109,8 +111,8 @@ describe("repair screen model", () => {
       label: "available"
     });
     expect(screen.actions.find((action) => action.id === "reset_telemetry_data")?.status).toEqual({
-      kind: "present",
-      label: "present"
+      kind: "missing",
+      label: "missing"
     });
     expect(screen.actions.some((action) => action.id.startsWith("uninstall_"))).toBe(false);
   });

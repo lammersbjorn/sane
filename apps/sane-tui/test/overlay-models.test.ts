@@ -92,9 +92,10 @@ describe("overlay models", () => {
     if (!overlay || overlay.kind !== "privacy") {
       throw new Error("expected privacy overlay");
     }
-    expect(overlay.fieldLines).toEqual(["> Telemetry: local-only"]);
+    expect(overlay.fieldLines).toEqual(["> Telemetry: local-only", "  Issue relay: off"]);
     expect(overlay.detailsLines.some((line: string) => line.includes("consent: local-only"))).toBe(true);
     expect(overlay.detailsLines).toContain("policy: local-only keeps summary/events local and removes upload queue");
+    expect(overlay.detailsLines).toContain("issue relay: off");
     expect(overlay.detailsLines.some((line: string) => line.includes("summary path:"))).toBe(true);
     expect(overlay.detailsLines.some((line: string) => line.includes("events path:"))).toBe(true);
   });

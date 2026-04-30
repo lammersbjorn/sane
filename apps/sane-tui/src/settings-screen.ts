@@ -15,6 +15,7 @@ export interface SettingsScreenAction {
     | "open_config_editor"
     | "open_pack_editor"
     | "open_privacy_editor"
+    | "toggle_auto_updates"
     | "show_config"
     | "show_codex_config"
     | "preview_statusline_profile"
@@ -34,6 +35,7 @@ export interface SettingsScreenModel {
   subagents: SettingsSnapshotModel["subagents"];
   modelCapabilities: SettingsSnapshotModel["modelCapabilities"];
   telemetry: SettingsSnapshotModel["telemetry"];
+  autoUpdates: SettingsSnapshotModel["autoUpdates"];
   telemetryFiles: SettingsSnapshotModel["telemetryFiles"];
   enabledPacks: string[];
   statuslineAudit: ReturnType<typeof inspectCodexProfileFamilySnapshot>["statusline"]["audit"];
@@ -73,6 +75,7 @@ export function loadSettingsScreen(
     subagents: snapshot.subagents,
     modelCapabilities: snapshot.modelCapabilities,
     telemetry: snapshot.telemetry,
+    autoUpdates: snapshot.autoUpdates,
     telemetryFiles: snapshot.telemetryFiles,
     enabledPacks: snapshot.enabledPacks,
     statuslineAudit: profiles.statusline.audit,

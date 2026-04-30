@@ -11,6 +11,7 @@ import {
   cycleTelemetryLevel,
   moveConfigFieldSelection,
   movePackSelection,
+  movePrivacySelection,
   resetConfigEditor,
   resetPackEditor,
   resetPrivacyEditor,
@@ -128,7 +129,7 @@ describe("preferences editor state", () => {
   it("toggles optional packs with core locked on and resets to defaults", () => {
     const editor = createPackEditorState(createDefaultLocalConfig());
 
-    expect(editor.fields).toEqual(["caveman", "rtk", "frontend_craft"]);
+    expect(editor.fields).toEqual(["caveman", "rtk", "frontend_craft", "docs_craft"]);
 
     const toggled = toggleSelectedPack(editor);
     expect(toggled.config.packs.caveman).toBe(true);
@@ -142,7 +143,7 @@ describe("preferences editor state", () => {
     expect(reset.config.packs).toEqual(createDefaultLocalConfig().packs);
   });
 
-  it("cycles privacy telemetry levels in both directions and resets to off", () => {
+  it("cycles privacy telemetry and issue relay levels in both directions and resets to off", () => {
     const editor = createPrivacyEditorState(createDefaultLocalConfig());
 
     const once = cycleTelemetryLevel(editor, 1);
@@ -154,7 +155,13 @@ describe("preferences editor state", () => {
     expect(twice.config.privacy.telemetry).toBe("product-improvement");
     expect(wrapped.config.privacy.telemetry).toBe("off");
     expect(reverseWrapped.config.privacy.telemetry).toBe("product-improvement");
-    expect(resetPrivacyEditor(twice).config.privacy.telemetry).toBe("off");
+    const issueRelay = cycleTelemetryLevel(movePrivacySelection(editor, 1), 1);
+    const issueRelayReverse = cycleTelemetryLevel(movePrivacySelection(editor, 1), -1);
+    expect(issueRelay.config.issueRelay.mode).toBe("draft-local");
+    expect(issueRelayReverse.config.issueRelay.mode).toBe("pr-review");
+    const reset = resetPrivacyEditor(issueRelay);
+    expect(reset.config.privacy.telemetry).toBe("off");
+    expect(reset.config.issueRelay.mode).toBe("off");
   });
 
   it("surfaces save/reset affordances for dirty editor state", () => {

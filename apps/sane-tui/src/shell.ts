@@ -33,6 +33,8 @@ import {
   exportHooks
 } from "@sane/control-plane/hooks-custom-agents.js";
 import { executeConfigSave, executeOperation, executeOperationWithRuntimeState } from "@sane/control-plane/history.js";
+import { checkForUpdates } from "@sane/control-plane/update-check.js";
+import { submitLatestIssueRelayDraft, writeIssueRelayDraft } from "@sane/control-plane/issue-relay.js";
 import {
   doctor,
   doctorForStatusBundle,
@@ -49,7 +51,8 @@ import {
   inspectEditablePreferencesConfig,
   inspectPreferencesFamilySnapshot,
   resetTelemetryData,
-  showConfig
+  showConfig,
+  toggleAutoUpdates
 } from "@sane/control-plane/preferences.js";
 import {
   advanceOutcome,
@@ -80,6 +83,7 @@ import {
   cycleTelemetryLevel,
   moveConfigFieldSelection,
   movePackSelection,
+  movePrivacySelection,
   resetConfigEditor,
   resetPackEditor,
   resetPrivacyEditor,
@@ -89,6 +93,7 @@ import {
   type PrivacyEditorState
 } from "@sane/sane-tui/preferences-editor-state.js";
 import { buildLastResultView, buildNotice, buildResultNotice, type LastResultView, type NoticeView } from "@sane/sane-tui/result-panel.js";
+import { SANE_CLI_VERSION } from "@sane/sane-tui/version.js";
 
 export interface PendingConfirmation {
   title: "Confirm";
@@ -292,6 +297,7 @@ export function moveEditorSelection(shell: TuiShell, delta: 1 | -1): void {
       shell.activeEditor = movePackSelection(shell.activeEditor, delta);
       break;
     case "privacy":
+      shell.activeEditor = movePrivacySelection(shell.activeEditor, delta);
       break;
   }
 }
@@ -469,8 +475,31 @@ export function executeUiCommand(
       return executeOperation(paths, () => showOutcomeReadiness(paths));
     case "advance_outcome":
       return executeOperation(paths, () => advanceOutcome(paths));
+    case "review_issue_draft":
+      return executeOperation(paths, () => writeIssueRelayDraft(paths, {
+        category: "sane-status",
+        sourceCommand: "show_status",
+        summary: "Sane status or repair signal needs user review",
+        reproductionSteps: [
+          "Run sane status",
+          "Run sane doctor",
+          "Review local Sane status, drift, and repair output"
+        ]
+      }));
+    case "submit_issue_draft":
+      return executeOperation(paths, () => submitLatestIssueRelayDraft(paths));
     case "reset_telemetry_data":
       return executeOperation(paths, () => resetTelemetryData(paths));
+    case "toggle_auto_updates":
+      return executeOperation(paths, () => toggleAutoUpdates(paths, codexPaths));
+    case "check_updates":
+      return executeOperation(paths, () =>
+        checkForUpdates({
+          currentVersion: SANE_CLI_VERSION,
+          autoUpdate: inspectEditablePreferencesConfig(paths, codexPaths).current.updates.auto,
+          executablePath: process.argv[1] ?? null
+        })
+      );
     case "preview_policy":
       return executeOperation(paths, () => previewPolicy(paths));
     case "backup_codex_config":

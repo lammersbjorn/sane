@@ -14,7 +14,10 @@ export type BackendCommandId =
   | "show_runtime_summary"
   | "show_outcome_readiness"
   | "advance_outcome"
+  | "review_issue_draft"
+  | "submit_issue_draft"
   | "reset_telemetry_data"
+  | "toggle_auto_updates"
   | "preview_policy"
   | "backup_codex_config"
   | "preview_codex_profile"
@@ -41,6 +44,7 @@ export type BackendCommandId =
   | "uninstall_hooks"
   | "uninstall_custom_agents"
   | "uninstall_all"
+  | "check_updates"
   | "show_status"
   | "doctor";
 
@@ -320,7 +324,8 @@ export const COMMAND_METADATA_REGISTRY = {
       help: [
         "Check whether saved Sane handoff notes are ready for a long-running outcome flow.",
         "",
-        "It checks local handoff layers, unresolved blockers, verification posture, latest policy preview state, and the B8 policy preflight suite.",
+        "It checks local handoff layers, unresolved recent blockers in Sane-owned state, verification posture, latest policy preview state, and the B8 policy preflight suite.",
+        "This uses `.sane` state only and does not mine raw Codex logs.",
         "It does not start an autonomous loop or turn Sane into the normal prompting interface."
       ],
       confirmation: null,
@@ -358,6 +363,42 @@ export const COMMAND_METADATA_REGISTRY = {
         ".sane/state/artifacts.jsonl"
       ]
     },
+    review_issue_draft: {
+      id: "review_issue_draft",
+      kind: "backend",
+      backendKind: OperationKind.ReviewIssueDraft,
+      help: [
+        "Create a local GitHub issue draft from Sane status signals.",
+        "",
+        "This writes reviewable markdown under `.sane/issue-relay/` only when issue relay is enabled.",
+        "It does not submit to GitHub, create a PR, or use telemetry consent as permission.",
+        "Prompts, responses, source code, repo paths, branch names, and secrets are omitted."
+      ],
+      confirmation: null,
+      successNoticeTitle: "Saved",
+      repoMutation: false,
+      filesTouched: [".sane/issue-relay/"]
+    },
+    submit_issue_draft: {
+      id: "submit_issue_draft",
+      kind: "backend",
+      backendKind: OperationKind.SubmitIssueDraft,
+      help: [
+        "Submit the latest reviewed local issue draft to GitHub.",
+        "",
+        "This runs only when issue relay mode is `issue-review`.",
+        "It checks likely duplicate GitHub issues first and blocks when candidates are found.",
+        "Telemetry consent does not grant permission to submit."
+      ],
+      confirmation: {
+        required: true,
+        impactCopy: "This may create a GitHub issue from the latest `.sane/issue-relay/` draft after duplicate search passes.",
+        remindPreviewOrBackup: false
+      },
+      successNoticeTitle: "Saved",
+      repoMutation: false,
+      filesTouched: [".sane/issue-relay/"]
+    },
     reset_telemetry_data: {
       id: "reset_telemetry_data",
       kind: "backend",
@@ -379,6 +420,21 @@ export const COMMAND_METADATA_REGISTRY = {
       successNoticeTitle: "Reset",
       repoMutation: false,
       filesTouched: [".sane/telemetry/"]
+    },
+    toggle_auto_updates: {
+      id: "toggle_auto_updates",
+      kind: "backend",
+      backendKind: OperationKind.ShowConfig,
+      help: [
+        "Enable or disable automatic Sane CLI updates.",
+        "",
+        "When enabled, update checks can apply newer supported package-manager installs automatically.",
+        "Local source installs are detected and left manual."
+      ],
+      confirmation: null,
+      successNoticeTitle: "Saved",
+      repoMutation: false,
+      filesTouched: [".sane/config.local.toml"]
     },
     preview_policy: {
       id: "preview_policy",
@@ -685,7 +741,7 @@ export const COMMAND_METADATA_REGISTRY = {
         "Install the full Sane bundle into OpenCode.",
         "",
         "This writes Sane skills, guidance, and agents into `~/.config/opencode/`.",
-        "OpenCode agents use OpenCode Go model IDs with cost-aware task routing."
+        "Plugin and config entries are exported as managed files; host OpenCode visibility/load support decides runtime effect."
       ],
       confirmation: null,
       successNoticeTitle: "Installed",
@@ -866,6 +922,21 @@ export const COMMAND_METADATA_REGISTRY = {
       repoMutation: false,
       filesTouched: ["~/.agents/skills/sane-router", "~/.agents/skills/sane-bootstrap-research", "~/.agents/skills/sane-agent-lanes", "~/.agents/skills/sane-outcome-continuation", "~/.agents/skills/continue", "~/.codex/AGENTS.md", "~/.codex/hooks.json", "~/.codex/agents/"]
     },
+    check_updates: {
+      id: "check_updates",
+      kind: "backend",
+      backendKind: OperationKind.CheckUpdates,
+      help: [
+        "Check the package registry for a newer Sane CLI release.",
+        "",
+        "This reads the published `sane-codex` version with pnpm and prints an update command when a newer release exists.",
+        "It does not change your install."
+      ],
+      confirmation: null,
+      successNoticeTitle: null,
+      repoMutation: false,
+      filesTouched: []
+    },
     show_status: {
       id: "show_status",
       kind: "backend",
@@ -942,6 +1013,7 @@ export const COMMAND_METADATA_REGISTRY = {
         "off = no optional telemetry files",
         "local-only = keep local product-improvement data on this machine only",
         "product-improvement = opt in to future product-improvement reporting",
+        "issue relay = separate opt-in for reviewable GitHub issue drafts and explicit issue submit",
         "",
         "This does not change issue reporting; that stays separate."
       ],
@@ -967,6 +1039,7 @@ export const COMMAND_METADATA_REGISTRY = {
     { commandId: "apply_statusline_profile", section: "settings", order: 7, label: "Apply optional native Codex statusline settings" },
     { commandId: "preview_cloudflare_profile", section: "settings", order: 8, label: "Preview optional Cloudflare Codex settings" },
     { commandId: "apply_cloudflare_profile", section: "settings", order: 9, label: "Apply optional Cloudflare Codex settings" },
+    { commandId: "toggle_auto_updates", section: "settings", order: 10, label: "Toggle automatic Sane updates" },
     { commandId: "export_user_skills", section: "add_to_codex", order: 1, label: "Install Sane user skills for your account" },
     { commandId: "export_global_agents", section: "add_to_codex", order: 2, label: "Install Sane guidance block in global AGENTS.md" },
     { commandId: "export_repo_skills", section: "add_to_codex", order: 3, label: "Advanced repo mutation: install Sane repo skills for this project" },
@@ -985,10 +1058,15 @@ export const COMMAND_METADATA_REGISTRY = {
     { commandId: "preview_statusline_profile", section: "status", order: 7, label: "Preview optional native Codex statusline settings" },
     { commandId: "preview_policy", section: "status", order: 8, label: "Explain Codex routing choices" },
     { commandId: "show_outcome_readiness", section: "status", order: 9, label: "Check long-run readiness" },
+    { commandId: "review_issue_draft", section: "status", order: 10, label: "Review local GitHub issue draft" },
+    { commandId: "submit_issue_draft", section: "status", order: 11, label: "Submit reviewed GitHub issue draft" },
+    { commandId: "check_updates", section: "status", order: 12, label: "Check for Sane updates" },
     { commandId: "install_runtime", section: "repair", order: 1, label: "Repair Sane's local project files" },
     { commandId: "backup_codex_config", section: "repair", order: 2, label: "Back up your Codex settings" },
     { commandId: "restore_codex_config", section: "repair", order: 3, label: "Restore your last Codex backup" },
     { commandId: "reset_telemetry_data", section: "repair", order: 4, label: "Delete Sane's local telemetry data" },
+    { commandId: "review_issue_draft", section: "repair", order: 5, label: "Create local issue report draft" },
+    { commandId: "submit_issue_draft", section: "repair", order: 6, label: "Submit reviewed issue report draft" },
     { commandId: "uninstall_user_skills", section: "uninstall", order: 1, label: "Remove Sane user skills from your account" },
     { commandId: "uninstall_global_agents", section: "uninstall", order: 2, label: "Remove Sane block from global AGENTS.md" },
     { commandId: "uninstall_hooks", section: "uninstall", order: 3, label: "Remove Sane Codex hooks" },

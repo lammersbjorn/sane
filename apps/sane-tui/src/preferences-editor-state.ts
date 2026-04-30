@@ -1,4 +1,5 @@
 import {
+  ISSUE_RELAY_MODES,
   PICKER_MODELS,
   REASONING_EFFORTS,
   TELEMETRY_LEVELS,
@@ -21,7 +22,8 @@ export type ConfigFieldId =
   | "frontend_craft_model"
   | "frontend_craft_reasoning";
 
-export type PackFieldId = "caveman" | "rtk" | "frontend_craft";
+export type PackFieldId = string;
+export type PrivacyFieldId = "telemetry" | "issue_relay";
 
 export interface ConfigEditorState {
   kind: "config";
@@ -47,9 +49,11 @@ export interface PackEditorState {
 
 export interface PrivacyEditorState {
   kind: "privacy";
-  initial: LocalConfig["privacy"];
+  initial: Pick<LocalConfig, "privacy" | "issueRelay">;
   config: LocalConfig;
-  defaults: LocalConfig["privacy"];
+  defaults: Pick<LocalConfig, "privacy" | "issueRelay">;
+  selected: number;
+  fields: PrivacyFieldId[];
   canSave: boolean;
   canReset: boolean;
 }
@@ -206,27 +210,22 @@ export const CONFIG_FIELD_METADATA: Record<ConfigFieldId, ConfigFieldMetadata> =
 
 const CONFIG_FIELDS: ConfigFieldId[] = Object.keys(CONFIG_FIELD_METADATA) as ConfigFieldId[];
 
-const PACK_FIELD_ID_BY_NAME: Record<OptionalPackName, PackFieldId> = {
-  caveman: "caveman",
-  rtk: "rtk",
-  "frontend-craft": "frontend_craft"
-};
+const PACK_FIELD_ID_BY_NAME = Object.fromEntries(
+  OPTIONAL_PACK_METADATA.map((entry) => [entry.name, packNameToFieldId(entry.name)])
+) as Record<OptionalPackName, PackFieldId>;
 
-const PACK_NAME_BY_FIELD: Record<PackFieldId, OptionalPackName> = {
-  caveman: "caveman",
-  rtk: "rtk",
-  frontend_craft: "frontend-craft"
-};
+const PACK_NAME_BY_FIELD = Object.fromEntries(
+  OPTIONAL_PACK_METADATA.map((entry) => [packNameToFieldId(entry.name), entry.name])
+) as Record<PackFieldId, OptionalPackName>;
 
-const PACK_CONFIG_KEY_BY_FIELD: Record<PackFieldId, keyof LocalConfig["packs"]> = {
-  caveman: "caveman",
-  rtk: "rtk",
-  frontend_craft: "frontendCraft"
-};
+const PACK_CONFIG_KEY_BY_FIELD = Object.fromEntries(
+  OPTIONAL_PACK_METADATA.map((entry) => [packNameToFieldId(entry.name), entry.configKey])
+) as Record<PackFieldId, keyof LocalConfig["packs"]>;
 
 const PACK_FIELDS: PackFieldId[] = OPTIONAL_PACK_METADATA.map(
   (entry) => PACK_FIELD_ID_BY_NAME[entry.name]
 );
+const PRIVACY_FIELDS: PrivacyFieldId[] = ["telemetry", "issue_relay"];
 
 export function createConfigEditorState(
   config: LocalConfig,
@@ -319,9 +318,24 @@ export function resetPackEditor(state: PackEditorState): PackEditorState {
 export function createPrivacyEditorState(config: LocalConfig): PrivacyEditorState {
   return withPrivacyAffordances({
     kind: "privacy",
-    initial: structuredClone(config.privacy),
+    initial: {
+      privacy: structuredClone(config.privacy),
+      issueRelay: structuredClone(config.issueRelay)
+    },
     config: structuredClone(config),
-    defaults: { telemetry: "off" }
+    defaults: {
+      privacy: { telemetry: "off" },
+      issueRelay: { mode: "off" }
+    },
+    selected: 0,
+    fields: PRIVACY_FIELDS
+  });
+}
+
+export function movePrivacySelection(state: PrivacyEditorState, step: 1 | -1): PrivacyEditorState {
+  return withPrivacyAffordances({
+    ...state,
+    selected: wrapIndex(state.selected + step, state.fields.length)
   });
 }
 
@@ -329,6 +343,19 @@ export function cycleTelemetryLevel(
   state: PrivacyEditorState,
   step: 1 | -1
 ): PrivacyEditorState {
+  const field = state.fields[state.selected]!;
+  if (field === "issue_relay") {
+    return withPrivacyAffordances({
+      ...state,
+      config: {
+        ...structuredClone(state.config),
+        issueRelay: {
+          mode: cycleValue(ISSUE_RELAY_MODES, state.config.issueRelay.mode, step)
+        }
+      }
+    });
+  }
+
   return withPrivacyAffordances({
     ...state,
     config: {
@@ -347,6 +374,9 @@ export function resetPrivacyEditor(state: PrivacyEditorState): PrivacyEditorStat
       ...structuredClone(state.config),
       privacy: {
         telemetry: "off"
+      },
+      issueRelay: {
+        mode: "off"
       }
     }
   });
@@ -363,6 +393,10 @@ function cycleValue<const T extends readonly string[]>(
 
 function wrapIndex(index: number, length: number): number {
   return (index + length) % length;
+}
+
+function packNameToFieldId(packName: string): PackFieldId {
+  return packName.replaceAll("-", "_");
 }
 
 function withConfigAffordances(state: Omit<ConfigEditorState, "canSave" | "canReset">): ConfigEditorState {
@@ -388,8 +422,12 @@ function withPackAffordances(state: Omit<PackEditorState, "canSave" | "canReset"
 function withPrivacyAffordances(
   state: Omit<PrivacyEditorState, "canSave" | "canReset">
 ): PrivacyEditorState {
-  const canSave = JSON.stringify(state.config.privacy) !== JSON.stringify(state.initial);
-  const canReset = JSON.stringify(state.config.privacy) !== JSON.stringify(state.defaults);
+  const current = {
+    privacy: state.config.privacy,
+    issueRelay: state.config.issueRelay
+  };
+  const canSave = JSON.stringify(current) !== JSON.stringify(state.initial);
+  const canReset = JSON.stringify(current) !== JSON.stringify(state.defaults);
   return {
     ...state,
     canSave,

@@ -44,13 +44,16 @@ const expectedControlPlaneExports = [
   "./index.js",
   "./install-status.js",
   "./inventory.js",
+  "./issue-relay.js",
   "./policy-preview.js",
   "./preferences.js",
   "./repair-status.js",
   "./runtime-state.js",
   "./session-start-hook.js",
   "./status-presenter.js",
-  "./tokscale-submit-hook.js"
+  "./telemetry.js",
+  "./tokscale-submit-hook.js",
+  "./update-check.js"
 ].sort();
 
 const expectedSaneTuiExports = [
@@ -80,7 +83,8 @@ const expectedSaneTuiExports = [
   "./terminal-keys.js",
   "./terminal-loop.js",
   "./text-driver.js",
-  "./text-renderer.js"
+  "./text-renderer.js",
+  "./version.js"
 ].sort();
 
 describe("workspace package boundaries", () => {

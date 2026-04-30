@@ -17,12 +17,16 @@ export interface StatusScreenAction {
     UiCommandId,
     | "show_status"
     | "doctor"
+    | "check_updates"
     | "show_runtime_summary"
     | "show_config"
     | "show_codex_config"
     | "preview_integrations_profile"
     | "preview_statusline_profile"
     | "preview_policy"
+    | "show_outcome_readiness"
+    | "review_issue_draft"
+    | "submit_issue_draft"
   >;
   title: string;
 }

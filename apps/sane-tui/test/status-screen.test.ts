@@ -268,7 +268,10 @@ describe("status screen model", () => {
       "preview_integrations_profile",
       "preview_statusline_profile",
       "preview_policy",
-      "show_outcome_readiness"
+      "show_outcome_readiness",
+      "review_issue_draft",
+      "submit_issue_draft",
+      "check_updates"
     ]);
     expect(screen.actions.map((action) => action.id)).not.toContain("apply_integrations_profile");
     expect(screen.statusBundle.inventory).toHaveLength(screen.status.inventory.length);
@@ -332,6 +335,14 @@ describe("status screen model", () => {
         name: "frontend-craft",
         status: "disabled",
         skillNames: expect.any(Array),
+        provenance: expect.objectContaining({
+          kind: "derived"
+        })
+      }),
+      expect.objectContaining({
+        name: "docs-craft",
+        status: "disabled",
+        skillNames: ["sane-docs-writing"],
         provenance: expect.objectContaining({
           kind: "derived"
         })

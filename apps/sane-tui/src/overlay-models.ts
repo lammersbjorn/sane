@@ -45,7 +45,9 @@ const PACK_FIELD_EXPLANATIONS: Record<PackFieldId, string> = {
     "Compressed communication guidance. Useful when you want less token-heavy prose by default.",
   rtk: "Shell-routing guidance. When enabled, route shell work through RTK instead of raw commands.",
   frontend_craft:
-    "Frontend craft guidance. Biases Sane away from generic AI UI output and toward stronger design quality."
+    "Frontend craft guidance. Biases Sane away from generic AI UI output and toward stronger design quality.",
+  docs_craft:
+    "Documentation guidance. Keeps README, user docs, changelogs, and release notes source-verified and concise."
 };
 
 export function loadOverlayModel(shell: TuiShell): OverlayModel {
@@ -92,8 +94,8 @@ export function loadOverlayModel(shell: TuiShell): OverlayModel {
         kind: "privacy",
         title: "Privacy",
         headerLines: [
-          "Privacy / Telemetry",
-          "Left/right consent. Enter save. d clear local telemetry. Esc close."
+          "Privacy / Reporting",
+          "Up/down field. Left/right value. Enter save. d clear local telemetry. Esc close."
         ],
         fieldLines: privacyFieldLines(shell.activeEditor),
         outputLines: shell.lastResult.lines,
@@ -134,7 +136,13 @@ function packFieldLines(editor: PackEditorState): string[] {
 }
 
 function privacyFieldLines(editor: PrivacyEditorState): string[] {
-  return [`> Telemetry: ${editor.config.privacy.telemetry}`];
+  return editor.fields.map((field, index) => {
+    const prefix = index === editor.selected ? "> " : "  ";
+    if (field === "telemetry") {
+      return `${prefix}Telemetry: ${editor.config.privacy.telemetry}`;
+    }
+    return `${prefix}Issue relay: ${editor.config.issueRelay.mode}`;
+  });
 }
 
 function configFieldHelpLines(editor: ConfigEditorState): string[] {
@@ -186,7 +194,8 @@ function privacyLines(shell: TuiShell): string[] {
     `queue.jsonl: ${transparency.telemetry.queuePresent ? "present" : "missing"}`,
     "",
     "No remote upload logic yet.",
-    "Issue reporting stays separate.",
+    `issue relay: ${config.config.issueRelay.mode}`,
+    "Issue relay is separate from telemetry and requires review before GitHub submission.",
     `summary path: ${transparency.summaryPath}`,
     `events path: ${transparency.eventsPath}`,
     `queue path: ${transparency.queuePath}`
@@ -200,7 +209,7 @@ function privacyConsentPolicy(consent: PrivacyEditorState["config"]["privacy"]["
     case "local-only":
       return "local-only keeps summary/events local and removes upload queue";
     case "product-improvement":
-      return "product-improvement keeps local files and prepares an upload queue";
+      return "product-improvement keeps sanitized local aggregates; no upload transport yet";
   }
 }
 

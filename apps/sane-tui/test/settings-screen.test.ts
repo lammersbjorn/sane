@@ -45,6 +45,7 @@ describe("settings screen model", () => {
     expect(screen.subagents.frontendCraft.model).toBe("gpt-5.5");
     expect(screen.subagents.frontendCraft.reasoningEffort).toBe("high");
     expect(screen.telemetry).toBe("off");
+    expect(screen.autoUpdates).toBe(false);
     expect(screen.telemetryFiles).toEqual({
       dirPresent: false,
       summaryPresent: false,
@@ -65,7 +66,8 @@ describe("settings screen model", () => {
       "preview_statusline_profile",
       "apply_statusline_profile",
       "preview_cloudflare_profile",
-      "apply_cloudflare_profile"
+      "apply_cloudflare_profile",
+      "toggle_auto_updates"
     ]);
   });
 
@@ -78,6 +80,7 @@ describe("settings screen model", () => {
     config.models.coordinator.model = "gpt-5.2";
     config.packs.caveman = true;
     config.privacy.telemetry = "product-improvement";
+    config.updates.auto = true;
 
     preferencesControlPlane.saveConfig(paths, config);
     const screen = loadSettingsScreen(paths, codexPaths);
@@ -88,11 +91,12 @@ describe("settings screen model", () => {
     expect(screen.derivedRouting.realtime.model).toBe("gpt-5.3-codex-spark");
     expect(screen.subagents.explorer.model).toBe("gpt-5.4-mini");
     expect(screen.subagents.frontendCraft.model).toBe("gpt-5.5");
+    expect(screen.autoUpdates).toBe(true);
     expect(screen.telemetryFiles).toEqual({
       dirPresent: true,
       summaryPresent: true,
       eventsPresent: true,
-      queuePresent: true
+      queuePresent: false
     });
     expect(screen.enabledPacks).toEqual(["core", "caveman"]);
     expect(screen.statuslinePreview.summary).toBe("statusline-profile preview: 3 recommended change(s)");

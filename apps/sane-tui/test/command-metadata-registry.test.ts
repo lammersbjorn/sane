@@ -117,13 +117,17 @@ describe("command metadata registry", () => {
       "doctor",
       "show_runtime_summary",
       "preview_policy",
-      "show_outcome_readiness"
+      "show_outcome_readiness",
+      "review_issue_draft",
+      "submit_issue_draft"
     ]);
     expectSectionContainsInOrder("repair", [
       "install_runtime",
       "backup_codex_config",
       "restore_codex_config",
-      "reset_telemetry_data"
+      "reset_telemetry_data",
+      "review_issue_draft",
+      "submit_issue_draft"
     ]);
     expectSectionContainsInOrder("uninstall", [
       "uninstall_user_skills",
@@ -138,7 +142,8 @@ describe("command metadata registry", () => {
     expect(sectionActionIds("repair").some((id) => id.startsWith("uninstall_"))).toBe(false);
     expect(listSectionActions("home").at(-1)?.label).toBe("6. Refresh Codex setup");
     expect(listSectionActions("add_to_codex").at(-1)?.label).toBe("Install full Sane bundle into OpenCode");
-    expect(listSectionActions("settings").at(-1)?.label).toBe("Apply optional Cloudflare Codex settings");
+    expect(listSectionActions("settings").at(-1)?.label).toBe("Toggle automatic Sane updates");
+    expectHelpMentions("toggle_auto_updates", ["automatic Sane CLI updates", "Local source installs"]);
     expectHelpMentions("show_runtime_summary", [
       "saved local handoff notes",
       "It does not start agent work",
@@ -155,10 +160,22 @@ describe("command metadata registry", () => {
     expect(getCommandSpec("show_outcome_readiness").backendKind).toBe(
       OperationKind.ShowOutcomeReadiness
     );
-    expectHelpMentions("show_outcome_readiness", ["saved Sane handoff notes", "does not start"]);
+    expectHelpMentions("show_outcome_readiness", [
+      "saved Sane handoff notes",
+      "does not mine raw Codex logs",
+      "does not start"
+    ]);
     expect(getCommandSpec("advance_outcome").backendKind).toBe(
       OperationKind.AdvanceOutcome
     );
+    expect(getCommandSpec("review_issue_draft").backendKind).toBe(
+      OperationKind.ReviewIssueDraft
+    );
+    expectHelpMentions("review_issue_draft", ["local GitHub issue draft", "does not submit"]);
+    expect(getCommandSpec("submit_issue_draft").backendKind).toBe(
+      OperationKind.SubmitIssueDraft
+    );
+    expectHelpMentions("submit_issue_draft", ["Submit the latest reviewed", "duplicate", "Telemetry consent"]);
     expect(getCommandSpec("advance_outcome").repoMutation).toBe(true);
     expect(getCommandSpec("preview_policy").filesTouched).toEqual(
       expect.arrayContaining([".sane/config.local.toml", ".sane/state/current-run.json"])
@@ -169,7 +186,11 @@ describe("command metadata registry", () => {
     expectHelpMentions("doctor", ["managed surfaces"]);
     expectHelpMentions("export_hooks", ["native Windows", "WSL"]);
     expectHelpMentions("export_all", ["core user skills", "custom agents", "native Windows"]);
-    expectHelpMentions("export_opencode_all", ["Install the full Sane bundle into OpenCode", "~/.config/opencode/", "OpenCode Go model IDs"]);
+    expectHelpMentions("export_opencode_all", [
+      "Install the full Sane bundle into OpenCode",
+      "~/.config/opencode/",
+      "host OpenCode visibility/load support"
+    ]);
     expect(getCommandSpec("export_opencode_all").filesTouched).toEqual(["~/.config/opencode/"]);
     expect(getCommandSpec("export_all").includes).toEqual(["user-skills", "global-agents", "hooks", "custom-agents"]);
     expectHelpMentions("uninstall_all", ["core Codex bundle"]);

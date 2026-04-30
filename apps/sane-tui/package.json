@@ -53,7 +53,8 @@
     "./terminal-keys.js": "./src/terminal-keys.ts",
     "./terminal-loop.js": "./src/terminal-loop.ts",
     "./text-driver.js": "./src/text-driver.ts",
-    "./text-renderer.js": "./src/text-renderer.ts"
+    "./text-renderer.js": "./src/text-renderer.ts",
+    "./version.js": "./src/version.ts"
   },
   "scripts": {
     "build": "tsup --config tsup.config.ts",

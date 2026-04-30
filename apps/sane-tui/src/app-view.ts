@@ -212,6 +212,7 @@ function sectionOverviewLines(
         `quick helper model: ${preferences.subagents.realtime.model}/${preferences.subagents.realtime.reasoningEffort}`,
         `frontend helper model: ${preferences.subagents.frontendCraft.model}/${preferences.subagents.frontendCraft.reasoningEffort}`,
         `telemetry: ${preferences.telemetry}`,
+        `auto updates: ${preferences.autoUpdates ? "enabled" : "disabled"}`,
         `local telemetry data: ${presentFlag(preferences.telemetryFiles.dirPresent)}`,
         `telemetry files: summary ${presentFlag(preferences.telemetryFiles.summaryPresent)}, events ${presentFlag(preferences.telemetryFiles.eventsPresent)}, queue ${presentFlag(preferences.telemetryFiles.queuePresent)}`,
         `enabled packs: ${preferences.enabledPacks.join(", ")}`,

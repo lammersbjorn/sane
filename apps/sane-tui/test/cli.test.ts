@@ -50,6 +50,12 @@ describe("ts cli command parsing", () => {
     expectBackendCommand(["preview", "integrations-profile"], "preview_integrations_profile");
     expectBackendCommand(["apply", "statusline-profile"], "apply_statusline_profile");
     expectBackendCommand(["outcome-readiness"], "show_outcome_readiness");
+    expectBackendCommand(["issue", "draft"], "review_issue_draft");
+    expect(parseCliArgs(["issue", "submit", ".sane/issue-relay/draft.md", "--repo", "sane/sane"])).toMatchObject({
+      kind: "issue-submit",
+      draftPath: ".sane/issue-relay/draft.md",
+      repo: "sane/sane"
+    });
     expectBackendCommand(["export", "opencode"], "export_opencode_all");
   });
 
