@@ -15,13 +15,20 @@ reasoning_effort = "medium"
 [privacy]
 telemetry = "product-improvement"
 
+[issue-relay]
+mode = "issue-review"
+
 [packs]
 core = true
 caveman = true
 rtk = true
 frontend-craft = true
+docs-craft = true
 
 [lifecycle-hooks]
 tokscale-submit = true
 tokscale-dry-run = false
 rate-limit-resume = true
+
+[updates]
+auto = true

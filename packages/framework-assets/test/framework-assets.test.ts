@@ -10,6 +10,7 @@ import {
   SANE_AGENT_NAME,
   SANE_BOOTSTRAP_RESEARCH_SKILL_NAME,
   SANE_CAVEMAN_PACK_SKILL_NAME,
+  SANE_DOCS_WRITING_PACK_SKILL_NAME,
   SANE_EXPLORER_AGENT_NAME,
   SANE_FRONTEND_CRAFT_PACK_SKILL_NAME,
   SANE_FRONTEND_VISUAL_ASSETS_PACK_SKILL_NAME,
@@ -90,6 +91,7 @@ interface CorePackManifest {
   optionalPacks: Record<
     string,
     {
+      configKey?: keyof GuidancePacks;
       skillName?: string;
       skillPath?: string;
       skills?: Array<{
@@ -196,6 +198,9 @@ describe("framework asset parity", () => {
     expect(manifestSkills(manifest.optionalPacks["frontend-craft"]).at(-1)?.name).toBe(
       SANE_FRONTEND_REVIEW_PACK_SKILL_NAME
     );
+    expect(manifestSkills(manifest.optionalPacks["docs-craft"])[0]?.name).toBe(
+      SANE_DOCS_WRITING_PACK_SKILL_NAME
+    );
     expect(manifest.optionalPacks.caveman.provenance.kind).toBe("derived");
     expect(manifest.optionalPacks["frontend-craft"].provenance.kind).toBe("derived");
     for (const [packName, entry] of Object.entries(manifest.optionalPacks)) {
@@ -206,10 +211,16 @@ describe("framework asset parity", () => {
   });
 
   it("exposes one shared optional-pack roster and config-key mapping", () => {
-    expect(optionalPackNames()).toEqual(["caveman", "rtk", "frontend-craft"]);
+    const manifest = readCoreManifest();
+    expect(optionalPackNames()).toEqual(Object.keys(manifest.optionalPacks));
     expect(optionalPackConfigKey("caveman")).toBe("caveman");
     expect(optionalPackConfigKey("rtk")).toBe("rtk");
     expect(optionalPackConfigKey("frontend-craft")).toBe("frontendCraft");
+    expect(optionalPackConfigKey("docs-craft")).toBe("docsCraft");
+    for (const [packName, entry] of Object.entries(manifest.optionalPacks)) {
+      expect(entry.configKey, `${packName} should define configKey`).toBeTruthy();
+      expect(optionalPackConfigKey(packName)).toBe(entry.configKey);
+    }
   });
 
   it("router skill renders from the checked-in core template", () => {
@@ -217,7 +228,8 @@ describe("framework asset parity", () => {
     const packs: GuidancePacks = {
       caveman: true,
       rtk: true,
-      frontendCraft: false
+      frontendCraft: false,
+      docsCraft: false
     };
     const manifest = readCoreManifest();
     const template = readCoreAsset(manifest.assets.routerSkill);
@@ -313,7 +325,8 @@ describe("framework asset parity", () => {
     const packs: GuidancePacks = {
       caveman: false,
       rtk: false,
-      frontendCraft: true
+      frontendCraft: true,
+      docsCraft: false
     };
     const manifest = readCoreManifest();
     const template = readCoreAsset(manifest.assets.globalOverlay);
@@ -348,7 +361,8 @@ describe("framework asset parity", () => {
     const packs: GuidancePacks = {
       caveman: false,
       rtk: true,
-      frontendCraft: false
+      frontendCraft: false,
+      docsCraft: false
     };
     const manifest = readCoreManifest();
     const template = readCoreAsset(manifest.assets.repoOverlay);
@@ -388,7 +402,8 @@ describe("framework asset parity", () => {
     const packs: GuidancePacks = {
       caveman: true,
       rtk: true,
-      frontendCraft: true
+      frontendCraft: true,
+      docsCraft: true
     };
     const expectedNotes = Object.values(manifest.optionalPacks)
       .map((entry) => entry.policyNote)
@@ -409,7 +424,8 @@ describe("framework asset parity", () => {
     const cases: Array<[string, string]> = [
       ["caveman", SANE_CAVEMAN_PACK_SKILL_NAME],
       ["rtk", "sane-rtk"],
-      ["frontend-craft", SANE_FRONTEND_CRAFT_PACK_SKILL_NAME]
+      ["frontend-craft", SANE_FRONTEND_CRAFT_PACK_SKILL_NAME],
+      ["docs-craft", SANE_DOCS_WRITING_PACK_SKILL_NAME]
     ];
 
     for (const [pack, name] of cases) {
@@ -465,17 +481,30 @@ describe("framework asset parity", () => {
     expect(frontendReview).toContain("Catch visual, interaction, responsive, and asset defects");
     expect(frontendReview).toContain("Frontend review/visual QA subagents should run on `gpt-5.5` with `high` reasoning");
     expect(frontendReview).toContain("Review Checklist");
+
+    const docsWriting = createOptionalPackSkill("docs-craft");
+    expect(optionalPackSkillNames("docs-craft")).toEqual([SANE_DOCS_WRITING_PACK_SKILL_NAME]);
+    expect(docsWriting).toContain("name: sane-docs-writing");
+    expect(docsWriting).toContain("Write docs that help readers act from current truth");
+    expect(docsWriting).toContain("Do not present the TUI as the normal prompting interface");
   });
 
   it("exposes pinned provenance seam for optional packs", () => {
     const caveman = optionalPackProvenance("caveman");
     const frontendCraft = optionalPackProvenance("frontend-craft");
+    const docsCraft = optionalPackProvenance("docs-craft");
     const rtk = optionalPackProvenance("rtk");
 
     expect(caveman?.kind).toBe("derived");
     expect(frontendCraft?.kind).toBe("derived");
+    expect(docsCraft?.kind).toBe("derived");
     expect(rtk?.kind).toBe("internal");
-    if (caveman?.kind !== "derived" || frontendCraft?.kind !== "derived" || rtk?.kind !== "internal") {
+    if (
+      caveman?.kind !== "derived" ||
+      frontendCraft?.kind !== "derived" ||
+      docsCraft?.kind !== "derived" ||
+      rtk?.kind !== "internal"
+    ) {
       throw new Error("unexpected optional pack provenance shape");
     }
 
@@ -502,6 +531,17 @@ describe("framework asset parity", () => {
     });
     expect(frontendCraft?.note).toContain("Sane-owned compact frontend craft pack");
     expect(frontendCraft?.upstreams?.filter((upstream) => upstream.ref).length).toBeGreaterThanOrEqual(2);
+    expect(docsCraft).toMatchObject({
+      kind: "derived",
+      updateStrategy: "manual-curated",
+      upstreams: [
+        expect.objectContaining({ name: "google-gemini-docs-writer", role: "inspiration" }),
+        expect.objectContaining({ name: "aiskillstore-writing-docs", role: "inspiration" }),
+        expect.objectContaining({ name: "inkeep-docs-skill", role: "inspiration" }),
+        expect.objectContaining({ name: "obra-writing-plans", role: "inspiration" })
+      ]
+    });
+    expect(docsCraft?.note).toContain("ETH-aligned instruction-surface research");
     expect(rtk).toMatchObject({
       kind: "internal",
       updateStrategy: "manual-curated"
@@ -635,7 +675,8 @@ describe("framework asset parity", () => {
     const packs: GuidancePacks = {
       caveman: true,
       rtk: false,
-      frontendCraft: false
+      frontendCraft: false,
+      docsCraft: false
     };
 
     const agent = createSaneAgentTemplateWithPacks(roles, packs);

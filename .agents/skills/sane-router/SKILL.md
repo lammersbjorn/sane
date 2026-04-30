@@ -46,6 +46,7 @@ Broad work route:
 - Load `sane-agent-lanes`; it owns lane planning, subagent handoff, edit boundaries, and auth gates.
 - If subagent authorization is required but missing, do not route broad work to "main session only"; `sane-agent-lanes` must ask and stop.
 - Follow-up implementation after research/planning is broad work again; prior research lanes do not satisfy the implementation handoff.
+- For review convergence, require findings triage as `confirmed`, `needs-verify`, or `rejected`, then route to smallest implementation lane that closes `confirmed` items plus required verification.
 - Coordinator owns final judgment and verification.
 
 Route subagent classes with current exported defaults:

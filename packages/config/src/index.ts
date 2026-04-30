@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { parse as parseToml } from 'toml';
 import { z } from 'zod';
@@ -30,10 +31,12 @@ export const PICKER_MODELS = [
 
 export const REASONING_EFFORTS = ['low', 'medium', 'high', 'xhigh'] as const;
 export const TELEMETRY_LEVELS = ['off', 'local-only', 'product-improvement'] as const;
+export const ISSUE_RELAY_MODES = ['off', 'draft-local', 'issue-review', 'pr-review'] as const;
 
 export type AvailableModel = (typeof AVAILABLE_MODELS)[number];
 export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
 export type TelemetryLevel = (typeof TELEMETRY_LEVELS)[number];
+export type IssueRelayMode = (typeof ISSUE_RELAY_MODES)[number];
 
 export interface ModelPreset {
   model: string;
@@ -83,11 +86,17 @@ export interface PrivacyConfig {
   telemetry: TelemetryLevel;
 }
 
+export interface IssueRelayConfig {
+  mode: IssueRelayMode;
+}
+
 export interface PackConfig {
+  [configKey: string]: boolean;
   core: boolean;
   caveman: boolean;
   rtk: boolean;
   frontendCraft: boolean;
+  docsCraft: boolean;
 }
 
 export interface LifecycleHooksConfig {
@@ -96,13 +105,19 @@ export interface LifecycleHooksConfig {
   rateLimitResume: boolean;
 }
 
+export interface UpdatesConfig {
+  auto: boolean;
+}
+
 export interface LocalConfig {
   version: number;
   models: ModelRolePresets;
   subagents: SubagentRoutingPresets;
   privacy: PrivacyConfig;
+  issueRelay: IssueRelayConfig;
   packs: PackConfig;
   lifecycleHooks: LifecycleHooksConfig;
+  updates: UpdatesConfig;
 }
 
 export interface PortableSettingsFile {
@@ -113,6 +128,7 @@ export interface PortableSettingsFile {
 
 const reasoningEffortSchema = z.enum(REASONING_EFFORTS);
 const telemetryLevelSchema = z.enum(TELEMETRY_LEVELS);
+const issueRelayModeSchema = z.enum(ISSUE_RELAY_MODES);
 const COORDINATOR_PRIORITY = [
   'gpt-5.5',
   'gpt-5.4',
@@ -194,6 +210,7 @@ const DEFAULT_RECOMMENDATION_ENVIRONMENT: CodexEnvironment = {
     reasoningEfforts: [...REASONING_EFFORTS],
   })),
 };
+const CORE_PACK_MANIFEST = readCorePackManifest();
 
 const modelPresetSchema = z.object({
   model: z.string(),
@@ -210,12 +227,16 @@ const privacyConfigSchema = z.object({
   telemetry: telemetryLevelSchema,
 });
 
+const issueRelayConfigSchema = z.object({
+  mode: issueRelayModeSchema.default('off'),
+});
+
 const packConfigSchema = z
   .object({
     core: z.boolean(),
-    caveman: z.boolean().default(false),
-    rtk: z.boolean().default(false),
-    frontendCraft: z.boolean().default(false),
+    ...Object.fromEntries(
+      optionalPackNames().map((pack) => [optionalPackConfigKey(pack), z.boolean().default(false)]),
+    ),
   })
   .superRefine((value, ctx) => {
     if (!value.core) {
@@ -232,6 +253,10 @@ const lifecycleHooksConfigSchema = z.object({
   rateLimitResume: z.boolean().default(false),
 });
 
+const updatesConfigSchema = z.object({
+  auto: z.boolean().default(false),
+});
+
 const localConfigSchema = z.object({
   version: z.literal(1),
   models: modelRolePresetsSchema.default(createDefaultModelRolePresets),
@@ -245,8 +270,10 @@ const localConfigSchema = z.object({
     ),
   }).default(createDefaultSubagentRoutingPresets),
   privacy: privacyConfigSchema.default(createDefaultPrivacyConfig),
+  issueRelay: issueRelayConfigSchema.default(createDefaultIssueRelayConfig),
   packs: packConfigSchema.default(createDefaultPackConfig),
   lifecycleHooks: lifecycleHooksConfigSchema.default(createDefaultLifecycleHooksConfig),
+  updates: updatesConfigSchema.default(createDefaultUpdatesConfig),
 });
 
 export function createDefaultModelRolePresets(): ModelRolePresets {
@@ -273,13 +300,17 @@ export function createDefaultPrivacyConfig(): PrivacyConfig {
   };
 }
 
+export function createDefaultIssueRelayConfig(): IssueRelayConfig {
+  return {
+    mode: 'off',
+  };
+}
+
 export function createDefaultPackConfig(): PackConfig {
   return {
     core: true,
-    caveman: false,
-    rtk: false,
-    frontendCraft: false,
-  };
+    ...Object.fromEntries(optionalPackNames().map((pack) => [optionalPackConfigKey(pack), false])),
+  } as PackConfig;
 }
 
 export function createDefaultLifecycleHooksConfig(): LifecycleHooksConfig {
@@ -290,14 +321,22 @@ export function createDefaultLifecycleHooksConfig(): LifecycleHooksConfig {
   };
 }
 
+export function createDefaultUpdatesConfig(): UpdatesConfig {
+  return {
+    auto: false,
+  };
+}
+
 export function createDefaultLocalConfig(): LocalConfig {
   return {
     version: 1,
     models: createDefaultModelRolePresets(),
     subagents: createDefaultSubagentRoutingPresets(),
     privacy: createDefaultPrivacyConfig(),
+    issueRelay: createDefaultIssueRelayConfig(),
     packs: createDefaultPackConfig(),
     lifecycleHooks: createDefaultLifecycleHooksConfig(),
+    updates: createDefaultUpdatesConfig(),
   };
 }
 
@@ -350,8 +389,10 @@ export function createRecommendedLocalConfig(environment: CodexEnvironment): Loc
     models: createRecommendedModelRolePresets(environment),
     subagents: createRecommendedSubagentRoutingPresets(environment),
     privacy: createDefaultPrivacyConfig(),
+    issueRelay: createDefaultIssueRelayConfig(),
     packs: createDefaultPackConfig(),
     lifecycleHooks: createDefaultLifecycleHooksConfig(),
+    updates: createDefaultUpdatesConfig(),
   };
 }
 
@@ -577,16 +618,22 @@ export function stringifyLocalConfig(config: LocalConfig): string {
     '[privacy]',
     `telemetry = ${quote(normalized.privacy.telemetry)}`,
     '',
+    '[issue-relay]',
+    `mode = ${quote(normalized.issueRelay.mode)}`,
+    '',
     '[packs]',
     `core = ${normalized.packs.core}`,
-    `caveman = ${normalized.packs.caveman}`,
-    `rtk = ${normalized.packs.rtk}`,
-    `"frontend-craft" = ${normalized.packs.frontendCraft}`,
+    ...optionalPackNames().map(
+      (pack) => `${tomlBareOrQuotedKey(pack)} = ${normalized.packs[optionalPackConfigKey(pack)] ?? false}`,
+    ),
     '',
     '[lifecycle-hooks]',
     `"tokscale-submit" = ${normalized.lifecycleHooks.tokscaleSubmit}`,
     `"tokscale-dry-run" = ${normalized.lifecycleHooks.tokscaleDryRun}`,
     `"rate-limit-resume" = ${normalized.lifecycleHooks.rateLimitResume}`,
+    '',
+    '[updates]',
+    `auto = ${normalized.updates.auto}`,
     '',
   ].join('\n');
 }
@@ -649,15 +696,7 @@ export function enabledPackNames(config: PackConfig): string[] {
   if (config.core) {
     enabled.push('core');
   }
-  if (config.caveman) {
-    enabled.push('caveman');
-  }
-  if (config.rtk) {
-    enabled.push('rtk');
-  }
-  if (config.frontendCraft) {
-    enabled.push('frontend-craft');
-  }
+  enabled.push(...optionalPackNames().filter((pack) => config[optionalPackConfigKey(pack)]));
   return enabled;
 }
 
@@ -688,6 +727,17 @@ function normalizeLocalConfigInput(value: unknown): unknown {
       }
     : undefined;
 
+  const rawIssueRelay = isRecord(value['issue-relay'])
+    ? value['issue-relay']
+    : isRecord(value.issueRelay)
+      ? value.issueRelay
+      : undefined;
+  const issueRelay = rawIssueRelay
+    ? {
+        mode: rawIssueRelay.mode,
+      }
+    : undefined;
+
   const subagents = isRecord(value.subagents)
     ? {
         explorer: normalizeModelPreset(value.subagents.explorer),
@@ -700,12 +750,16 @@ function normalizeLocalConfigInput(value: unknown): unknown {
       }
     : undefined;
 
-  const packs = isRecord(value.packs)
+  const rawPacks = isRecord(value.packs) ? value.packs : undefined;
+  const packs = rawPacks
     ? {
-        core: value.packs.core,
-        caveman: value.packs.caveman,
-        rtk: value.packs.rtk,
-        frontendCraft: value.packs['frontend-craft'] ?? value.packs.frontendCraft,
+        core: rawPacks.core,
+        ...Object.fromEntries(
+          optionalPackNames().map((pack) => [
+            optionalPackConfigKey(pack),
+            rawPacks[pack] ?? rawPacks[optionalPackConfigKey(pack)],
+          ]),
+        ),
       }
     : undefined;
 
@@ -719,6 +773,12 @@ function normalizeLocalConfigInput(value: unknown): unknown {
         tokscaleSubmit: rawLifecycleHooks['tokscale-submit'] ?? rawLifecycleHooks.tokscaleSubmit,
         tokscaleDryRun: rawLifecycleHooks['tokscale-dry-run'] ?? rawLifecycleHooks.tokscaleDryRun,
         rateLimitResume: rawLifecycleHooks['rate-limit-resume'] ?? rawLifecycleHooks.rateLimitResume,
+    }
+    : undefined;
+
+  const updates = isRecord(value.updates)
+    ? {
+        auto: value.updates.auto,
       }
     : undefined;
 
@@ -727,8 +787,10 @@ function normalizeLocalConfigInput(value: unknown): unknown {
     models,
     subagents,
     privacy,
+    issueRelay,
     packs,
     lifecycleHooks,
+    updates,
   };
 }
 
@@ -741,6 +803,63 @@ function normalizeModelPreset(value: unknown): unknown {
     model: value.model,
     reasoningEffort: value.reasoning_effort ?? value.reasoningEffort,
   };
+}
+
+function optionalPackNames(): string[] {
+  return Object.keys(CORE_PACK_MANIFEST.optionalPacks);
+}
+
+function optionalPackConfigKey(pack: string): string {
+  const configKey = CORE_PACK_MANIFEST.optionalPacks[pack]?.configKey;
+  if (!configKey) {
+    throw new Error(`missing configKey for optional pack ${pack}`);
+  }
+  return configKey;
+}
+
+function readCorePackManifest(): { optionalPacks: Record<string, { configKey?: string }> } {
+  return JSON.parse(readFileSync(resolve(discoverRepoRoot(), "packs/core/manifest.json"), "utf8")) as {
+    optionalPacks: Record<string, { configKey?: string }>;
+  };
+}
+
+function discoverRepoRoot(): string {
+  for (const startDir of candidateRepoRootStarts()) {
+    let current = startDir;
+
+    while (true) {
+      if (existsSync(resolve(current, "packs/core/manifest.json"))) {
+        return current;
+      }
+
+      const parent = resolve(current, "..");
+      if (parent === current) {
+        break;
+      }
+
+      current = parent;
+    }
+  }
+
+  throw new Error(`unable to locate repo root for Sane pack manifest`);
+}
+
+function candidateRepoRootStarts(): string[] {
+  const starts = new Set<string>();
+
+  if (process.argv[1]) {
+    starts.add(dirname(resolve(process.argv[1])));
+  }
+
+  try {
+    starts.add(dirname(fileURLToPath(import.meta.url)));
+  } catch {
+    if (typeof __dirname === "string") {
+      starts.add(__dirname);
+    }
+  }
+
+  return [...starts];
 }
 
 function isAvailableModel(model: string): model is AvailableModel {
@@ -804,7 +923,7 @@ function validateNormalizedLocalConfig(value: unknown, path: string): LocalConfi
     }
   }
 
-  return parsed.data;
+  return parsed.data as unknown as LocalConfig;
 }
 
 function collectReasoningEfforts(value: unknown, reasoning: Set<ReasoningEffort>): void {
@@ -983,6 +1102,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function quote(value: string): string {
   return JSON.stringify(value);
+}
+
+function tomlBareOrQuotedKey(value: string): string {
+  return /^[A-Za-z0-9_]+$/.test(value) ? value : quote(value);
 }
 
 function messageOf(error: unknown): string {

@@ -12,6 +12,7 @@ export const SANE_CAVEMAN_PACK_SKILL_NAME = "sane-caveman";
 export const SANE_FRONTEND_CRAFT_PACK_SKILL_NAME = "sane-frontend-craft";
 export const SANE_FRONTEND_VISUAL_ASSETS_PACK_SKILL_NAME = "sane-frontend-visual-assets";
 export const SANE_FRONTEND_REVIEW_PACK_SKILL_NAME = "sane-frontend-review";
+export const SANE_DOCS_WRITING_PACK_SKILL_NAME = "sane-docs-writing";
 export const SANE_AGENT_NAME = "sane-agent";
 export const SANE_REVIEWER_AGENT_NAME = "sane-reviewer";
 export const SANE_EXPLORER_AGENT_NAME = "sane-explorer";
@@ -21,24 +22,18 @@ export const SANE_GLOBAL_AGENTS_BEGIN = "<!-- sane:global-agents:start -->";
 export const SANE_GLOBAL_AGENTS_END = "<!-- sane:global-agents:end -->";
 export const SANE_REPO_AGENTS_BEGIN = "<!-- sane:repo-agents:start -->";
 export const SANE_REPO_AGENTS_END = "<!-- sane:repo-agents:end -->";
-export const OPTIONAL_PACK_NAMES = ["caveman", "rtk", "frontend-craft"] as const;
-export type OptionalPackName = typeof OPTIONAL_PACK_NAMES[number];
-export const OPTIONAL_PACK_METADATA = [
-  { name: "caveman", configKey: "caveman" },
-  { name: "rtk", configKey: "rtk" },
-  { name: "frontend-craft", configKey: "frontendCraft" }
-] as const satisfies ReadonlyArray<{
+export type OptionalPackName = string;
+export interface OptionalPackMetadata {
   name: OptionalPackName;
-  configKey: keyof GuidancePacks;
-}>;
-const OPTIONAL_PACK_METADATA_BY_NAME = Object.fromEntries(
-  OPTIONAL_PACK_METADATA.map((entry) => [entry.name, entry])
-) as Record<OptionalPackName, (typeof OPTIONAL_PACK_METADATA)[number]>;
+  configKey: string;
+}
 
 export interface GuidancePacks {
+  [configKey: string]: boolean;
   caveman: boolean;
   rtk: boolean;
   frontendCraft: boolean;
+  docsCraft: boolean;
 }
 
 export interface ModelRoleGuidance {
@@ -93,6 +88,7 @@ interface CorePackAssetSources {
 }
 
 interface CorePackManifestEntry {
+  configKey?: string;
   skillName?: string;
   skillPath?: string;
   skills?: Array<{
@@ -105,6 +101,7 @@ interface CorePackManifestEntry {
     }>;
   }>;
   policyNote?: string;
+  continuityNote?: string;
   routerNote?: string;
   overlayNote?: string;
   provenance: PackAssetProvenance;
@@ -148,20 +145,24 @@ interface CorePackManifest {
 const REPO_ROOT = discoverRepoRoot(candidateRepoRootStarts());
 const CORE_PACK_ROOT = resolve(REPO_ROOT, "packs/core");
 const CORE_PACK_MANIFEST = readCorePackManifest();
+export const OPTIONAL_PACK_METADATA: OptionalPackMetadata[] = optionalPackNames().map((name) =>
+  optionalPackMetadata(name)
+);
 
 export function createDefaultGuidancePacks(): GuidancePacks {
   return {
     caveman: false,
     rtk: false,
-    frontendCraft: false
+    frontendCraft: false,
+    docsCraft: false
   };
 }
 
 export function optionalPackNames(): OptionalPackName[] {
-  return [...OPTIONAL_PACK_NAMES];
+  return Object.keys(CORE_PACK_MANIFEST.optionalPacks);
 }
 
-export function optionalPackConfigKey(pack: OptionalPackName): keyof GuidancePacks {
+export function optionalPackConfigKey(pack: OptionalPackName): string {
   return optionalPackMetadata(pack).configKey;
 }
 
@@ -170,11 +171,11 @@ export function isOptionalPackEnabled(pack: OptionalPackName, packs: GuidancePac
 }
 
 export function enabledOptionalPackNames(packs: GuidancePacks): OptionalPackName[] {
-  return OPTIONAL_PACK_NAMES.filter((pack) => isOptionalPackEnabled(pack, packs));
+  return optionalPackNames().filter((pack) => isOptionalPackEnabled(pack, packs));
 }
 
 export function disabledOptionalPackNames(packs: GuidancePacks): OptionalPackName[] {
-  return OPTIONAL_PACK_NAMES.filter((pack) => !isOptionalPackEnabled(pack, packs));
+  return optionalPackNames().filter((pack) => !isOptionalPackEnabled(pack, packs));
 }
 
 export function createSaneRouterSkill(packs: GuidancePacks, roles: ModelRoutingGuidance): string {
@@ -351,6 +352,37 @@ export function createOptionalPackSkills(pack: string): Array<{
 
 export function optionalPackProvenance(pack: string): PackAssetProvenance | undefined {
   return optionalPackManifestEntry(pack)?.provenance;
+}
+
+export function optionalPackPolicyLine(pack: string): string | undefined {
+  const entry = optionalPackManifestEntry(pack);
+  if (!entry) {
+    return undefined;
+  }
+
+  const note = packPolicyNote(entry).trim();
+  return note.startsWith("- ") ? note.slice(2) : note;
+}
+
+export function enabledOptionalPackPolicyLines(packs: GuidancePacks): string[] {
+  return enabledPackEntries(packs)
+    .map(([pack]) => optionalPackPolicyLine(pack))
+    .filter((line): line is string => Boolean(line));
+}
+
+export function optionalPackContinuityLine(pack: string): string | undefined {
+  const entry = optionalPackManifestEntry(pack);
+  if (!entry) {
+    return undefined;
+  }
+
+  return entry.continuityNote ?? optionalPackPolicyLine(pack);
+}
+
+export function enabledOptionalPackContinuityLines(packs: GuidancePacks): string[] {
+  return enabledPackEntries(packs)
+    .map(([pack]) => optionalPackContinuityLine(pack))
+    .filter((line): line is string => Boolean(line));
 }
 
 export function corePackAssetSourceProvenance(path: string): PackAssetSourceProvenance | undefined {
@@ -552,8 +584,16 @@ function enabledPackAgentNotes(packs: GuidancePacks): string {
   return enabledPackPolicyNotes(packs);
 }
 
-function optionalPackMetadata(pack: OptionalPackName): (typeof OPTIONAL_PACK_METADATA)[number] {
-  return OPTIONAL_PACK_METADATA_BY_NAME[pack];
+function optionalPackMetadata(pack: OptionalPackName): OptionalPackMetadata {
+  const entry = optionalPackManifestEntry(pack);
+  if (!entry?.configKey) {
+    throw new Error(`missing configKey for optional pack ${pack}`);
+  }
+
+  return {
+    name: pack,
+    configKey: entry.configKey
+  };
 }
 
 function optionalPackManifestEntry(pack: string): CorePackManifestEntry | undefined {

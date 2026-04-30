@@ -70,11 +70,15 @@ describe('local config parity', () => {
     expect(config.subagents.frontendCraft.model).toBe('gpt-5.5');
     expect(config.subagents.frontendCraft.reasoningEffort).toBe('high');
     expect(config.privacy.telemetry).toBe('off');
+    expect(config.issueRelay.mode).toBe('off');
     expect(enabledPackNames(config.packs)).toEqual(['core']);
     expect(config.lifecycleHooks).toEqual({
       tokscaleSubmit: false,
       tokscaleDryRun: true,
       rateLimitResume: false,
+    });
+    expect(config.updates).toEqual({
+      auto: false,
     });
   });
 
@@ -89,17 +93,20 @@ describe('local config parity', () => {
 
     expect(config.models.coordinator.reasoningEffort).toBe('xhigh');
     expect(config.privacy.telemetry).toBe('product-improvement');
+    expect(config.issueRelay.mode).toBe('issue-review');
     expect(enabledPackNames(config.packs)).toEqual([
       'core',
       'caveman',
       'rtk',
       'frontend-craft',
+      'docs-craft',
     ]);
     expect(config.lifecycleHooks).toEqual({
       tokscaleSubmit: true,
       tokscaleDryRun: false,
       rateLimitResume: true,
     });
+    expect(config.updates.auto).toBe(true);
   });
 
   it('rejects disabling the core pack', () => {

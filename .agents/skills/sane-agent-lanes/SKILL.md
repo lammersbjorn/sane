@@ -47,6 +47,8 @@ Also include:
 - whether this is a new implementation phase after research/planning, and the first implementation/review handoff needed before edits
 - the exact authorization question to ask if higher-priority rules require explicit user permission for subagents
 - the merge/review order
+- review-lane convergence format: each finding labeled `confirmed`, `needs-verify`, or `rejected` with one-line reason/evidence
+- coordinator step that picks smallest implementation lane that resolves all `confirmed` findings and only required `needs-verify` checks
 - what the human must pick or approve before final integration
 
 ## How To Run
@@ -62,6 +64,7 @@ Also include:
 9. If spawn fails or thread cap is hit, close completed agents and retry once with either `message` or `items`, not both.
 10. Keep one coordinator lane responsible for integration and review.
 11. Stop and ask when write boundaries conflict or the next step needs a human choice.
+12. Keep review verdicts compact; avoid long narrative sprawl once findings are classified.
 
 ## Safety
 
@@ -75,4 +78,5 @@ Also include:
 - Missing subagent authorization is never a reason to route broad work to "main session only".
 - Do not create hidden background loops.
 - Do not skip verification just because lanes ran in parallel.
+- Do not leave review findings as unclassified prose; classify as `confirmed`, `needs-verify`, or `rejected`.
 - Do not turn Sane into the daily prompting interface; this is exported workflow guidance.

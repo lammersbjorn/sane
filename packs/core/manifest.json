@@ -18,6 +18,7 @@
   },
   "optionalPacks": {
     "caveman": {
+      "configKey": "caveman",
       "skillName": "sane-caveman",
       "skillPath": "skills/optional/sane-caveman.md",
       "skills": [
@@ -46,9 +47,11 @@
           }
         ]
       },
-      "policyNote": "- Caveman pack active: load `sane-caveman` for prose rules"
+      "policyNote": "- Caveman pack active: load `sane-caveman` for prose rules",
+      "continuityNote": "Caveman pack active: load `sane-caveman` skill body before normal narrative."
     },
     "rtk": {
+      "configKey": "rtk",
       "skillName": "sane-rtk",
       "skillPath": "skills/optional/sane-rtk.md",
       "skills": [
@@ -68,9 +71,11 @@
         "note": "Internal workflow pack for RTK-aware shell routing. The skill teaches native RTK command selection instead of a raw-shell wrapper ritual.",
         "updateStrategy": "manual-curated"
       },
-      "policyNote": "- RTK pack active: load `sane-rtk` for shell/search/test/log routing"
+      "policyNote": "- RTK pack active: load `sane-rtk` for shell/search/test/log routing",
+      "continuityNote": "RTK pack active: load `sane-rtk` skill body before shell/search/test/log work."
     },
     "frontend-craft": {
+      "configKey": "frontendCraft",
       "skillName": "sane-frontend-craft",
       "skillPath": "skills/optional/frontend-craft/sane-frontend-craft.md",
       "skills": [
@@ -136,7 +141,70 @@
           }
         ]
       },
-      "policyNote": "- Frontend-craft pack active: load the matching frontend skill for UI, asset, or visual-review work"
+      "policyNote": "- Frontend-craft pack active: load the matching frontend skill for UI, asset, or visual-review work",
+      "continuityNote": "Frontend-craft pack active: load the matching frontend skill body before UI, asset, or visual-review work."
+    },
+    "docs-craft": {
+      "configKey": "docsCraft",
+      "skillName": "sane-docs-writing",
+      "skillPath": "skills/optional/docs-craft/sane-docs-writing.md",
+      "skills": [
+        {
+          "name": "sane-docs-writing",
+          "path": "skills/optional/docs-craft/sane-docs-writing.md",
+          "taskKinds": [
+            "documentation-writing",
+            "readme",
+            "user-docs",
+            "product-docs",
+            "changelog",
+            "docs-editing",
+            "docs-review",
+            "release-notes"
+          ]
+        }
+      ],
+      "provenance": {
+        "kind": "derived",
+        "note": "Sane-owned compact docs-writing pack informed by upstream documentation skills and ETH-aligned instruction-surface research. Upstreams are research inputs, not exported user prompt surfaces.",
+        "updateStrategy": "manual-curated",
+        "upstreams": [
+          {
+            "name": "google-gemini-docs-writer",
+            "role": "inspiration",
+            "url": "https://github.com/google-gemini/gemini-cli",
+            "ref": null,
+            "path": ".gemini/skills/docs-writer/SKILL.md",
+            "license": "Apache-2.0"
+          },
+          {
+            "name": "aiskillstore-writing-docs",
+            "role": "inspiration",
+            "url": "https://agentskill.sh/aiskillstore/writing-docs",
+            "ref": null,
+            "path": "SKILL.md",
+            "license": null
+          },
+          {
+            "name": "inkeep-docs-skill",
+            "role": "inspiration",
+            "url": "https://agentskills.so/skills/inkeep-team-skills-docs",
+            "ref": null,
+            "path": null,
+            "license": null
+          },
+          {
+            "name": "obra-writing-plans",
+            "role": "inspiration",
+            "url": "https://github.com/obra/superpowers",
+            "ref": null,
+            "path": "skills/writing-plans/SKILL.md",
+            "license": null
+          }
+        ]
+      },
+      "policyNote": "- Docs-craft pack active: load `sane-docs-writing` for README, user-docs, changelog, release-note, migration-note, support-doc, or product-doc rewrites",
+      "continuityNote": "Docs-craft pack active: load `sane-docs-writing` for README, user-docs, changelog, release-note, migration-note, support-doc, or product-doc rewrites."
     }
   },
   "assetSources": {
@@ -257,6 +325,13 @@
       "skills/optional/frontend-craft/sane-frontend-review.md": {
         "repo": "https://github.com/lammersbjorn/sane",
         "path": "packs/core/skills/optional/frontend-craft/sane-frontend-review.md",
+        "ref": "workspace",
+        "license": "MIT OR Apache-2.0",
+        "updateStrategy": "manual-curated"
+      },
+      "skills/optional/docs-craft/sane-docs-writing.md": {
+        "repo": "https://github.com/lammersbjorn/sane",
+        "path": "packs/core/skills/optional/docs-craft/sane-docs-writing.md",
         "ref": "workspace",
         "license": "MIT OR Apache-2.0",
         "updateStrategy": "manual-curated"

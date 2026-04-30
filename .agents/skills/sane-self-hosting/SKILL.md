@@ -41,6 +41,7 @@ Work on `Sane` itself without turning this repo's self-hosting setup into a gene
 - repo-aligned code or docs changes
 - synced product docs when behavior or ownership changed
 - matching local verification
+- release recommendation when changes are user-facing, package/distribution-related, or meaningfully affect exported Codex/OpenCode surfaces
 - checkpoint commits between meaningful phases when implementation is underway
 
 ## How To Run
@@ -61,6 +62,8 @@ Work on `Sane` itself without turning this repo's self-hosting setup into a gene
 9. Do not present future work as shipped behavior.
 10. When committing, copy the repo's commit message style; if none exists or it is poor, default to Conventional Commits.
 11. Keep managed Codex-native surfaces additive and reversible.
+12. Suggest a release when the completed slice changes public behavior, install/update/package flows, managed exported surfaces, docs that users rely on, or tap/npm artifacts. Name the likely release size or prerelease channel, and say what verification/tag/publish steps remain.
+13. Do not suggest a release for internal-only churn unless it unblocks a pending release or fixes a released regression.
 
 ## Verification
 

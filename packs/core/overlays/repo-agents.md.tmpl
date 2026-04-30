@@ -1,6 +1,7 @@
 # Sane
 
 - Sane repo overlay. Repo `AGENTS.md`, repo-local skills, current worktree, and runtime state are project truth.
+- If repo `AGENTS.md` is absent, do not call it out unless task needs repo-local Sane setup.
 - Prefer repo-local evidence over memory or stale chat context.
 - Keep always-on context small; load docs and skills only when they answer the current task.
 - Use `sane-router` for Sane routing unless a concrete repo-local skill already matches.
