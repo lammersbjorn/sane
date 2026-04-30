@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-beta.5] - 2026-04-30
+
+### Fixed
+
+- Switched the packaged CLI to a self-contained ESM bundle so Homebrew installs do not depend on missing runtime `node_modules`.
+- Updated packaged smoke commands to execute `dist/bin/sane.js`.
+
 ## [1.0.0-beta.4] - 2026-04-30
 
 ### Fixed

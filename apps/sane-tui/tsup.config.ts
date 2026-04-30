@@ -7,7 +7,7 @@ export default defineConfig({
   banner: {
     js: "#!/usr/bin/env node"
   },
-  format: ["cjs"],
+  format: ["esm"],
   platform: "node",
   target: "node20",
   bundle: true,
@@ -16,5 +16,5 @@ export default defineConfig({
   clean: true,
   dts: false,
   outDir: "dist",
-  noExternal: [/^@sane\//]
+  noExternal: [/.*/]
 });

@@ -15,9 +15,9 @@ const distPackage = {
   name: "sane-codex",
   version: sourcePackage.version,
   private: false,
-  type: "commonjs",
+  type: "module",
   bin: {
-    sane: "./bin/sane.cjs"
+    sane: "./bin/sane.js"
   },
   files: ["bin", "packs", "README.md", "NOTICE", "LICENSE-MIT", "LICENSE-APACHE"],
   license: "MIT OR Apache-2.0",

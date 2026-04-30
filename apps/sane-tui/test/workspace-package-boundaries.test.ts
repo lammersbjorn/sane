@@ -143,7 +143,7 @@ describe("workspace package boundaries", () => {
 
     expectScriptIncludes(rootPackage.scripts, "start", [
       "pnpm --filter @sane/sane-tui run build:package",
-      "node ./apps/sane-tui/dist/bin/sane.cjs"
+      "node ./apps/sane-tui/dist/bin/sane.js"
     ]);
     expectScriptIncludes(rootPackage.scripts, "pack:sane-tui", [
       "pnpm --filter @sane/sane-tui run build:package",
@@ -156,7 +156,7 @@ describe("workspace package boundaries", () => {
     ]);
     expectScriptIncludes(saneTuiPackage.scripts, "build:smoke", [
       "pnpm run build:package",
-      "node ./dist/bin/sane.cjs",
+      "node ./dist/bin/sane.js",
       "status"
     ]);
     expect(Object.values(rootPackage.scripts ?? {}).join("\n")).not.toMatch(/\bcargo\b/i);

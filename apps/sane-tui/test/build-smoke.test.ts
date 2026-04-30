@@ -40,7 +40,7 @@ describe("built sane tui bin", () => {
       expect(packageJson.name).toBe("sane-codex");
       expect(packageJson.version).toBe(SOURCE_PACKAGE_JSON.version);
       expect(packageJson.private).toBe(false);
-      expect(packageJson.type).toBe("commonjs");
+      expect(packageJson.type).toBe("module");
       expect(packageJson.license).toBe("MIT OR Apache-2.0");
       expect(packageJson.description).toBe("Sane terminal onboarding and setup surface for Codex.");
       expect(packageJson.files).toEqual([
@@ -55,7 +55,7 @@ describe("built sane tui bin", () => {
       expect(packageJson.publishConfig?.access).toBe("public");
       expect(Object.keys(packageJson.bin ?? {})).toEqual(["sane"]);
       expect(JSON.stringify(packageJson)).not.toMatch(/\b(outcome[- ]runner|run[- ]outcome|runner)\b/i);
-      expect(saneBin).toBe("./bin/sane.cjs");
+      expect(saneBin).toBe("./bin/sane.js");
 
       const pack = spawnSync("pnpm", ["pack"], { cwd: distDir, encoding: "utf8" });
       expect(pack.status, pack.stderr).toBe(0);
