@@ -1,7 +1,7 @@
 {
   "name": "@sane/core",
   "private": true,
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.2",
   "description": "Core operation result and inventory primitives for Sane packages.",
   "license": "MIT OR Apache-2.0",
   "type": "module",

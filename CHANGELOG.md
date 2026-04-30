@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-beta.2] - 2026-04-30
+
+### Added
+
+- Optional `docs-craft` pack metadata and bundled `sane-docs-writing` skill.
+- Opt-in issue relay draft and submission commands with duplicate checks and privacy boundaries.
+- Sane CLI update check plus opt-in auto-update setting for supported installs.
+- Runtime status signal for recent blockers recorded in Sane-owned state.
+
+### Changed
+
+- Refreshed public docs around Sane's Codex-native framework positioning and current control-surface scope.
+- Generalized optional pack metadata so config, exported guidance, and OpenCode continuity use pack manifest truth.
+
 ## [1.0.0-beta.1] - 2026-04-29
 
 ### Added
