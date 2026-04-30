@@ -156,7 +156,8 @@ Before opening a PR, make sure you can explain:
 - Beta/prerelease tags must be marked prerelease and must not be marked GitHub Latest.
 - Publish `sane-codex` from `apps/sane-tui/dist` only after `release:verify` passes.
 - Publish beta npm releases with the `beta` dist-tag, never `latest`.
-- Use GitHub Release `SHA256SUMS.txt` as source of truth for the Homebrew tap, winget, and Scoop updates.
+- Configure `HOMEBREW_TAP_TOKEN` with workflow dispatch access to `lammersbjorn/homebrew-sane`; release artifact CI triggers the tap repo's updater, and that repo validates and commits formula changes from GitHub Release `SHA256SUMS.txt`.
+- Use GitHub Release `SHA256SUMS.txt` as source of truth for winget and Scoop updates.
 
 ## Commit Style
 

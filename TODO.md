@@ -95,14 +95,14 @@ Acceptance:
 - [x] Prepare packaging/distribution rollout for `v1`:
   - [x] GitHub Release artifact verification and asset upload (`.tgz`, `.zip`, `SHA256SUMS.txt`)
   - [x] npm publish gate for `sane-codex` (manual workflow, secret + environment required)
-  - [x] Homebrew tap notes/workflow stub
+  - [x] Homebrew tap updater workflow trigger from tagged GitHub Release assets
   - [x] winget artifact/update plan stub
   - [x] Scoop artifact/update plan stub
 
 ## Next Slice
 
 - [ ] Wire channel repos after first stable `v1` tag:
-  - Homebrew tap update PR
+  - Verify `HOMEBREW_TAP_TOKEN` and first triggered tap update
   - winget manifest PR
   - Scoop bucket update PR
 

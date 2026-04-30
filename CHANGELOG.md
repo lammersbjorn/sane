@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-beta.9] - 2026-04-30
+
+### Changed
+
+- Hardened broad-work subagent routing to attempt lane handoff first and ask only after blocked launch.
+- Added release CI automation to trigger the Homebrew tap updater after tagged GitHub Release artifacts publish.
+
 ## [1.0.0-beta.8] - 2026-04-30
 
 ### Fixed
