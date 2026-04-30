@@ -94,8 +94,36 @@ describe("built sane tui bin", () => {
       expect(inspect.stdout).toContain("[Status]");
       expect(inspect.stdout).toContain("Status Focus");
 
+      const ttyInspect = runPseudoTty(join(extractedPackage, saneBin!), ["status"], trapCwd);
+      const ttyOutput = `${ttyInspect.stdout}\n${ttyInspect.stderr}`;
+      if (!ttyOutput.includes("tcgetattr/ioctl")) {
+        expect(ttyOutput).not.toContain("Dynamic require");
+        expect(ttyOutput).toContain("Sane");
+      }
+
     } finally {
       rmSync(sandboxRoot, { recursive: true, force: true });
     }
   }, 20_000);
 });
+
+function runPseudoTty(command: string, args: string[], cwd: string): ReturnType<typeof spawnSync> {
+  const commandLine = [command, ...args].map(shellQuote).join(" ");
+  if (process.platform === "darwin") {
+    return spawnSync("script", ["-q", "/dev/null", command, ...args], {
+      cwd,
+      encoding: "utf8",
+      timeout: 2_000
+    });
+  }
+
+  return spawnSync("script", ["-q", "-c", commandLine, "/dev/null"], {
+    cwd,
+    encoding: "utf8",
+    timeout: 2_000
+  });
+}
+
+function shellQuote(value: string): string {
+  return `'${value.replaceAll("'", "'\\''")}'`;
+}

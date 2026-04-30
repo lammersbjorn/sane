@@ -5,7 +5,11 @@ export default defineConfig({
     "bin/sane": "bin/sane-preview.ts"
   },
   banner: {
-    js: "#!/usr/bin/env node"
+    js: [
+      "#!/usr/bin/env node",
+      'import { createRequire as __saneCreateRequire } from "module";',
+      "const require = __saneCreateRequire(import.meta.url);"
+    ].join("\n")
   },
   format: ["esm"],
   platform: "node",

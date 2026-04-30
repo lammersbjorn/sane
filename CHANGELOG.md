@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-beta.7] - 2026-04-30
+
+### Fixed
+
+- Injected a real Node `createRequire` shim into the packaged ESM CLI so Ink's bundled CommonJS dependencies work in interactive Homebrew runs.
+- Added a pseudo-TTY package smoke test for the interactive Ink path.
+
 ## [1.0.0-beta.6] - 2026-04-30
 
 ### Fixed
