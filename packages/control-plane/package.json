@@ -1,7 +1,7 @@
 {
   "name": "@sane/control-plane",
   "private": true,
-  "version": "1.0.0-beta.3",
+  "version": "1.0.0-beta.4",
   "description": "Backend operations for Sane install, status, config, export, repair, and uninstall flows.",
   "license": "MIT OR Apache-2.0",
   "type": "module",

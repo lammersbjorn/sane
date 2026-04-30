@@ -25,6 +25,10 @@ const distPackage = {
   engines: {
     node: ">=22"
   },
+  dependencies: {
+    ink: sourcePackage.dependencies.ink,
+    react: sourcePackage.dependencies.react
+  },
   publishConfig: {
     access: "public"
   },

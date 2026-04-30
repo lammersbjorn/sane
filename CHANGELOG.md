@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-beta.4] - 2026-04-30
+
+### Fixed
+
+- Declared runtime package dependencies in the generated `sane-codex` package so package-manager installs can resolve Ink and React.
+- Prepared Homebrew packaging to install npm runtime dependencies instead of copying the bare tarball.
+
 ## [1.0.0-beta.3] - 2026-04-30
 
 ### Changed
