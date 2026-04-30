@@ -33,6 +33,9 @@ describe("session-start hook helper", () => {
       expect(context).toContain("Use subagents by default");
       expect(context).toContain("load `sane-agent-lanes`");
       expect(context).toContain("including follow-up implementation after research");
+      expect(context).toContain("Attempt lane handoff first");
+      expect(context).toContain("ask only if subagent launch is blocked");
+      expect(context).toContain("Never silently downgrade broad work");
       expect(context).toContain("before broad edits");
       expect(context).not.toContain("Subagent/model routing summary");
       expect(context).not.toContain("Sane command lane:");
@@ -90,6 +93,9 @@ describe("session-start hook helper", () => {
     );
     expect(JSON.parse(renderSessionStartHookOutput()).hookSpecificOutput.additionalContext).toContain(
       "including follow-up implementation after research"
+    );
+    expect(JSON.parse(renderSessionStartHookOutput()).hookSpecificOutput.additionalContext).toContain(
+      "Attempt lane handoff first"
     );
     expect(JSON.parse(renderSessionStartHookOutput()).hookSpecificOutput.additionalContext).not.toContain(
       "sane-outcome-continuation"

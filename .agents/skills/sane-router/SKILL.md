@@ -44,7 +44,8 @@ Make one routing decision. Do not restate workflows owned by concrete skills.
 Broad work route:
 - Broad work means multi-file cleanup, refactor, feature work, product pass, research pass, repair loop, or ambiguous repo work.
 - Load `sane-agent-lanes`; it owns lane planning, subagent handoff, edit boundaries, and auth gates.
-- If subagent authorization is required but missing, do not route broad work to "main session only"; `sane-agent-lanes` must ask and stop.
+- Do not pre-ask for subagents when a handoff can be attempted. `sane-agent-lanes` should attempt the first lane handoff, then ask only if the tool, runtime, or higher-priority policy blocks launch.
+- If subagent launch is blocked, unavailable, or requires explicit authorization, do not route broad work to "main session only"; `sane-agent-lanes` must report the blocker, ask once, and stop.
 - Follow-up implementation after research/planning is broad work again; prior research lanes do not satisfy the implementation handoff.
 - For review convergence, require findings triage as `confirmed`, `needs-verify`, or `rejected`, then route to smallest implementation lane that closes `confirmed` items plus required verification.
 - Coordinator owns final judgment and verification.

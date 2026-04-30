@@ -306,12 +306,12 @@ describe("framework asset parity", () => {
     expect(createSaneAgentLanesSkill()).toContain("Research/planning lanes do not authorize later implementation");
     expect(createSaneAgentLanesSkill()).toContain("Do not count earlier research or planning lanes as the implementation handoff");
     expect(createSaneAgentLanesSkill()).toContain("Do not do a tiny solo pass for broad review");
-    expect(createSaneAgentLanesSkill()).toContain("Do not confuse missing explicit user authorization with a harness block");
-    expect(createSaneAgentLanesSkill()).toContain("Missing subagent authorization is never a reason to route broad work to \"main session only\"");
+    expect(createSaneAgentLanesSkill()).toContain("Do not pre-ask just because work is broad");
+    expect(createSaneAgentLanesSkill()).toContain("Blocked, missing, or unauthorized subagent launch is never a reason to route broad work to \"main session only\"");
     expect(createSaneOutcomeContinuationSkill()).toContain("name: sane-outcome-continuation");
     expect(createSaneOutcomeContinuationSkill()).toContain("plain-language outcome");
     expect(createSaneOutcomeContinuationSkill()).toContain("Broad reviews need explorer/reviewer lanes");
-    expect(createSaneOutcomeContinuationSkill()).toContain("ask and stop");
+    expect(createSaneOutcomeContinuationSkill()).toContain("ask once, and stop");
     expect(createSaneOutcomeContinuationSkill()).toContain("do not inspect, verify, patch, or continue broad work locally as a substitute");
     expect(createSaneOutcomeContinuationSkill()).not.toContain("smallest solo fallback");
     expect(createSaneOutcomeContinuationSkill()).not.toContain("advance_outcome");

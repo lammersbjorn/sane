@@ -6,6 +6,7 @@
 - Keep startup context small. Load `sane-router` or concrete skills only when triggered.
 - Open matching skill bodies before acting; pack labels are not enough.
 - Follow instruction hierarchy: system/developer/tool rules first; repo `AGENTS.md` and repo-local skills can override Sane defaults.
-- For broad work or follow-up implementation, load `sane-agent-lanes` before edits.
+- For broad work or follow-up implementation, load `sane-agent-lanes` before edits; attempt lane handoff first and ask only if subagent launch is blocked.
+- Never silently downgrade broad work to solo main-session work.
 - Verify meaningful changes; coordinator owns final judgment on subagent output.
 {{ENABLED_PACK_OVERLAY_NOTES}}

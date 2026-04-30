@@ -6,7 +6,8 @@
 - Keep always-on context small; load docs and skills only when they answer the current task.
 - Use `sane-router` for Sane routing unless a concrete repo-local skill already matches.
 - Load `continue` and `sane-outcome-continuation` by trigger only.
-- For broad work or follow-up implementation, load `sane-agent-lanes`; follow its lane, handoff, edit-boundary, and auth gates.
+- For broad work or follow-up implementation, load `sane-agent-lanes`; follow its lane, handoff, edit-boundary, and blocked-launch gates.
+- Never silently downgrade broad work to solo main-session work.
 - Use the repo's own verify commands before claiming success.
 - Coordinator owns final judgment on subagent output.
 {{ENABLED_PACK_OVERLAY_NOTES}}

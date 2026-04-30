@@ -45,7 +45,7 @@ Also include:
 - which lanes can run now and which must wait
 - the first successful subagent handoff needed before broad work continues
 - whether this is a new implementation phase after research/planning, and the first implementation/review handoff needed before edits
-- the exact authorization question to ask if higher-priority rules require explicit user permission for subagents
+- the blocked-handoff fallback question to ask only if launch is blocked, unavailable, or requires explicit user authorization
 - the merge/review order
 - review-lane convergence format: each finding labeled `confirmed`, `needs-verify`, or `rejected` with one-line reason/evidence
 - coordinator step that picks smallest implementation lane that resolves all `confirmed` findings and only required `needs-verify` checks
@@ -58,9 +58,9 @@ Also include:
 3. Split by ownership and write boundary, not by vague activity type.
 4. Give each lane a small write boundary and a matching verify command.
 5. Require failing or focused tests before implementation when behavior changes.
-6. Spawn at least one lane before broad work continues. Use explorer/reviewer lanes for broad reviews and implementation lanes when files will change.
+6. Attempt to spawn at least one lane before broad work continues. Use explorer/reviewer lanes for broad reviews and implementation lanes when files will change.
 7. Treat each phase change as a new lane decision. Research/planning lanes do not authorize later implementation; before broad edits, spawn an implementation lane or a read-only reviewer lane with exact boundaries.
-8. If higher-priority tool rules require explicit subagent authorization and the user has not provided it, ask for that authorization and stop. Do not inspect, verify, patch, or continue broad work locally as a substitute.
+8. Ask for subagent authorization only after a handoff is blocked. If launch is unavailable, denied, missing, at thread cap, or higher-priority policy requires explicit user authorization before invocation, report the exact blocker, ask once, and stop. Do not inspect, verify, patch, or continue broad work locally as a substitute.
 9. If spawn fails or thread cap is hit, close completed agents and retry once with either `message` or `items`, not both.
 10. Keep one coordinator lane responsible for integration and review.
 11. Stop and ask when write boundaries conflict or the next step needs a human choice.
@@ -74,8 +74,8 @@ Also include:
 - Do not count earlier research or planning lanes as the implementation handoff for a later "add it", "build it", "fix it", or "redo it" turn.
 - Do not create lanes for broad repo summaries; create lanes for decisions, files, tests, or reviews.
 - Do not do a tiny solo pass for broad review, whole-codebase review, release review, or architecture review.
-- Do not confuse missing explicit user authorization with a harness block; ask and stop.
-- Missing subagent authorization is never a reason to route broad work to "main session only".
+- Do not pre-ask just because work is broad when a subagent handoff can be attempted.
+- Blocked, missing, or unauthorized subagent launch is never a reason to route broad work to "main session only"; ask and stop instead.
 - Do not create hidden background loops.
 - Do not skip verification just because lanes ran in parallel.
 - Do not leave review findings as unclassified prose; classify as `confirmed`, `needs-verify`, or `rejected`.

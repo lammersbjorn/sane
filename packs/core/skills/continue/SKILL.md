@@ -45,7 +45,7 @@ Keep the current mainline moving through verified slices until done or truly blo
 5. Use repo-local agents, tools, skills, local state, and routing defaults when present.
 6. Preserve the repo's own terminology and current surface names. If the user points at a file, command, path, screen, or label, inspect it before arguing from memory.
 7. Use parallel read/research lanes aggressively when safe.
-8. For broad or multi-file work, load `sane-agent-lanes`, make a lane plan, and get a successful subagent handoff before deep work. Broad reviews need explorer/reviewer lanes; broad edits need at least one implementation lane with a disjoint write scope. If higher-priority rules require explicit subagent authorization and it is missing, ask and stop instead of doing a tiny solo substitute.
+8. For broad or multi-file work, load `sane-agent-lanes`, make a lane plan, and attempt a subagent handoff before deep work. Broad reviews need explorer/reviewer lanes; broad edits need at least one implementation lane with a disjoint write scope. Do not pre-ask just because work is broad when a handoff can be attempted. If launch is unavailable, denied, missing, at thread cap, or blocked by higher-priority policy requiring explicit user authorization before invocation, report the exact blocker, ask once, and stop instead of doing a tiny solo substitute.
 9. Delegate side tasks and bounded side lanes by default when possible so mainline progress does not stall.
 10. If the user injects a side task:
    - delegate it when possible
