@@ -13,6 +13,7 @@ export default defineConfig({
   bundle: true,
   splitting: false,
   sourcemap: false,
+  shims: true,
   clean: true,
   dts: false,
   outDir: "dist",

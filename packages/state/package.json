@@ -1,7 +1,7 @@
 {
   "name": "@sane/state",
   "private": true,
-  "version": "1.0.0-beta.5",
+  "version": "1.0.0-beta.6",
   "description": "Thin local state persistence helpers for Sane.",
   "license": "MIT OR Apache-2.0",
   "type": "module",

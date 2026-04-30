@@ -1,7 +1,7 @@
 {
   "name": "@sane/framework-assets",
   "private": true,
-  "version": "1.0.0-beta.5",
+  "version": "1.0.0-beta.6",
   "description": "Checked-in Sane pack assets rendered for Codex-native installs.",
   "license": "MIT OR Apache-2.0",
   "type": "module",

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-beta.6] - 2026-04-30
+
+### Fixed
+
+- Added Node ESM shims to the self-contained CLI bundle so bundled CommonJS dependencies can resolve built-in modules under Homebrew.
+
 ## [1.0.0-beta.5] - 2026-04-30
 
 ### Fixed
