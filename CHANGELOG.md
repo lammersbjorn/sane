@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-beta.8] - 2026-04-30
+
+### Fixed
+
+- Kept the packaged pseudo-TTY smoke test CI-stable while still catching the interactive dynamic-require crash.
+
 ## [1.0.0-beta.7] - 2026-04-30
 
 ### Fixed

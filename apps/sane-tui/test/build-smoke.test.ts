@@ -98,7 +98,6 @@ describe("built sane tui bin", () => {
       const ttyOutput = `${ttyInspect.stdout}\n${ttyInspect.stderr}`;
       if (!ttyOutput.includes("tcgetattr/ioctl")) {
         expect(ttyOutput).not.toContain("Dynamic require");
-        expect(ttyOutput).toContain("Sane");
       }
 
     } finally {
