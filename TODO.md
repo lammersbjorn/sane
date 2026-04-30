@@ -35,7 +35,9 @@ Do not re-litigate locked product philosophy unless a new decision log changes i
 - Launch behavior is part of the contract: first run opens guided Home, installed no-args opens Status, `sane install` opens the guided wizard, and `sane status` opens Status.
 - Compatibility aliases may remain for scripts/internal APIs, but user-facing docs should use `Status` naming.
 - Managed Codex surfaces include user skills, optional repo skills, optional repo `AGENTS.md`, global `AGENTS.md`, hooks, custom agents, and narrow Codex config profiles.
+- User-stable preferences stay narrow: model/reasoning defaults, pack toggles, privacy level, and update preference in `.sane/config.local.toml`.
 - `.sane` state stays thin: local config, handoff/runtime state, history, summaries, backups, and optional telemetry state.
+- Recent blocker/readiness checks use Sane-owned `.sane` state only; no raw Codex log mining claims.
 - Codex plugin artifact packaging is deferred from `v1`; `export_all` remains the core Codex-native install bundle.
 - The autonomous/end-to-end outcome runner is not shipped.
 

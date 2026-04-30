@@ -149,6 +149,10 @@ Issue relay:
 - explicit verification flow
 - duplicate-aware
 - user-approved context
+- separately configured from telemetry
+- local draft generation is allowed in `draft-local`
+- GitHub issue submission requires `issue-review`; PR submission is a separate future flow
+- submission runs only from an explicit reviewed action and blocks on likely duplicate issues
 
 These must remain separately configurable.
 
@@ -158,4 +162,5 @@ These must remain separately configurable.
 - `Sane` should implement a local-first telemetry model with three consent levels: `off`, `local-only`, `product-improvement`.
 - remote telemetry must stay aggregate and sanitized.
 - issue reporting remains a separate opt-in system.
+- telemetry may provide aggregate failure signals, but it must never grant permission to file GitHub issues or PRs.
 - `B6` should start with config + transparency + reset, not with remote transport.

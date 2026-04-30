@@ -1,65 +1,57 @@
 # Support
 
-`Sane` is young, and detailed reports help us resolve issues faster.
+`Sane` is young. Useful reports name the managed surface that failed and what Sane wrote, skipped, or could not repair.
 
 ## Before You Open An Issue
 
 Try this order first:
 
-1. Run `status`
-2. Run the setup check in the TUI
-3. If config changed recently, use `backup`, `restore`, or `uninstall`
-4. Re-run the exact export or apply step that failed
+1. Run `sane status`.
+2. Run the setup check in the control surface.
+3. If Codex config changed recently, use `sane repair` or `sane restore codex-config`.
+4. Re-run the exact export or apply step that failed.
 
-If that still does not fix it, open an issue.
+If that does not fix it, open an issue.
 
 ## Pick The Right Path
 
-- **Bug report**
-
-Use the bug template when `Sane` did the wrong thing, wrote the wrong files, failed to preserve existing config, or left managed state inconsistent.
-
-- **Feature request**
-
-Use the feature request template when you want a new workflow, new profile, better UX, better docs, or a different product default.
-
-- **Security issue**
-
-Do not open a public issue.
-Use [SECURITY.md](./SECURITY.md).
-
-- **Docs issue**
-
-Open a normal issue or PR.
-Docs fixes are welcome.
+- **Bug report**: Sane wrote the wrong files, failed to preserve existing config, left managed state inconsistent, or reported incorrect status.
+- **Feature request**: you want a new managed surface, profile, pack, workflow, UX change, or product default.
+- **Security issue**: do not open a public issue; use [SECURITY.md](./SECURITY.md).
+- **Docs issue**: open a normal issue or PR.
 
 ## What To Include
 
 Include:
 
 - your OS
-- what command or TUI flow you used
+- whether you ran from source or an installed `sane-codex` package
+- what command or control-surface flow you used
 - what you expected
 - what actually happened
 - screenshots or terminal output if relevant
-- your current commit hash if you are running from source
+- current commit hash if you are running from source
 
-It also helps to say which Sane surface failed:
+It helps to name the Sane surface involved:
 
-- local `.sane` runtime
-- router skill export
-- packs
-- managed `AGENTS.md` block
+- local `.sane/` runtime
+- user skills
+- optional packs
+- global or repo `AGENTS.md` block
 - hooks
 - custom agents
-- Codex config preview, apply, restore, or uninstall
+- Codex config profile
+- recommended integrations
+- Cloudflare profile
+- native Codex statusline/title profile
+- OpenCode export
 
 ## Common Recovery Paths
 
 | Problem | First thing to try |
 | --- | --- |
-| Local runtime missing or half-created | `install`, then run the setup check |
-| Exported files look stale | re-export the relevant install or run `export all` |
-| Codex config looks wrong after apply | `restore codex-config` |
-| You want to back out completely | `uninstall all` |
-| You are not sure what changed | `status`, then run the setup check |
+| Local runtime missing or half-created | `sane install`, then run the setup check. |
+| Exported files look stale | Re-export the relevant surface or run `sane export all`. |
+| Codex config looks wrong after apply | `sane restore codex-config`. |
+| You want to back out completely | `sane uninstall all`. |
+| You are not sure what changed | `sane status`, then run the setup check. |

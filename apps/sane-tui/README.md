@@ -1,95 +1,38 @@
-# Sane TUI (TypeScript)
+# @sane/sane-tui
 
-This package is the TypeScript-side TUI app model for `Sane`.
+Terminal install/config/status/repair service for Sane's Codex-native framework pieces.
 
-Current role:
+This package owns:
 
-- owns TUI-facing section/action metadata
-- owns screen loaders for `Home`, `Settings`, `Add to Codex`, `Status`, `Repair`, and `Uninstall`
-- owns shell state for section selection, confirmations, notices, and editor flows
-- owns pure input/key handling on top of the shell state machine
-- owns internal non-interactive TS CLI parsing/execution for backend verbs, section shortcuts, and hook output
-- exposes internal smart/text/live preview paths through `tsx`
-- exposes an internal bundled build lane that emits `dist/bin/sane.cjs` without needing `tsx` at runtime
-- owns render-ready dashboard / overlay / app view models
-- owns internal text-frame rendering for the TS terminal driver
-- owns internal text-driver glue that wires discovery, shell, input, and text rendering together
-- owns terminal-key decoding for the TS key loop
-- owns terminal-driver glue that maps raw terminal input into the TS runtime
-- now owns the shipped public terminal UI path through the built root `pnpm start` flow
+- section/action metadata for Home, Settings, Add to Codex, Status, Repair, and Uninstall
+- shell state, editor state, confirmations, notices, and input handling
+- render-ready view models plus text and Ink terminal drivers
+- CLI parsing that dispatches to `@sane/control-plane`
 
-Public API barrel:
+It should stay thin around backend behavior. Install/export/status/repair logic belongs in `@sane/control-plane`; config, platform, state, policy, and asset logic belong in their packages.
 
-- package barrel is `@sane/sane-tui/index.js` (`src/index.ts`)
-- stable barrel exports: `command-registry`, `main`, and `preview-launch`
-- for stable imports, prefer the barrel; subpath exports are explicit compatibility entries, not a wildcard API
-- internal-only modules are not in the barrel even when a compatibility subpath exists (for example `cli`, `input-driver`, `ink-terminal`, `section-action-rows`, `shell-layer`)
+Stable imports should prefer the package barrel:
 
-Important files:
-
-- `src/command-registry.ts`
-  - normalized command specs plus section placements
-- `src/shell.ts`
-  - shell state, action dispatch, confirmations, notices, editor save/reset flows
-- `src/dashboard.ts`
-  - welcome/dashboard view model
-- `src/overlay-models.ts`
-  - config/privacy/pack/confirm/notice modal view models
-- `src/app-view.ts`
-  - top-level render-ready view model
-- `src/preferences-editor-state.ts`
-  - pure editor draft logic for model defaults, packs, and privacy
-- `src/main.ts`
-  - package bootstrap entry for building the app model from project/home roots
-- `src/input-driver.ts`
-  - pure key/input mapping for the TS shell state machine
-- `src/cli.ts`
-  - internal TS CLI parser/executor for backend commands and `hook session-start`
-- `src/text-renderer.ts`
-  - internal text-frame renderer for the TS app view
-- `src/text-driver.ts`
-  - internal runtime glue for discovery + shell + input driver + text rendering
-- `src/ink-terminal.ts`
-  - Ink live terminal renderer for the interactive TTY path
-- `src/terminal-keys.ts`
-  - terminal escape-sequence decoding into TS TUI input keys
-- `src/terminal-driver.ts`
-  - raw terminal input -> TS runtime step glue
-- `src/terminal-loop.ts`
-  - legacy text-loop test harness kept for deterministic terminal input coverage
-
-Boundary rules:
-
-- keep this package focused on TUI state and view models
-- reuse `packages/control-plane` for backend operations
-- reuse `packages/config`, `packages/platform`, and `packages/state` for source-of-truth logic
-- do not reintroduce legacy-stack behavior if the TS layer can own it cleanly
-- keep product framing aligned with `docs/decisions/2026-04-19-sane-decision-log.md`
-
-Current package story:
-
-- public repo entrypoint now goes through the built root `pnpm start` / `pnpm run start:settings` / `pnpm run start:status` scripts
-- internal source preview path is `apps/sane-tui/bin/sane.mjs`, which shells through `tsx`
-- internal built preview path is `apps/sane-tui/dist/bin/sane.cjs`, emitted by `pnpm --filter @sane/sane-tui run build`
-- generated distribution metadata now lives in `apps/sane-tui/dist/package.json`, which points the package CLI at the built output
-
-Verification:
-
-```bash
-node apps/sane-tui/bin/sane.mjs install
-node apps/sane-tui/bin/sane.mjs settings
-node apps/sane-tui/bin/sane.mjs status
-node apps/sane-tui/bin/sane.mjs repair
-node apps/sane-tui/bin/sane.mjs uninstall
-node apps/sane-tui/bin/sane.mjs install-runtime # advanced non-interactive runtime install
-pnpm --filter @sane/sane-tui run preview settings
-pnpm --filter @sane/sane-tui run preview status
-pnpm --filter @sane/sane-tui run preview:terminal settings
-pnpm --filter @sane/sane-tui run preview:text settings
-pnpm --filter @sane/sane-tui run build
-node apps/sane-tui/dist/bin/sane.cjs status
-pnpm --filter @sane/sane-tui test
-pnpm --filter @sane/sane-tui typecheck
+```ts
+import { createSaneTuiApp } from "@sane/sane-tui";
 ```
 
-Compatibility note: `inspect` remains a script/backcompat alias for the `Status` tab, but docs and user-facing copy should prefer `status`.
+Root scripts such as `pnpm start`, `pnpm run start:settings`, and `pnpm run start:status` build and launch this package. Package-local preview scripts are for development.
+
+Verify with:
+
+```bash
+pnpm --filter @sane/sane-tui test
+pnpm --filter @sane/sane-tui typecheck
+pnpm --filter @sane/sane-tui run build:smoke
+```
+
+Useful development previews:
+
+```bash
+pnpm --filter @sane/sane-tui run preview settings
+pnpm --filter @sane/sane-tui run preview update-check
+pnpm --filter @sane/sane-tui run preview updates auto
+pnpm --filter @sane/sane-tui run preview:terminal status
+pnpm --filter @sane/sane-tui run preview:text settings
+```

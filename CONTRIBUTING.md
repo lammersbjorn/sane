@@ -1,10 +1,10 @@
 # Contributing to Sane
 
-`Sane` is still early. Good contributions usually make it clearer, safer, more reversible, and easier for a new user to trust.
+`Sane` gives Codex better defaults, sharper workflows, and cleaner recovery by managing Codex-native framework pieces. Good contributions make that baseline clearer, safer, more reversible, and easier to trust.
 
-## Read This First
+## Read First
 
-Start with the docs that define product truth:
+Product truth lives here:
 
 - [README.md](./README.md)
 - [docs/what-sane-does.md](./docs/what-sane-does.md)
@@ -12,41 +12,29 @@ Start with the docs that define product truth:
 - [docs/specs/2026-04-19-sane-backend-contract.md](./docs/specs/2026-04-19-sane-backend-contract.md)
 - [TODO.md](./TODO.md)
 
-Use the decision log to separate:
+Use the decision log to separate locked product direction, flexible recommendations, and open future questions. Do not present an open idea as shipped behavior.
 
-- locked product direction
-- recommended but flexible implementation shape
-- open future questions
-
-Do not present an open idea as a shipped fact.
-
-## What You Are Contributing To
-
-`Sane` is a Codex-native setup and repair tool.
+## Product Frame
 
 In practice:
 
-- the TUI is the user control surface
-- the real product effect lands in Codex-native installs and narrow config changes
-- `.sane/` is the local runtime for config, state, and backups
+- Codex-native exports are the product effect
+- the `sane` command is the install/config/status/repair service
+- `.sane/` is the local runtime for config, state, handoff, and backups
 - repo mutation is optional
 - `AGENTS.md` is optional
-
-If you need the user story first, re-read:
-
-- [README.md](./README.md)
-- [docs/what-sane-does.md](./docs/what-sane-does.md)
+- Sane is not a daily prompting wrapper
 
 ## First-Time Setup
 
-### Prerequisites
+Prerequisites:
 
 - Node.js 22 or newer
 - pnpm
 - Git
 - a Codex environment if you want to test end-to-end behavior
 
-### Clone and run
+Clone and run:
 
 ```bash
 git clone https://github.com/lammersbjorn/sane.git
@@ -55,31 +43,17 @@ pnpm install
 pnpm start
 ```
 
-That opens the onboarding TUI.
+That opens the onboarding control surface.
 
-If you want to jump straight into the settings/configure area:
-
-```bash
-pnpm run start:settings
-```
-
-### Install the git hooks
-
-This repo ships a `commit-msg` hook for Conventional Commits.
+Install the local Conventional Commits hook:
 
 ```bash
 ./scripts/install-hooks.sh
 ```
 
-That sets:
-
-```bash
-git config core.hooksPath .githooks
-```
-
 ## Local Workflow
 
-Use this baseline loop while developing:
+Baseline loop:
 
 ```bash
 pnpm test
@@ -91,27 +65,28 @@ Useful commands:
 
 | Command | Why you would run it |
 | --- | --- |
-| `pnpm start` | Open the onboarding-first TUI. |
+| `pnpm start` | Open the onboarding control surface. |
 | `pnpm run start:settings` | Go straight to settings/configure mode. |
-| `pnpm run start:repair` | Go straight to repair/remove mode. |
 | `pnpm run start:status` | Show current managed targets, runtime state, and drift. |
+| `pnpm run start:repair` | Go straight to repair/remove mode. |
 | `pnpm run release:verify` | Run full verification, build the packaged CLI, and produce the npm tarball for release checks. |
 | `pnpm run release:npm:dry-run` | Validate npm publish metadata and payload without publishing. |
 
-If your change affects repair, preview/apply, export, or uninstall, test that flow directly.
+If your change affects preview, apply, export, status, repair, restore, or uninstall, test that flow directly.
 
 ## Repo Map
 
 | Path | Why it exists |
 | --- | --- |
-| [README.md](./README.md) | Public beginner-first product story. |
-| [docs/what-sane-does.md](./docs/what-sane-does.md) | Longer plain-English explainer of what changes in practice. |
-| [TODO.md](./TODO.md) | Current state, guardrails, and future-only items. |
+| [README.md](./README.md) | Public product story and setup path. |
+| [docs/what-sane-does.md](./docs/what-sane-does.md) | Plain-English walkthrough of how Sane changes Codex. |
+| [TODO.md](./TODO.md) | Current state, guardrails, and next slices. |
 | [docs/decisions/2026-04-19-sane-decision-log.md](./docs/decisions/2026-04-19-sane-decision-log.md) | Locked product decisions. |
-| [docs/specs/2026-04-19-sane-backend-contract.md](./docs/specs/2026-04-19-sane-backend-contract.md) | Current backend contract the TUI wraps. |
-| [apps/sane-tui/README.md](./apps/sane-tui/README.md) | User-facing control surface responsibilities. |
-| [packages/control-plane/src](./packages/control-plane/src) | Install/export/inspect/repair behavior the TUI wraps. |
-| [packages/config/src](./packages/config/src) | Meaning of saved Sane settings. |
+| [docs/specs/2026-04-19-sane-backend-contract.md](./docs/specs/2026-04-19-sane-backend-contract.md) | Current backend contract the control surface uses. |
+| [apps/sane-tui/README.md](./apps/sane-tui/README.md) | Terminal install/config/status/repair service package. |
+| [packages/control-plane/src](./packages/control-plane/src) | Install/export/status/repair behavior the control surface uses. |
+| [packages/config/src](./packages/config/src) | Saved Sane settings and Codex environment detection. |
+| [packages/framework-assets/src](./packages/framework-assets/src) | Bundled skills, overlays, agents, and pack metadata. |
 | [packages/platform/src](./packages/platform/src) | Cross-platform path and filesystem layout rules. |
 | [packages/state/src](./packages/state/src) | Thin local state and persistence. |
 | [packages/policy/src](./packages/policy/src) | Adaptive policy groundwork. |
@@ -120,46 +95,39 @@ If your change affects repair, preview/apply, export, or uninstall, test that fl
 
 Update docs in the same PR when you change:
 
-- what a user sees in the TUI
-- what `Sane` writes
-- what profiles or exports do
-- what is safe, optional, additive, or reversible
-- what contributors are expected to verify
-- crate responsibilities
+- exported skills, overlays, agents, hooks, or config profiles
+- optional pack behavior
+- what Sane writes or removes
+- status, repair, restore, or uninstall behavior
+- contributor verification expectations
+- package responsibilities
 
-Rules for doc updates:
+Doc rules:
 
-- keep the root README user-facing first
-- keep under-the-hood detail in service of the user story
-- keep future ideas in `TODO.md` or specs, not in the README as shipped behavior
-- keep the BuildStory Hackathon #2 note in the root README project note, not scattered through product explainers
-- if a change affects a crate boundary, update that crate's README in the same PR
+- lead public docs with user value, then explain Codex framework behavior
+- mention terminal UI details only when the install/config/status/repair surface matters
+- use `sane-docs-writing` when the docs-craft pack is active
+- keep future ideas in `TODO.md` or specs, not as shipped README behavior
+- keep model availability claims in dated research when they can drift
+- keep package READMEs short and ownership-focused
+- if a package boundary changes, update that package README
 
 ## Contribution Rules
 
-### Keep user value ahead of architecture
-
-The root docs should always answer:
-
-- what `Sane` is
-- who it is for
-- what changes in practice
-- what users actually get
-- what is already real versus planned later
-
-### Preserve the safety model
-
-Prefer:
+Preserve the safety model:
 
 - preview before apply
 - backup before risky writes
-- additive changes over clobbering
+- additive managed blocks over clobbering
+- warning-first drift detection
 - uninstall and restore paths that leave unrelated content alone
 
-### Keep it Codex-native
+Keep Sane Codex-native:
 
-`Sane` should not drift into a mandatory wrapper workflow.
-The TUI is a control surface, not the user's daily prompting interface.
+- no mandatory wrapper workflow
+- no command ritual before normal work
+- no required repo-local Sane footprint
+- no broad config takeover
 
 ## Changes That Need Discussion First
 
@@ -169,15 +137,15 @@ Open an issue first for:
 - new default integrations or provider profiles
 - new managed surfaces that write more user files
 - broad routing-policy changes
-- architecture shifts that weaken the local-first or Codex-native stance
+- architecture shifts that weaken local-first or Codex-native behavior
 
 ## Pull Request Checklist
 
 Before opening a PR, make sure you can explain:
 
 - the user problem
-- the user-facing effect
-- what surfaces changed
+- the Codex-native surface or behavior that changed
+- what files Sane writes, if any
 - what you verified
 - which docs changed with it
 
@@ -196,7 +164,7 @@ Examples:
 
 - `feat(tui): add clearer apply confirmation`
 - `fix(state): validate malformed summary files`
-- `docs(readme): explain Sane to first-time users`
+- `docs(readme): explain framework exports`
 
 ## Need Help?
 

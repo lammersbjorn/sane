@@ -7,8 +7,9 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Initial `v1.0.0-beta.1` prerelease of the `sane-codex` CLI package.
-- Control-center TUI for Home, Settings, Add to Codex, Status, Repair, and Uninstall flows.
+- Control surface for installing, configuring, checking, repairing, and removing Sane's Codex-native framework pieces.
 - Codex-native managed surfaces for Sane skills, guidance blocks, hooks, custom agents, narrow config profiles, and optional OpenCode export.
+- Optional `docs-craft` pack with `sane-docs-writing` for source-verified user-facing documentation work.
 - Packaged release verification for npm tarballs plus GitHub Release artifacts and downstream channel planning.
 - Public README, support, contribution, package README, and changelog baseline for the beta release.
 
