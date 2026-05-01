@@ -38,19 +38,19 @@ describe("get started screen model", () => {
 
     expect(screen.summary).toBe("Home");
     expect(screen.recommendedActionId).toBe("install_runtime");
-    expect(screen.recommendedNextStep).toBe("Set up Sane's local files first.");
+    expect(screen.recommendedNextStep).toBe("Get this repo ready for Sane first.");
     expect(screen.codexProfileAudit.status).toBe("missing");
     expect(screen.codexProfileApply.status).toBe("ready");
     expect(screen.statusLine).toBe(
-      "runtime missing | codex-config missing | user-skills missing | hooks missing | install bundle missing"
+      "repo setup missing | codex setup missing | sane skills missing | codex hooks missing | sane add-ons missing"
     );
     expect(screen.attentionItems).toEqual([
-      "runtime: missing",
-      "config: missing",
-      "codex-config: missing",
-      "user-skills: missing",
-      "hooks: missing",
-      "custom-agents: missing"
+      "repo setup missing",
+      "saved defaults missing",
+      "Codex setup missing",
+      "Sane skills missing",
+      "Codex hooks missing",
+      "named agents missing"
     ]);
     expect(screen.steps.map((step) => step.id)).toEqual([
       "install_runtime",
@@ -58,7 +58,8 @@ describe("get started screen model", () => {
       "preview_codex_profile",
       "backup_codex_config",
       "apply_codex_profile",
-      "export_all"
+      "export_all",
+      "doctor"
     ]);
     expect(screen.steps[0]?.filesTouched).toEqual([".sane/"]);
     expect(screen.steps[5]?.filesTouched).toEqual([
@@ -72,12 +73,12 @@ describe("get started screen model", () => {
       "~/.codex/agents/"
     ]);
     expect(screen.attentionItems).toEqual([
-      "runtime: missing",
-      "config: missing",
-      "codex-config: missing",
-      "user-skills: missing",
-      "hooks: missing",
-      "custom-agents: missing"
+      "repo setup missing",
+      "saved defaults missing",
+      "Codex setup missing",
+      "Sane skills missing",
+      "Codex hooks missing",
+      "named agents missing"
     ]);
   });
 
@@ -92,9 +93,7 @@ describe("get started screen model", () => {
     const screen = loadHomeScreen(paths, codexPaths);
 
     expect(screen.recommendedActionId).toBe("preview_codex_profile");
-    expect(screen.recommendedNextStep).toBe(
-      "Review the Codex changes before applying them."
-    );
+    expect(screen.recommendedNextStep).toBe("Review Codex changes before you apply them.");
     expect(screen.codexProfilePreview.summary).toBe("codex-profile preview: 4 recommended change(s)");
   });
 
@@ -112,7 +111,7 @@ describe("get started screen model", () => {
     const screen = loadHomeScreen(paths, codexPaths);
 
     expect(screen.recommendedActionId).toBe("export_all");
-    expect(screen.recommendedNextStep).toBe("Add or refresh Sane in Codex.");
+    expect(screen.recommendedNextStep).toBe("Add Sane to Codex when the setup path looks right.");
     expect(screen.codexProfileApply.status).toBe("already_satisfied");
   });
 
@@ -130,8 +129,8 @@ describe("get started screen model", () => {
 
     const screen = loadHomeScreen(paths, codexPaths);
 
-    expect(screen.recommendedActionId).toBe(null);
-    expect(screen.recommendedNextStep).toBe("Setup is complete. Choose a tune-up action or open Status.");
+    expect(screen.recommendedActionId).toBe("doctor");
+    expect(screen.recommendedNextStep).toBe("Setup looks complete. Start on Check, then tune behavior or add-ons only when needed.");
   });
 
   it("builds from a preloaded status bundle when requested", () => {
@@ -161,8 +160,8 @@ describe("get started screen model", () => {
     const bundle = inventory.inspectStatusBundle(paths, codexPaths, "windows");
     const screen = loadHomeScreenFromStatusBundle(paths, codexPaths, bundle, undefined, "windows");
 
-    expect(screen.recommendedActionId).toBeNull();
-    expect(screen.attentionItems).not.toContain("hooks: invalid");
+    expect(screen.recommendedActionId).toBe("doctor");
+    expect(screen.attentionItems).not.toContain("hooks invalid");
     expect(screen.statusLine).toContain("hooks unsupported (use WSL)");
     expect(screen.steps[5]?.filesTouched).toEqual([
       "~/.agents/skills/sane-router",

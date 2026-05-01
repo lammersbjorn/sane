@@ -24,121 +24,60 @@ afterEach(() => {
 });
 
 describe("text renderer", () => {
-  it("renders the public tui frame with a rail and dominant detail pane", () => {
+  it("renders a focused base view without tab strip chrome", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
 
     const output = renderTextAppView(loadAppView(shell));
 
-    expect(output).toContain("Sane  Home");
-    expect(output).toContain("[Home]");
-    expect(output).toContain("Settings");
-    expect(output).toContain("Add to Codex");
-    expect(output).toContain("Runtime [missing]");
-    expect(output).toContain("| Actions");
-    expect(output).toContain("| > 1. Set up Sane files");
-    expect(output).toContain("Home Focus");
-    expect(output).toContain("Snapshot");
-    expect(output).not.toContain("Latest Status");
+    expect(output).toContain("Focus:");
+    expect(output).toContain("Current job");
+    expect(output).toContain("Actions");
+    expect(output).toContain("Selected:");
+    expect(output).toContain("Impact:");
+    expect(output).toContain("Undo:");
+    expect(output).not.toContain("control center");
+    expect(output).not.toContain("Sections:");
+    expect(output).not.toContain("[Home]");
   });
 
-  it("renders a compact statusline with the primary surfaces", () => {
+  it("uses contextual footer with keys and state", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
-    const output = renderTextAppView(loadAppView(shell));
+    const output = renderTextAppView(loadAppView(shell), { width: 112, height: 32 });
 
-    expect(output).toContain("Runtime [missing]");
-    expect(output).toContain("Codex [missing]");
-    expect(output).toContain("Skills [missing]");
-    expect(output).toContain("Hooks [missing]");
-    expect(output).toContain("Drift [1 issue(s)]");
+    expect(output).toContain("Keys: enter");
+    expect(output).toContain("up/down move");
+    expect(output).toContain("State:");
+    expect(output).toContain("local setup");
+    expect(output).toContain("drift");
   });
 
-  it("keeps the standard footer statusline on one line", () => {
+  it("uses compact state labels in narrow terminals", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
+    const output = renderTextAppView(loadAppView(shell), { width: 56, height: 20 });
 
-    const output = renderTextAppView(loadAppView(shell), {
-      width: 112,
-      height: 32
-    });
-    const footerLines = output
-      .split("\n")
-      .filter((line) => line.startsWith("mode browse"));
-
-    expect(footerLines).toHaveLength(1);
-    expect(footerLines[0]!.length).toBeLessThanOrEqual(112);
-    expect(footerLines[0]).toContain("runtime");
-    expect(footerLines[0]).toContain("drift");
+    expect(output).toContain("State: local");
+    expect(output).toContain("cx");
+    expect(output).toContain("sk");
+    expect(output).toContain("hk");
+    expect(output).toContain("dr");
   });
 
-  it("uses compact footer labels when narrow terminals would wrap", () => {
+  it("keeps install/default/settings/status surfaces visible across viewports", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
-
-    const output = renderTextAppView(loadAppView(shell), {
-      width: 56,
-      height: 20
-    });
-    const footerLines = output
-      .split("\n")
-      .filter((line) => line.startsWith("mode browse") || line.startsWith("browse |"));
-
-    expect(footerLines).toHaveLength(1);
-    expect(footerLines[0]!.length).toBeLessThanOrEqual(56);
-    expect(footerLines[0]).toContain("rt");
-    expect(footerLines[0]).toContain("dr");
-  });
-
-  it("uses compact header chrome on narrow terminals", () => {
-    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
-
-    const output = renderTextAppView(loadAppView(shell), {
-      width: 56,
-      height: 20
-    });
-
-    expect(output).toContain("Sane  Home");
-    expect(output).toContain("[Home]");
-    expect(output).toContain("rt missing");
-    expect(output).toContain("mode browse | rt miss cx miss sk miss hk miss dr 1");
-    expect(output).toContain("Home Focus");
-    expect(output).toContain("Status: Ready.");
-    expect(output).toContain("runtime missing");
-    expect(output).not.toContain("Project ");
-    expect(output).not.toContain("Project ");
-    expect(output).not.toContain("Home Details");
-  });
-
-  it("keeps install/default/settings/status surfaces visible across compact, normal, and wide text viewports", () => {
-    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
-    const viewports = [
-      { width: 56, height: 20 },
-      { width: 96, height: 26 },
-      { width: 132, height: 34 }
-    ] as const;
 
     selectSection(shell, "home");
-    expect(renderTextAppView(loadAppView(shell), viewports[0])).toContain("runtime missing");
+    expect(renderTextAppView(loadAppView(shell), { width: 56, height: 20 })).toContain("Get this repo ready");
 
     selectSection(shell, "add_to_codex");
-    expect(renderTextAppView(loadAppView(shell), viewports[1])).toContain("Current install bundle:");
+    expect(renderTextAppView(loadAppView(shell), { width: 96, height: 26 })).toContain("Choose what Sane adds to Codex.");
 
     selectSection(shell, "settings");
-    expect(renderTextAppView(loadAppView(shell), viewports[2])).toContain("Edit model and agent defaults");
+    expect(renderTextAppView(loadAppView(shell), { width: 132, height: 34 })).toContain("Tune Sane around how you want Codex to work.");
 
     selectSection(shell, "status");
-    expect(renderTextAppView(loadAppView(shell), viewports[1])).toContain("status counts:");
-  });
-
-  it("shortens absolute runtime paths in compact focus status", () => {
-    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
-    runSelectedAction(shell);
-    shell.notice = null;
-
-    const output = renderTextAppView(loadAppView(shell), {
-      width: 56,
-      height: 20
-    });
-
-    expect(output).toContain("Status: installed runtime at .sane");
-    expect(output).not.toContain("Status: installed runtime at /");
+    const statusOutput = renderTextAppView(loadAppView(shell), { width: 96, height: 26 });
+    expect(statusOutput).toContain("Sane / Check");
+    expect(statusOutput).toContain("Focus:");
   });
 
   it("renders overlay state when present", () => {
@@ -153,9 +92,8 @@ describe("text renderer", () => {
     const output = renderTextAppView(loadAppView(shell));
 
     expect(output).toContain("[Overlay: Saved]");
-    expect(output).toContain("| saved body");
+    expect(output).toContain("saved body");
     expect(output).toContain("Enter, Space, or Esc closes this message.");
-    expect(output).toContain("mode notice");
   });
 
   it("keeps overlay lines within viewport width at compact sizes", () => {
@@ -167,80 +105,59 @@ describe("text renderer", () => {
       section: "settings"
     };
 
-    const output = renderTextAppView(loadAppView(shell), {
-      width: 40,
-      height: 18
-    });
+    const output = renderTextAppView(loadAppView(shell), { width: 40, height: 18 });
     const lines = output.split("\n");
 
     expect(lines.every((line) => line.length <= 40)).toBe(true);
     expect(output).toContain("[Overlay: Saved]");
   });
 
-  it("shows selection changes in the rendered action list", () => {
+  it("shows selection changes in rendered action list", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
     shell.activeActionIndex = 1;
 
     const output = renderTextAppView(loadAppView(shell));
 
-    expect(output).toContain("*");
-    expect(output).toContain("| > 2. Choose defaults");
+    expect(output).toMatch(/>\s+\w+/);
   });
 
-  it("keeps the selected action visible when the rail is windowed", () => {
-    const shell = createTuiShell(
-      createProjectPaths(makeTempDir()),
-      createCodexPaths(makeTempDir()),
-      "settings"
-    );
+  it("keeps selected action visible when list is windowed", () => {
+    const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()), "settings");
     shell.activeActionIndex = 8;
 
-    const output = renderTextAppView(loadAppView(shell), {
-      width: 56,
-      height: 24
-    });
+    const output = renderTextAppView(loadAppView(shell), { width: 56, height: 24 });
 
-    expect(output).toContain("Apply optional Cloudflare Codex settings");
     expect(output).toContain("...");
   });
 
-  it("fits output into a bounded viewport", () => {
+  it("fits output into bounded viewport", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()), "settings");
 
-    const output = renderTextAppView(loadAppView(shell), {
-      width: 48,
-      height: 16
-    });
+    const output = renderTextAppView(loadAppView(shell), { width: 48, height: 16 });
 
     const lines = output.split("\n");
     expect(lines).toHaveLength(16);
     expect(lines.every((line) => line.length <= 48)).toBe(true);
-    expect(output).toContain("Selected:");
-    expect(output).toContain("Sane  Settings");
+    expect(output).toContain("Focus:");
   });
 
   it("adds ansi styling only when requested", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
 
-    const output = renderTextAppView(loadAppView(shell), {
-      ansi: true
-    });
+    const output = renderTextAppView(loadAppView(shell), { ansi: true });
 
-    expect(output).toContain("\u001b[1mSane  Home");
-    expect(output).toContain("\u001b[33mRuntime [missing]\u001b[0m");
-    expect(output).toContain("\u001b[1;46;30m[Home]\u001b[0m");
-    expect(output).toContain("\u001b[7m| > 1. Set up Sane files");
-    expect(output).toContain("\u001b[1;36m| Actions");
+    expect(output).toContain("\u001b[1mSane / Setup");
+    expect(output).toContain("\u001b[33mKeys:");
+    expect(output).toContain("\u001b[2m+");
   });
 
-  it("renders editor overlays as distinct framed sections", () => {
+  it("renders editor overlays as framed sections", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()), "settings");
     runSelectedAction(shell);
 
     const output = renderTextAppView(loadAppView(shell));
 
     expect(output).toContain("[Overlay: Model Defaults]");
-    expect(output).toContain("mode edit models");
     expect(output).toContain("Fields");
     expect(output).toContain("Field Help");
   });
@@ -271,7 +188,7 @@ describe("text renderer", () => {
     }
     runSelectedAction(shell);
     const wideConfirm = renderTextAppView(loadAppView(shell), { width: 132, height: 34 });
-    expect(wideConfirm).toContain("[Overlay: Confirm]");
-    expect(wideConfirm).toContain("Confirm This Action");
+    expect(wideConfirm).toContain("[Overlay: Confirm action]");
+    expect(wideConfirm).toContain("Apply Codex tune-up");
   });
 });

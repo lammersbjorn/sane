@@ -15,7 +15,7 @@ export interface DashboardChip {
 
 export interface DashboardView {
   title: "Sane";
-  subtitle: "Codex-native onboarding and setup";
+  subtitle: "Install, tune, check, and recover Sane in Codex";
   projectLabel: string;
   recommendedNextStep: string;
   recommendedActionId: ReturnType<typeof homeScreen.loadHomeScreen>["recommendedActionId"];
@@ -31,17 +31,17 @@ export interface DashboardView {
 const PRIMARY_STATUS_CHIP_SPECS = [
   {
     id: "runtime",
-    label: "Runtime",
+    label: "Repo setup",
     pick: (status: TuiShell["statusSnapshot"]["statusBundle"]["primary"]["status"]) => status.runtime
   },
   {
     id: "codex-config",
-    label: "Codex config",
+    label: "Codex setup",
     pick: (status: TuiShell["statusSnapshot"]["statusBundle"]["primary"]["status"]) => status.codexConfig
   },
   {
     id: "user-skills",
-    label: "User skills",
+    label: "Sane skills",
     pick: (status: TuiShell["statusSnapshot"]["statusBundle"]["primary"]["status"]) => status.userSkills
   },
   {
@@ -71,7 +71,7 @@ export function loadDashboardView(
 
   return {
     title: "Sane",
-    subtitle: "Codex-native onboarding and setup",
+    subtitle: "Install, tune, check, and recover Sane in Codex",
     projectLabel: projectLabel(shell),
     recommendedNextStep: home.recommendedNextStep,
     recommendedActionId: home.recommendedActionId,
@@ -106,7 +106,7 @@ function buildStatusChips(statusSnapshot: TuiShell["statusSnapshot"]): Dashboard
   );
   chips.push({
     id: "custom-agents",
-    label: "Custom agents",
+    label: "Named agents",
     value: customAgents.label,
     tone: customAgents.tone
   });
@@ -115,7 +115,7 @@ function buildStatusChips(statusSnapshot: TuiShell["statusSnapshot"]): Dashboard
 
   chips.push({
     id: "install_bundle",
-    label: "Install bundle",
+    label: "Sane add-ons",
     value: installBundleValue,
     tone: toneForValue(installBundleValue)
   });

@@ -64,7 +64,9 @@ Current managed export behavior also depends on local config:
 - `frontend-craft` currently exports compact Sane-owned frontend skills instead of the full upstream Taste/Impeccable mirrors; Taste Skill, `impeccable`, and `make-interfaces-feel-better` remain provenance/reference inputs
 - `sane-frontend-review` must direct agents to use browser, Playwright, screenshot/local image, and terminal tooling according to what evidence the UI review needs
 - `rtk` exports the `sane-rtk` skill and also changes router/overlay/custom-agent output
-- installed `caveman` pack guidance is enforced through exported router guidance, overlays, and custom-agent templates; it is not just an advisory status note
+- installed `caveman` pack guidance is enforced through exported router guidance, overlays, custom-agent templates, and the SessionStart obligation receipt; it is not just an advisory status note
+- exported custom-agent templates treat enabled pack notes as active developer instructions, so optional packs apply inside spawned Sane agents instead of relying on parent-session memory
+- exported hooks include a compact SessionStart obligation receipt covering triggered skill bodies, broad-work lane handoff, blocked-handoff behavior, current style mode, and enabled optional-pack state
 - default continuity should still come from scoped Codex-native exports plus thin local `.sane` state, not Codex native `memories`
 - repo-local `AGENTS.md` overlay export should stay distinct from the global overlay while reusing the same underlying routing state
 - built-in pack manifests may also carry read-only provenance metadata for bundled upstream-derived skills or MCP references
@@ -168,7 +170,7 @@ These are the backend actions the TUI is allowed to call in the current phase.
     - `model_reasoning_effort`
     - `compact_prompt`
     - `features.codex_hooks`
-  - compact prompt stays small and operational: preserve objective, verified state, active Sane rules, completed work, next actions, and blocker state without generated repo overviews
+  - compact prompt stays small and operational: preserve objective, verified state, active Sane rules, the Sane obligation receipt, completed work, next actions, and blocker state without generated repo overviews
   - preserve all unrelated user config
 
 - `restore_codex_config`

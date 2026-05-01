@@ -51,6 +51,146 @@ export function inkRenderOptions(): RenderOptions {
   };
 }
 
+export type InkFocusedLayoutPlan =
+  | {
+      mode: "wide";
+      actionWidth: number;
+      detailWidth: number;
+      topHeight: number;
+      contextHeight: number;
+    }
+  | {
+      mode: "stacked";
+      detailHeight: number;
+      actionHeight: number;
+    }
+  | {
+      mode: "list-only";
+      actionHeight: number;
+    };
+
+export function planInkFocusedLayout(width: number, height: number): InkFocusedLayoutPlan {
+  if (width >= 118 && height >= 18) {
+    const actionWidth = Math.min(48, Math.max(42, Math.floor(width * 0.36)));
+    const detailWidth = Math.max(40, width - actionWidth - 2);
+    const topHeight = Math.min(height, Math.max(14, Math.min(22, Math.floor(height * 0.5))));
+    const contextHeight = Math.max(0, height - topHeight - 1);
+    return { mode: "wide", actionWidth, detailWidth, topHeight, contextHeight };
+  }
+
+  if (height < 11) {
+    return { mode: "list-only", actionHeight: height };
+  }
+
+  const detailHeight = height >= 17 ? 9 : height >= 14 ? 8 : 6;
+  return {
+    mode: "stacked",
+    detailHeight,
+    actionHeight: Math.max(4, height - detailHeight - 1)
+  };
+}
+
+export interface InkEditorOverlayLayout {
+  modalWidth: number;
+  modalHeight: number;
+  compactEditor: boolean;
+  headerSlots: number;
+  fieldSlots: number;
+  detailSlots: number;
+  showHelp: boolean;
+  contentHeight: number;
+}
+
+export interface InkSectionTabItem {
+  id: string;
+  label: string;
+}
+
+export type InkSectionTabsPlan =
+  | {
+      mode: "full";
+      items: Array<InkSectionTabItem & { active: boolean }>;
+    }
+  | {
+      mode: "neighbors";
+      previous: InkSectionTabItem;
+      current: InkSectionTabItem;
+      next: InkSectionTabItem;
+    }
+  | {
+      mode: "current";
+      current: InkSectionTabItem;
+    };
+
+export function planSectionTabs(
+  items: InkSectionTabItem[],
+  selected: string,
+  width: number
+): InkSectionTabsPlan {
+  const safeItems = items.length > 0 ? items : [{ id: "current", label: "Current" }];
+  const selectedIndex = Math.max(0, safeItems.findIndex((item) => item.id === selected));
+  const current = safeItems[selectedIndex] ?? safeItems[0]!;
+  const fullWidth = safeItems.reduce(
+    (total, item, index) => total + (index > 0 ? 1 : 0) + tabCellWidth(item.label, item.id === current.id),
+    0
+  );
+
+  if (fullWidth <= width) {
+    return {
+      mode: "full",
+      items: safeItems.map((item) => ({ ...item, active: item.id === current.id }))
+    };
+  }
+
+  const previous = safeItems[(selectedIndex - 1 + safeItems.length) % safeItems.length]!;
+  const next = safeItems[(selectedIndex + 1) % safeItems.length]!;
+  const neighborWidth = tabCellWidth(previous.label) + tabCellWidth(current.label, true) + tabCellWidth(next.label) + 6;
+  if (neighborWidth <= width) {
+    return { mode: "neighbors", previous, current, next };
+  }
+
+  return { mode: "current", current };
+}
+
+function tabCellWidth(label: string, active = false): number {
+  return label.length + (active ? 4 : 2);
+}
+
+export function planInkEditorOverlay(width: number, height: number): InkEditorOverlayLayout {
+  const modalWidth = computeOverlayWidth(width, 70, 4, 120);
+  const modalHeight = Math.max(4, height);
+  const compactEditor = width < 110 || modalHeight < 16;
+
+  if (compactEditor) {
+    const contentSlots = Math.max(1, modalHeight - 2);
+    const showHelp = contentSlots >= 7;
+    const headerSlots = contentSlots >= 6 ? 1 : 0;
+    const fieldSlots = Math.max(1, contentSlots - 2 - headerSlots - (showHelp ? 2 : 0));
+    return {
+      modalWidth,
+      modalHeight,
+      compactEditor,
+      headerSlots,
+      fieldSlots,
+      detailSlots: showHelp ? 1 : 0,
+      showHelp,
+      contentHeight: contentSlots
+    };
+  }
+
+  const contentHeight = Math.max(1, modalHeight - 5);
+  return {
+    modalWidth,
+    modalHeight,
+    compactEditor,
+    headerSlots: 1,
+    fieldSlots: Math.max(1, contentHeight - 1),
+    detailSlots: Math.max(1, contentHeight - 1),
+    showHelp: true,
+    contentHeight
+  };
+}
+
 export async function startInkTerminalLoop(
   runtime: TextTuiRuntime,
   options: RenderOptions = {}
@@ -67,6 +207,17 @@ export async function startInkTerminalLoop(
     const view = loadAppView(runtime.app.shell);
     const width = stdout.columns ?? 100;
     const height = stdout.rows ?? 30;
+
+    React.useEffect(() => {
+      const handleResize = () => {
+        stdout.write?.("\u001b[2J\u001b[H");
+        setVersion((version) => version + 1);
+      };
+      stdout.on?.("resize", handleResize);
+      return () => {
+        stdout.off?.("resize", handleResize);
+      };
+    }, [stdout]);
 
     useInput((input, key) => {
       const mapped = inkInputToTuiKey(input, key);
@@ -86,67 +237,78 @@ export async function startInkTerminalLoop(
 
   function InkShell({ view, width, height }: { view: SaneTuiAppView; width: number; height: number }): InkNode {
     const compact = width < 92 || height < 24;
+    const innerWidth = Math.max(20, width - 2);
+    const tight = height < 20;
+    const headerHeight = tight ? 2 : 3;
+    const footerHeight = tight ? 1 : 2;
+    const bodyHeight = Math.max(tight ? 3 : 6, height - headerHeight - footerHeight);
     return React.createElement(
       Box,
       { flexDirection: "column", paddingX: 1, width, height },
-      React.createElement(Header, { view, compact }),
+      React.createElement(Header, { view, compact, tight, width: innerWidth }),
       view.overlay
-        ? React.createElement(OverlayWindow, { view, width, height })
-        : React.createElement(MainWindows, { view, width, height, compact }),
-      React.createElement(Footer, { view, compact })
+        ? React.createElement(OverlayWindow, { view, width: innerWidth, height: bodyHeight })
+        : React.createElement(MainWindows, { view, width: innerWidth, height: bodyHeight, compact }),
+      React.createElement(Footer, { view, compact, tight, width: innerWidth })
     );
   }
 
-  function Header({ view, compact }: { view: SaneTuiAppView; compact: boolean }): InkNode {
+  function Header({ view, compact, tight, width }: { view: SaneTuiAppView; compact: boolean; tight: boolean; width: number }): InkNode {
+    const title = compact ? `${view.title} / ${view.activeSection.docLabel}` : `${view.title} / ${view.activeSection.docLabel} / ${view.projectLabel}`;
+    const label = compact || tight ? title : `${title}  -  ${view.experience.title}`;
     return React.createElement(
       Box,
-      { flexDirection: "column", marginBottom: 1 },
-      React.createElement(
+      { flexDirection: "column", marginBottom: tight ? 0 : 1 },
+      React.createElement(Text, { bold: true, color: "cyan" }, truncateEnd(label, width)),
+      React.createElement(SectionTabs, { view, width })
+    );
+  }
+
+  function SectionTabs({ view, width }: { view: SaneTuiAppView; width: number }): InkNode {
+    const plan = planSectionTabs(view.tabs.items, view.tabs.selected, width);
+    if (plan.mode === "current") {
+      return React.createElement(
         Box,
-        { justifyContent: "space-between" },
-        React.createElement(Text, { bold: true, color: "cyan" }, `Sane / ${view.activeSection.docLabel}`),
-        !compact && React.createElement(Text, { color: "gray" }, view.projectLabel)
-      ),
-      React.createElement(TabBar, { view }),
-      React.createElement(StatusChips, { view, compact })
+        { width, overflow: "hidden" },
+        renderTabCell(plan.current, true, "current", width)
+      );
+    }
+
+    if (plan.mode === "neighbors") {
+      return React.createElement(
+        Box,
+        { width, overflow: "hidden" },
+        React.createElement(Text, { color: "gray" }, "< "),
+        renderTabCell(plan.previous, false, "previous"),
+        React.createElement(Text, { color: "gray" }, " "),
+        renderTabCell(plan.current, true, "current"),
+        React.createElement(Text, { color: "gray" }, " "),
+        renderTabCell(plan.next, false, "next"),
+        React.createElement(Text, { color: "gray" }, " >")
+      );
+    }
+
+    return React.createElement(
+      Box,
+      { width, overflow: "hidden" },
+      ...plan.items.flatMap((item, index) => [
+        ...(index > 0 ? [React.createElement(Text, { key: `tab-gap-${item.id}`, color: "gray" }, " ")] : []),
+        renderTabCell(item, item.active, item.id)
+      ])
     );
   }
 
-  function TabBar({ view }: { view: SaneTuiAppView }): InkNode {
+  function renderTabCell(item: InkSectionTabItem, active: boolean, key: string, maxWidth?: number): InkNode {
+    const label = maxWidth ? truncateEnd(item.label, Math.max(1, maxWidth - (active ? 4 : 2))) : item.label;
     return React.createElement(
-      Box,
-      { gap: 1 },
-      ...view.tabs.items.map((tab) =>
-        React.createElement(
-          Text,
-          {
-            key: tab.id,
-            color: tab.id === view.tabs.selected ? "black" : "gray",
-            backgroundColor: tab.id === view.tabs.selected ? "cyan" : undefined,
-            bold: tab.id === view.tabs.selected
-          },
-          tab.id === view.tabs.selected ? ` ${tab.label} ` : tab.label
-        )
-      )
-    );
-  }
-
-  function StatusChips({ view, compact }: { view: SaneTuiAppView; compact: boolean }): InkNode {
-    const ids = compact
-      ? ["runtime", "codex-config", "drift"]
-      : ["runtime", "codex-config", "user-skills", "hooks", "drift"];
-    return React.createElement(
-      Box,
-      { gap: 1 },
-      ...view.chips
-        .filter((chip) => ids.includes(chip.id))
-        .map((chip) =>
-          React.createElement(
-            Text,
-            { key: chip.id, color: chipColor(chip.tone) },
-            `${compactChipLabel(chip.id, chip.label)} ${chip.value}`
-          )
-        )
+      Text,
+      {
+        key,
+        color: active ? "black" : "gray",
+        backgroundColor: active ? "cyan" : undefined,
+        bold: active
+      },
+      active ? ` [${label}] ` : ` ${label} `
     );
   }
 
@@ -161,21 +323,160 @@ export async function startInkTerminalLoop(
     height: number;
     compact: boolean;
   }): InkNode {
-    const bodyHeight = Math.max(compact ? 14 : 20, height - 6);
-    const actionWidth = compact ? width - 2 : Math.max(36, Math.min(48, Math.floor(width * 0.25)));
-    if (compact) {
+    return React.createElement(
+      Box,
+      { flexDirection: "column", width },
+      React.createElement(FocusedJobWindow, { view, width, height })
+    );
+  }
+
+  function FocusedJobWindow({ view, width, height }: { view: SaneTuiAppView; width: number; height: number }): InkNode {
+    const plan = planInkFocusedLayout(width, height);
+
+    if (plan.mode === "wide") {
       return React.createElement(
         Box,
-        { flexDirection: "column", flexGrow: 1, height: bodyHeight },
-        React.createElement(FocusWindow, { view, height: bodyHeight, compact })
+        { flexDirection: "column", width, height },
+        React.createElement(
+          Box,
+          { gap: 2, width, height: plan.topHeight },
+          React.createElement(ActionListPane, { view, width: plan.actionWidth, height: plan.topHeight, fill: true }),
+          React.createElement(SelectedMovePane, { view, width: plan.detailWidth, height: plan.topHeight, fill: true })
+        ),
+        plan.contextHeight >= 7
+          ? React.createElement(ContextPanelsPane, { view, width, height: plan.contextHeight })
+          : null
       );
+    }
+
+    if (plan.mode === "list-only") {
+      return React.createElement(ActionListPane, { view, width, height: plan.actionHeight, fill: true });
     }
 
     return React.createElement(
       Box,
-      { gap: 1, flexGrow: 1, height: bodyHeight },
-      React.createElement(ActionWindow, { view, width: actionWidth, height: bodyHeight }),
-      React.createElement(FocusWindow, { view, height: bodyHeight, compact })
+      { flexDirection: "column", width, height },
+      React.createElement(SelectedMovePane, { view, width, height: plan.detailHeight, fill: true }),
+      React.createElement(Box, { height: 1 }),
+      React.createElement(ActionListPane, { view, width, height: plan.actionHeight, fill: true })
+    );
+  }
+
+  function SelectedMovePane({
+    view,
+    width,
+    height,
+    fill = false
+  }: {
+    view: SaneTuiAppView;
+    width: number;
+    height: number;
+    fill?: boolean;
+  }): InkNode {
+    const lineWidth = Math.max(18, width - 6);
+    const detailCopy = selectedMoveDetailLines(view);
+    const detailLines = wrapForInk(
+      [
+        `${actionIconForCommand(view.selectedAction.id)} ${view.experience.selectedTitle}`,
+        "",
+        ...detailCopy,
+        "",
+        ...actionSafetyLines(view.selectedAction),
+        "",
+        focusActionHint(view.selectedAction)
+      ],
+      lineWidth
+    );
+    const paneHeight = fill ? height : Math.min(height, Math.max(8, Math.min(detailLines.length + 4, 14)));
+    const verticalPadding = paneVerticalPadding(paneHeight);
+    const detailLineLimit = Math.max(1, paneHeight - 3 - (verticalPadding * 2));
+
+    return React.createElement(
+      Box,
+      {
+        borderStyle: "round",
+        borderColor: "cyan",
+        flexDirection: "column",
+        paddingX: 2,
+        paddingY: verticalPadding,
+        width,
+        height: paneHeight
+      },
+      React.createElement(Text, { bold: true, color: "cyan" }, "Ready when you are"),
+      ...limitWithoutOverflowMarker(detailLines, detailLineLimit).map((line, index) =>
+        React.createElement(Text, {
+          key: `selected-${index}`,
+          color: selectedMoveLineColor(line, index),
+          bold: index === 0 || line.startsWith("Will:") || line.startsWith("Undo:")
+        }, line)
+      )
+    );
+  }
+
+  function ActionListPane({
+    view,
+    width,
+    height,
+    fill = false
+  }: {
+    view: SaneTuiAppView;
+    width: number;
+    height: number;
+    fill?: boolean;
+  }): InkNode {
+    const actionLines = experienceActionLines(view, Math.max(5, height - 5));
+    const labelWidth = Math.max(8, width - 4);
+    const paneHeight = fill ? height : Math.min(height, Math.max(8, Math.min(actionLines.length + 4, 20)));
+    const verticalPadding = paneVerticalPadding(paneHeight);
+    const actionLineLimit = Math.max(1, paneHeight - 3 - (verticalPadding * 2));
+
+    return React.createElement(
+      Box,
+      {
+        borderStyle: "round",
+        borderColor: "gray",
+        flexDirection: "column",
+        paddingX: 1,
+        paddingY: verticalPadding,
+        width,
+        height: paneHeight
+      },
+      React.createElement(Text, { bold: true, color: "cyan" }, "Moves"),
+      ...limitWithoutOverflowMarker(actionLines, actionLineLimit).map((line, index) =>
+        React.createElement(Text, {
+          key: `action-line-${index}`,
+          color: actionLineColor(line),
+          backgroundColor: line.startsWith("> ") ? "cyan" : undefined,
+          bold: line.startsWith("> ") || isActionGroupLine(line)
+        }, line.startsWith("> ") ? truncateEnd(line, labelWidth) : truncateEnd(line, labelWidth))
+      )
+    );
+  }
+
+  function ContextPanelsPane({ view, width, height }: { view: SaneTuiAppView; width: number; height: number }): InkNode {
+    const panelWidth = Math.max(26, Math.floor((width - 2) / Math.max(1, Math.min(2, view.experience.panels.length))));
+    const panels = view.experience.panels.slice(0, 2);
+    return React.createElement(
+      Box,
+      { gap: 2, width, height, marginTop: 1 },
+      ...panels.map((panel, panelIndex) =>
+        React.createElement(
+          Box,
+          {
+            key: `context-panel-${panel.title}`,
+            borderStyle: "single",
+            borderColor: panelIndex === 0 ? "blue" : "gray",
+            flexDirection: "column",
+            paddingX: 1,
+            width: panels.length === 1 ? width : panelWidth,
+            height
+          },
+          React.createElement(Text, { bold: true, color: panelIndex === 0 ? "blue" : "gray" }, panel.title),
+          ...wrapForInk(panel.lines.slice(0, Math.max(2, height - 3)), Math.max(14, panelWidth - 4))
+            .slice(0, Math.max(1, height - 3))
+            .map((line, index) => React.createElement(Text, { key: `context-${panelIndex}-${index}`, color: "gray" }, line))
+        )
+      )
     );
   }
 
@@ -194,7 +495,7 @@ export async function startInkTerminalLoop(
         width,
         height
       },
-      React.createElement(Text, { bold: true, color: "cyan" }, "Actions"),
+      React.createElement(Text, { bold: true, color: "cyan" }, "Next Moves"),
       ...actions.map((action, index) =>
         action === null
           ? React.createElement(Text, { key: `ellipsis-${index}`, color: "gray" }, "...")
@@ -208,7 +509,7 @@ export async function startInkTerminalLoop(
                 wrap: "truncate-end"
               },
               truncateEnd(
-                `${action.id === view.selectedAction.id ? "> " : "  "}${compactActionLabel(action.label)}${action.id === view.recommendedActionId ? " *" : ""}`,
+                `${action.id === view.selectedAction.id ? "> " : "  "}${compactActionLabel(action.label)}${action.id === view.recommendedActionId && action.id !== view.selectedAction.id ? " *" : ""}`,
                 labelWidth
               )
             )
@@ -232,7 +533,7 @@ export async function startInkTerminalLoop(
       React.createElement(
         Box,
         { flexDirection: "column", marginBottom: 1 },
-        React.createElement(Text, { bold: true, color: "blue" }, `${view.activeSection.docLabel} Focus`),
+        React.createElement(Text, { bold: true, color: "blue" }, `${view.activeSection.docLabel} / Next Move`),
         React.createElement(Text, { bold: true, wrap: "truncate-end" }, view.selectedAction.label)
       ),
       React.createElement(
@@ -248,7 +549,7 @@ export async function startInkTerminalLoop(
       React.createElement(
         Box,
         { flexDirection: "column" },
-        React.createElement(Text, { bold: true, color: "cyan" }, "Snapshot"),
+        React.createElement(Text, { bold: true, color: "cyan" }, "Setup at a Glance"),
         ...snapshot.map((line, index) =>
           React.createElement(Text, { key: `snapshot-${index}`, color: "gray", wrap: "truncate-end" }, line)
         )
@@ -259,13 +560,12 @@ export async function startInkTerminalLoop(
   function OverlayWindow({ view, width, height }: { view: SaneTuiAppView; width: number; height: number }): InkNode {
     const overlay = view.overlay!;
     if (overlay.kind !== "confirm" && overlay.kind !== "notice") {
-      const modalWidth = computeOverlayWidth(width, 70, 6, 120);
-      const compactEditor = width < 110;
-      if (compactEditor) {
-        const lineWidth = Math.max(20, modalWidth - 8);
+      const layout = planInkEditorOverlay(width, height);
+      if (layout.compactEditor) {
+        const lineWidth = Math.max(20, layout.modalWidth - 8);
         return React.createElement(
           Box,
-          { justifyContent: "center", height: Math.max(18, height - 6) },
+          { justifyContent: "center", height: layout.modalHeight },
           React.createElement(
             Box,
             {
@@ -273,36 +573,39 @@ export async function startInkTerminalLoop(
               borderColor: "cyan",
               flexDirection: "column",
               paddingX: 2,
-              width: modalWidth,
-              minHeight: Math.min(Math.max(18, height - 8), 28)
+              width: layout.modalWidth,
+              height: layout.modalHeight
             },
             React.createElement(Text, { bold: true, color: "cyan" }, overlay.title),
-            ...overlay.headerLines.slice(1).map((line, index) =>
-              React.createElement(Text, { key: `editor-header-${index}`, color: "gray", wrap: "truncate-end" }, line)
+            ...overlay.headerLines.slice(1, 1 + layout.headerSlots).map((line, index) =>
+              React.createElement(Text, { key: `editor-header-${index}`, color: "gray" }, truncateEnd(line, lineWidth))
             ),
-            React.createElement(Text, {}, ""),
             React.createElement(Text, { bold: true, color: "cyan" }, "Fields"),
-            ...overlay.fieldLines.map((line, index) =>
+            ...windowLinesAroundSelection(
+              overlay.fieldLines,
+              Math.max(0, overlay.fieldLines.findIndex((line) => line.startsWith("> "))),
+              layout.fieldSlots
+            ).map((line, index) =>
               React.createElement(Text, {
                 key: `editor-field-${index}`,
                 color: line.startsWith("> ") ? "black" : undefined,
                 backgroundColor: line.startsWith("> ") ? "cyan" : undefined,
-                bold: line.startsWith("> "),
-                wrap: "truncate-end"
+                bold: line.startsWith("> ")
               }, truncateEnd(line, lineWidth))
             ),
-            React.createElement(Text, {}, ""),
-            React.createElement(Text, { bold: true, color: "blue" }, overlay.detailsTitle),
-            ...limitWithoutOverflowMarker(overlay.detailsLines, 4).map((line, index) =>
-              React.createElement(Text, { key: `editor-help-${index}`, color: index > 2 ? "gray" : undefined, wrap: "truncate-end" }, line)
-            )
+            layout.showHelp ? React.createElement(Text, { bold: true, color: "blue" }, overlay.detailsTitle) : null,
+            ...(layout.showHelp
+              ? limitWithoutOverflowMarker(wrapForInk(overlay.detailsLines, lineWidth), layout.detailSlots).map((line, index) =>
+                  React.createElement(Text, { key: `editor-help-${index}`, color: "gray" }, line)
+                )
+              : [])
           )
         );
       }
-      const fieldWidth = Math.max(28, Math.min(54, Math.floor(modalWidth * 0.45)));
+      const fieldWidth = Math.max(28, Math.min(54, Math.floor(layout.modalWidth * 0.45)));
       return React.createElement(
         Box,
-        { justifyContent: "center", height: Math.max(18, height - 6) },
+        { justifyContent: "center", height: layout.modalHeight },
         React.createElement(
           Box,
           {
@@ -310,37 +613,43 @@ export async function startInkTerminalLoop(
             borderColor: "cyan",
             flexDirection: "column",
             paddingX: 2,
-            width: modalWidth,
-            minHeight: Math.min(Math.max(18, height - 8), 28)
+            width: layout.modalWidth,
+            height: layout.modalHeight
           },
           React.createElement(Text, { bold: true, color: "cyan" }, overlay.title),
-          ...overlay.headerLines.slice(1).map((line, index) =>
-            React.createElement(Text, { key: `editor-header-${index}`, color: "gray", wrap: "truncate-end" }, line)
+          ...overlay.headerLines.slice(1, 1 + layout.headerSlots).map((line, index) =>
+            React.createElement(Text, { key: `editor-header-${index}`, color: "gray" }, truncateEnd(line, layout.modalWidth - 6))
           ),
           React.createElement(Text, {}, ""),
           React.createElement(
             Box,
-            { gap: 2 },
+            { gap: 2, height: layout.contentHeight },
             React.createElement(
               Box,
-              { flexDirection: "column", width: fieldWidth },
+              { flexDirection: "column", width: fieldWidth, height: layout.contentHeight },
               React.createElement(Text, { bold: true, color: "cyan" }, "Fields"),
-              ...overlay.fieldLines.map((line, index) =>
+              ...windowLinesAroundSelection(
+                overlay.fieldLines,
+                Math.max(0, overlay.fieldLines.findIndex((line) => line.startsWith("> "))),
+                layout.fieldSlots
+              ).map((line, index) =>
                 React.createElement(Text, {
                   key: `editor-field-${index}`,
                   color: line.startsWith("> ") ? "black" : undefined,
                   backgroundColor: line.startsWith("> ") ? "cyan" : undefined,
-                  bold: line.startsWith("> "),
-                  wrap: "truncate-end"
+                  bold: line.startsWith("> ")
                 }, truncateEnd(line, fieldWidth - 2))
               )
             ),
             React.createElement(
               Box,
-              { flexDirection: "column", flexGrow: 1 },
+              { flexDirection: "column", flexGrow: 1, height: layout.contentHeight },
               React.createElement(Text, { bold: true, color: "blue" }, overlay.detailsTitle),
-              ...limitWithoutOverflowMarker(overlay.detailsLines, Math.max(8, height - 14)).map((line, index) =>
-                React.createElement(Text, { key: `editor-help-${index}`, color: index > 2 ? "gray" : undefined, wrap: "truncate-end" }, line)
+              ...limitWithoutOverflowMarker(
+                wrapForInk(overlay.detailsLines, Math.max(24, layout.modalWidth - fieldWidth - 8)),
+                layout.detailSlots
+              ).map((line, index) =>
+                React.createElement(Text, { key: `editor-help-${index}`, color: index > 2 ? "gray" : undefined }, line)
               )
             )
           )
@@ -351,9 +660,14 @@ export async function startInkTerminalLoop(
       overlay.kind === "confirm"
         ? [overlay.header, "", ...overlay.bodyLines, "", overlay.footer]
         : [...overlay.bodyLines, "", overlay.footer];
+    const modalWidth = computeOverlayWidth(width, Math.min(64, Math.max(34, width - 4)), 4, 92);
+    const lineWidth = Math.max(20, modalWidth - 6);
+    const wrappedBody = wrapForInk(body, lineWidth);
+    const modalHeight = Math.max(4, Math.min(height, Math.min(14, wrappedBody.length + 4)));
+    const bodyLines = limitWithoutOverflowMarker(wrappedBody, Math.max(3, modalHeight - 4));
     return React.createElement(
       Box,
-      { justifyContent: "center", height: Math.max(12, height - 6) },
+      { justifyContent: "center", height },
       React.createElement(
         Box,
         {
@@ -361,22 +675,40 @@ export async function startInkTerminalLoop(
           borderColor: overlay.kind === "confirm" ? "yellow" : "cyan",
           flexDirection: "column",
           paddingX: 2,
-          width: computeOverlayWidth(width, 50, 6, 96)
+          paddingY: 1,
+          width: modalWidth,
+          height: modalHeight
         },
         React.createElement(Text, { bold: true, color: overlay.kind === "confirm" ? "yellow" : "cyan" }, overlay.title),
-        ...compactLines(body, 16).map((line, index) =>
-          React.createElement(Text, { key: `overlay-${index}`, wrap: "truncate-end" }, line)
+        ...bodyLines.map((line, index) =>
+          React.createElement(Text, { key: `overlay-${index}` }, line)
         )
       )
     );
   }
 
-  function Footer({ view, compact }: { view: SaneTuiAppView; compact: boolean }): InkNode {
+  function Footer({ view, compact, tight, width }: { view: SaneTuiAppView; compact: boolean; tight: boolean; width: number }): InkNode {
+    const hint = footerHint(view);
+    if (tight) {
+      const status = compactStatusline(view, width);
+      const combined = `${hint} | ${status}`;
+      const line = combined.length <= width
+        ? combined
+        : hint.length <= width
+          ? hint
+          : compactFooterHint(view);
+      return React.createElement(
+        Box,
+        { marginTop: 0 },
+        React.createElement(Text, { color: "gray" }, truncateEnd(line, width))
+      );
+    }
+
     return React.createElement(
       Box,
-      { marginTop: 1, justifyContent: "space-between" },
-      React.createElement(Text, { color: "gray" }, compact ? "tab sections  enter run  q quit" : view.mode.hint),
-      !compact && React.createElement(Text, { color: "gray" }, view.mode.label)
+      { marginTop: 1, flexDirection: "column" },
+      React.createElement(Text, { color: "gray" }, truncateEnd(hint, width)),
+      React.createElement(Text, { color: "gray" }, compact ? compactStatusline(view, width) : fullStatusline(view))
     );
   }
 
@@ -387,6 +719,87 @@ export async function startInkTerminalLoop(
       ...options
     }
   );
+}
+
+function experienceHeroLines(view: SaneTuiAppView): string[] {
+  return [
+    view.experience.title,
+    "",
+    ...view.experience.body,
+    "",
+    `Start here: ${view.experience.primaryActionLabel}`,
+    `Why: ${view.experience.primaryActionHint}`
+  ];
+}
+
+  function experienceActionLines(view: SaneTuiAppView, maxLines: number): string[] {
+  const lines = view.experience.actionGroups.flatMap((group, groupIndex) => [
+    ...(groupIndex > 0 ? [""] : []),
+    group.title,
+    ...group.items.map((item) => {
+      const marker = item.selected ? ">" : item.recommended ? "*" : " ";
+      return `${marker} ${actionIconForCommand(item.id)} ${item.label}`;
+    })
+  ]);
+
+  return windowLinesAroundSelection(
+    lines,
+    Math.max(0, lines.findIndex((line) => line.startsWith("> "))),
+    maxLines
+  );
+}
+
+function selectedExperienceLines(view: SaneTuiAppView, maxLines: number): string[] {
+  const lines = view.experience.selectedLines.length > 0
+    ? view.experience.selectedLines
+    : ["No extra details."];
+
+  return limitWithoutOverflowMarker(compactLines(lines, maxLines), maxLines);
+}
+
+function selectedMoveDetailLines(view: SaneTuiAppView): string[] {
+  const lines = view.experience.selectedLines
+    .map((line) => line.trim())
+    .filter((line) => (
+      line.length > 0
+      && !line.startsWith("What happens:")
+      && !line.startsWith("Files changed:")
+      && !line.startsWith("Safety")
+      && !line.startsWith("Confirmation required")
+      && !line.startsWith("audit:")
+      && !line.startsWith("apply readiness:")
+    ));
+
+  return lines.length > 0 ? lines.slice(0, 1) : selectedExperienceLines(view, 1);
+}
+
+function windowLinesAroundSelection(
+  lines: string[],
+  selectedIndex: number,
+  availableLines: number
+): string[] {
+  if (availableLines <= 0 || lines.length <= availableLines) {
+    return lines;
+  }
+
+  const windowSize = Math.max(1, availableLines);
+  const halfWindow = Math.floor(windowSize / 2);
+  let start = Math.max(0, selectedIndex - halfWindow);
+  let end = Math.min(lines.length, start + windowSize);
+
+  if (end - start < windowSize) {
+    start = Math.max(0, end - windowSize);
+  }
+
+  const visible = lines.slice(start, end);
+  if (start > 0) {
+    visible[0] = "...";
+  }
+  if (end < lines.length) {
+    visible[visible.length - 1] = "...";
+  }
+
+  return visible;
 }
 
 type FocusAction = SaneTuiAppView["selectedAction"];
@@ -402,7 +815,10 @@ export function focusHelpLines(action: FocusAction, maxLines: number): string[] 
 }
 
 export function focusSnapshotLines(lines: string[], maxLines: number): string[] {
-  return addSnapshotSpacing(prioritizeSnapshotLines(readableOverviewLines(lines), maxLines));
+  return limitWithoutOverflowMarker(
+    addSnapshotSpacing(prioritizeSnapshotLines(readableOverviewLines(lines), maxLines)),
+    maxLines
+  );
 }
 
 function prioritizeSnapshotLines(lines: string[], maxLines: number): string[] {
@@ -456,8 +872,141 @@ function actionImpactSummary(action: FocusAction): string {
   }
 
   return action.repoMutation
-    ? "Changes this repo or Sane project files."
-    : "Changes your Codex setup. Preview or confirmation appears first when needed.";
+    ? "Changes this project. Preview or confirmation appears first."
+    : "Changes your Codex setup. Preview or confirmation appears first.";
+}
+
+export function actionIconForCommand(id: string): string {
+  const normalized = id.toLowerCase();
+
+  if (
+    normalized.includes("uninstall")
+    || normalized.includes("remove")
+    || normalized.includes("reset")
+    || normalized.includes("restore")
+  ) {
+    return "!";
+  }
+
+  if (
+    normalized.startsWith("show_")
+    || normalized.startsWith("preview_")
+    || normalized === "doctor"
+    || normalized.includes("status")
+    || normalized.includes("readiness")
+  ) {
+    return "i";
+  }
+
+  if (
+    normalized.includes("install")
+    || normalized.includes("add")
+    || normalized.includes("apply")
+    || normalized.includes("export")
+    || normalized.includes("backup")
+  ) {
+    return "+";
+  }
+
+  if (
+    normalized.includes("editor")
+    || normalized.includes("config")
+    || normalized.includes("pack")
+    || normalized.includes("privacy")
+    || normalized.includes("repair")
+    || normalized.includes("update")
+    || normalized.includes("drift")
+  ) {
+    return "~";
+  }
+
+  return "+";
+}
+
+function actionSafetyLines(action: FocusAction): string[] {
+  if (action.kind === "editor") {
+    return [
+      "Will: save local Sane config.",
+      "Undo: reopen editor and change it back."
+    ];
+  }
+
+  if (isReadOnlyAction(action)) {
+    return [
+      "Will: show details only. No files change.",
+      "Undo: none needed."
+    ];
+  }
+
+  return action.repoMutation
+    ? [
+        "Will: change this project after confirm.",
+        "Undo: revert selected hunks with git."
+      ]
+    : [
+        "Will: change Codex setup after confirm.",
+        "Undo: use matching remove/reset move."
+      ];
+}
+
+function selectedMoveLineColor(line: string, index: number): "cyan" | "gray" | "yellow" | undefined {
+  if (index === 0) {
+    return "cyan";
+  }
+  if (line.length === 0) {
+    return undefined;
+  }
+  if (line.startsWith("Will:") || line.startsWith("Undo:")) {
+    return "yellow";
+  }
+  if (line.startsWith("Why now:") || line.startsWith("Enter ")) {
+    return "gray";
+  }
+  return undefined;
+}
+
+function actionLineColor(line: string): "black" | "cyan" | "gray" | "yellow" | undefined {
+  if (line.startsWith("> ")) {
+    return "black";
+  }
+  if (line.startsWith("* ")) {
+    return "yellow";
+  }
+  if (isActionGroupLine(line)) {
+    return "cyan";
+  }
+  if (line === "...") {
+    return "gray";
+  }
+  return undefined;
+}
+
+function paneVerticalPadding(height: number): 0 | 1 {
+  return height < 12 ? 0 : 1;
+}
+
+function isActionGroupLine(line: string): boolean {
+  return line.length > 0 && !line.startsWith(" ") && !line.startsWith("> ") && !line.startsWith("* ") && line !== "...";
+}
+
+function footerHint(view: SaneTuiAppView): string {
+  const action = footerActionLabel(view);
+  return `${action} | up/down move | left/right tab | q quit`;
+}
+
+function compactFooterHint(view: SaneTuiAppView): string {
+  return `${footerActionLabel(view)} | up/down | left/right tab | q`;
+}
+
+function footerActionLabel(view: SaneTuiAppView): string {
+  const action = view.selectedAction.confirmation?.required
+    ? "enter confirm"
+    : view.selectedAction.kind === "editor"
+      ? "enter edit"
+      : isReadOnlyAction(view.selectedAction)
+        ? "enter open"
+        : "enter run";
+  return action;
 }
 
 function focusActionHint(action: FocusAction): string {
@@ -474,6 +1023,52 @@ function focusActionHint(action: FocusAction): string {
   }
 
   return "Enter runs this action.";
+}
+
+function wrapForInk(lines: string[], width: number): string[] {
+  const safeWidth = Math.max(8, width);
+  return lines.flatMap((line) => wrapInkLine(line, safeWidth));
+}
+
+function wrapInkLine(line: string, width: number): string[] {
+  if (line.length === 0) {
+    return [""];
+  }
+
+  const words = line.split(" ");
+  const result: string[] = [];
+  let current = "";
+
+  for (const word of words) {
+    if (current.length === 0) {
+      current = word;
+      continue;
+    }
+
+    if (`${current} ${word}`.length <= width) {
+      current = `${current} ${word}`;
+      continue;
+    }
+
+    result.push(current);
+    current = word;
+  }
+
+  if (current.length > 0) {
+    result.push(current);
+  }
+
+  return result.flatMap((wrappedLine) => {
+    if (wrappedLine.length <= width) {
+      return [wrappedLine];
+    }
+
+    const chunks: string[] = [];
+    for (let index = 0; index < wrappedLine.length; index += width) {
+      chunks.push(wrappedLine.slice(index, index + width));
+    }
+    return chunks;
+  });
 }
 
 function isReadOnlyAction(action: FocusAction): boolean {
@@ -536,13 +1131,14 @@ function chipColor(tone: SaneTuiAppView["chips"][number]["tone"]): "green" | "ye
   }
 }
 
-function compactChipLabel(id: string, label: string): string {
-  switch (id) {
-    case "codex-config":
-      return "codex";
-    case "user-skills":
-      return "skills";
-    default:
-      return label.toLowerCase();
+function fullStatusline(view: SaneTuiAppView): string {
+  return `State: local ${view.footer.status.runtime} | codex ${view.footer.status.codex} | skills ${view.footer.status.user} | hooks ${view.footer.status.hooks} | drift ${view.chips.find((chip) => chip.id === "drift")?.value ?? "unknown"}`;
+}
+
+function compactStatusline(view: SaneTuiAppView, width = 80): string {
+  const drift = view.chips.find((chip) => chip.id === "drift")?.value ?? "unknown";
+  if (width < 64) {
+    return `State: local ${view.footer.status.runtime} | drift ${drift}`;
   }
+  return `State: local ${view.footer.status.runtime} | cx ${view.footer.status.codex} | sk ${view.footer.status.user} | hk ${view.footer.status.hooks} | dr ${drift}`;
 }

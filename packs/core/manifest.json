@@ -47,8 +47,8 @@
           }
         ]
       },
-      "policyNote": "- Caveman pack active: load `sane-caveman` for prose rules",
-      "continuityNote": "Caveman pack active: load `sane-caveman` skill body before normal narrative."
+      "policyNote": "- Caveman pack active: use `sane-caveman` prose rules; read the skill body before normal narrative when available",
+      "continuityNote": "Caveman pack active: use `sane-caveman` prose rules; read the skill body before normal narrative when available."
     },
     "rtk": {
       "configKey": "rtk",

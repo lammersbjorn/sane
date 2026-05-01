@@ -1,4 +1,5 @@
 /.sane
+**/.sane
 /node_modules
 /.turbo
 **/.turbo

@@ -36,9 +36,12 @@ describe("app view", () => {
     expect(view.activeSection.id).toBe("home");
     expect(view.tabs.title).toBe("Sections");
     expect(view.tabs.selected).toBe("home");
-    expect(view.tabs.items[0]).toEqual({ id: "home", label: "Home" });
-    expect(view.sectionOverviewLines[0]).toContain("Guided setup");
-    expect(view.selectedHelpLines[0]).toContain("Selected action:");
+    expect(view.tabs.items[0]).toEqual({ id: "home", label: "Setup" });
+    expect(view.sectionOverviewLines[0]).toContain("Start here");
+    expect(view.experience.eyebrow).toBe("Codex readiness");
+    expect(view.experience.primaryActionLabel).toBe("Prepare repo");
+    expect(view.experience.actionGroups[0]?.title).toBe("Start");
+    expect(view.selectedHelpLines[0]).toContain("What happens:");
     expect(view.latestStatusTitle).toBe("Latest Status");
     expect(view.mode.id).toBe("browse");
     expect(view.mode.label).toBe("Browse");
@@ -48,7 +51,7 @@ describe("app view", () => {
     expect(view.footer.status.runtime).toBe("missing");
     expect(view.footer.status.codex).toBe("missing");
     expect(view.footerLines[0]).toContain("mode browse");
-    expect(view.footerLines[0]).toContain("runtime");
+    expect(view.footerLines[0]).toContain("local");
     expect(view.footerLines[0]).toContain("drift");
   });
 
@@ -185,13 +188,13 @@ describe("app view", () => {
 
     const view = loadAppView(shell);
 
-    expect(view.recommendedNextStep).toBe("Set up Sane's local files first.");
-    expect(view.sectionOverviewLines.join("\n")).toContain("Current setup");
-    expect(view.sectionOverviewLines.join("\n")).toContain("runtime: missing");
-    expect(view.sectionOverviewLines.join("\n")).toContain("config: missing");
-    expect(view.sectionOverviewLines.join("\n")).toContain("codex-config: missing");
-    expect(view.sectionOverviewLines.join("\n")).toContain("user-skills: missing");
-    expect(view.sectionOverviewLines.join("\n")).toContain("Codex defaults: missing");
+    expect(view.recommendedNextStep).toBe("Get this repo ready for Sane first.");
+    expect(view.sectionOverviewLines.join("\n")).toContain("Right now");
+    expect(view.sectionOverviewLines.join("\n")).toContain("repo setup missing");
+    expect(view.sectionOverviewLines.join("\n")).toContain("saved defaults missing");
+    expect(view.sectionOverviewLines.join("\n")).toContain("Codex setup missing");
+    expect(view.sectionOverviewLines.join("\n")).toContain("Sane skills missing");
+    expect(view.sectionOverviewLines.join("\n")).toContain("Codex tune-up: missing");
   });
 
   it("surfaces typed codex profile readiness in Home guidance", () => {
@@ -669,10 +672,9 @@ describe("app view", () => {
     const view = loadAppView(shell);
     const overview = view.sectionOverviewLines.join("\n");
 
-    expect(overview).toContain("Current install bundle:");
-    expect(overview.match(/Current install bundle:/g)).toHaveLength(1);
-    expect(overview).toContain("install bundle state:");
-    expect(overview).toContain("bundle targets missing:");
+    expect(overview).not.toContain("Current Codex setup bundle:");
+    expect(overview).toContain("codex add-ons state:");
+    expect(overview).toContain("setup targets missing:");
     expect(overview).toContain("optional Codex tools: missing (3 recommended changes)");
   });
 

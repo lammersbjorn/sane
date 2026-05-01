@@ -37,7 +37,7 @@ describe("sane bin shim", () => {
     });
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain("[Settings]");
+    expect(result.stdout).toContain("Sane / Tune /");
   }, 15_000);
 
   it("runs section shortcuts through the smart preview shim", () => {
@@ -55,7 +55,7 @@ describe("sane bin shim", () => {
     });
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain("[Status]");
+    expect(result.stdout).toContain("Sane / Check /");
   }, 15_000);
 
   it("opens the install wizard through the same shim", () => {
@@ -73,7 +73,7 @@ describe("sane bin shim", () => {
     });
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain("[Home]");
-    expect(result.stdout).toContain("Set up Sane files");
+    expect(result.stdout).toContain("Sane / Setup /");
+    expect(result.stdout).toContain("Get this repo ready");
   }, 15_000);
 });

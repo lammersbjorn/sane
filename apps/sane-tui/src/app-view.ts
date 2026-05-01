@@ -12,9 +12,38 @@ import { loadSettingsScreen } from "@sane/sane-tui/settings-screen.js";
 import { loadRepairScreenFromStatusBundle } from "@sane/sane-tui/repair-screen.js";
 import { type UiCommandId } from "@sane/sane-tui/command-registry.js";
 
+export interface ExperienceActionItem {
+  id: string;
+  label: string;
+  selected: boolean;
+  recommended: boolean;
+}
+
+export interface ExperienceActionGroup {
+  title: string;
+  items: ExperienceActionItem[];
+}
+
+export interface ExperiencePanel {
+  title: string;
+  lines: string[];
+}
+
+export interface ExperienceView {
+  eyebrow: string;
+  title: string;
+  body: string[];
+  primaryActionLabel: string;
+  primaryActionHint: string;
+  panels: ExperiencePanel[];
+  actionGroups: ExperienceActionGroup[];
+  selectedTitle: string;
+  selectedLines: string[];
+}
+
 export interface SaneTuiAppView {
   title: "Sane";
-  subtitle: "Codex-native onboarding and setup";
+  subtitle: "Install, tune, check, and recover Sane in Codex";
   projectLabel: string;
   recommendedNextStep: string;
   recommendedActionId: ReturnType<typeof loadDashboardView>["recommendedActionId"];
@@ -46,13 +75,14 @@ export interface SaneTuiAppView {
     navHint: string;
     status: Record<"runtime" | "codex" | "user" | "hooks", string>;
   };
+  experience: ExperienceView;
   overlay: OverlayModel;
 }
 
 const FOOTER_STATUS_SPECS = [
-  { id: "runtime", label: "runtime" },
+  { id: "runtime", label: "local" },
   { id: "codex-config", label: "codex" },
-  { id: "user-skills", label: "user" },
+  { id: "user-skills", label: "skills" },
   { id: "hooks", label: "hooks" }
 ] as const;
 
@@ -100,6 +130,16 @@ export function loadAppView(shell: TuiShell): SaneTuiAppView {
     )
   );
 
+  const sectionOverview = sectionOverviewLines(dashboard, {
+    home,
+    install,
+    inspect,
+    preferences,
+    repair
+  });
+  const selectedHelp = selectedActionHelpLines(shell, home, inspect, preferences);
+  const mode = currentMode(shell);
+
   return {
     ...dashboard,
     tabs: {
@@ -111,24 +151,25 @@ export function loadAppView(shell: TuiShell): SaneTuiAppView {
       }))
     },
     sectionOverviewTitle: "Section Overview",
-    sectionOverviewLines: sectionOverviewLines(dashboard, {
+    sectionOverviewLines: sectionOverview,
+    selectedHelpTitle: "Selected Step Details",
+    selectedHelpLines: selectedHelp,
+    latestStatusTitle: dashboard.lastResult.title,
+    latestStatusLines: dashboard.lastResult.lines,
+    mode,
+    footerTitle: "Now",
+    footerLines: [footerLine(dashboard.chips, mode)],
+    footer: {
+      navHint: mode.hint,
+      status: footerStatusMap(dashboard.chips)
+    },
+    experience: buildExperienceView(dashboard, {
       home,
       install,
       inspect,
       preferences,
       repair
-    }),
-    selectedHelpTitle: "Selected Step Details",
-    selectedHelpLines: selectedActionHelpLines(shell, home, inspect, preferences),
-    latestStatusTitle: dashboard.lastResult.title,
-    latestStatusLines: dashboard.lastResult.lines,
-    mode: currentMode(shell),
-    footerTitle: "Now",
-    footerLines: [footerLine(dashboard.chips, currentMode(shell))],
-    footer: {
-      navHint: currentMode(shell).hint,
-      status: footerStatusMap(dashboard.chips)
-    },
+    }, sectionOverview, selectedHelp),
     overlay: loadOverlayModel(shell)
   };
 }
@@ -150,17 +191,18 @@ function sectionOverviewLines(
         homeOverviewTitle(models.home),
         `Next step: ${dashboard.recommendedNextStep}`,
         "",
-        "Current setup",
+        "Right now",
         ...models.home.statusLine.split(" | "),
         "",
-        "Setup path",
-        "1. Set up local Sane files",
-        "2. Choose defaults",
-        "3. Review and back up Codex settings",
-        "4. Apply Codex defaults",
-        "5. Add or refresh Sane in Codex",
+        "Suggested path",
+        "1. Get this repo ready",
+        "2. Choose how Codex should work",
+        "3. Preview and back up the Codex tune-up",
+        "4. Apply the Codex tune-up",
+        "5. Teach Codex the Sane workflow",
+        "6. Check health whenever something feels off",
         "",
-        "Normal `sane` opens Status after setup."
+        "Normal `sane` opens Check after setup."
       ];
       if (dashboard.recommendedActionId) {
         const action = dashboard.actions.find((item) => item.id === dashboard.recommendedActionId);
@@ -175,7 +217,7 @@ function sectionOverviewLines(
         lines.push(...dashboard.attentionItems);
       }
       lines.push("");
-      lines.push(`Codex defaults: ${models.home.codexProfileAudit.status} (${models.home.codexProfileAudit.recommendedChangeCount} change(s))`);
+      lines.push(`Codex tune-up: ${models.home.codexProfileAudit.status} (${models.home.codexProfileAudit.recommendedChangeCount} change(s))`);
       return lines;
     }
     case "status": {
@@ -186,10 +228,10 @@ function sectionOverviewLines(
       const lines = [
         ...dashboard.activeSection.description,
         "",
-        `install bundle state: ${install.bundleStatus}`,
+        `codex add-ons state: ${install.bundleStatus}`,
         install.missingTargets.length === 0
-          ? "bundle targets: all onboarding targets installed"
-          : `bundle targets missing: ${install.missingTargets.join(", ")}`,
+          ? "setup targets: all onboarding targets installed"
+          : `setup targets missing: ${install.missingTargets.join(", ")}`,
         `optional Codex tools: ${install.integrationsStatus.label} (${install.integrationsRecommendedChangeCount} recommended changes)`
       ];
       const hooksInventory = install.inventory.find((item) => item.name === "hooks");
@@ -232,12 +274,352 @@ function sectionOverviewLines(
         repair.removableInstalls.length === 0
           ? "removable installs: none currently installed"
           : `removable installs: ${repair.removableInstalls.join(", ")}`,
-        `install bundle: ${repair.installBundle}`
+        `codex add-ons: ${repair.installBundle}`
       ];
     }
     default:
       return dashboard.activeSection.description;
   }
+}
+
+function buildExperienceView(
+  dashboard: ReturnType<typeof loadDashboardView>,
+  models: {
+    home: ReturnType<typeof loadHomeScreenFromStatusBundle>;
+    install: ReturnType<typeof loadAddToCodexScreenFromStatusBundle>;
+    inspect: () => ReturnType<typeof loadStatusScreenFromStatusBundle>;
+    preferences: () => ReturnType<typeof loadSettingsScreen>;
+    repair: () => ReturnType<typeof loadRepairScreenFromStatusBundle>;
+  },
+  sectionOverview: string[],
+  selectedHelp: string[]
+): ExperienceView {
+  const recommended = recommendedAction(dashboard);
+  const selectedTitle = cleanActionLabel(dashboard.selectedAction.label);
+  const selectedLines = readableSelectedLines(selectedHelp);
+
+  switch (dashboard.activeSection.id) {
+    case "home":
+      return {
+        eyebrow: "Codex readiness",
+        title: homeExperienceTitle(models.home),
+        body: [
+          dashboard.recommendedNextStep,
+          "Tune defaults, refresh Codex add-ons, check health, and get back to work."
+        ],
+        primaryActionLabel: cleanActionLabel(recommended?.label ?? dashboard.selectedAction.label),
+        primaryActionHint: primaryActionHint(recommended ?? dashboard.selectedAction),
+        panels: [
+          {
+            title: "Setup now",
+            lines: models.home.statusLine.split(" | ").map(sentenceCaseStatus)
+          },
+          {
+            title: "Needs a look",
+            lines: dashboard.attentionItems.length > 0
+              ? dashboard.attentionItems.slice(0, 4).map(sentenceCaseStatus)
+              : ["No urgent setup issues."]
+          }
+        ],
+        actionGroups: actionGroups(dashboard, [
+          { title: "Start", ids: ["install_runtime", "open_config_editor", "preview_codex_profile", "backup_codex_config", "apply_codex_profile", "export_all"] },
+          { title: "Maintain", ids: ["doctor"] }
+        ]),
+        selectedTitle,
+        selectedLines
+      };
+    case "settings": {
+      const preferences = models.preferences();
+      return {
+        eyebrow: "Work style",
+        title: "Tune Sane around how you want Codex to work.",
+        body: [
+          "Set the default crew once: main session, explorer, implementation, reviewer, realtime helper.",
+          "Keep advanced model details visible, but behind the selected move."
+        ],
+        primaryActionLabel: cleanActionLabel(recommended?.label ?? dashboard.selectedAction.label),
+        primaryActionHint: primaryActionHint(recommended ?? dashboard.selectedAction),
+        panels: [
+          {
+            title: "Agent defaults",
+            lines: [
+              `Main session: ${preferences.models.coordinator.model}/${preferences.models.coordinator.reasoningEffort}`,
+              `Explorer: ${preferences.subagents.explorer.model}/${preferences.subagents.explorer.reasoningEffort}`,
+              `Build: ${preferences.subagents.implementation.model}/${preferences.subagents.implementation.reasoningEffort}`,
+              `Review: ${preferences.subagents.verifier.model}/${preferences.subagents.verifier.reasoningEffort}`
+            ]
+          },
+          {
+            title: "Comfort settings",
+            lines: [
+              `Packs: ${preferences.enabledPacks.join(", ") || "core only"}`,
+              `Telemetry: ${preferences.telemetry}`,
+              `Auto updates: ${preferences.autoUpdates ? "on" : "off"}`
+            ]
+          }
+        ],
+        actionGroups: actionGroups(dashboard, [
+          { title: "Edit", ids: ["open_config_editor", "open_pack_editor", "open_privacy_editor"] },
+          { title: "Preview", ids: ["show_config", "show_codex_config", "preview_statusline_profile", "preview_cloudflare_profile"] },
+          { title: "Apply", ids: ["apply_statusline_profile", "apply_cloudflare_profile", "toggle_auto_updates"] }
+        ]),
+        selectedTitle,
+        selectedLines
+      };
+    }
+    case "add_to_codex": {
+      const install = models.install;
+      return {
+        eyebrow: "Codex add-ons",
+        title: "Choose what Sane adds to Codex.",
+        body: [
+          "Personal add-ons teach Codex the Sane workflow. Repo add-ons stay explicit.",
+          install.missingTargets.length === 0
+            ? "Core Codex add-ons are already installed."
+            : `${install.missingTargets.length} add-on target(s) still need attention.`
+        ],
+        primaryActionLabel: cleanActionLabel(recommended?.label ?? dashboard.selectedAction.label),
+        primaryActionHint: primaryActionHint(recommended ?? dashboard.selectedAction),
+        panels: [
+          {
+            title: "Personal Codex",
+            lines: [
+              `Core add-ons: ${install.bundleStatus}`,
+              `Optional tools: ${install.integrationsStatus.label}`,
+              `Recommended tool changes: ${install.integrationsRecommendedChangeCount}`
+            ]
+          },
+          {
+            title: "Project boundary",
+            lines: [
+              "Repo-level writes are advanced and explicit.",
+              "Files changed show before writes.",
+              "Unrelated Codex content stays yours."
+            ]
+          }
+        ],
+        actionGroups: actionGroups(dashboard, [
+          { title: "Personal", ids: ["export_all", "export_user_skills", "export_global_agents", "export_custom_agents", "export_hooks"] },
+          { title: "Tools", ids: ["apply_integrations_profile"] },
+          { title: "Advanced", ids: ["export_repo_skills", "export_repo_agents", "export_opencode_all"] }
+        ]),
+        selectedTitle,
+        selectedLines
+      };
+    }
+    case "status": {
+      const statusLines = sectionOverview.filter((line) => line.length > 0);
+      return {
+        eyebrow: "Health check",
+        title: "Read the setup before touching anything.",
+        body: [
+          "Status is read-only. It gives you the calm version first, then the full report when selected.",
+          firstMatching(statusLines, "Needs attention") ?? "Needs attention: none"
+        ],
+        primaryActionLabel: cleanActionLabel(recommended?.label ?? dashboard.selectedAction.label),
+        primaryActionHint: primaryActionHint(recommended ?? dashboard.selectedAction),
+        panels: [
+          {
+            title: "Health",
+            lines: statusLines.slice(1, 8)
+          },
+          {
+            title: "Details live here",
+            lines: [
+              "Full reports, policy previews, handoff notes, and raw config are one move away.",
+              "No agent work starts from Status."
+            ]
+          }
+        ],
+        actionGroups: actionGroups(dashboard, [
+          { title: "Check", ids: ["show_status", "doctor", "check_updates"] },
+          { title: "Read", ids: ["show_runtime_summary", "show_config", "show_codex_config", "preview_policy"] },
+          { title: "Optional", ids: ["preview_integrations_profile", "preview_statusline_profile"] }
+        ]),
+        selectedTitle,
+        selectedLines
+      };
+    }
+    case "repair": {
+      const repair = models.repair();
+      return {
+        eyebrow: "Repair",
+        title: "Fix broken setup without removing what is yours.",
+        body: [
+          "Repair keeps recovery tools separate from uninstall.",
+          "Backups and confirmations appear before risky moves."
+        ],
+        primaryActionLabel: cleanActionLabel(recommended?.label ?? dashboard.selectedAction.label),
+        primaryActionHint: primaryActionHint(recommended ?? dashboard.selectedAction),
+        panels: [
+          {
+            title: "Recovery",
+            lines: [
+              `Restore: ${repair.restoreStatus.label}`,
+              `Backups: ${repair.backups.backupCount}`,
+              `Codex add-ons: ${repair.installBundle}`
+            ]
+          },
+          {
+            title: "Local data",
+            lines: [
+              `Telemetry directory: ${presentFlag(repair.telemetry.dirPresent)}`,
+              "Local cleanup stays separate from uninstall."
+            ]
+          }
+        ],
+        actionGroups: actionGroups(dashboard, [
+          { title: "Restore", ids: ["install_runtime", "backup_codex_config", "restore_codex_config"] },
+          { title: "Clean", ids: ["reset_telemetry_data"] }
+        ]),
+        selectedTitle,
+        selectedLines
+      };
+    }
+    case "uninstall":
+      return {
+        eyebrow: "Remove",
+        title: "Remove only Sane-managed pieces.",
+        body: [
+          "This is intentionally blunt. Every destructive move requires confirmation.",
+          "Unrelated Codex files, skills, agents, and plugins should stay."
+        ],
+        primaryActionLabel: cleanActionLabel(recommended?.label ?? dashboard.selectedAction.label),
+        primaryActionHint: primaryActionHint(recommended ?? dashboard.selectedAction),
+        panels: [
+          {
+            title: "Safety",
+            lines: [
+              "Remove means Sane-managed only.",
+              "Repo removal stays marked advanced.",
+              "Remove all is last on purpose."
+            ]
+          }
+        ],
+        actionGroups: actionGroups(dashboard, [
+          { title: "Personal", ids: ["uninstall_user_skills", "uninstall_global_agents", "uninstall_hooks", "uninstall_custom_agents"] },
+          { title: "Project", ids: ["uninstall_repo_skills", "uninstall_repo_agents"] },
+          { title: "Everything", ids: ["uninstall_all"] }
+        ]),
+        selectedTitle,
+        selectedLines
+      };
+  }
+}
+
+type DashboardAction = ReturnType<typeof loadDashboardView>["actions"][number];
+
+function recommendedAction(dashboard: ReturnType<typeof loadDashboardView>): DashboardAction | null {
+  return dashboard.actions.find((action) => action.id === dashboard.recommendedActionId) ?? null;
+}
+
+function cleanActionLabel(label: string): string {
+  return label.replace(/^\d+\.\s*/, "");
+}
+
+function primaryActionHint(action: DashboardAction): string {
+  if (action.confirmation?.required) {
+    return "Opens confirmation first.";
+  }
+
+  if (action.kind === "editor") {
+    return "Opens an editor. Save when ready.";
+  }
+
+  if (isReadOnlyDashboardAction(action)) {
+    return "Opens details. No files change.";
+  }
+
+  return action.repoMutation
+    ? "Changes this project after preview or confirmation when needed."
+    : "Changes your Codex setup after preview or confirmation when needed.";
+}
+
+function actionGroups(
+  dashboard: ReturnType<typeof loadDashboardView>,
+  specs: Array<{ title: string; ids: readonly UiCommandId[] }>
+): ExperienceActionGroup[] {
+  const seen = new Set<string>();
+  const groups = specs.flatMap((spec) => {
+    const items = spec.ids
+      .map((id) => dashboard.actions.find((action) => action.id === id))
+      .filter((action): action is DashboardAction => Boolean(action))
+      .map((action) => {
+        seen.add(action.id);
+        return {
+          id: action.id,
+          label: cleanActionLabel(action.label),
+          selected: action.id === dashboard.selectedAction.id,
+          recommended: action.id === dashboard.recommendedActionId
+        };
+      });
+
+    return items.length > 0 ? [{ title: spec.title, items }] : [];
+  });
+
+  const remaining = dashboard.actions
+    .filter((action) => !seen.has(action.id))
+    .map((action) => ({
+      id: action.id,
+      label: cleanActionLabel(action.label),
+      selected: action.id === dashboard.selectedAction.id,
+      recommended: action.id === dashboard.recommendedActionId
+    }));
+
+  return remaining.length > 0 ? [...groups, { title: "More", items: remaining }] : groups;
+}
+
+function sentenceCaseStatus(line: string): string {
+  if (line.length === 0) {
+    return line;
+  }
+
+  return `${line[0]!.toUpperCase()}${line.slice(1)}`;
+}
+
+function readableSelectedLines(lines: string[]): string[] {
+  return lines
+    .map((line) => line.trim())
+    .filter((line) => (
+      line.length > 0
+      && !line.startsWith("Files changed:")
+      && !line.startsWith("audit:")
+      && !line.startsWith("apply readiness:")
+      && !line.startsWith("Visibility only")
+      && !line.startsWith("Use it when")
+    ))
+    .slice(0, 6);
+}
+
+function firstMatching(lines: string[], prefix: string): string | null {
+  return lines.find((line) => line.startsWith(prefix)) ?? null;
+}
+
+function homeExperienceTitle(home: ReturnType<typeof loadHomeScreenFromStatusBundle>): string {
+  switch (home.recommendedActionId) {
+    case "install_runtime":
+      return "Give this repo a clean starting point.";
+    case "preview_codex_profile":
+      return "Review what Sane wants to tune in Codex.";
+    case "export_all":
+      return "Add Sane's Codex add-ons when ready.";
+    case "doctor":
+      return "Your setup has a calm checkup screen.";
+    default:
+      return "Make Codex feel ready before work starts.";
+  }
+}
+
+function isReadOnlyDashboardAction(action: DashboardAction): boolean {
+  return (
+    action.id === "show_status"
+    || action.id === "doctor"
+    || action.id === "show_runtime_summary"
+    || action.id === "show_config"
+    || action.id === "show_codex_config"
+    || action.id === "show_outcome_readiness"
+    || action.id.startsWith("preview_")
+  );
 }
 
 function selectedActionHelpLines(
@@ -367,10 +749,10 @@ function detailSelectedActionHelp(action: SelectedAction, details: string[]): st
 }
 
 function selectedActionHelp(action: SelectedAction, details?: string[]): string[] {
+  const filesTouched = action.filesTouched.length === 0 ? "none" : action.filesTouched.join(", ");
   const lines = [
-    `Selected action: ${action.label}`,
-    impactLine(action),
-    `Files touched: ${action.filesTouched.join(", ")}`,
+    `What happens: ${impactLine(action)}`,
+    `Files changed: ${filesTouched}`,
     "",
     ...action.help
   ];
@@ -379,18 +761,18 @@ function selectedActionHelp(action: SelectedAction, details?: string[]): string[
 
 function impactLine(action: SelectedAction): string {
   if (action.kind === "editor") {
-    return "Impact: changes Sane defaults only after you save.";
+    return "changes Sane defaults only after you save.";
   }
 
   if (isReadOnlyAction(action)) {
     return action.id.startsWith("apply_") || action.id.startsWith("backup_") || action.id.startsWith("restore_")
-      ? "Impact: changes user-level Codex files, not this repo."
-      : "Impact: opens details without changing files.";
+      ? "changes user-level Codex files, not this repo."
+      : "opens details without changing files.";
   }
 
   return action.repoMutation
-    ? "Impact: changes this repo or Sane project files."
-    : "Impact: changes your Codex setup.";
+    ? "changes this project. Preview or confirmation appears first."
+    : "changes your Codex setup. Preview or confirmation appears first.";
 }
 
 function isReadOnlyAction(action: SelectedAction): boolean {
@@ -446,8 +828,8 @@ function presentFlag(value: boolean): string {
 
 function homeOverviewTitle(home: ReturnType<typeof loadHomeScreenFromStatusBundle>): string {
   return home.recommendedActionId === "install_runtime"
-    ? "Guided setup"
-    : "Setup tune-up";
+    ? "Start here"
+    : "Tune-up";
 }
 
 function currentMode(shell: TuiShell): SaneTuiAppView["mode"] {

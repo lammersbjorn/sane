@@ -27,6 +27,12 @@ pnpm --filter @sane/sane-tui typecheck
 pnpm --filter @sane/sane-tui run build:smoke
 ```
 
+Real Codex smoke (requires Codex CLI plus auth at `~/.codex/auth.json` or `SANE_CODEX_SMOKE_AUTH_JSON`):
+
+```bash
+pnpm --filter @sane/sane-tui run smoke:codex-real
+```
+
 Useful development previews:
 
 ```bash

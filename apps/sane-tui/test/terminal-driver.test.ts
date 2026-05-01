@@ -54,7 +54,7 @@ describe("terminal driver", () => {
     expect(step.keys).toEqual(["quit"]);
     expect(step.result).toBeNull();
     expect(step.shouldExit).toBe(true);
-    expect(step.frame).toContain("[Home]");
+    expect(step.frame).toContain("Sane / Setup /");
   });
 
   it("ignores unknown terminal input and keeps rendering", () => {
@@ -69,7 +69,7 @@ describe("terminal driver", () => {
     expect(step.keys).toEqual([]);
     expect(step.result).toBeNull();
     expect(step.shouldExit).toBe(false);
-    expect(step.frame).toContain("[Home]");
+    expect(step.frame).toContain("Sane / Setup /");
   });
 
   it("handles batched terminal chunks in order and still exits on quit", () => {
@@ -84,6 +84,6 @@ describe("terminal driver", () => {
     expect(step.keys).toEqual(["tab", "quit"]);
     expect(step.key).toBe("quit");
     expect(step.shouldExit).toBe(true);
-    expect(step.frame).toContain("[Add to Codex]");
+    expect(step.frame).toContain("Sane / Install /");
   });
 });

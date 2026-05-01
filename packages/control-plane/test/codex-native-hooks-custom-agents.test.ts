@@ -238,6 +238,9 @@ describe("hooks and custom agents", () => {
     expect(managedEntry?.hooks?.[0]?.command).toContain("load `sane-agent-lanes`");
     expect(managedEntry?.hooks?.[0]?.command).toContain("including follow-up implementation after research");
     expect(managedEntry?.hooks?.[0]?.command).toContain("before broad edits");
+    expect(managedEntry?.hooks?.[0]?.command).toContain("Sane obligation receipt:");
+    expect(managedEntry?.hooks?.[0]?.command).toContain("blocked_handoff=report blocker + ask once + stop");
+    expect(managedEntry?.hooks?.[0]?.command).toContain("caveman:");
     expect(managedEntry?.hooks?.[0]?.command).toContain("Caveman pack active:");
     expect(managedEntry?.hooks?.[0]?.command).toContain("RTK pack active:");
     expect(managedEntry?.hooks?.[0]?.command).toContain("sane-rtk");
@@ -395,6 +398,7 @@ describe("hooks and custom agents", () => {
     expect(exportedBody.hooks.SessionStart[0].hooks[0].command).toContain("Use subagents by default");
     expect(exportedBody.hooks.SessionStart[0].hooks[0].command).toContain("load `sane-agent-lanes`");
     expect(exportedBody.hooks.SessionStart[0].hooks[0].command).toContain("including follow-up implementation after research");
+    expect(exportedBody.hooks.SessionStart[0].hooks[0].command).toContain("Sane obligation receipt:");
     expect(exportedBody.hooks.SessionStart[0].hooks[0].command).not.toContain("sane-outcome-continuation");
     expect(exportedBody.hooks.SessionStart[0].hooks[0].command).not.toBe("'sane' hook session-start");
     expect(inspectHooksInventory(projectPaths, codexPaths).status).toBe(InventoryStatus.Installed);
@@ -425,6 +429,7 @@ describe("hooks and custom agents", () => {
     expect(exportedBody.hooks.SessionStart[0].hooks[0].command).toContain("Load `sane-router` skill body");
     expect(exportedBody.hooks.SessionStart[0].hooks[0].command).toContain("read that matching SKILL.md before acting");
     expect(exportedBody.hooks.SessionStart[0].hooks[0].command).toContain("Use subagents by default");
+    expect(exportedBody.hooks.SessionStart[0].hooks[0].command).toContain("Sane obligation receipt:");
     expect(exportedBody.hooks.SessionStart[0].hooks[0].command).not.toContain("continue/SKILL.md");
     expect(exportedBody.hooks.Stop[0].hooks[0].command).toBe(
       buildManagedSessionEndHookCommand(undefined, { rateLimitResume: true })

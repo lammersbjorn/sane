@@ -56,9 +56,7 @@ describe("repair screen model", () => {
       "install_runtime",
       "backup_codex_config",
       "restore_codex_config",
-      "reset_telemetry_data",
-      "review_issue_draft",
-      "submit_issue_draft"
+      "reset_telemetry_data"
     ]);
     expect(
       screen.actions.find((action) => action.id === "restore_codex_config")?.confirmation

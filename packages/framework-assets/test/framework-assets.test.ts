@@ -246,7 +246,7 @@ describe("framework asset parity", () => {
       REALTIME_MODEL: roles.realtimeModel,
       REALTIME_REASONING: roles.realtimeReasoning,
       ENABLED_PACK_ROUTER_NOTES: [
-        "- Caveman pack active: load `sane-caveman` for prose rules",
+        "- Caveman pack active: use `sane-caveman` prose rules; read the skill body before normal narrative when available",
         "- RTK pack active: load `sane-rtk` for shell/search/test/log routing"
       ].join("\n"),
       ENABLED_PACK_SKILL_SELECTIONS: [
@@ -689,6 +689,7 @@ describe("framework asset parity", () => {
       expect(body).toContain(
         "Caveman pack active"
       );
+      expect(body).toContain("enabled pack notes below are active behavior");
       expect(body).toContain("instruction hierarchy");
       expect(body).not.toContain("{{ENABLED_PACK_AGENT_NOTES}}");
     }

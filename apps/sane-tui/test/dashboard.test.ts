@@ -38,21 +38,22 @@ describe("dashboard view", () => {
 
     expect(view.title).toBe("Sane");
     expect(view.projectLabel).toBe(projectRoot.split("/").at(-1));
-    expect(view.recommendedNextStep).toBe("Set up Sane's local files first.");
-    expect(view.activeSection.docLabel).toBe("Home");
+    expect(view.recommendedNextStep).toBe("Get this repo ready for Sane first.");
+    expect(view.activeSection.docLabel).toBe("Setup");
     expect(view.actions.map((action) => action.id)).toEqual([
       "install_runtime",
       "open_config_editor",
       "preview_codex_profile",
       "backup_codex_config",
       "apply_codex_profile",
-      "export_all"
+      "export_all",
+      "doctor"
     ]);
     expect(view.selectedAction.id).toBe("install_runtime");
     expect(view.chips.some((chip) => chip.id === "runtime")).toBe(true);
     expect(view.chips.find((chip) => chip.id === "install_bundle")).toEqual({
       id: "install_bundle",
-      label: "Install bundle",
+      label: "Sane add-ons",
       value: "missing",
       tone: "warn"
     });
@@ -64,7 +65,7 @@ describe("dashboard view", () => {
     });
   });
 
-  it("names the concrete install bundle in the install section summary", () => {
+  it("explains the Add to Codex section by user outcome", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const shell = createTuiShell(createProjectPaths(projectRoot), createCodexPaths(homeDir));
@@ -72,13 +73,9 @@ describe("dashboard view", () => {
     const view = loadDashboardView(shell);
     const installSection = view.sections.find((section) => section.id === "add_to_codex");
 
-    expect(installSection?.description.join("\n")).toContain("Current install bundle:");
-    expect(installSection?.description.join("\n")).toContain("user skill");
-    expect(installSection?.description.join("\n")).toContain("global AGENTS.md block");
-    expect(installSection?.description.join("\n")).toContain("hooks");
-    expect(installSection?.description.join("\n")).toContain("sane-agent");
-    expect(installSection?.description.join("\n")).toContain("sane-reviewer");
-    expect(installSection?.description.join("\n")).toContain("sane-explorer");
+    expect(installSection?.description.join("\n")).toContain("Use this when you want Codex to learn Sane workflow.");
+    expect(installSection?.description.join("\n")).toContain("Personal add-ons update your Codex setup.");
+    expect(installSection?.description.join("\n")).toContain("Repo writes stay explicit and optional.");
   });
 
   it("surfaces phase and verification chips from control-plane runtime progress", () => {
@@ -126,10 +123,10 @@ describe("dashboard view", () => {
     vi.spyOn(home, "loadHomeScreen").mockReturnValue({
       summary: "Home",
       recommendedActionId: "install_runtime",
-      recommendedNextStep: "Set up Sane's local files first.",
+      recommendedNextStep: "Get this repo ready for Sane first.",
       attentionItems: [],
       statusLine:
-        "runtime missing | codex-config missing | user-skills missing | hooks missing | install bundle missing",
+        "repo setup missing | codex setup missing | Sane skills missing | codex hooks missing | sane add-ons missing",
       codexProfileAudit: {
         status: "missing",
         recommendedChangeCount: 3,
@@ -168,10 +165,10 @@ describe("dashboard view", () => {
     vi.spyOn(home, "loadHomeScreen").mockReturnValue({
       summary: "Home",
       recommendedActionId: "install_runtime",
-      recommendedNextStep: "Set up Sane's local files first.",
+      recommendedNextStep: "Get this repo ready for Sane first.",
       attentionItems: [],
       statusLine:
-        "runtime missing | codex-config missing | user-skills missing | hooks missing | install bundle missing",
+        "repo setup missing | codex setup missing | Sane skills missing | codex hooks missing | sane add-ons missing",
       codexProfileAudit: {
         status: "missing",
         recommendedChangeCount: 3,

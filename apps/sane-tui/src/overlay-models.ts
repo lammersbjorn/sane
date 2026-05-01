@@ -82,7 +82,7 @@ export function loadOverlayModel(shell: TuiShell): OverlayModel {
         title: "Model Defaults",
         headerLines: [
           "Model Defaults",
-          "Up/down field. Left/right value. Enter save. r reset. Esc close."
+          "Arrows change value. Enter save. Esc close."
         ],
         fieldLines: configFieldLines(shell.activeEditor),
         outputLines: shell.lastResult.lines,
@@ -95,7 +95,7 @@ export function loadOverlayModel(shell: TuiShell): OverlayModel {
         title: "Privacy",
         headerLines: [
           "Privacy / Reporting",
-          "Up/down field. Left/right value. Enter save. d clear local telemetry. Esc close."
+          "Arrows change value. Enter save. Esc close."
         ],
         fieldLines: privacyFieldLines(shell.activeEditor),
         outputLines: shell.lastResult.lines,
@@ -108,7 +108,7 @@ export function loadOverlayModel(shell: TuiShell): OverlayModel {
         title: "Built-in Packs",
         headerLines: [
           "Built-in Packs",
-          "Core stays on. Up/down pack. Space toggle. Enter save. Esc close."
+          "Space toggles. Enter save. Esc close."
         ],
         fieldLines: packFieldLines(shell.activeEditor),
         outputLines: shell.lastResult.lines,

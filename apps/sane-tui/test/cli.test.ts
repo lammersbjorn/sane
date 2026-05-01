@@ -146,7 +146,7 @@ describe("ts cli command execution", () => {
     const result = runCliCommandFromDiscovery(["install"], nested, { HOME: homeDir });
 
     expectSuccessfulSectionOutput(result, "home");
-    expect(result.output).toContain("Set up Sane files");
+    expect(result.output).toContain("Get this repo ready");
     expect(existsSync(join(projectRoot, ".sane"))).toBe(false);
   });
 
@@ -232,23 +232,23 @@ function expectUnsupportedCommand(args: readonly string[]): void {
 
 function expectSuccessfulSectionOutput(result: CliRunResult, section: string): void {
   expect(result.exitCode).toBe(0);
-  expect(result.output).toContain(`[${sectionLabel(section)}]`);
+  expect(result.output).toContain(`Sane / ${sectionLabel(section)}`);
 }
 
 function sectionLabel(section: string): string {
   switch (section) {
     case "home":
-      return "Home";
+      return "Setup";
     case "settings":
-      return "Settings";
+      return "Tune";
     case "add_to_codex":
-      return "Add to Codex";
+      return "Install";
     case "status":
-      return "Status";
+      return "Check";
     case "repair":
-      return "Repair";
+      return "Recover";
     case "uninstall":
-      return "Uninstall";
+      return "Remove";
     default:
       return section;
   }

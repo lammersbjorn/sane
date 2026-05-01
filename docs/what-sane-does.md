@@ -59,9 +59,13 @@ Sane can install custom agent templates for common work shapes:
 
 The point is not agent theater. The point is clearer ownership for broad work: inspect, implement, review, and integrate with explicit boundaries.
 
+Enabled pack notes are active instructions inside these custom agents. For example, when the `caveman` pack is enabled, the generated agents are told to use the `sane-caveman` prose rules directly instead of treating the pack as a passive status note.
+
 ### Hooks
 
 Sane can manage Codex hook entries for supported environments. Hook export is optional and platform-sensitive: native Windows cannot use Codex hooks, so hook workflows belong in WSL there.
+
+The managed `SessionStart` hook injects a compact Sane obligation receipt. It keeps routing, skill-loading, broad-work lane handoff, blocked-handoff, and optional-pack state visible after long sessions and resumes.
 
 ### Codex Config Profiles
 
@@ -69,7 +73,7 @@ Sane can preview, apply, back up, and restore narrow Codex config changes:
 
 - model and reasoning defaults
 - task-shaped subagent defaults
-- compact continuity prompt for compaction recovery
+- compact continuity prompt with the same Sane obligation receipt for compaction recovery
 - recommended integrations profile for `Context7`, `Playwright`, and `grep.app`
 - optional Cloudflare profile
 - optional native Codex statusline/title profile

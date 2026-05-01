@@ -60,6 +60,7 @@
     "build": "tsup --config tsup.config.ts",
     "build:package": "pnpm run build && node ./scripts/write-dist-package.mjs",
     "build:smoke": "pnpm run build:package && node ./dist/bin/sane.js status",
+    "smoke:codex-real": "node ./scripts/codex-real-smoke.mjs",
     "preview": "tsx ./bin/sane-preview.ts",
     "preview:built": "node ./dist/bin/sane.js",
     "preview:terminal": "tsx ./bin/sane-terminal-preview.ts",

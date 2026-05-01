@@ -1,4 +1,4 @@
-# Sane TUI Control Center Redesign
+# Sane TUI Task-First Redesign
 
 Date: 2026-04-25
 
@@ -16,14 +16,14 @@ Primary user:
 - should not need to know what every skill, hook, profile, or custom agent file means before getting value
 
 Launch behavior:
-- first ever `sane` when Sane is not installed opens a guided install/tune-up flow
-- `sane install` always opens the guided install/tune-up wizard, even after Sane is already installed
-- after successful first install, the TUI transitions to the control center
-- later no-args `sane` always opens the control center
+- first ever `sane` when Sane is not installed opens guided setup/tune-up flow
+- `sane install` always opens guided setup/tune-up wizard, even after Sane is already installed
+- after successful first setup, default no-args `sane` launch opens `Status` (setup check)
+- `Home` remains available as orientation/recommended next-step screen, not default post-onboarding landing
 
 The TUI is still setup and operations only. It is not the normal prompting interface.
 
-## Navigation
+## Top-Level Jobs
 
 Use these TUI labels:
 
@@ -58,27 +58,27 @@ Keep CLI command names practical:
 ### Home
 
 Purpose:
-- answer "what is my Codex setup state and what should I do next?"
-- show the recommended next step without turning into a command wall
+- answer "what should I do next?"
+- keep orientation and recommendations calm and short
 
 Content:
-- current install state
+- concise setup summary
 - 1 primary recommended action
 - small set of quick actions
 - last result
 - warnings that matter now
 
 First-run Home:
-- acts as guided install/tune-up
+- acts as guided setup/tune-up
 - previews what Sane will add or change
 - makes backup behavior clear
 - lets the user customize first
-- ends in the normal control center after successful install
+- ends in the normal post-onboarding flow after successful install
 
 Normal Home:
-- opens after Sane is installed
+- available after setup for orientation and recommended actions
 - summarizes health, drift, and recommended fixes
-- links out to Settings, Add to Codex, Status, Repair, and Uninstall
+- links to Settings, Add to Codex, Status, Repair, and Uninstall
 
 ### Settings
 
@@ -117,12 +117,13 @@ Rules:
 - explain each target as "what this adds to Codex"
 - show exact files touched before writes
 - make repo-level writes explicit
-- do not make this screen feel like package-manager internals
+- avoid inventory-first packaging language; keep copy outcome-first
 
 ### Status
 
 Purpose:
 - read-only truth in plain language
+- default post-onboarding launch screen (`sane` after setup)
 
 Content:
 - installed/missing/stale/invalid state
@@ -137,6 +138,8 @@ Content:
 Do not call this `Inspect` in TUI copy.
 
 Internal function names may keep `inspect*` only where they mean read-only backend inspection and do not leak to users.
+
+Status should start with a clear setup-check summary before deeper detail.
 
 ### Repair
 
@@ -188,6 +191,9 @@ Use:
 - "Check setup"
 - "Recommended next step"
 - "Files changed"
+- "What this does"
+- "What changes"
+- "How to undo"
 
 Avoid user-facing:
 - "Inspect"
@@ -225,9 +231,10 @@ Implementation rule:
 4. Do not let the renderer choice change the product model, CLI behavior, or screen responsibilities.
 5. Revisit Rezi only if a later spike proves native dependency packaging, CI, terminal compatibility, and tests are clean.
 
-## Visual Design Rules
+## Interaction Design Rules
 
 The live TTY must behave like a real TUI:
+- one active screen per job; avoid multi-panel control-center feel
 - use component windows for focused work areas
 - use popups/modals for confirmation, notices, and editors
 - editor popups show the editable list directly, with help beside or below it depending on terminal width
@@ -238,6 +245,14 @@ The live TTY must behave like a real TUI:
 - do not show `... N more line(s)` in the primary live focus pane
 - make compact terminals switch layout instead of squeezing every panel onto screen
 - keep the non-TTY renderer plain and deterministic for piping, tests, and snapshots
+- keep contextual footer/help short and action-aware, not global command inventory
+- reveal deeper commands only when user enters related flow
+
+Current screen shape:
+- brief header: what this job is for and current state
+- main body: one clear next action plus secondary actions by outcome
+- footer/help: contextual keys, safety hint, and where to go next
+- compact terminals keep one reading path instead of side-by-side density
 
 ## Future Scope
 
@@ -250,13 +265,13 @@ Later import/export support:
 ## Implementation TODO
 
 1. Add tests for the new TUI section names and launch routing before renaming code.
-2. Choose Ink for the live TTY path and keep Rezi deferred behind a later spike.
+2. Choose Ink for live TTY path and keep Rezi deferred behind later spike.
 3. Keep the current app-view/text-renderer boundary for deterministic output.
 4. Rename TUI-specific section ids, files, screen models, tests, and docs.
 5. Add `Uninstall` as a separate section and move uninstall actions out of `Repair`.
 6. Keep backend `inspect*` APIs where they are internal read-only inspection, but remove leaked `Inspect` copy from TUI/docs.
-7. Update CLI routing so `sane install` opens the guided wizard, `sane status` is primary, and `sane inspect` remains compatibility-only if retained.
-8. Implement first-run vs post-install launch behavior.
+7. Update CLI routing so `sane install` opens guided wizard, `sane status` is primary, and `sane inspect` remains compatibility-only if retained.
+8. Implement first-run vs post-install launch behavior with post-onboarding no-args default to `Status`.
 9. Rewrite visible TUI copy using the copy rules above.
 10. Refresh README, `apps/sane-tui/README.md`, and the older TUI redesign spec so they do not contradict this spec.
 11. Verify with `rtk pnpm test` and `rtk run 'pnpm typecheck'` until RTK native typecheck routing is repaired.
@@ -268,9 +283,13 @@ Later import/export support:
 Implemented in the current B16 slice:
 
 - `sane install` is the guided Home wizard launch shortcut; `sane install-runtime` remains the direct backend runtime install alias for scripts.
-- No-args launch opens Home only while Sane local runtime files are missing; installed repos open the control center on Status.
+- First-run no-args launch opens guided setup; post-onboarding no-args launch opens `Status`.
 - TUI section labels now use `Home`, `Settings`, `Add to Codex`, `Status`, `Repair`, and `Uninstall`.
 - Destructive removal actions live in `Uninstall`, not `Repair`.
+- Home, Settings, Add to Codex, Status, Repair, and Uninstall now render from an explicit experience model: eyebrow, title, body, primary action, safety hint, panels, grouped moves, and selected-action detail.
+- Main text and Ink renderers prioritize one active screen with contextual detail instead of inventory-heavy multi-pane layout.
+- User-facing action labels now lead with outcomes such as "Get this repo ready", "Choose how Codex should work", "Teach Codex the Sane workflow", and "Read setup health".
+- Home recommendation selection uses the same mapping as the Home screen model, so completed setup lands on a health check instead of an unrelated refresh action.
 - Live TTY rendering uses Ink component windows and modal overlays instead of wrapping the old text snapshot renderer.
 - Read-only backend output, long file paths, logs, and raw detail payloads open as notices/modals instead of filling the main focus pane.
 - Settings now exposes editable defaults for Main session, Explorer agent, Implementation agent, Reviewer agent, and Realtime helper.
@@ -281,29 +300,23 @@ Implemented in the current B16 slice:
 Verification already run after the implementation slice:
 
 ```bash
-rtk pnpm test
-rtk run 'pnpm typecheck'
+rtk pnpm --filter @sane/sane-tui test
+rtk run 'pnpm --filter @sane/sane-tui typecheck'
 ```
 
-Live TTY smoke checks were also run for `sane install` and `sane settings`, including opening the Settings editor modal.
+Text previews were run for Home, Settings, Status, and compact Home. Earlier live TTY smoke checks were also run for `sane install` and `sane settings`, including opening the Settings editor modal.
 
 ## Remaining Work
 
-Do not call this redesign visually accepted until the B17 TODO lane is complete:
-
-- run live terminal screenshots/smoke checks for `sane install`, `sane`, `sane settings`, `sane status`, the editor modal, read-only notice modal, and confirmation modal at compact, normal, and wide terminal sizes
-- fix `sane install` on an already-installed repo so Home does not look like a dead first-run checklist
-- shorten the editor header/help copy so compact terminals never show unreadable truncation such as `r r...`
-- ensure Home always shows meaningful current setup lines in compact live mode
-- keep the full Settings editor field list visible when width allows it, with compact mode showing fields first and help below
-- do a fresh copy pass for any remaining internal terms in live TTY copy
-- keep settings import/export as later portability scope unless the user explicitly pulls it into the current gate
+- Human visual acceptance in a real terminal is still needed for the exact feel.
+- Continue compact-editor polish if a later screenshot shows cramped help text.
+- Keep settings import/export as later portability scope unless explicitly pulled into the current gate.
 
 ## Success Criteria
 
 - a Codex user can open `sane` and understand the next step without knowing Sane internals
 - first-run install feels guided
-- normal launch feels like a control center
+- post-onboarding launch defaults to setup check (`Status`) with calm next-step guidance
 - destructive removal is easy to find but hard to do accidentally
 - `Inspect` and other weird internal wording disappear from user-facing TUI copy
 - CLI users can still run `sane install`, `sane status`, `sane repair`, and `sane uninstall ...`; scripts can use `sane install-runtime` for the direct backend runtime install

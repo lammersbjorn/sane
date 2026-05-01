@@ -67,7 +67,7 @@ describe("command metadata registry", () => {
 
   it("exports normalized command specs, placements, and shortcuts", () => {
     expect(COMMAND_METADATA_REGISTRY).toBeDefined();
-    expect(COMMAND_METADATA_REGISTRY.shortcuts.default).toBe("home");
+    expect(COMMAND_METADATA_REGISTRY.shortcuts.default).toBe("status");
     expect(COMMAND_METADATA_REGISTRY.shortcuts.settings).toBe("settings");
     expect(COMMAND_METADATA_REGISTRY.shortcuts.status).toBe("status");
     expect(COMMAND_METADATA_REGISTRY.shortcuts.repair).toBe("repair");
@@ -81,12 +81,12 @@ describe("command metadata registry", () => {
       "uninstall"
     ]);
     expect(listSections().map((section) => section.tabLabel)).toEqual([
-      "Home",
-      "Settings",
-      "Add to Codex",
-      "Status",
-      "Repair",
-      "Uninstall"
+      "Setup",
+      "Tune",
+      "Install",
+      "Check",
+      "Recover",
+      "Remove"
     ]);
   });
 
@@ -99,11 +99,11 @@ describe("command metadata registry", () => {
       "export_all"
     ]);
     expectSectionContainsInOrder("add_to_codex", [
+      "export_all",
       "export_user_skills",
       "export_global_agents",
-      "export_hooks",
       "export_custom_agents",
-      "export_all",
+      "export_hooks",
       "export_opencode_all"
     ]);
     expectSectionContainsInOrder("settings", [
@@ -117,17 +117,13 @@ describe("command metadata registry", () => {
       "doctor",
       "show_runtime_summary",
       "preview_policy",
-      "show_outcome_readiness",
-      "review_issue_draft",
-      "submit_issue_draft"
+      "check_updates"
     ]);
     expectSectionContainsInOrder("repair", [
       "install_runtime",
       "backup_codex_config",
       "restore_codex_config",
-      "reset_telemetry_data",
-      "review_issue_draft",
-      "submit_issue_draft"
+      "reset_telemetry_data"
     ]);
     expectSectionContainsInOrder("uninstall", [
       "uninstall_user_skills",
@@ -140,9 +136,9 @@ describe("command metadata registry", () => {
       expect(new Set(sectionActionIds(section.id)).size).toBe(sectionActionIds(section.id).length);
     }
     expect(sectionActionIds("repair").some((id) => id.startsWith("uninstall_"))).toBe(false);
-    expect(listSectionActions("home").at(-1)?.label).toBe("6. Refresh Codex setup");
-    expect(listSectionActions("add_to_codex").at(-1)?.label).toBe("Install full Sane bundle into OpenCode");
-    expect(listSectionActions("settings").at(-1)?.label).toBe("Toggle automatic Sane updates");
+    expect(listSectionActions("home").at(-1)?.label).toBe("Run doctor");
+    expect(listSectionActions("add_to_codex").at(-1)?.label).toBe("OpenCode bundle");
+    expect(listSectionActions("settings").at(-1)?.label).toBe("Auto updates");
     expectHelpMentions("toggle_auto_updates", ["automatic Sane CLI updates", "Local source installs"]);
     expectHelpMentions("show_runtime_summary", [
       "saved local handoff notes",
@@ -182,13 +178,13 @@ describe("command metadata registry", () => {
     );
     expectHelpMentions("preview_policy", ["route common Codex work", "does not start agent work"]);
     expectHelpMentions("preview_codex_profile", ["Nothing changes until you apply it"]);
-    expectHelpMentions("show_status", ["currently manages"]);
+    expectHelpMentions("show_status", ["current Sane setup", "Codex add-ons"]);
     expectHelpMentions("doctor", ["managed surfaces"]);
     expectHelpMentions("export_hooks", ["native Windows", "WSL"]);
-    expectHelpMentions("export_all", ["core user skills", "custom agents", "native Windows"]);
+    expectHelpMentions("export_all", ["personal Sane workflow", "named agents", "native Windows"]);
     expectHelpMentions("export_opencode_all", [
-      "Install the full Sane bundle into OpenCode",
-      "~/.config/opencode/",
+      "Add Sane's workflow to OpenCode",
+      "OpenCode's config area",
       "host OpenCode visibility/load support"
     ]);
     expect(getCommandSpec("export_opencode_all").filesTouched).toEqual(["~/.config/opencode/"]);
@@ -242,7 +238,7 @@ describe("command metadata registry", () => {
 
   it("adapts install metadata for native Windows", () => {
     expect(getSectionMetadata("add_to_codex", "windows").description.join("\n")).toContain(
-      "hooks stay outside the default bundle"
+      "hooks stay outside personal bundle"
     );
     expect(getCommandSpec("export_hooks", "windows").filesTouched).toEqual([]);
     expect(getCommandSpec("export_all", "windows").filesTouched).not.toContain("~/.codex/hooks.json");

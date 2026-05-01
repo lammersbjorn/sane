@@ -61,13 +61,15 @@ describe("tui shell", () => {
     expect(currentAction(settingsShell).id).toBe("open_config_editor");
   });
 
-  it("opens Status by default after Sane is installed", () => {
+  it("opens Check by default after onboarding is complete", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const paths = createProjectPaths(projectRoot);
     const codexPaths = createCodexPaths(homeDir);
 
     controlPlane.installRuntime(paths, codexPaths);
+    codexConfig.applyCodexProfile(paths, codexPaths);
+    exportAll(paths, codexPaths);
     const shell = createTuiShell(paths, codexPaths);
 
     expect(shell.activeSectionId).toBe("status");
@@ -106,8 +108,8 @@ describe("tui shell", () => {
     expect(shell.statusSnapshot.statusBundle.runtimeState.current?.phase).toBe("setup");
     expect(shell.statusSnapshot.codexProfiles.core.audit.status).toBe("missing");
     expect(shell.statusSnapshot.preferences.preferences.source).toBe("local");
-    expect(shell.activeSectionId).toBe("status");
-    expect(currentAction(shell).id).toBe("show_status");
+    expect(shell.activeSectionId).toBe("home");
+    expect(currentAction(shell).id).toBe("preview_codex_profile");
   });
 
   it("hydrates the initial last-result copy from the canonical runtime snapshot", () => {
@@ -315,7 +317,7 @@ describe("tui shell", () => {
     const shell = createTuiShell(createProjectPaths(projectRoot), createCodexPaths(homeDir));
 
     moveSelection(shell, "action", -1);
-    expect(currentAction(shell).id).toBe("export_all");
+    expect(currentAction(shell).id).toBe("doctor");
 
     moveSelection(shell, "section", 1);
     expect(shell.activeSectionId).toBe("settings");
@@ -341,7 +343,8 @@ describe("tui shell", () => {
     const pending = runSelectedAction(shell);
 
     expect(pending).toBeNull();
-    expect(shell.pendingConfirmation?.heading).toBe("Confirm This Action");
+    expect(shell.pendingConfirmation?.title).toBe("Confirm action");
+    expect(shell.pendingConfirmation?.heading).toBe("Apply Codex tune-up");
     expect(existsSync(codexPaths.configToml)).toBe(false);
 
     const result = confirmPendingAction(shell);
@@ -415,7 +418,8 @@ describe("tui shell", () => {
     expect(existsSync(codexPaths.configToml)).toBe(false);
 
     runSelectedAction(shell);
-    expect(shell.pendingConfirmation?.heading).toBe("Confirm This Action");
+    expect(shell.pendingConfirmation?.title).toBe("Confirm action");
+    expect(shell.pendingConfirmation?.heading).toBe("Tool setup");
     expect(shell.pendingConfirmation?.commandId).toBe("apply_integrations_profile");
 
     const result = confirmPendingAction(shell);
@@ -429,7 +433,7 @@ describe("tui shell", () => {
     expect(existsSync(codexPaths.configToml)).toBe(true);
   });
 
-  it("moves to Status after completing the full Add to Codex install", () => {
+  it("returns to Setup when setup is still incomplete after Add to Codex install", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const paths = createProjectPaths(projectRoot);
@@ -440,12 +444,17 @@ describe("tui shell", () => {
       moveSelection(shell, "action", 1);
     }
 
-    const result = runSelectedAction(shell);
+    const pending = runSelectedAction(shell);
+
+    expect(pending).toBeNull();
+    expect(shell.pendingConfirmation?.commandId).toBe("export_all");
+
+    const result = confirmPendingAction(shell);
 
     expect(result?.summary).toBe("export all: installed managed targets");
-    expect(shell.activeSectionId).toBe("status");
-    expect(currentAction(shell).id).toBe("show_status");
-    expect(shell.notice?.section).toBe("status");
+    expect(shell.activeSectionId).toBe("home");
+    expect(currentAction(shell).id).toBe("install_runtime");
+    expect(shell.notice?.section).toBe("home");
   });
 
   it("resets local telemetry data from the privacy editor flow", () => {

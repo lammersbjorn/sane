@@ -75,7 +75,7 @@ describe("terminal loop", () => {
     expect(stdin.resumed).toBe(1);
     expect(stdout.writes[0]).toBe("\u001b[?1049h\u001b[?25l");
     expect(stdout.writes[1]).toContain("\u001b[2J\u001b[H");
-    expect(stdout.writes[1]).toContain("[Home]");
+    expect(stdout.writes[1]).toContain("Sane / Setup /");
 
     controller.stop();
     expect(stdin.rawModes).toEqual([true, false]);

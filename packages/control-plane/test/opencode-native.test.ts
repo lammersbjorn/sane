@@ -73,7 +73,7 @@ describe("opencode native installer", () => {
     expect(pluginBody).toContain("Use subagents by default");
     expect(pluginBody).toContain("load `sane-agent-lanes`");
     expect(pluginBody).toContain("call the `task` tool");
-    expect(pluginBody).toContain("load `sane-caveman` skill body");
+    expect(pluginBody).toContain("use `sane-caveman` prose rules");
     expect(pluginBody).toContain("load `sane-rtk` skill body");
     expect(JSON.parse(readFileSync(join(opencodeRoot, "opencode.json"), "utf8")).plugin).toContain(
       join(opencodeRoot, "plugins", "sane-session-start.js")

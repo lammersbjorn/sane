@@ -230,6 +230,16 @@ describe("status screen model", () => {
     expect(lines).toContain(
       "hooks: invalid (Codex hooks are unavailable on native Windows. Use WSL for hook-enabled flows.)"
     );
+    expect(lines.slice(0, 8)).toEqual([
+      "Setup health",
+      "Local setup: missing",
+      "Codex settings: missing",
+      "Codex add-ons: missing",
+      "Codex skills: missing",
+      "Hooks: missing",
+      "Needs attention: 1 issue(s)",
+      "Health check: doctor: hooks invalid"
+    ]);
     expect(lines).toContain(
       "outcome rescue signal (read-only): block - current-run payload is unavailable"
     );
@@ -240,7 +250,10 @@ describe("status screen model", () => {
     expect(lines).toContain("repo verify (read-only): none");
     expectReadOnlyStatusOverview(lines.join("\n"));
     expectOptionalPackProvenanceOverview(lines.join("\n"));
-    expect(lines).toEqual(formatSharedInspectOverviewLines(snapshot));
+    expect(lines).toEqual([
+      ...lines.slice(0, 10),
+      ...formatSharedInspectOverviewLines(snapshot)
+    ]);
   });
 
   it("aggregates backend inspect surfaces for the TUI", () => {
@@ -268,9 +281,6 @@ describe("status screen model", () => {
       "preview_integrations_profile",
       "preview_statusline_profile",
       "preview_policy",
-      "show_outcome_readiness",
-      "review_issue_draft",
-      "submit_issue_draft",
       "check_updates"
     ]);
     expect(screen.actions.map((action) => action.id)).not.toContain("apply_integrations_profile");
@@ -358,7 +368,14 @@ describe("status screen model", () => {
     });
     expect(screen.driftItems).toEqual([]);
     expect(screen.policyPreview.summary).toBe("policy preview: rendered adaptive obligation scenarios");
-    expect(screen.overviewLines).toEqual(formatSharedInspectOverviewLines(screen));
+    expect(screen.overviewLines.slice(0, 2)).toEqual([
+      "Setup health",
+      "Local setup: installed"
+    ]);
+    expect(screen.overviewLines).toEqual([
+      ...screen.overviewLines.slice(0, 10),
+      ...formatSharedInspectOverviewLines(screen)
+    ]);
     expect(screen.overviewLines.join("\n")).toContain("status counts:");
     expect(screen.overviewLines.join("\n")).toContain("primary surfaces:");
     expect(screen.overviewLines.join("\n")).toContain("setup check:");

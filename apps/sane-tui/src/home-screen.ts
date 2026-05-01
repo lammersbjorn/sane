@@ -10,7 +10,7 @@ import {
   type OnboardingReasonId
 } from "@sane/control-plane/inventory.js";
 import { presentManagedInventoryItem } from "@sane/control-plane/status-presenter.js";
-import { listSectionActions } from "@sane/sane-tui/command-registry.js";
+import { listSectionActions, type TuiSectionId } from "@sane/sane-tui/command-registry.js";
 
 export interface HomeStep {
   id:
@@ -19,7 +19,8 @@ export interface HomeStep {
     | "preview_codex_profile"
     | "backup_codex_config"
     | "apply_codex_profile"
-    | "export_all";
+    | "export_all"
+    | "doctor";
   title: string;
   impact: string;
   filesTouched: string[];
@@ -75,11 +76,11 @@ export function loadHomeScreenFromStatusBundle(
     recommendedNextStep: recommendedNextStep(onboarding.recommendedReason),
     attentionItems: onboarding.attentionItems.map(formatAttentionItem),
     statusLine: [
-      `runtime ${onboarding.primaryStatuses.runtime}`,
-      `codex-config ${onboarding.primaryStatuses.codexConfig}`,
-      `user-skills ${onboarding.primaryStatuses.userSkills}`,
-      `hooks ${hookStatusLabel(statusBundle)}`,
-      `install bundle ${onboarding.primaryStatuses.installBundle}`
+      `repo setup ${onboarding.primaryStatuses.runtime}`,
+      `codex setup ${onboarding.primaryStatuses.codexConfig}`,
+      `sane skills ${onboarding.primaryStatuses.userSkills}`,
+      `codex hooks ${hookStatusLabel(statusBundle)}`,
+      `sane add-ons ${onboarding.primaryStatuses.installBundle}`
     ].join(" | "),
     codexProfileAudit: codexProfile.audit,
     codexProfileApply: codexProfile.apply,
@@ -91,45 +92,78 @@ export function loadHomeScreenFromStatusBundle(
 function recommendedNextStep(reason: OnboardingReasonId): string {
   switch (reason) {
     case "install_runtime":
-      return "Set up Sane's local files first.";
+      return "Get this repo ready for Sane first.";
     case "show_codex_config":
-      return "Review the Codex changes before applying them.";
+      return "Review Codex changes before you apply them.";
     case "export_all":
-      return "Add or refresh Sane in Codex.";
+      return "Add Sane to Codex when the setup path looks right.";
     default:
-      return "Setup is complete. Choose a tune-up action or open Status.";
+      return "Setup looks complete. Start on Check, then tune behavior or add-ons only when needed.";
   }
 }
 
 function onboardingStepImpact(stepId: HomeStep["id"]): string {
   switch (stepId) {
     case "install_runtime":
-      return "Create or repair repo-local `.sane/` files.";
+      return "Create or repair the repo setup Sane needs.";
     case "open_config_editor":
-      return "Choose model, reasoning, packs, and privacy defaults.";
+      return "Choose model, guidance, and privacy defaults.";
     case "preview_codex_profile":
-      return "See what Sane would change in Codex settings.";
+      return "Review Codex changes before writing anything.";
     case "backup_codex_config":
-      return "Save a rollback copy before writing settings.";
+      return "Save a rollback point before changing Codex.";
     case "apply_codex_profile":
-      return "Write Sane's recommended Codex defaults.";
+      return "Write the reviewed Codex changes.";
     case "export_all":
-      return "Add Sane skills, guidance, hooks, and agents to Codex.";
+      return "Add the full personal Sane setup to Codex.";
+    case "doctor":
+      return "Run deeper checks when setup feels stale or broken.";
   }
 }
 
-function homeRecommendedActionId(
+export function homeRecommendedActionId(
   actionId: ReturnType<typeof inspectOnboardingSnapshotFromStatusBundle>["recommendedActionId"]
 ): HomeScreenModel["recommendedActionId"] {
   if (actionId === "show_codex_config") {
     return "preview_codex_profile";
   }
 
-  return actionId;
+  return actionId ?? "doctor";
+}
+
+export function defaultLandingSectionId(
+  actionId: ReturnType<typeof inspectOnboardingSnapshotFromStatusBundle>["recommendedActionId"]
+): TuiSectionId {
+  return actionId === null ? "status" : "home";
 }
 
 function formatAttentionItem(item: OnboardingAttentionItem): string {
-  return `${item.id}: ${item.status}`;
+  return `${attentionLabel(item.id)} ${item.status}`;
+}
+
+function attentionLabel(id: string): string {
+  switch (id) {
+    case "config":
+      return "saved defaults";
+    case "runtime":
+      return "repo setup";
+    case "codexConfig":
+    case "codex-config":
+      return "Codex setup";
+    case "userSkills":
+    case "user-skills":
+      return "Sane skills";
+    case "hooks":
+      return "Codex hooks";
+    case "customAgents":
+    case "custom-agents":
+      return "named agents";
+    case "installBundle":
+    case "install-bundle":
+      return "Sane add-ons";
+    default:
+      return id;
+  }
 }
 
 function hookStatusLabel(statusBundle: ReturnType<typeof inspectStatusBundle>): string {

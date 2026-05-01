@@ -35,7 +35,7 @@ describe("overlay models", () => {
       throw new Error("expected config overlay");
     }
     expect(overlay.title).toBe("Model Defaults");
-    expect(overlay.headerLines[1]).toContain("Up/down field");
+    expect(overlay.headerLines[1]).toContain("Arrows change value");
     expect(overlay.fieldLines[0]).toContain("> Main session model:");
     expect(overlay.fieldLines.some((line) => line.includes("Explorer agent model:"))).toBe(true);
     expect(overlay.fieldLines.some((line) => line.includes("Implementation agent model:"))).toBe(true);
@@ -112,7 +112,9 @@ describe("overlay models", () => {
     if (!overlay || overlay.kind !== "confirm") {
       throw new Error("expected confirm overlay");
     }
-    expect(overlay.bodyLines[0]).toContain("Selected action:");
+    expect(overlay.title).toBe("Confirm action");
+    expect(overlay.header).toBe(shell.pendingConfirmation?.label);
+    expect(overlay.bodyLines[0]).not.toContain("Selected move:");
 
     shell.pendingConfirmation = null;
     shell.notice = {

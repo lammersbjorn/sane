@@ -3,6 +3,7 @@ import { execSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
 import {
+  buildSaneCompactPrompt,
   buildManagedSessionEndHookCommand,
   buildManagedSessionStartHookCommand,
   isManagedLifecycleHookCommand,
@@ -37,6 +38,13 @@ describe("session-start hook helper", () => {
       expect(context).toContain("ask only if subagent launch is blocked");
       expect(context).toContain("Never silently downgrade broad work");
       expect(context).toContain("before broad edits");
+      expect(context).toContain("Sane obligation receipt:");
+      expect(context).toContain("skills=read sane-router + triggered SKILL.md bodies");
+      expect(context).toContain("broad_work=visible lane plan + spawn_agent handoff before broad edits");
+      expect(context).toContain("blocked_handoff=report blocker + ask once + stop");
+      expect(context).toContain("style=normal");
+      expect(context).toContain("packs=");
+      expect(context).toContain("caveman:off");
       expect(context).not.toContain("Subagent/model routing summary");
       expect(context).not.toContain("Sane command lane:");
       expect(context).not.toContain("sane-outcome-continuation");
@@ -97,9 +105,24 @@ describe("session-start hook helper", () => {
     expect(JSON.parse(renderSessionStartHookOutput()).hookSpecificOutput.additionalContext).toContain(
       "Attempt lane handoff first"
     );
+    expect(JSON.parse(renderSessionStartHookOutput()).hookSpecificOutput.additionalContext).toContain(
+      "Sane obligation receipt:"
+    );
     expect(JSON.parse(renderSessionStartHookOutput()).hookSpecificOutput.additionalContext).not.toContain(
       "sane-outcome-continuation"
     );
+  });
+
+  it("renders compact prompt with obligation receipt checklist", () => {
+    const prompt = buildSaneCompactPrompt({ caveman: true });
+    expect(prompt).toContain("3. Obligation Receipt: Sane obligation receipt:");
+    expect(prompt).toContain("skills=read sane-router + triggered SKILL.md bodies");
+    expect(prompt).toContain("broad_work=visible lane plan + spawn_agent handoff before broad edits");
+    expect(prompt).toContain("blocked_handoff=report blocker + ask once + stop");
+    expect(prompt).toContain("style=sane-caveman");
+    expect(prompt).toContain("packs=");
+    expect(prompt).toContain("caveman:on");
+    expect(prompt).toContain("7. BLOCKED: exact blocker, or `none`.");
   });
 
   it("renders SessionStart hook output with export-time context", () => {

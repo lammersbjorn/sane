@@ -78,7 +78,24 @@ export function loadStatusScreenFromStatusBundle(
 }
 
 export function statusOverviewLines(snapshot: InspectOverviewSnapshot): string[] {
-  return formatSharedInspectOverviewLines(snapshot);
+  const primary = snapshot.statusBundle.primary;
+  const driftCount = snapshot.statusBundle.driftItems.length;
+  const driftLine =
+    driftCount === 0 ? "Needs attention: none" : `Needs attention: ${driftCount} issue(s)`;
+
+  return [
+    "Setup health",
+    `Local setup: ${primary.status.runtime}`,
+    `Codex settings: ${primary.status.codexConfig}`,
+    `Codex add-ons: ${primary.installBundle}`,
+    `Codex skills: ${primary.status.userSkills}`,
+    `Hooks: ${primary.status.hooks}`,
+    driftLine,
+    `Health check: ${snapshot.doctorHeadline}`,
+    "",
+    "Detailed report",
+    ...formatSharedInspectOverviewLines(snapshot)
+  ];
 }
 
 export function formatLatestPolicyPreviewLine(

@@ -75,6 +75,7 @@ import {
   type TuiSectionId,
   type UiCommandId
 } from "@sane/sane-tui/command-registry.js";
+import { defaultLandingSectionId, homeRecommendedActionId } from "@sane/sane-tui/home-screen.js";
 import {
   createConfigEditorState,
   createPackEditorState,
@@ -96,9 +97,9 @@ import { buildLastResultView, buildNotice, buildResultNotice, type LastResultVie
 import { SANE_CLI_VERSION } from "@sane/sane-tui/version.js";
 
 export interface PendingConfirmation {
-  title: "Confirm";
-  heading: "Confirm This Action";
-  footer: "Enter or y runs it. Esc or n cancels.";
+  title: string;
+  heading: string;
+  footer: string;
   body: string[];
   commandId: UiCommandId;
   label: string;
@@ -132,7 +133,8 @@ export function createTuiShell(
 ): TuiShell {
   const hostPlatform = detectPlatform();
   const statusSnapshot = buildStatusSnapshot(paths, codexPaths, hostPlatform);
-  const sectionId = initialSectionId(launchShortcut, statusSnapshot, paths);
+  const onboarding = inspectOnboardingSnapshotFromStatusBundle(paths, statusSnapshot.statusBundle);
+  const sectionId = initialSectionId(launchShortcut, onboarding.recommendedActionId);
   const lastSummary = statusSnapshot.statusBundle.runtimeState.historyPreview.latestEvent?.summary ?? null;
   return {
     paths,
@@ -148,7 +150,11 @@ export function createTuiShell(
     lastResult: buildLastResultView(
       null,
       lastSummary
-        ?? "Ready. Start in `Home`. Left/right changes section. Up/down changes option. Enter runs the selected step."
+        ?? (
+          sectionId === "status"
+            ? "Ready. Open `Check` first. Left/right changes job. Up/down changes move. Enter runs selected move."
+            : "Ready. Finish `Setup` first. Left/right changes job. Up/down changes move. Enter runs selected move."
+        )
     )
   };
 }
@@ -223,12 +229,6 @@ function defaultActionIndex(
 
   const recommendedIndex = actions.findIndex((action) => action.id === recommendedActionId);
   return recommendedIndex >= 0 ? recommendedIndex : 0;
-}
-
-function homeRecommendedActionId(
-  actionId: ReturnType<typeof inspectOnboardingSnapshotFromStatusBundle>["recommendedActionId"]
-): UiCommandId | null {
-  return actionId === "show_codex_config" ? "preview_codex_profile" : actionId;
 }
 
 export function runSelectedAction(shell: TuiShell): OperationResult | null {
@@ -367,14 +367,14 @@ export function resetLocalTelemetry(shell: TuiShell): OperationResult {
 export function requestTelemetryResetConfirmation(shell: TuiShell): void {
   const action: SectionActionMetadata = {
     ...getCommandSpec("reset_telemetry_data", shell.hostPlatform),
-    label: "Delete local telemetry files",
+    label: "Delete local telemetry data",
     order: 0,
     section: shell.activeSectionId
   };
   shell.pendingConfirmation = buildPendingConfirmation(shell, action);
   shell.lastResult = buildLastResultView(
     null,
-    "Review `Delete local telemetry files`. Enter or y confirms. Esc or n cancels."
+    "Review `Delete local telemetry data`. Enter or y confirms. Esc or n cancels."
   );
   shell.notice = null;
 }
@@ -385,7 +385,7 @@ function runCommand(shell: TuiShell, commandId: UiCommandId): OperationResult | 
       shell.activeEditor = createConfigEditorState(...loadEditableConfigArgs(shell));
       shell.lastResult = buildLastResultView(
         null,
-        "Config editor open. Left/right cycles values. Enter saves. r resets."
+        "Model defaults open. Left/right changes value. Enter saves. r resets."
       );
       shell.notice = null;
       return null;
@@ -393,7 +393,7 @@ function runCommand(shell: TuiShell, commandId: UiCommandId): OperationResult | 
       shell.activeEditor = createPackEditorState(loadEditablePreferencesConfig(shell).current);
       shell.lastResult = buildLastResultView(
         null,
-        "Pack screen open. Up/down picks pack. Space toggles optional packs. Enter saves. r resets optional packs."
+        "Guidance packs open. Up/down picks pack. Space toggles optional packs. Enter saves. r resets optional packs."
       );
       shell.notice = null;
       return null;
@@ -401,7 +401,7 @@ function runCommand(shell: TuiShell, commandId: UiCommandId): OperationResult | 
       shell.activeEditor = createPrivacyEditorState(loadEditablePreferencesConfig(shell).current);
       shell.lastResult = buildLastResultView(
         null,
-        "Privacy screen open. Left/right cycles telemetry level. Enter saves. d deletes local telemetry data."
+        "Privacy defaults open. Left/right changes telemetry level. Enter saves. d deletes local telemetry data."
       );
       shell.notice = null;
       return null;
@@ -435,8 +435,11 @@ function runCommand(shell: TuiShell, commandId: UiCommandId): OperationResult | 
       refreshStatusSnapshot(shell);
       shell.activeEditor = null;
       shell.lastResult = buildLastResultView(result, result.renderText());
-      if (commandId === "install_runtime" || commandId === "export_all") {
-        selectSection(shell, "status");
+      if (commandId === "install_runtime") {
+        selectSection(shell, "home");
+      }
+      if (commandId === "export_all") {
+        selectSection(shell, defaultLandingSectionAfterRefresh(shell));
       }
       const notice = buildNotice(commandId, result);
       shell.notice = {
@@ -573,16 +576,14 @@ function buildStatusSnapshot(
 
 function initialSectionId(
   launchShortcut: keyof typeof COMMAND_METADATA_REGISTRY.shortcuts,
-  statusSnapshot: ShellStatusSnapshot,
-  paths: ProjectPaths
+  recommendedActionId: ReturnType<typeof inspectOnboardingSnapshotFromStatusBundle>["recommendedActionId"]
 ): TuiSectionId {
   const sectionId = COMMAND_METADATA_REGISTRY.shortcuts[launchShortcut];
   if (launchShortcut !== "default") {
     return sectionId;
   }
 
-  const onboarding = inspectOnboardingSnapshotFromStatusBundle(paths, statusSnapshot.statusBundle);
-  return onboarding.primaryStatuses.runtime === "missing" ? "home" : "status";
+  return defaultLandingSectionId(recommendedActionId);
 }
 
 function refreshStatusSnapshot(shell: TuiShell): void {
@@ -598,15 +599,15 @@ function actionLabelForCommand(shell: TuiShell, commandId: UiCommandId): string 
 
 function buildPendingConfirmation(shell: TuiShell, action: SectionActionMetadata): PendingConfirmation {
   const confirmation = getCommandSpec(action.id, shell.hostPlatform).confirmation!;
-  const body = [`Selected action: ${action.label}`, "", confirmation.impactCopy];
+  const body = [confirmation.impactCopy];
   if (confirmation.remindPreviewOrBackup) {
-    body.push("Use preview or backup first when available.");
+    body.push("Preview or back up first if you want a rollback point.");
   }
 
   return {
-    title: "Confirm",
-    heading: "Confirm This Action",
-    footer: "Enter or y runs it. Esc or n cancels.",
+    title: "Confirm action",
+    heading: action.label,
+    footer: "Enter/y runs it. Esc/n cancels.",
     body,
     commandId: action.id,
     label: action.label,
@@ -625,4 +626,9 @@ function loadEditablePreferencesConfig(shell: TuiShell) {
 function loadEditableConfigArgs(shell: TuiShell) {
   const snapshot = loadEditablePreferencesConfig(shell);
   return [snapshot.current, snapshot.recommended] as const;
+}
+
+function defaultLandingSectionAfterRefresh(shell: TuiShell): TuiSectionId {
+  const onboarding = inspectOnboardingSnapshotFromStatusBundle(shell.paths, shell.statusSnapshot.statusBundle);
+  return defaultLandingSectionId(onboarding.recommendedActionId);
 }

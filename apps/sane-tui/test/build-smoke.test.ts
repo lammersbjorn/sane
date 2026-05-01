@@ -91,8 +91,9 @@ describe("built sane tui bin", () => {
       });
 
       expect(inspect.status, inspect.stderr).toBe(0);
-      expect(inspect.stdout).toContain("[Status]");
-      expect(inspect.stdout).toContain("Status Focus");
+      expect(inspect.stdout).toContain("Sane / Check /");
+      expect(inspect.stdout).toContain("Current job");
+      expect(inspect.stdout).toContain("Selected: Overall health");
 
       const ttyInspect = runPseudoTty(join(extractedPackage, saneBin!), ["status"], trapCwd);
       const ttyOutput = `${ttyInspect.stdout}\n${ttyInspect.stderr}`;
