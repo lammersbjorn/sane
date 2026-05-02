@@ -262,4 +262,20 @@ describe("opencode native installer", () => {
     expect(inventory[2]?.status).toBe(InventoryStatus.Invalid);
     expect(readFileSync(opencodeJsonPath, "utf8")).toBe("{");
   });
+
+  it("blocks export when opencode.json root is non-object valid JSON and preserves file", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const opencodeRoot = join(homeDir, ".config", "opencode");
+    mkdirSync(opencodeRoot, { recursive: true });
+    const opencodeJsonPath = join(opencodeRoot, "opencode.json");
+    writeFileSync(opencodeJsonPath, "[]\n", "utf8");
+
+    const exportResults = exportOpencodeCoreBundle(paths, codexPaths);
+    expect(exportResults[2]?.summary).toBe("export opencode-session-start: blocked by invalid opencode.json");
+    expect(readFileSync(opencodeJsonPath, "utf8")).toBe("[]\n");
+    expect(existsSync(join(opencodeRoot, "plugins", "sane-session-start.js"))).toBe(false);
+  });
 });

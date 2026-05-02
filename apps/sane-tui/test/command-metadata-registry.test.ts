@@ -35,6 +35,37 @@ function expectNoCommandIds(commandIds: Iterable<string>, forbidden: readonly st
 }
 
 describe("command metadata registry", () => {
+  it("requires actionable execution contracts and validation expectations for every descriptor", () => {
+    const commandSpecs = Object.values(COMMAND_METADATA_REGISTRY.commands);
+
+    for (const command of commandSpecs) {
+      expect(command.help.length).toBeGreaterThan(0);
+      expect(command.help[0]?.trim().length ?? 0).toBeGreaterThan(10);
+      expect(command.filesTouched.length).toBeGreaterThanOrEqual(0);
+
+      if (command.kind === "backend") {
+        expect(command.backendKind).not.toBeNull();
+      } else {
+        expect(command.backendKind).toBeNull();
+      }
+
+      if (command.confirmation?.required) {
+        expect(command.confirmation.impactCopy.trim().length).toBeGreaterThan(20);
+      }
+
+      const helpText = command.help.join(" ");
+      const hasValidationExpectation = /\b(does not|only|when|before|check|checks|required|safety|read-only|nothing changes)\b/i.test(
+        helpText
+      );
+
+      const contractBackedByMetadata =
+        command.confirmation?.required === true || command.filesTouched.length > 0 || command.backendKind !== null;
+
+      expect(contractBackedByMetadata).toBe(true);
+      expect(hasValidationExpectation || command.confirmation?.required === true).toBe(true);
+    }
+  });
+
   it("does not expose public outcome runner command ids", () => {
     const shippedCommandIds = new Set([
       ...Object.keys(COMMAND_METADATA_REGISTRY.commands),
@@ -82,7 +113,7 @@ describe("command metadata registry", () => {
     ]);
     expect(listSections().map((section) => section.tabLabel)).toEqual([
       "Setup",
-      "Tune",
+      "Configure",
       "Install",
       "Check",
       "Recover",
@@ -136,8 +167,8 @@ describe("command metadata registry", () => {
       expect(new Set(sectionActionIds(section.id)).size).toBe(sectionActionIds(section.id).length);
     }
     expect(sectionActionIds("repair").some((id) => id.startsWith("uninstall_"))).toBe(false);
-    expect(listSectionActions("home").at(-1)?.label).toBe("Run doctor");
-    expect(listSectionActions("add_to_codex").at(-1)?.label).toBe("OpenCode bundle");
+    expect(listSectionActions("home").at(-1)?.label).toBe("Run health check");
+    expect(listSectionActions("add_to_codex").at(-1)?.label).toBe("Install OpenCode setup");
     expect(listSectionActions("settings").at(-1)?.label).toBe("Auto updates");
     expectHelpMentions("toggle_auto_updates", ["automatic Sane CLI updates", "Local source installs"]);
     expectHelpMentions("show_runtime_summary", [
@@ -179,13 +210,13 @@ describe("command metadata registry", () => {
     expectHelpMentions("preview_policy", ["route common Codex work", "does not start agent work"]);
     expectHelpMentions("preview_codex_profile", ["Nothing changes until you apply it"]);
     expectHelpMentions("show_status", ["current Sane setup", "Codex add-ons"]);
-    expectHelpMentions("doctor", ["managed surfaces"]);
+    expectHelpMentions("doctor", ["Read-only check"]);
     expectHelpMentions("export_hooks", ["native Windows", "WSL"]);
     expectHelpMentions("export_all", ["personal Sane workflow", "named agents", "native Windows"]);
     expectHelpMentions("export_opencode_all", [
       "Add Sane's workflow to OpenCode",
       "OpenCode's config area",
-      "host OpenCode visibility/load support"
+      "OpenCode support decides what users see"
     ]);
     expect(getCommandSpec("export_opencode_all").filesTouched).toEqual(["~/.config/opencode/"]);
     expect(getCommandSpec("export_all").includes).toEqual(["user-skills", "global-agents", "hooks", "custom-agents"]);

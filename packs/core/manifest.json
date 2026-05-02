@@ -203,8 +203,8 @@
           }
         ]
       },
-      "policyNote": "- Docs-craft pack active: load `sane-docs-writing` for README, user-docs, changelog, release-note, migration-note, support-doc, or product-doc rewrites",
-      "continuityNote": "Docs-craft pack active: load `sane-docs-writing` for README, user-docs, changelog, release-note, migration-note, support-doc, or product-doc rewrites."
+      "policyNote": "- Docs-craft pack active: load `sane-docs-writing` for README, user-docs, changelog, release-note, migration-note, support-doc, product-doc, or docs review/edit work",
+      "continuityNote": "Docs-craft pack active: load `sane-docs-writing` for README, user-docs, changelog, release-note, migration-note, support-doc, product-doc, or docs review/edit work."
     }
   },
   "assetSources": {
@@ -335,6 +335,91 @@
         "ref": "workspace",
         "license": "MIT OR Apache-2.0",
         "updateStrategy": "manual-curated"
+      }
+    }
+  },
+  "assetOwnership": {
+    "style": "sane-managed-asset-ownership",
+    "items": {
+      "skills/sane-router.md.tmpl": {
+        "owner": "sane",
+        "mode": "generated-managed",
+        "writeMode": "overwrite"
+      },
+      "skills/sane-bootstrap-research.md": {
+        "owner": "sane",
+        "mode": "source-managed"
+      },
+      "skills/sane-agent-lanes.md": {
+        "owner": "sane",
+        "mode": "source-managed"
+      },
+      "skills/sane-outcome-continuation.md": {
+        "owner": "sane",
+        "mode": "source-managed"
+      },
+      "skills/continue/SKILL.md": {
+        "owner": "sane",
+        "mode": "source-managed"
+      },
+      "overlays/global-agents.md.tmpl": {
+        "owner": "sane",
+        "mode": "generated-managed",
+        "writeMode": "overwrite"
+      },
+      "overlays/repo-agents.md.tmpl": {
+        "owner": "sane",
+        "mode": "generated-managed",
+        "writeMode": "overwrite"
+      },
+      "agents/sane-agent.toml.tmpl": {
+        "owner": "sane",
+        "mode": "generated-managed",
+        "writeMode": "overwrite"
+      },
+      "agents/sane-reviewer.toml.tmpl": {
+        "owner": "sane",
+        "mode": "generated-managed",
+        "writeMode": "overwrite"
+      },
+      "agents/sane-explorer.toml.tmpl": {
+        "owner": "sane",
+        "mode": "generated-managed",
+        "writeMode": "overwrite"
+      },
+      "agents/sane-implementation.toml.tmpl": {
+        "owner": "sane",
+        "mode": "generated-managed",
+        "writeMode": "overwrite"
+      },
+      "agents/sane-realtime.toml.tmpl": {
+        "owner": "sane",
+        "mode": "generated-managed",
+        "writeMode": "overwrite"
+      },
+      "skills/optional/sane-caveman.md": {
+        "owner": "sane",
+        "mode": "source-managed"
+      },
+      "skills/optional/sane-rtk.md": {
+        "owner": "sane",
+        "mode": "source-managed"
+      },
+      "skills/optional/frontend-craft/sane-frontend-craft.md": {
+        "owner": "sane",
+        "mode": "source-managed"
+      },
+      "skills/optional/frontend-craft/sane-frontend-visual-assets.md": {
+        "owner": "sane",
+        "mode": "source-managed"
+      },
+      "skills/optional/frontend-craft/sane-frontend-review.md": {
+        "owner": "sane",
+        "mode": "source-managed"
+      },
+      "skills/optional/docs-craft/sane-docs-writing.md": {
+        "owner": "sane",
+        "mode": "source-managed"
       }
     }
   }

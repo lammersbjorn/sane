@@ -66,13 +66,13 @@ describe("text renderer", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
 
     selectSection(shell, "home");
-    expect(renderTextAppView(loadAppView(shell), { width: 56, height: 20 })).toContain("Get this repo ready");
+    expect(renderTextAppView(loadAppView(shell), { width: 56, height: 20 })).toContain("Set up the local Sane files");
 
     selectSection(shell, "add_to_codex");
     expect(renderTextAppView(loadAppView(shell), { width: 96, height: 26 })).toContain("Choose what Sane adds to Codex.");
 
     selectSection(shell, "settings");
-    expect(renderTextAppView(loadAppView(shell), { width: 132, height: 34 })).toContain("Tune Sane around how you want Codex to work.");
+    expect(renderTextAppView(loadAppView(shell), { width: 132, height: 34 })).toContain("Configure how Sane guides Codex.");
 
     selectSection(shell, "status");
     const statusOutput = renderTextAppView(loadAppView(shell), { width: 96, height: 26 });
@@ -189,6 +189,6 @@ describe("text renderer", () => {
     runSelectedAction(shell);
     const wideConfirm = renderTextAppView(loadAppView(shell), { width: 132, height: 34 });
     expect(wideConfirm).toContain("[Overlay: Confirm action]");
-    expect(wideConfirm).toContain("Apply Codex tune-up");
+    expect(wideConfirm).toContain("Apply Codex settings");
   });
 });

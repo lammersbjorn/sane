@@ -37,6 +37,7 @@ import {
   showCodexConfig,
   applyStatuslineProfile
 } from "../src/codex-config.js";
+import { inspectStatusBundle } from "../src/inventory.js";
 
 const tempDirs: string[] = [];
 
@@ -70,7 +71,7 @@ describe("codex config control plane", () => {
       "note: broader execution and realtime routing stays derived outside config.toml"
     );
     expect(result.details).toContain("note: Codex native memories stay outside Sane's default continuity path");
-    expect(result.details).toContain("note: integrations stay outside bare core profile");
+    expect(result.details).toContain("note: Codex tool settings stay outside the core Codex settings");
     expect(result.inventory[0]?.path).toBe(codexPaths.configToml);
     expect(result.pathsTouched).toEqual([codexPaths.configToml]);
     expect(projectRoot).not.toBe("");
@@ -121,7 +122,54 @@ describe("codex config control plane", () => {
     expect(result.details).toContain("tui status line: model-with-reasoning, project-root");
     expect(result.details).toContain("tui terminal title: project, spinner");
     expect(result.details).toContain("tui notifications: always");
-    expect(result.details).toContain("tui theme: zenburn");
+    expect(result.details).toContain("tui theme: zenburn (display-only, not Sane-managed)");
+  });
+
+  it("classifies compatibility-only codex config keys without managing them", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+    writeFileSync(
+      codexPaths.configToml,
+      [
+        "[features]",
+        "memories = true",
+        "",
+        "[tui]",
+        'theme = "zenburn"',
+        "",
+        "[plugins.local_lab]",
+        "enabled = true",
+        "",
+        "[mcp_servers.experimental_sidecar]",
+        'command = "experimental"'
+      ].join("\n"),
+      "utf8"
+    );
+
+    const family = inspectCodexProfileFamilySnapshot(codexPaths);
+    const bundle = inspectStatusBundle(projectPaths, codexPaths);
+
+    expect(family.codexConfig.details).toContain("codex memories: enabled");
+    expect(family.codexConfig.details).toContain("enabled plugins: 1");
+    expect(family.codexConfig.details).toContain("mcp server names: experimental_sidecar");
+    expect(family.codexConfig.details).toContain("tui theme: zenburn (display-only, not Sane-managed)");
+    expect(bundle.conflictWarnings.map((warning) => warning.kind)).toEqual([
+      "unmanaged_mcp_server",
+      "codex_native_memories_enabled",
+      "unsupported_tui_theme",
+      "unmanaged_plugin"
+    ]);
+    expect(bundle.conflictWarnings.find((warning) => warning.target === "tui.theme")).toEqual({
+      kind: "unsupported_tui_theme",
+      target: "tui.theme",
+      path: codexPaths.configToml,
+      message:
+        "Codex TUI theme 'zenburn' is display-only in Sane; warning-only, no auto-apply or auto-remove"
+    });
   });
 
   it("shows invalid codex config without pretending the config is ok", () => {

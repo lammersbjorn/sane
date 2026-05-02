@@ -8,6 +8,7 @@ High-signal handoff for current `Sane` cleanup. Keep detailed history in dated d
 - `.agents/skills/sane-self-hosting/SKILL.md`
 - `docs/decisions/2026-04-19-sane-decision-log.md`
 - `docs/specs/2026-04-27-codebase-cleanup-current-standards.md`
+- `docs/specs/2026-05-02-sane-product-acceptance-standard.md`
 - `docs/specs/2026-04-25-sane-tui-control-center-redesign.md`
 - `docs/what-sane-does.md`
 
@@ -20,11 +21,11 @@ Do not re-litigate locked product philosophy unless a new decision log changes i
 - Plain-language outcome flow is primary; no command ritual.
 - `AGENTS.md` is optional. Repo mutation is optional.
 - Root `AGENTS.md` stays small; targeted behavior belongs in skills and docs.
-- Built-in `v1` pack set is fixed: `core`, optional `caveman`, optional `rtk`, optional `frontend-craft`.
-- Current optional pack skill exports include `sane-caveman`, `sane-rtk`, `sane-frontend-craft`, `sane-frontend-visual-assets`, and `sane-frontend-review`.
+- Built-in `v1` pack set is fixed: `core`, optional `caveman`, optional `rtk`, optional `frontend-craft`, optional `docs-craft`.
+- Current optional pack skill exports include `sane-caveman`, `sane-rtk`, `sane-frontend-craft`, `sane-frontend-visual-assets`, `sane-frontend-review`, and `sane-docs-writing`.
 - Later end-to-end outcome runner is future work, not current product surface.
 - RTK is mandatory in this repo for shell/search/test/log work.
-- Verify release-bound changes with `rtk pnpm run release:verify`. For narrow non-package changes, use `rtk pnpm test` and `rtk run 'pnpm typecheck'` while RTK native typecheck routing false-exits.
+- Verify release-bound changes with `rtk pnpm run accept`. For narrow non-package changes, use `rtk pnpm test` and `rtk run 'pnpm typecheck'` while RTK native typecheck routing false-exits.
 
 ## Verified Current State
 
@@ -101,10 +102,177 @@ Acceptance:
 
 ## Next Slice
 
-- [ ] Wire channel repos after first stable `v1` tag:
-  - Verify `HOMEBREW_TAP_TOKEN` and first triggered tap update
+- [ ] Wire remaining channel repos after first stable `v1` tag:
   - winget manifest PR
   - Scoop bucket update PR
+
+## Product Acceptance Hardening
+
+Goal: make Sane's shipped behavior provable end to end, not only documented or
+represented by generated files. Keep this work Sane-owned and Codex-native; do
+not widen the TUI into a daily prompting interface.
+
+### Acceptance Standard
+
+- [x] Add a dated Sane acceptance standard under `docs/specs/` that defines:
+  - one product acceptance command or release gate
+  - artifact validity rules for authored, generated, deployed, and installed
+    files
+  - manifest ownership requirements for full-file writes, marked blocks,
+    structured config keys, checksums, executable bits, and source origins
+  - fixture-root deploy/uninstall expectations that never touch real user home
+  - hook fixture expectations for allowed, blocked, malformed, provider-output,
+    and deployed-path execution cases
+  - route, command, skill, and custom-agent contract requirements
+  - generated/source drift checks
+  - negative acceptance cases for placeholders, shallow descriptors,
+    metadata-only records, non-executable hooks, unsupported config keys, and
+    unsupported model names
+- [x] Link the acceptance standard from the active cleanup/spec docs after it is
+      written and verified.
+
+### Acceptance Command And Tests
+
+- [x] Decide the public gate is `pnpm accept`, delegating to current
+      `release:verify` until the evidence bundle work ships.
+- [x] Add a fixture-root acceptance suite for personal Codex exports:
+  - user skills
+  - global `AGENTS.md` managed block
+  - hooks
+  - custom agents
+  - config profile previews or writes where covered
+- [x] Add a fixture-root acceptance suite for optional repo exports:
+  - repo skills
+  - repo `AGENTS.md` managed block
+  - repo agents, when enabled
+  - bundle-level coverage remains blocked: `exportAll` / `uninstallAll` are
+    intentionally personal Codex bundle operations today; repo exports are
+    explicit commands and need a separate repo-bundle API decision before they
+    belong in all-in-one lifecycle tests.
+- [x] Prove bundle uninstall preserves user-owned skill and hook content while
+      removing Sane-owned global-agent and hook content.
+- [x] Prove repeated bundle uninstall is idempotent in a temp fixture root.
+- [x] Extend idempotency fixture coverage to repeated deploy and repo exports.
+- [x] Add negative tests that fail when generated artifacts are shallow,
+      placeholder-only, metadata-only, or disconnected from source.
+
+### Manifest And Provenance
+
+- [x] Audit current manifest data against the acceptance standard.
+- [x] Ensure generated/deployed artifacts expose source origin where the user or
+      repair/status flow needs it.
+- [x] Track ownership mode for core pack source-managed and generated-managed
+      asset files in the manifest.
+- [x] Extend ownership mode to marked blocks and structured config keys across
+      export, status, repair, and uninstall.
+- [x] Confirm current managed hooks do not depend on managed `.mjs`
+      hook/runtime files or executable-bit preservation; inline exported
+      commands execute directly in fixture roots.
+- [x] Add drift tests for generated/exported surfaces against canonical pack
+      source.
+
+### Done In Acceptance Slice
+
+- [x] Added `docs/specs/2026-05-02-sane-product-acceptance-standard.md` and
+      linked it from the active cleanup spec.
+- [x] Added bundle lifecycle test for preserving unmanaged skill/hook content
+      and repeated uninstall behavior.
+- [x] Added core pack asset ownership metadata, parser validation, accessors,
+      and malformed-ownership tests.
+- [x] Added config capability classification for warning-only/display-only
+      Codex config surfaces, including `tui.theme`.
+- [x] Added direct custom-agent contract assertions and shallow generated asset
+      negative tests.
+- [x] Added managed hook fixture tests for allowed, blocked, malformed,
+      provider-output, and inline execution behavior.
+- [x] Added repeated personal deploy and explicit repo export idempotency
+      fixture tests.
+- [x] Added optional skill support-file, executable helper-script, and
+      non-shallow operational body audits.
+- [x] Added command descriptor execution-contract and validation-expectation
+      audits.
+- [x] Added custom-agent hook/guardrail contract wording and tests.
+- [x] Aligned CI, npm publish, and GitHub Release artifact workflows on the
+      public `pnpm run accept` gate.
+- [x] Confirmed optional pack provenance is surfaced in Status/Inspect, core
+      asset source provenance is manifest-backed, managed block markers are
+      fixture-tested, and structured Codex config writes preserve unmanaged
+      keys.
+- [x] Verified with:
+  - `rtk pnpm run accept`
+  - `rtk vitest packages/control-plane/test/bundles.test.ts`
+  - `rtk vitest packages/control-plane/test/codex-config.test.ts`
+  - `rtk vitest packages/control-plane/test/codex-native-hooks-custom-agents.test.ts`
+  - `rtk vitest packages/control-plane/test/codex-native-skills-agents.test.ts`
+  - `rtk vitest packages/framework-assets/test/framework-assets.test.ts`
+  - `rtk vitest apps/sane-tui/test/command-metadata-registry.test.ts`
+  - `rtk vitest apps/sane-tui/test/workspace-package-boundaries.test.ts`
+  - `rtk vitest packages/control-plane/test/inspect-presenter.test.ts apps/sane-tui/test/command-metadata-registry.test.ts apps/sane-tui/test/ink-terminal.test.ts packages/control-plane/test/inventory.test.ts packages/control-plane/test/inspect.test.ts`
+
+### Hook And Route Quality Gates
+
+- [x] Add fixture tests for managed hooks:
+  - allowed input
+  - blocked input
+  - malformed input
+  - inline exported command execution
+  - provider-specific output shape
+- [x] Add or document safety-hook backlog for:
+  - destructive command guard
+  - secret and credential guard
+  - protected branch guard
+  - environment-file read guard
+  - unsafe git operation guard
+  - generated-file edit guard
+- [x] Add route/completion gate backlog for:
+  - explanation-only completion rejection on edit-required routes
+  - execution-evidence requirement on execution-required routes
+  - weak `BLOCKED` rejection unless attempted/evidence/need are present
+  - repeated failure circuit
+  - large diff warning
+  - test failure loop guard
+
+### Config And Capability Policy
+
+- [x] Audit Codex config profile output for deprecated or compatibility-only
+      keys and replace them with current supported keys where applicable.
+- [x] Validate emitted config keys against the current control-plane parser and
+      focused tests where practical.
+- [x] Make every enabled capability tied to Sane-owned behavior and every
+      disabled capability tied to a control reason.
+- [x] Classify warning-only/display-only adjacent Codex config surfaces:
+      `features.memories`, enabled `plugins.*`, unmanaged `mcp_servers.*`, and
+      `tui.theme`.
+- [x] Evaluate explicit support for `tools_view_image`, hook/profile features,
+      and a separate long-runtime profile before documenting them as shipped.
+- [x] Keep default continuity scoped to `.sane` state; do not make native memory
+      systems the default continuity path without a separate decision.
+
+### Agent, Skill, And Route Contracts
+
+- [x] Audit generated custom-agent templates for:
+  - [x] exact trigger conditions
+  - [x] non-goals
+  - [x] tool/write/sandbox contract
+  - [x] model route
+  - [x] allowed skills
+  - [x] route ownership
+  - [x] hook/guard expectations
+  - [x] workflow
+  - [x] validation behavior
+  - [x] final output contract
+- [x] Audit skills for support-file preservation, executable helper scripts, and
+      non-shallow operational bodies.
+- [x] Audit TUI/CLI command descriptors so commands include actionable
+      execution contracts and validation expectations instead of only labels.
+
+### Release And Git Hygiene
+
+- [x] Keep release verification aligned across npm, GitHub Release assets,
+      Homebrew, winget, and Scoop surfaces.
+- [x] Add drift checks for release artifacts and exported framework assets.
+- [x] Evaluate optional git-workflow policy for canonical AI co-author trailers
+      and malformed-domain blocking without making it a default repo mutation.
 
 ## Agent Working Rules
 

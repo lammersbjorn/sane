@@ -27,7 +27,8 @@ Use in this order:
 3. `docs/decisions/2026-04-19-sane-decision-log.md`
 4. `docs/what-sane-does.md`
 5. `docs/specs/2026-04-25-sane-tui-control-center-redesign.md`
-6. dated research notes only for their dated evidence
+6. `docs/specs/2026-05-02-sane-product-acceptance-standard.md`
+7. dated research notes only for their dated evidence
 
 `TODO.md` is not a spec. It is a live work queue and handoff.
 `packs/core/skills/vendor/` content is reference-only unless the manifest explicitly exports it.
@@ -52,13 +53,14 @@ Use in this order:
 
 ### Packs And Skills
 
-- Fixed `v1` built-in pack set: `core`, optional `caveman`, optional `rtk`, optional `frontend-craft`.
+- Fixed `v1` built-in pack set: `core`, optional `caveman`, optional `rtk`, optional `frontend-craft`, optional `docs-craft`.
 - Optional exported skills now include:
   - `sane-caveman`
   - `sane-rtk`
   - `sane-frontend-craft`
   - `sane-frontend-visual-assets`
   - `sane-frontend-review`
+  - `sane-docs-writing`
 - Docs must not describe `rtk` as capability-only while the manifest exports `sane-rtk`.
 
 ### Code
@@ -81,7 +83,7 @@ Use in this order:
    - allow compatibility alias notes
    - fix public-facing leaks
 3. Run verification:
-   - release-bound changes: `rtk pnpm run release:verify`
+   - release-bound changes: `rtk pnpm run accept`
    - narrow non-package changes: `rtk pnpm test`
    - typecheck until RTK native routing is repaired: `rtk run 'pnpm typecheck'`
 4. Repair only failures caused by cleanup or obvious current-standard drift.

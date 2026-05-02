@@ -38,4 +38,4 @@ jobs:
         run: pnpm typecheck
 
       - name: Run release packaging gate
-        run: pnpm run release:verify
+        run: pnpm run accept

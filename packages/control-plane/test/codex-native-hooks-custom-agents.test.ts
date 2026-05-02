@@ -361,6 +361,125 @@ describe("hooks and custom agents", () => {
     expect(output).toBe("");
   });
 
+  it("allows non-Bash and malformed PreToolUse payloads", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const config = createDefaultLocalConfig();
+    config.packs.rtk = true;
+    writeLocalConfig(projectPaths.configPath, config);
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+
+    exportHooks(projectPaths, codexPaths);
+    const exportedBody = JSON.parse(readFileSync(codexPaths.hooksJson, "utf8"));
+    const command = exportedBody.hooks.PreToolUse[0].hooks[0].command;
+
+    const nonBashOutput = execSync(command, {
+      encoding: "utf8",
+      input: JSON.stringify({
+        tool_name: "Read",
+        tool_input: { path: "README.md" },
+        cwd: projectRoot
+      }),
+      shell: "/bin/sh"
+    });
+    expect(nonBashOutput).toBe("");
+
+    const malformedOutput = execSync(command, {
+      encoding: "utf8",
+      input: "{not valid json",
+      shell: "/bin/sh"
+    });
+    expect(malformedOutput).toBe("");
+  });
+
+  it("returns expected deny output shape for blocked Bash input", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const binDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const config = createDefaultLocalConfig();
+    config.packs.rtk = true;
+    writeLocalConfig(projectPaths.configPath, config);
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+    writeFileSync(
+      join(binDir, "rtk"),
+      "#!/bin/sh\nif [ \"$1\" = \"rewrite\" ]; then printf 'rtk grep foo\\n'; exit 0; fi\nexit 1\n",
+      "utf8"
+    );
+    chmodSync(join(binDir, "rtk"), 0o755);
+
+    exportHooks(projectPaths, codexPaths);
+    const exportedBody = JSON.parse(readFileSync(codexPaths.hooksJson, "utf8"));
+    const command = exportedBody.hooks.PreToolUse[0].hooks[0].command;
+    const output = execSync(command, {
+      encoding: "utf8",
+      env: { ...process.env, PATH: `${binDir}:${process.env.PATH ?? ""}` },
+      input: JSON.stringify({
+        tool_name: "Bash",
+        tool_input: { command: "grep foo" },
+        cwd: projectRoot
+      }),
+      shell: "/bin/sh"
+    });
+
+    const payload = JSON.parse(output);
+    expect(Object.keys(payload)).toEqual(["hookSpecificOutput"]);
+    expect(Object.keys(payload.hookSpecificOutput).sort()).toEqual([
+      "hookEventName",
+      "permissionDecision",
+      "permissionDecisionReason"
+    ]);
+    expect(payload.hookSpecificOutput.hookEventName).toBe("PreToolUse");
+    expect(payload.hookSpecificOutput.permissionDecision).toBe("deny");
+    expect(payload.hookSpecificOutput.permissionDecisionReason).toMatch(/^RTK is required\./);
+  });
+
+  it("executes inline managed SessionStart and Tokscale hooks without deployed .mjs runtime", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const config = createDefaultLocalConfig();
+    config.lifecycleHooks.tokscaleSubmit = true;
+    writeLocalConfig(projectPaths.configPath, config);
+    mkdirSync(join(homeDir, ".codex"), { recursive: true });
+
+    exportHooks(projectPaths, codexPaths);
+    const exportedBody = JSON.parse(readFileSync(codexPaths.hooksJson, "utf8"));
+    const sessionStartCommand = exportedBody.hooks.SessionStart[0].hooks[0].command;
+    const tokscaleCommand = exportedBody.hooks.Stop.find((entry: any) =>
+      Array.isArray(entry?.hooks)
+      && entry.hooks.some((hook: any) => String(hook?.command ?? "").includes("hook tokscale-submit --event stop"))
+    )?.hooks?.[0]?.command;
+
+    expect(sessionStartCommand).toContain("hook session-start");
+    expect(sessionStartCommand).not.toContain(".mjs");
+    expect(tokscaleCommand).toContain("hook tokscale-submit --event stop");
+    expect(tokscaleCommand).not.toContain(".mjs");
+
+    const sessionStartOutput = execSync(sessionStartCommand, {
+      encoding: "utf8",
+      env: { ...process.env, PATH: "" },
+      shell: "/bin/sh"
+    });
+    const tokscaleOutput = execSync(tokscaleCommand, {
+      encoding: "utf8",
+      env: { ...process.env, PATH: "" },
+      shell: "/bin/sh"
+    });
+
+    expect(JSON.parse(sessionStartOutput)).toMatchObject({
+      hookSpecificOutput: {
+        hookEventName: "SessionStart"
+      }
+    });
+    expect(typeof JSON.parse(sessionStartOutput).hookSpecificOutput.additionalContext).toBe("string");
+    expect(JSON.parse(tokscaleOutput)).toEqual({});
+  });
+
   it("repairs legacy managed hooks that depended on sane being on PATH", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();

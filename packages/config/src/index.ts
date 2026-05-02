@@ -1,9 +1,23 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-import { parse as parseToml } from 'toml';
 import { z } from 'zod';
+import {
+  firstString,
+  FRONTEND_CRAFT_WIRE_KEY,
+  isRecord,
+  normalizeLocalConfigInput,
+  RATE_LIMIT_RESUME_WIRE_KEY,
+  TOKSCALE_DRY_RUN_WIRE_KEY,
+  TOKSCALE_SUBMIT_WIRE_KEY,
+} from './config-coercion.js';
+import {
+  buildRecommendedModelRoutingPresets,
+  buildRecommendedSubagentFrontendCraftPreset,
+  pickReasoningForModel,
+} from './config-model-routing.js';
+import { readCorePackManifest } from './config-manifest.js';
+import { messageOf, parseJsonConfig, parseTomlConfig, readUtf8File } from './config-parsing.js';
 
 export const AVAILABLE_MODELS = [
   'gpt-5.5',
@@ -129,81 +143,6 @@ export interface PortableSettingsFile {
 const reasoningEffortSchema = z.enum(REASONING_EFFORTS);
 const telemetryLevelSchema = z.enum(TELEMETRY_LEVELS);
 const issueRelayModeSchema = z.enum(ISSUE_RELAY_MODES);
-const COORDINATOR_PRIORITY = [
-  'gpt-5.5',
-  'gpt-5.4',
-  'gpt-5.3-codex',
-  'gpt-5.2',
-  'gpt-5.4-mini',
-  'gpt-5.3-codex-spark',
-  'gpt-5.1-codex',
-  'gpt-5-codex',
-  'gpt-5.1-codex-mini',
-] as const;
-const EXECUTION_PRIORITY = [
-  'gpt-5.3-codex',
-  'gpt-5.5',
-  'gpt-5.4',
-  'gpt-5.2',
-  'gpt-5.3-codex-spark',
-  'gpt-5.1-codex',
-  'gpt-5-codex',
-  'gpt-5.4-mini',
-  'gpt-5.1-codex-mini',
-] as const;
-const SIDECAR_PRIORITY = [
-  'gpt-5.4-mini',
-  'gpt-5.3-codex-spark',
-  'gpt-5.3-codex',
-  'gpt-5.4',
-  'gpt-5.5',
-  'gpt-5.2',
-  'gpt-5.1-codex-mini',
-  'gpt-5.1-codex',
-  'gpt-5-codex',
-] as const;
-const VERIFIER_PRIORITY = [
-  'gpt-5.5',
-  'gpt-5.4',
-  'gpt-5.3-codex',
-  'gpt-5.2',
-  'gpt-5.4-mini',
-  'gpt-5.3-codex-spark',
-  'gpt-5.1-codex',
-  'gpt-5-codex',
-  'gpt-5.1-codex-mini',
-] as const;
-const REALTIME_PRIORITY = [
-  'gpt-5.3-codex-spark',
-  'gpt-5.4-mini',
-  'gpt-5.3-codex',
-  'gpt-5.4',
-  'gpt-5.5',
-  'gpt-5.2',
-  'gpt-5.1-codex-mini',
-  'gpt-5.1-codex',
-  'gpt-5-codex',
-] as const;
-const FRONTEND_CRAFT_PRIORITY = [
-  'gpt-5.5',
-  'gpt-5.4',
-  'gpt-5.3-codex',
-  'gpt-5.2',
-  'gpt-5.4-mini',
-  'gpt-5.3-codex-spark',
-  'gpt-5.1-codex',
-  'gpt-5-codex',
-  'gpt-5.1-codex-mini',
-] as const;
-const COORDINATOR_REASONING: readonly ReasoningEffort[] = ['high', 'xhigh', 'medium', 'low'];
-const EXECUTION_REASONING: readonly ReasoningEffort[] = ['medium', 'high', 'low', 'xhigh'];
-const SIDECAR_REASONING: readonly ReasoningEffort[] = ['medium', 'low', 'high', 'xhigh'];
-const VERIFIER_REASONING: readonly ReasoningEffort[] = ['high', 'medium', 'xhigh', 'low'];
-const REALTIME_REASONING: readonly ReasoningEffort[] = ['low', 'medium', 'high', 'xhigh'];
-const FRONTEND_CRAFT_REASONING: readonly ReasoningEffort[] = ['high', 'xhigh', 'medium', 'low'];
-const COORDINATOR_REASONING_BY_MODEL: Record<string, readonly ReasoningEffort[]> = {
-  'gpt-5.5': ['medium', 'high', 'xhigh', 'low'],
-};
 const DEFAULT_RECOMMENDATION_ENVIRONMENT: CodexEnvironment = {
   availableModels: AVAILABLE_MODELS.map((slug) => ({
     slug,
@@ -355,32 +294,10 @@ export function createRecommendedModelRolePresets(
 export function createRecommendedModelRoutingPresets(
   environment: CodexEnvironment,
 ): ModelRoutingPresets {
-  if (environment.availableModels.length === 0) {
-    return createDefaultModelRoutingPresets();
-  }
-
-  return {
-    coordinator:
-      pickModelPreset(
-        environment.availableModels,
-        COORDINATOR_PRIORITY,
-        COORDINATOR_REASONING,
-        COORDINATOR_REASONING_BY_MODEL,
-      ) ??
-      selectAvailableModelPreset(environment.availableModels, true, COORDINATOR_REASONING)!,
-    execution:
-      pickModelPreset(environment.availableModels, EXECUTION_PRIORITY, EXECUTION_REASONING) ??
-      selectAvailableModelPreset(environment.availableModels, true, EXECUTION_REASONING)!,
-    sidecar:
-      pickModelPreset(environment.availableModels, SIDECAR_PRIORITY, SIDECAR_REASONING) ??
-      selectAvailableModelPreset(environment.availableModels, false, SIDECAR_REASONING)!,
-    verifier:
-      pickModelPreset(environment.availableModels, VERIFIER_PRIORITY, VERIFIER_REASONING) ??
-      selectAvailableModelPreset(environment.availableModels, true, VERIFIER_REASONING)!,
-    realtime:
-      pickModelPreset(environment.availableModels, REALTIME_PRIORITY, REALTIME_REASONING) ??
-      selectAvailableModelPreset(environment.availableModels, false, REALTIME_REASONING)!,
-  };
+  return (
+    buildRecommendedModelRoutingPresets(environment.availableModels) ??
+    createDefaultModelRoutingPresets()
+  );
 }
 
 export function createRecommendedLocalConfig(environment: CodexEnvironment): LocalConfig {
@@ -433,16 +350,7 @@ export function createRecommendedSubagentPreset(
       return routing.realtime;
     case 'frontendCraft':
       return (
-        pickModelPreset(
-          environment.availableModels,
-          FRONTEND_CRAFT_PRIORITY,
-          FRONTEND_CRAFT_REASONING,
-        ) ??
-        selectAvailableModelPreset(
-          environment.availableModels,
-          true,
-          FRONTEND_CRAFT_REASONING,
-        ) ??
+        buildRecommendedSubagentFrontendCraftPreset(environment.availableModels) ??
         createDefaultSubagentRoutingPresets().frontendCraft
       );
   }
@@ -526,14 +434,7 @@ export function detectCodexEnvironment(
 }
 
 export function parseLocalConfigToml(raw: string, path = 'config.local.toml'): LocalConfig {
-  let decoded: unknown;
-  try {
-    decoded = parseToml(raw);
-  } catch (error) {
-    throw new Error(`failed to parse config from ${path}: ${messageOf(error)}`);
-  }
-
-  return parseLocalConfig(decoded, path);
+  return parseLocalConfig(parseTomlConfig(raw, path), path);
 }
 
 export function readLocalConfig(path: string): LocalConfig {
@@ -611,7 +512,7 @@ export function stringifyLocalConfig(config: LocalConfig): string {
     `model = ${quote(normalized.subagents.realtime.model)}`,
     `reasoning_effort = ${quote(normalized.subagents.realtime.reasoningEffort)}`,
     '',
-    '[subagents."frontend-craft"]',
+    `[subagents."${FRONTEND_CRAFT_WIRE_KEY}"]`,
     `model = ${quote(normalized.subagents.frontendCraft.model)}`,
     `reasoning_effort = ${quote(normalized.subagents.frontendCraft.reasoningEffort)}`,
     '',
@@ -628,9 +529,9 @@ export function stringifyLocalConfig(config: LocalConfig): string {
     ),
     '',
     '[lifecycle-hooks]',
-    `"tokscale-submit" = ${normalized.lifecycleHooks.tokscaleSubmit}`,
-    `"tokscale-dry-run" = ${normalized.lifecycleHooks.tokscaleDryRun}`,
-    `"rate-limit-resume" = ${normalized.lifecycleHooks.rateLimitResume}`,
+    `"${TOKSCALE_SUBMIT_WIRE_KEY}" = ${normalized.lifecycleHooks.tokscaleSubmit}`,
+    `"${TOKSCALE_DRY_RUN_WIRE_KEY}" = ${normalized.lifecycleHooks.tokscaleDryRun}`,
+    `"${RATE_LIMIT_RESUME_WIRE_KEY}" = ${normalized.lifecycleHooks.rateLimitResume}`,
     '',
     '[updates]',
     `auto = ${normalized.updates.auto}`,
@@ -653,12 +554,7 @@ export function parsePortableSettingsJson(
   raw: string,
   path = 'sane-settings-portable.json',
 ): PortableSettingsFile {
-  let decoded: unknown;
-  try {
-    decoded = JSON.parse(raw) as unknown;
-  } catch (error) {
-    throw new Error(`failed to parse portable settings from ${path}: ${messageOf(error)}`);
-  }
+  const decoded = parseJsonConfig(raw, path, 'portable settings');
 
   if (!isRecord(decoded)) {
     throw new Error(`invalid portable settings at ${path}: expected object`);
@@ -701,108 +597,17 @@ export function enabledPackNames(config: PackConfig): string[] {
 }
 
 export function validateLocalConfig(config: unknown, path = 'config.local.toml'): LocalConfig {
-  return validateNormalizedLocalConfig(normalizeLocalConfigInput(config), path);
+  return validateNormalizedLocalConfig(
+    normalizeLocalConfigInput(config, optionalPackNames(), optionalPackConfigKey),
+    path,
+  );
 }
 
 function parseLocalConfig(value: unknown, path: string): LocalConfig {
-  return validateNormalizedLocalConfig(normalizeLocalConfigInput(value), path);
-}
-
-function normalizeLocalConfigInput(value: unknown): unknown {
-  if (!isRecord(value)) {
-    return value;
-  }
-
-  const models = isRecord(value.models)
-    ? {
-        coordinator: normalizeModelPreset(value.models.coordinator),
-        sidecar: normalizeModelPreset(value.models.sidecar),
-        verifier: normalizeModelPreset(value.models.verifier),
-      }
-    : undefined;
-
-  const privacy = isRecord(value.privacy)
-    ? {
-        telemetry: value.privacy.telemetry,
-      }
-    : undefined;
-
-  const rawIssueRelay = isRecord(value['issue-relay'])
-    ? value['issue-relay']
-    : isRecord(value.issueRelay)
-      ? value.issueRelay
-      : undefined;
-  const issueRelay = rawIssueRelay
-    ? {
-        mode: rawIssueRelay.mode,
-      }
-    : undefined;
-
-  const subagents = isRecord(value.subagents)
-    ? {
-        explorer: normalizeModelPreset(value.subagents.explorer),
-        implementation: normalizeModelPreset(value.subagents.implementation),
-        verifier: normalizeModelPreset(value.subagents.verifier),
-        realtime: normalizeModelPreset(value.subagents.realtime),
-        frontendCraft: normalizeModelPreset(
-          value.subagents['frontend-craft'] ?? value.subagents.frontendCraft,
-        ),
-      }
-    : undefined;
-
-  const rawPacks = isRecord(value.packs) ? value.packs : undefined;
-  const packs = rawPacks
-    ? {
-        core: rawPacks.core,
-        ...Object.fromEntries(
-          optionalPackNames().map((pack) => [
-            optionalPackConfigKey(pack),
-            rawPacks[pack] ?? rawPacks[optionalPackConfigKey(pack)],
-          ]),
-        ),
-      }
-    : undefined;
-
-  const rawLifecycleHooks = isRecord(value['lifecycle-hooks'])
-    ? value['lifecycle-hooks']
-    : isRecord(value.lifecycleHooks)
-      ? value.lifecycleHooks
-      : undefined;
-  const lifecycleHooks = rawLifecycleHooks
-    ? {
-        tokscaleSubmit: rawLifecycleHooks['tokscale-submit'] ?? rawLifecycleHooks.tokscaleSubmit,
-        tokscaleDryRun: rawLifecycleHooks['tokscale-dry-run'] ?? rawLifecycleHooks.tokscaleDryRun,
-        rateLimitResume: rawLifecycleHooks['rate-limit-resume'] ?? rawLifecycleHooks.rateLimitResume,
-    }
-    : undefined;
-
-  const updates = isRecord(value.updates)
-    ? {
-        auto: value.updates.auto,
-      }
-    : undefined;
-
-  return {
-    version: value.version,
-    models,
-    subagents,
-    privacy,
-    issueRelay,
-    packs,
-    lifecycleHooks,
-    updates,
-  };
-}
-
-function normalizeModelPreset(value: unknown): unknown {
-  if (!isRecord(value)) {
-    return value;
-  }
-
-  return {
-    model: value.model,
-    reasoningEffort: value.reasoning_effort ?? value.reasoningEffort,
-  };
+  return validateNormalizedLocalConfig(
+    normalizeLocalConfigInput(value, optionalPackNames(), optionalPackConfigKey),
+    path,
+  );
 }
 
 function optionalPackNames(): string[] {
@@ -817,51 +622,6 @@ function optionalPackConfigKey(pack: string): string {
   return configKey;
 }
 
-function readCorePackManifest(): { optionalPacks: Record<string, { configKey?: string }> } {
-  return JSON.parse(readFileSync(resolve(discoverRepoRoot(), "packs/core/manifest.json"), "utf8")) as {
-    optionalPacks: Record<string, { configKey?: string }>;
-  };
-}
-
-function discoverRepoRoot(): string {
-  for (const startDir of candidateRepoRootStarts()) {
-    let current = startDir;
-
-    while (true) {
-      if (existsSync(resolve(current, "packs/core/manifest.json"))) {
-        return current;
-      }
-
-      const parent = resolve(current, "..");
-      if (parent === current) {
-        break;
-      }
-
-      current = parent;
-    }
-  }
-
-  throw new Error(`unable to locate repo root for Sane pack manifest`);
-}
-
-function candidateRepoRootStarts(): string[] {
-  const starts = new Set<string>();
-
-  if (process.argv[1]) {
-    starts.add(dirname(resolve(process.argv[1])));
-  }
-
-  try {
-    starts.add(dirname(fileURLToPath(import.meta.url)));
-  } catch {
-    if (typeof __dirname === "string") {
-      starts.add(__dirname);
-    }
-  }
-
-  return [...starts];
-}
-
 function isAvailableModel(model: string): model is AvailableModel {
   return (AVAILABLE_MODELS as readonly string[]).includes(model);
 }
@@ -871,12 +631,8 @@ function detectAvailableModels(path: string): DetectedAvailableModel[] {
     return [];
   }
 
-  const raw = readJsonFile(path, `failed to read models cache from ${path}: `);
-  try {
-    return detectAvailableModelsFromJson(JSON.parse(raw) as unknown);
-  } catch (error) {
-    throw new Error(`failed to parse models cache from ${path}: ${messageOf(error)}`);
-  }
+  const raw = readUtf8File(path, `failed to read models cache from ${path}: `);
+  return detectAvailableModelsFromJson(parseJsonConfig(raw, path, 'models cache'));
 }
 
 function detectPlanType(path: string): string | undefined {
@@ -884,12 +640,8 @@ function detectPlanType(path: string): string | undefined {
     return undefined;
   }
 
-  const raw = readJsonFile(path, `failed to read auth file from ${path}: `);
-  try {
-    return detectPlanTypeFromJson(JSON.parse(raw) as unknown);
-  } catch (error) {
-    throw new Error(`failed to parse auth file from ${path}: ${messageOf(error)}`);
-  }
+  const raw = readUtf8File(path, `failed to read auth file from ${path}: `);
+  return detectPlanTypeFromJson(parseJsonConfig(raw, path, 'auth file'));
 }
 
 function validateNormalizedLocalConfig(value: unknown, path: string): LocalConfig {
@@ -1005,80 +757,6 @@ function parseModelPriority(value: unknown): number | undefined {
   return undefined;
 }
 
-function pickModelPreset(
-  availableModels: readonly DetectedAvailableModel[],
-  priority: readonly string[],
-  reasoningPriority: readonly ReasoningEffort[],
-  reasoningPriorityByModel: Readonly<Record<string, readonly ReasoningEffort[]>> = {},
-): ModelPreset | undefined {
-  for (const slug of priority) {
-    const model = availableModels.find((candidate) => candidate.slug === slug);
-    if (!model) {
-      continue;
-    }
-
-    const candidateReasoningPriority = reasoningPriorityByModel[slug] ?? reasoningPriority;
-    const reasoningEffort =
-      candidateReasoningPriority.find((candidate) => model.reasoningEfforts.includes(candidate)) ??
-      model.reasoningEfforts[0];
-    if (!reasoningEffort) {
-      continue;
-    }
-
-    return {
-      model: model.slug,
-      reasoningEffort,
-    };
-  }
-
-  return undefined;
-}
-
-function pickReasoningForModel(
-  availableModels: readonly DetectedAvailableModel[],
-  model: string,
-  reasoningPriority: readonly ReasoningEffort[],
-  fallback: ReasoningEffort,
-): ReasoningEffort {
-  const detected = availableModels.find((candidate) => candidate.slug === model);
-  if (!detected) {
-    return fallback;
-  }
-
-  const reasoningEffort =
-    reasoningPriority.find((candidate) => detected.reasoningEfforts.includes(candidate)) ??
-    detected.reasoningEfforts[0];
-
-  return reasoningEffort ?? fallback;
-}
-
-function selectAvailableModelPreset(
-  availableModels: readonly DetectedAvailableModel[],
-  strongest: boolean,
-  reasoningPriority: readonly ReasoningEffort[],
-): ModelPreset | undefined {
-  const model = strongest ? availableModels[0] : availableModels[availableModels.length - 1];
-  if (!model) {
-    return undefined;
-  }
-
-  const reasoningEffort =
-    reasoningPriority.find((candidate) => model.reasoningEfforts.includes(candidate)) ??
-    model.reasoningEfforts[0];
-  if (!reasoningEffort) {
-    return undefined;
-  }
-
-  return {
-    model: model.slug,
-    reasoningEffort,
-  };
-}
-
-function firstString(...values: unknown[]): string | undefined {
-  return values.find((value): value is string => typeof value === 'string');
-}
-
 function normalizeReasoningEffort(value: unknown): ReasoningEffort | undefined {
   if (typeof value !== 'string') {
     return undefined;
@@ -1088,29 +766,10 @@ function normalizeReasoningEffort(value: unknown): ReasoningEffort | undefined {
   return REASONING_EFFORTS.find((candidate) => candidate === normalized);
 }
 
-function readJsonFile(path: string, prefix: string): string {
-  try {
-    return readFileSync(path, 'utf8');
-  } catch (error) {
-    throw new Error(`${prefix}${messageOf(error)}`);
-  }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
 function quote(value: string): string {
   return JSON.stringify(value);
 }
 
 function tomlBareOrQuotedKey(value: string): string {
   return /^[A-Za-z0-9_]+$/.test(value) ? value : quote(value);
-}
-
-function messageOf(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return String(error);
 }

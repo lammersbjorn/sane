@@ -27,26 +27,39 @@ import {
 import { detectPlatform, type CodexPaths, type HostPlatform, type ProjectPaths } from "@sane/platform";
 import { writeAtomicTextFile } from "@sane/state";
 
+import { asPlainRecord, type PlainRecord } from "./config-object.js";
+import {
+  ensureArrayProperty,
+  ensureObjectProperty,
+  readHooksJsonOrDefault,
+  validateHooksShapeForManagedUpdate,
+  writeHooksJson
+} from "./hooks-json.js";
+import {
+  containsExpectedHookCommand,
+  containsManagedLifecycleHook,
+  containsManagedRtkCommandHook,
+  containsManagedSessionEndHook,
+  containsManagedSessionStartHook,
+  containsManagedTokscaleHook,
+  removeMatchingHookEntries,
+  upsertHookEntry
+} from "./hooks-matchers.js";
 import {
   MANAGED_SESSION_START_STATUS_MESSAGE,
   MANAGED_SESSION_END_STATUS_MESSAGE,
   buildManagedSessionEndHookCommand,
   buildManagedSessionStartHookCommand,
-  buildSaneContinuityContext,
-  isManagedLifecycleHookCommand,
-  isManagedSessionEndHookCommand,
-  isManagedSessionStartHookCommand,
+  buildSaneContinuityContext
 } from "./session-start-hook.js";
 import {
   MANAGED_RTK_COMMAND_STATUS_MESSAGE,
-  buildManagedRtkCommandHookCommand,
-  isManagedRtkCommandHookCommand
+  buildManagedRtkCommandHookCommand
 } from "./rtk-command-hook.js";
 import { recommendedLocalConfigFromEnvironment } from "./local-config.js";
 import {
   MANAGED_TOKSCALE_STATUS_MESSAGE,
-  buildManagedTokscaleSubmitHookCommand,
-  isManagedTokscaleSubmitHookCommand
+  buildManagedTokscaleSubmitHookCommand
 } from "./tokscale-submit-hook.js";
 
 const CUSTOM_AGENT_OWNERSHIP_MARKER = "# managed-by: sane custom-agent\n";
@@ -231,9 +244,9 @@ export function exportHooks(
     additionalContext: managedSessionStartContext(packs, roles)
   });
   mkdirSync(join(codexPaths.homeDir, ".codex"), { recursive: true });
-  let root: JsonObject;
+  let root: PlainRecord;
   try {
-    root = readHooksJson(codexPaths.hooksJson);
+    root = readHooksJsonOrDefault(codexPaths.hooksJson, fileExists(codexPaths.hooksJson));
   } catch {
     return new OperationResult({
       kind: OperationKind.ExportHooks,
@@ -372,9 +385,9 @@ export function uninstallHooks(codexPaths: CodexPaths): OperationResult {
     });
   }
 
-  let root: JsonObject;
+  let root: PlainRecord;
   try {
-    root = readHooksJson(codexPaths.hooksJson);
+    root = readHooksJsonOrDefault(codexPaths.hooksJson, fileExists(codexPaths.hooksJson));
   } catch {
     return new OperationResult({
       kind: OperationKind.UninstallHooks,
@@ -392,7 +405,7 @@ export function uninstallHooks(codexPaths: CodexPaths): OperationResult {
       ]
     });
   }
-  const hooks = asObject(root.hooks);
+  const hooks = asPlainRecord(root.hooks);
   const sessionStart = Array.isArray(hooks?.SessionStart) ? hooks.SessionStart : null;
   const preToolUse = Array.isArray(hooks?.PreToolUse) ? hooks.PreToolUse : null;
   const sessionEnd = Array.isArray(hooks?.SessionEnd) ? hooks.SessionEnd : null;
@@ -499,9 +512,9 @@ export function inspectHooksInventory(
     };
   }
 
-  let root: Record<string, unknown>;
+  let root: PlainRecord;
   try {
-    root = readHooksJson(codexPaths.hooksJson);
+    root = readHooksJsonOrDefault(codexPaths.hooksJson, fileExists(codexPaths.hooksJson));
   } catch {
     return {
       name: "hooks",
@@ -522,7 +535,7 @@ export function inspectHooksInventory(
     };
   }
 
-  const hooks = asObject(root.hooks);
+  const hooks = asPlainRecord(root.hooks);
   const sessionStart = Array.isArray(hooks?.SessionStart) ? hooks.SessionStart : [];
   const preToolUse = Array.isArray(hooks?.PreToolUse) ? hooks.PreToolUse : [];
   const stop = Array.isArray(hooks?.Stop) ? hooks.Stop : [];
@@ -607,121 +620,6 @@ function loadOrDefaultConfig(
   );
 }
 
-type JsonObject = Record<string, unknown>;
-
-function readHooksJson(path: string): JsonObject {
-  if (!fileExists(path)) {
-    return {};
-  }
-
-  return JSON.parse(readFileSync(path, "utf8")) as JsonObject;
-}
-
-function writeHooksJson(path: string, value: unknown): void {
-  writeAtomicTextFile(path, `${JSON.stringify(value, null, 2)}\n`);
-}
-
-function ensureObjectProperty(root: JsonObject, key: string): JsonObject {
-  if (!asObject(root[key])) {
-    root[key] = {};
-  }
-  return root[key] as JsonObject;
-}
-
-function ensureArrayProperty(root: JsonObject, key: string): unknown[] {
-  if (!Array.isArray(root[key])) {
-    root[key] = [];
-  }
-  return root[key] as unknown[];
-}
-
-function containsManagedSessionStartHook(entry: unknown): boolean {
-  return hookEntries(entry).some((hook: unknown) => {
-    const command = asObject(hook)?.command;
-    return typeof command === "string" && isManagedSessionStartHookCommand(command);
-  });
-}
-
-function containsManagedSessionEndHook(entry: unknown): boolean {
-  return hookEntries(entry).some((hook: unknown) => {
-    const command = asObject(hook)?.command;
-    return typeof command === "string" && isManagedSessionEndHookCommand(command);
-  });
-}
-
-function containsManagedTokscaleHook(entry: unknown): boolean {
-  return hookEntries(entry).some((hook: unknown) => {
-    const command = asObject(hook)?.command;
-    return typeof command === "string"
-      && isManagedTokscaleSubmitHookCommand(command)
-      && (command.includes("--event stop") || command.includes("--event session-end"));
-  });
-}
-
-function containsManagedRtkCommandHook(entry: unknown): boolean {
-  return hookEntries(entry).some((hook: unknown) => {
-    const command = asObject(hook)?.command;
-    return typeof command === "string" && isManagedRtkCommandHookCommand(command);
-  });
-}
-
-function containsManagedLifecycleHook(entry: unknown): boolean {
-  return hookEntries(entry).some((hook: unknown) => {
-    const command = asObject(hook)?.command;
-    return typeof command === "string"
-      && (
-        isManagedLifecycleHookCommand(command)
-        || isManagedTokscaleSubmitHookCommand(command)
-        || isManagedRtkCommandHookCommand(command)
-      );
-  });
-}
-
-function pushHookEntry(target: unknown[], entry: JsonObject): void {
-  const expectedCommands = hookCommands(entry);
-  const alreadyPresent = target.some((candidate) => {
-    const candidateCommands = hookCommands(candidate);
-    return expectedCommands.every((command) => candidateCommands.includes(command));
-  });
-  if (!alreadyPresent) {
-    target.push(entry);
-  }
-}
-
-function upsertHookEntry(
-  target: unknown[],
-  isManagedEntry: (entry: unknown) => boolean,
-  entry: JsonObject
-): void {
-  const existingIndex = target.findIndex(isManagedEntry);
-  if (existingIndex >= 0) {
-    target[existingIndex] = entry;
-    return;
-  }
-  target.push(entry);
-}
-
-function removeMatchingHookEntries(target: unknown[], shouldRemove: (entry: unknown) => boolean): void {
-  const retained = target.filter((entry) => !shouldRemove(entry));
-  target.splice(0, target.length, ...retained);
-}
-
-function containsExpectedHookCommand(entry: unknown, expectedCommand: string): boolean {
-  return hookCommands(entry).includes(expectedCommand);
-}
-
-function hookCommands(entry: unknown): string[] {
-  return hookEntries(entry).flatMap((hook: unknown) => {
-    const command = asObject(hook)?.command;
-    return typeof command === "string" ? [command] : [];
-  });
-}
-
-function hookEntries(entry: unknown): unknown[] {
-  const hooks = asObject(entry)?.hooks;
-  return Array.isArray(hooks) ? hooks : [];
-}
-
 function fileExists(path: string): boolean {
   return existsSync(path);
 }
@@ -735,34 +633,4 @@ function isManagedCustomAgentBody(current: string, expected: string): boolean {
     current === expected ||
     current === `${CUSTOM_AGENT_OWNERSHIP_MARKER}${expected}`
   );
-}
-
-
-function asObject(value: unknown): JsonObject | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as JsonObject)
-    : null;
-}
-
-function validateHooksShapeForManagedUpdate(root: JsonObject): string | null {
-  if (root.hooks === undefined) {
-    return null;
-  }
-  const hooks = asObject(root.hooks);
-  if (!hooks) {
-    return "hooks.json must use object at top-level `hooks` key";
-  }
-  if (hooks.SessionStart !== undefined && !Array.isArray(hooks.SessionStart)) {
-    return "hooks.json must use array at `hooks.SessionStart`";
-  }
-  if (hooks.PreToolUse !== undefined && !Array.isArray(hooks.PreToolUse)) {
-    return "hooks.json must use array at `hooks.PreToolUse`";
-  }
-  if (hooks.SessionEnd !== undefined && !Array.isArray(hooks.SessionEnd)) {
-    return "hooks.json must use array at `hooks.SessionEnd`";
-  }
-  if (hooks.Stop !== undefined && !Array.isArray(hooks.Stop)) {
-    return "hooks.json must use array at `hooks.Stop`";
-  }
-  return null;
 }

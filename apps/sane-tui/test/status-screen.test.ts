@@ -34,7 +34,7 @@ function expectReadOnlyStatusOverview(overview: string): void {
 }
 
 function expectOptionalPackProvenanceOverview(overview: string): void {
-  expect(overview).toContain("optional pack provenance:");
+  expect(overview).toContain("optional guidance provenance:");
   expect(overview).toContain("caveman configured");
   expect(overview).toContain("rtk disabled");
   expect(overview).toContain("frontend-craft disabled");
@@ -377,7 +377,7 @@ describe("status screen model", () => {
       ...formatSharedInspectOverviewLines(screen)
     ]);
     expect(screen.overviewLines.join("\n")).toContain("status counts:");
-    expect(screen.overviewLines.join("\n")).toContain("primary surfaces:");
+    expect(screen.overviewLines.join("\n")).toContain("main files:");
     expect(screen.overviewLines.join("\n")).toContain("setup check:");
     expect(screen.overviewLines.join("\n")).toContain("runtime summary (read-only local visibility):");
     expect(screen.overviewLines.join("\n")).toContain("runtime history (read-only local visibility):");
@@ -392,7 +392,7 @@ describe("status screen model", () => {
     expect(screen.overviewLines.join("\n")).toContain(
       "current policy preview: policy preview: rendered adaptive obligation scenarios;"
     );
-    expect(screen.overviewLines.join("\n")).toContain("statusline profile: missing (3 recommended changes)");
+    expect(screen.overviewLines.join("\n")).toContain("status line settings: missing (3 recommended changes)");
     expectReadOnlyStatusOverview(screen.overviewLines.join("\n"));
     expectOptionalPackProvenanceOverview(screen.overviewLines.join("\n"));
   });

@@ -37,7 +37,7 @@ function expectReadOnlyRunnerDisabledOverview(overview: string): void {
 }
 
 function expectOptionalPackProvenanceOverview(overview: string): void {
-  expect(overview).toContain("optional pack provenance:");
+  expect(overview).toContain("optional guidance provenance:");
   expect(overview).toContain("caveman configured");
   expect(overview).toContain("rtk disabled");
   expect(overview).toContain("frontend-craft disabled");
@@ -152,9 +152,9 @@ describe("inspect snapshot", () => {
     const overview = formatInspectOverviewLines(snapshot).join("\n");
 
     expect(overview).toContain("status counts:");
-    expect(overview).toContain("primary surfaces:");
+    expect(overview).toContain("main files:");
     expectReadOnlyRunnerDisabledOverview(overview);
-    expect(overview).toContain("statusline profile: missing");
+    expect(overview).toContain("status line settings: missing");
     expect(overview).toContain("conflict warnings: none");
     expectOptionalPackProvenanceOverview(overview);
   });
@@ -185,7 +185,7 @@ describe("inspect snapshot", () => {
     ]);
     expect(overview).toContain("conflict warnings: 1");
     expect(overview).toContain(
-      "mcp_servers.experimental_sidecar: unmanaged Codex MCP server 'experimental_sidecar' is outside Sane's known profiles; warning-only, no auto-install or auto-remove"
+      "mcp_servers.experimental_sidecar: unmanaged Codex MCP server 'experimental_sidecar' is outside Sane's known tool settings; warning-only, no auto-install or auto-remove"
     );
   });
 
@@ -319,7 +319,7 @@ describe("inspect snapshot", () => {
     expect(snapshot.doctorHeadline).toBe("runtime: ok");
     const overview = formatInspectOverviewLines(snapshot).join("\n");
 
-    expect(overview).toContain("export drift view: config, hooks");
+    expect(overview).toContain("out-of-sync files: config, hooks");
     expect(overview).toContain("config: invalid");
     expect(overview).toContain("hooks: invalid (repair ~/.codex/hooks.json or remove conflicting JSON)");
   });

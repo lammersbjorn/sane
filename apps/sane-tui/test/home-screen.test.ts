@@ -38,7 +38,7 @@ describe("get started screen model", () => {
 
     expect(screen.summary).toBe("Home");
     expect(screen.recommendedActionId).toBe("install_runtime");
-    expect(screen.recommendedNextStep).toBe("Get this repo ready for Sane first.");
+    expect(screen.recommendedNextStep).toBe("Set up the local Sane files first.");
     expect(screen.codexProfileAudit.status).toBe("missing");
     expect(screen.codexProfileApply.status).toBe("ready");
     expect(screen.statusLine).toBe(
@@ -130,7 +130,7 @@ describe("get started screen model", () => {
     const screen = loadHomeScreen(paths, codexPaths);
 
     expect(screen.recommendedActionId).toBe("doctor");
-    expect(screen.recommendedNextStep).toBe("Setup looks complete. Start on Check, then tune behavior or add-ons only when needed.");
+    expect(screen.recommendedNextStep).toBe("Setup looks complete. Start on Check, then change settings or add-ons only when needed.");
   });
 
   it("builds from a preloaded status bundle when requested", () => {

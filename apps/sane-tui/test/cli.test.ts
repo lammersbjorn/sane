@@ -146,7 +146,7 @@ describe("ts cli command execution", () => {
     const result = runCliCommandFromDiscovery(["install"], nested, { HOME: homeDir });
 
     expectSuccessfulSectionOutput(result, "home");
-    expect(result.output).toContain("Get this repo ready");
+    expect(result.output).toContain("Set up the local Sane files");
     expect(existsSync(join(projectRoot, ".sane"))).toBe(false);
   });
 
@@ -240,7 +240,7 @@ function sectionLabel(section: string): string {
     case "home":
       return "Setup";
     case "settings":
-      return "Tune";
+      return "Configure";
     case "add_to_codex":
       return "Install";
     case "status":

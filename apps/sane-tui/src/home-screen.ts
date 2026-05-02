@@ -92,20 +92,20 @@ export function loadHomeScreenFromStatusBundle(
 function recommendedNextStep(reason: OnboardingReasonId): string {
   switch (reason) {
     case "install_runtime":
-      return "Get this repo ready for Sane first.";
+      return "Set up the local Sane files first.";
     case "show_codex_config":
       return "Review Codex changes before you apply them.";
     case "export_all":
       return "Add Sane to Codex when the setup path looks right.";
     default:
-      return "Setup looks complete. Start on Check, then tune behavior or add-ons only when needed.";
+      return "Setup looks complete. Start on Check, then change settings or add-ons only when needed.";
   }
 }
 
 function onboardingStepImpact(stepId: HomeStep["id"]): string {
   switch (stepId) {
     case "install_runtime":
-      return "Create or repair the repo setup Sane needs.";
+      return "Create or repair the local Sane files this repo needs.";
     case "open_config_editor":
       return "Choose model, guidance, and privacy defaults.";
     case "preview_codex_profile":
@@ -117,7 +117,7 @@ function onboardingStepImpact(stepId: HomeStep["id"]): string {
     case "export_all":
       return "Add the full personal Sane setup to Codex.";
     case "doctor":
-      return "Run deeper checks when setup feels stale or broken.";
+      return "Run a full setup check when files seem stale or broken.";
   }
 }
 

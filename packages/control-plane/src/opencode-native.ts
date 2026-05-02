@@ -15,27 +15,20 @@ import {
   type InventoryItem
 } from "@sane/core";
 import {
-  SANE_AGENT_NAME,
   SANE_AGENT_LANES_SKILL_NAME,
   SANE_BOOTSTRAP_RESEARCH_SKILL_NAME,
   SANE_CONTINUE_SKILL_NAME,
-  SANE_EXPLORER_AGENT_NAME,
   SANE_GLOBAL_AGENTS_BEGIN,
   SANE_GLOBAL_AGENTS_END,
-  SANE_IMPLEMENTATION_AGENT_NAME,
   SANE_OUTCOME_CONTINUATION_SKILL_NAME,
-  SANE_REALTIME_AGENT_NAME,
-  SANE_REVIEWER_AGENT_NAME,
   SANE_ROUTER_SKILL_NAME,
   createCoreSkills,
   createDefaultGuidancePacks,
   createOptionalPackSkills,
   createSaneGlobalAgentsOverlay,
-  enabledOptionalPackContinuityLines,
   enabledOptionalPackNames,
   optionalPackConfigKey,
   optionalPackNames,
-  optionalPackPolicyLine,
   optionalPackSkillNames,
   type GuidancePacks,
   type ModelRoutingGuidance
@@ -44,12 +37,24 @@ import { type CodexPaths, type ProjectPaths } from "@sane/platform";
 import { writeAtomicTextFile } from "@sane/state";
 
 import { recommendedLocalConfigFromEnvironment } from "./local-config.js";
-import { SESSION_START_BASE_GUIDANCE } from "./session-start-hook.js";
+import { readOpencodeConfigJson, writeOpencodeConfigJson } from "./opencode-config-json.js";
+import {
+  opencodePluginReferences,
+  removeOpencodePluginReference,
+  upsertOpencodePluginReference
+} from "./opencode-plugin-references.js";
+import {
+  OPENCODE_AGENT_NAMES,
+  OPENCODE_AGENT_OWNERSHIP_MARKER,
+  OPENCODE_SESSION_START_PLUGIN_MARKER,
+  createOpencodeSessionStartPluginBody,
+  expectedOpencodeAgentBodies,
+  isManagedOpencodeAgentBody,
+  markOpencodeAgentBody
+} from "./opencode-rendered-assets.js";
 
 const SKILL_OWNERSHIP_MARKER_FILE = ".sane-owned";
 const SKILL_OWNERSHIP_MARKER_CONTENT = "managed-by: sane\n";
-const OPENCODE_SESSION_START_PLUGIN_MARKER = "managed-by: sane opencode session-start plugin";
-const OPENCODE_AGENT_OWNERSHIP_MARKER = "<!-- managed-by: sane opencode-agent -->";
 // Keep Kimi K2.6 as a researched escalation candidate, not a default, while its OpenCode Go usage cost is high.
 const OPENCODE_GO_MODEL_ROUTING: ModelRoutingGuidance = {
   coordinatorModel: "opencode-go/glm-5.1",
@@ -344,8 +349,7 @@ export function exportOpencodeSessionStartPlugin(paths: ProjectPaths, codexPaths
   const updatedConfig = upsertOpencodePluginReference(config, pluginPath);
   mkdirSync(dirname(pluginPath), { recursive: true });
   writeAtomicTextFile(pluginPath, createOpencodeSessionStartPluginBody(packs));
-  mkdirSync(dirname(configPath), { recursive: true });
-  writeAtomicTextFile(configPath, `${JSON.stringify(updatedConfig, null, 2)}\n`);
+  writeOpencodeConfigJson(configPath, updatedConfig);
 
   return new OperationResult({
     kind: OperationKind.ExportGlobalAgents,
@@ -380,8 +384,7 @@ export function uninstallOpencodeSessionStartPlugin(codexPaths: CodexPaths): Ope
   }
 
   if (configChanged) {
-    mkdirSync(dirname(configPath), { recursive: true });
-    writeAtomicTextFile(configPath, `${JSON.stringify(updatedConfig, null, 2)}\n`);
+    writeOpencodeConfigJson(configPath, updatedConfig);
   }
 
   if (!hadPlugin && !configChanged) {
@@ -459,13 +462,7 @@ export function exportOpencodeAgents(paths: ProjectPaths, codexPaths: CodexPaths
 
 export function uninstallOpencodeAgents(codexPaths: CodexPaths): OperationResult {
   const agentsDir = opencodeAgentsDir(codexPaths);
-  const managedPaths = [
-    SANE_AGENT_NAME,
-    SANE_REVIEWER_AGENT_NAME,
-    SANE_EXPLORER_AGENT_NAME,
-    SANE_IMPLEMENTATION_AGENT_NAME,
-    SANE_REALTIME_AGENT_NAME
-  ].map((name) => join(agentsDir, `${name}.md`));
+  const managedPaths = OPENCODE_AGENT_NAMES.map((name) => join(agentsDir, `${name}.md`));
   const managed = managedPaths.filter((path) => existsSync(path) && isManagedOpencodeAgentFile(path));
   const preserved = managedPaths.filter((path) => existsSync(path) && !isManagedOpencodeAgentFile(path));
   const hadAny = managed.length + preserved.length > 0;
@@ -667,257 +664,6 @@ export function inspectOpencodeSessionStartInventory(paths: ProjectPaths, codexP
   };
 }
 
-function expectedOpencodeAgentBodies(
-  packs: GuidancePacks,
-  roles: ModelRoutingGuidance
-): Array<[string, string]> {
-  const packNotes = opencodePackNotes(packs);
-  return [
-    [
-      SANE_AGENT_NAME,
-      createOpencodeAgentTemplate({
-        description: "Primary Sane subagent for OpenCode execution lane.",
-        model: roles.coordinatorModel,
-        readOnly: false,
-        body: [
-          "Coordinate Sane work:",
-          "- start from repo-local instructions and current evidence",
-          "- route broad work into lanes with disjoint write boundaries",
-          "- keep context tight; load only task-relevant files",
-          "- verify changed behavior before done",
-          ...packNotes
-        ]
-      })
-    ],
-    [
-      SANE_REVIEWER_AGENT_NAME,
-      createOpencodeAgentTemplate({
-        description: "Read-only reviewer for Sane in OpenCode.",
-        model: roles.verifierModel,
-        readOnly: true,
-        body: [
-          "Review Sane work:",
-          "- findings first: bugs, regressions, risk, missing tests",
-          "- cite concrete file anchors and behavior",
-          "- avoid broad summaries and speculative churn",
-          ...packNotes
-        ]
-      })
-    ],
-    [
-      SANE_EXPLORER_AGENT_NAME,
-      createOpencodeAgentTemplate({
-        description: "Read-only explorer for Sane in OpenCode.",
-        model: roles.sidecarModel,
-        readOnly: true,
-        body: [
-          "Explore for Sane:",
-          "- map only relevant files and validators",
-          "- return concrete evidence and open questions",
-          "- skip generated repo overviews",
-          ...packNotes
-        ]
-      })
-    ],
-    [
-      SANE_IMPLEMENTATION_AGENT_NAME,
-      createOpencodeAgentTemplate({
-        description: "Implementation lane for Sane in OpenCode.",
-        model: roles.executionModel,
-        readOnly: false,
-        body: [
-          "Implement Sane work:",
-          "- own assigned write scope and avoid collateral edits",
-          "- read local patterns before patching",
-          "- verify focused behavior after edits",
-          ...packNotes
-        ]
-      })
-    ],
-    [
-      SANE_REALTIME_AGENT_NAME,
-      createOpencodeAgentTemplate({
-        description: "Realtime helper lane for Sane in OpenCode.",
-        model: roles.realtimeModel,
-        readOnly: false,
-        body: [
-          "Run realtime Sane support:",
-          "- handle small independent checks with tight context",
-          "- escalate to coordinator lane when risk or scope grows",
-          ...packNotes
-        ]
-      })
-    ]
-  ];
-}
-
-function createOpencodeAgentTemplate(input: {
-  description: string;
-  model: string;
-  readOnly: boolean;
-  body: string[];
-}): string {
-  const permissionBlock = input.readOnly
-    ? [
-        "permission:",
-        "  edit: deny",
-        "  bash: deny"
-      ]
-    : [];
-  return [
-    "---",
-    `description: ${input.description}`,
-    "mode: subagent",
-    `model: ${input.model}`,
-    "temperature: 0.1",
-    ...permissionBlock,
-    "---",
-    "",
-    ...input.body
-  ].join("\n");
-}
-
-function opencodePackNotes(packs: GuidancePacks): string[] {
-  return enabledOptionalPackNames(packs)
-    .map((pack) => optionalPackPolicyLine(pack))
-    .filter((line): line is string => Boolean(line))
-    .map((line) => `- ${line}`);
-}
-
-function createOpencodeSessionStartPluginBody(packs: GuidancePacks): string {
-  const guidance = [
-    SESSION_START_BASE_GUIDANCE,
-    "OpenCode-specific: for broad review, release audit, migration, multi-file repair, or architecture work, load required skills and call the `task` tool with a `sane-*` subagent before deep inspection.",
-    "OpenCode-specific: when RTK pack is active, use RTK-native commands (`rtk grep`, `rtk read`, `rtk ls`, `rtk git`, `rtk pnpm`, `rtk vitest`) or wrap exact shell with `rtk run`.",
-    ...opencodeSessionStartPackLines(packs)
-  ].join(" ");
-  return [
-    `// ${OPENCODE_SESSION_START_PLUGIN_MARKER}`,
-    "const SANE_SESSION_START_CONTEXT = " + JSON.stringify(guidance) + ";",
-    "const SANE_RTK_ACTIVE = " + JSON.stringify(packs.rtk) + ";",
-    "const broadSessions = new Set();",
-    "const subagentSessions = new Set();",
-    "",
-    "function textFromParts(parts) {",
-    "  return parts",
-    "    .filter((part) => part && part.type === \"text\" && typeof part.text === \"string\")",
-    "    .map((part) => part.text)",
-    "    .join(\"\\n\");",
-    "}",
-    "",
-    "function looksBroad(text) {",
-    "  return /\\b(full|complete|entire|whole|broad|public|release|v1|audit|review|migration|refactor|architecture|codebase)\\b/i.test(text) &&",
-    "    /\\b(codebase|repo|review|release|v1|audit|migration|refactor|architecture)\\b/i.test(text);",
-    "}",
-    "",
-    "function isRtkCommand(command) {",
-    "  const trimmed = command.trim();",
-    "  return trimmed === \"rtk\" || trimmed.startsWith(\"rtk \");",
-    "}",
-    "",
-    "function shellQuote(value) {",
-    "  return \"'\" + value.replaceAll(\"'\", \"'\\\"'\\\"'\") + \"'\";",
-    "}",
-    "",
-    "function blockedRtkCommand(command) {",
-    "  return \"printf %s\\\\n \" + shellQuote(",
-    "    \"Sane RTK guard: raw bash blocked. Use an RTK-native command (`rtk grep`, `rtk read`, `rtk ls`, `rtk git`, `rtk pnpm`, `rtk vitest`) or `rtk run '...` for exact shell. Original: \" + command",
-    "  ) + \" >&2; exit 2\";",
-    "}",
-    "",
-    "export const SaneSessionStartPlugin = async () => ({",
-    "  \"chat.message\": async (input, output) => {",
-    "    if (looksBroad(textFromParts(output.parts))) {",
-    "      broadSessions.add(input.sessionID);",
-    "    }",
-    "  },",
-    '  "experimental.chat.system.transform": async (_input, output) => {',
-    "    output.system.push(SANE_SESSION_START_CONTEXT);",
-    "  },",
-    "  \"tool.definition\": async (input, output) => {",
-    "    if ([\"bash\", \"read\", \"glob\", \"grep\", \"list\"].includes(input.toolID)) {",
-    "      output.description = `${output.description}\\n\\nSane: if RTK is active, prefer RTK-native commands. For broad review/release work, call the task tool with a sane-* subagent before deep solo inspection.`;",
-    "    }",
-    "    if (input.toolID === \"task\") {",
-    "      output.description = `${output.description}\\n\\nSane: broad codebase reviews, release audits, migrations, and multi-file work must start with a sane-* subagent handoff after required skills are loaded.`;",
-    "    }",
-    "  },",
-    "  \"tool.execute.before\": async (input, output) => {",
-    "    if (input.tool === \"task\") {",
-    "      subagentSessions.add(input.sessionID);",
-    "      return;",
-    "    }",
-    "    if (input.tool !== \"bash\" || !SANE_RTK_ACTIVE) {",
-    "      return;",
-    "    }",
-    "    const command = typeof output.args?.command === \"string\" ? output.args.command : \"\";",
-    "    if (command.trim().length > 0 && !isRtkCommand(command)) {",
-    "      output.args = {",
-    "        ...output.args,",
-    "        command: blockedRtkCommand(command),",
-    "        description: \"Sane RTK guard\"",
-    "      };",
-    "    }",
-    "  }",
-    "});",
-    ""
-  ].join("\n");
-}
-
-function opencodeSessionStartPackLines(packs: GuidancePacks): string[] {
-  return enabledOptionalPackContinuityLines(packs);
-}
-
-function readOpencodeConfigJson(path: string):
-  | { ok: true; value: Record<string, unknown> }
-  | { ok: false } {
-  if (!existsSync(path)) {
-    return { ok: true, value: {} };
-  }
-  try {
-    const parsed = JSON.parse(readFileSync(path, "utf8"));
-    return parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
-      ? { ok: true, value: parsed }
-      : { ok: true, value: {} };
-  } catch {
-    return { ok: false };
-  }
-}
-
-function upsertOpencodePluginReference(
-  config: Record<string, unknown>,
-  pluginPath: string
-): Record<string, unknown> {
-  const plugins = opencodePluginEntries(config);
-  if (!opencodePluginReferences(config).includes(pluginPath)) {
-    plugins.push(pluginPath);
-  }
-  return { ...config, plugin: plugins };
-}
-
-function removeOpencodePluginReference(
-  config: Record<string, unknown>,
-  pluginPath: string
-): Record<string, unknown> {
-  const plugins = opencodePluginEntries(config).filter((plugin) => plugin !== pluginPath);
-  return { ...config, plugin: plugins };
-}
-
-function opencodePluginEntries(config: Record<string, unknown>): unknown[] {
-  const plugin = config.plugin;
-  if (Array.isArray(plugin)) {
-    return [...plugin];
-  }
-  if (typeof plugin === "string") {
-    return [plugin];
-  }
-  return [];
-}
-
-function opencodePluginReferences(config: Record<string, unknown>): string[] {
-  return opencodePluginEntries(config).filter((item): item is string => typeof item === "string");
-}
-
 function invalidOpencodeConfigResult(kind: OperationKind, operation: string, configPath: string): OperationResult {
   return new OperationResult({
     kind,
@@ -938,36 +684,6 @@ function invalidOpencodeConfigResult(kind: OperationKind, operation: string, con
 
 function isManagedOpencodeAgentFile(path: string): boolean {
   return readFileSync(path, "utf8").includes(OPENCODE_AGENT_OWNERSHIP_MARKER);
-}
-
-function isManagedOpencodeAgentBody(current: string, expected: string): boolean {
-  return (
-    current === expected ||
-    current === markOpencodeAgentBody(expected) ||
-    isLegacySaneOpencodeAgentBody(current)
-  );
-}
-
-function isLegacySaneOpencodeAgentBody(current: string): boolean {
-  return (
-    current.startsWith("---\n") &&
-    current.includes("mode: subagent") &&
-    (current.includes("Work with Sane philosophy:") ||
-      current.includes("Review with Sane philosophy:") ||
-      current.includes("Explore with Sane philosophy:") ||
-      current.includes("Implement with Sane philosophy:") ||
-      current.includes("Run realtime Sane support:")) &&
-    current.includes("RTK-first shell/search/test route")
-  );
-}
-
-function markOpencodeAgentBody(body: string): string {
-  const closingFrontmatter = body.indexOf("\n---\n", 4);
-  if (body.startsWith("---\n") && closingFrontmatter >= 0) {
-    const insertAt = closingFrontmatter + "\n---\n".length;
-    return `${body.slice(0, insertAt)}${OPENCODE_AGENT_OWNERSHIP_MARKER}\n${body.slice(insertAt)}`;
-  }
-  return `${OPENCODE_AGENT_OWNERSHIP_MARKER}\n${body}`;
 }
 
 function activeGuidance(paths: ProjectPaths, codexPaths: CodexPaths): {

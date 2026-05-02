@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -43,6 +43,8 @@ import {
   createSaneRouterSkill,
   corePackAssetSourceProvenance,
   corePackAssetSourceProvenanceStyle,
+  corePackAssetOwnership,
+  corePackAssetOwnershipStyle,
   optionalPackConfigKey,
   optionalPackNames,
   optionalPackSkillName,
@@ -52,6 +54,7 @@ import {
   type PackAssetProvenance,
   type ModelRoutingGuidance
 } from "../src/index.js";
+import { parseCorePackManifest } from "../src/core-pack-manifest.js";
 
 const TEST_DIR = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(TEST_DIR, "../../..");
@@ -122,6 +125,17 @@ interface CorePackManifest {
       }
     >;
   };
+  assetOwnership?: {
+    style: string;
+    items: Record<
+      string,
+      {
+        owner: "sane";
+        mode: "source-managed" | "generated-managed";
+        writeMode?: "overwrite";
+      }
+    >;
+  };
 }
 
 function roleGuidance(): ModelRoutingGuidance {
@@ -147,6 +161,14 @@ function readCoreAsset(path: string): string {
   return readFileSync(resolve(CORE_PACK_ROOT, path), "utf8");
 }
 
+function readCoreAssetBuffer(path: string): Buffer {
+  return readFileSync(resolve(CORE_PACK_ROOT, path));
+}
+
+function isLikelyHelperScript(path: string): boolean {
+  return /(^|\/)scripts\//.test(path) || /\.(?:sh|bash|zsh|py|js|mjs|cjs|ts)$/u.test(path);
+}
+
 function manifestSkills(entry: CorePackManifest["optionalPacks"][string]) {
   return entry.skills ?? (entry.skillName && entry.skillPath ? [{ name: entry.skillName, path: entry.skillPath }] : []);
 }
@@ -168,6 +190,27 @@ function renderTemplate(template: string, replacements: Record<string, string>):
   return Object.entries(replacements).reduce(
     (body, [key, value]) => body.replaceAll(`{{${key}}}`, value),
     template
+  );
+}
+
+function expectNonShallowGeneratedAsset(path: string, body: string): void {
+  const trimmed = body.trim();
+  expect(trimmed.length, `${path} should not be placeholder-only`).toBeGreaterThan(120);
+  expect(trimmed, `${path} should not leave template tokens unresolved`).not.toMatch(/\{\{[^}]+\}\}/);
+  expect(trimmed, `${path} should include operational contract prose`).toMatch(
+    /instruction hierarchy|managed block|Sane philosophy|Load skills|repo-local evidence/
+  );
+}
+
+function expectOperationalSkillBody(path: string, body: string): void {
+  const trimmed = body.trim();
+  expect(trimmed.length, `${path} should not be shallow`).toBeGreaterThan(220);
+  expect(trimmed, `${path} should include frontmatter`).toMatch(/^---\n[\s\S]+?\n---\n/m);
+  expect(trimmed, `${path} should include operational sections`).toMatch(
+    /^## (Goal|Use When|How To Run|Inputs|Rules|Workflow|Verification|Safety|Boundaries)/m
+  );
+  expect(trimmed, `${path} should include concrete execution language`).toMatch(
+    /\b(must|should|do not|prefer|use)\b/i
   );
 }
 
@@ -596,6 +639,86 @@ describe("framework asset parity", () => {
     expect(corePackAssetSourceProvenance("missing/file")).toBeUndefined();
   });
 
+  it("exposes ownership seam for core managed assets", () => {
+    const manifest = readCoreManifest();
+    const requiredAssetPaths = [
+      manifest.assets.routerSkill,
+      manifest.assets.bootstrapResearchSkill,
+      manifest.assets.agentLanesSkill,
+      manifest.assets.outcomeContinuationSkill,
+      manifest.assets.continueSkill,
+      manifest.assets.globalOverlay,
+      manifest.assets.repoOverlay,
+      manifest.assets.agents.primary,
+      manifest.assets.agents.reviewer,
+      manifest.assets.agents.explorer,
+      manifest.assets.agents.implementation,
+      manifest.assets.agents.realtime,
+      ...Object.values(manifest.optionalPacks).flatMap((entry) =>
+        manifestSkills(entry).flatMap((skill) => [
+          skill.path,
+          ...((skill.resources ?? []).map((resource) => resource.source))
+        ])
+      )
+    ];
+    const requiredAssetPathSet = new Set(requiredAssetPaths);
+
+    expect(manifest.assetOwnership?.style).toBe("sane-managed-asset-ownership");
+    expect(corePackAssetOwnershipStyle()).toBe("sane-managed-asset-ownership");
+    expect(Object.keys(manifest.assetOwnership?.items ?? {}).sort()).toEqual(
+      [...requiredAssetPathSet].sort()
+    );
+
+    for (const path of requiredAssetPathSet) {
+      const ownership = corePackAssetOwnership(path);
+      expect(ownership).toEqual(manifest.assetOwnership?.items[path]);
+      expect(ownership?.owner).toBe("sane");
+      if (path.endsWith(".tmpl")) {
+        expect(ownership?.mode).toBe("generated-managed");
+        expect(ownership?.writeMode).toBe("overwrite");
+      } else {
+        expect(ownership?.mode).toBe("source-managed");
+        expect(ownership?.writeMode).toBeUndefined();
+      }
+    }
+
+    expect(corePackAssetOwnership("missing/file")).toBeUndefined();
+  });
+
+  it("rejects malformed ownership metadata", () => {
+    const manifest = readCoreManifest();
+    const ownedPath = manifest.assets.routerSkill;
+
+    const wrongOwner = structuredClone(manifest);
+    wrongOwner.assetOwnership!.items[ownedPath] = {
+      owner: "not-sane" as "sane",
+      mode: "generated-managed",
+      writeMode: "overwrite"
+    };
+    expect(() => parseCorePackManifest(JSON.stringify(wrongOwner))).toThrow(
+      `core pack asset ownership ${ownedPath} owner must be sane`
+    );
+
+    const missingGeneratedWriteMode = structuredClone(manifest);
+    missingGeneratedWriteMode.assetOwnership!.items[ownedPath] = {
+      owner: "sane",
+      mode: "generated-managed"
+    };
+    expect(() => parseCorePackManifest(JSON.stringify(missingGeneratedWriteMode))).toThrow(
+      `core pack asset ownership ${ownedPath} generated-managed writeMode must be overwrite`
+    );
+
+    const sourceWithWriteMode = structuredClone(manifest);
+    sourceWithWriteMode.assetOwnership!.items[manifest.assets.bootstrapResearchSkill] = {
+      owner: "sane",
+      mode: "source-managed",
+      writeMode: "overwrite"
+    };
+    expect(() => parseCorePackManifest(JSON.stringify(sourceWithWriteMode))).toThrow(
+      `core pack asset ownership ${manifest.assets.bootstrapResearchSkill} source-managed must not define writeMode`
+    );
+  });
+
   it("keeps every manifest-exported skill path current", () => {
     const manifest = readCoreManifest();
 
@@ -605,6 +728,48 @@ describe("framework asset parity", () => {
         expect(body, `${packName}:${skill.path}`).toMatch(/^---\n/);
         expect(frontmatterField(body, "name"), `${packName}:${skill.path}`).toBe(skill.name);
         expect(frontmatterField(body, "description"), `${packName}:${skill.path}`).toBeTruthy();
+      }
+    }
+  });
+
+  it("preserves optional skill support files exactly as manifest declares", () => {
+    const manifest = readCoreManifest();
+
+    for (const [packName, entry] of Object.entries(manifest.optionalPacks)) {
+      const generatedSkills = createOptionalPackSkills(packName);
+      const manifestDeclaredSkills = manifestSkills(entry);
+      expect(generatedSkills.map((skill) => skill.name)).toEqual(
+        manifestDeclaredSkills.map((skill) => skill.name)
+      );
+
+      for (const skill of manifestDeclaredSkills) {
+        const generated = generatedSkills.find((candidate) => candidate.name === skill.name);
+        expect(generated, `${packName}:${skill.name} should be exported`).toBeTruthy();
+        const expectedResources = (skill.resources ?? []).map((resource) => ({
+          path: resource.target,
+          content: readCoreAsset(resource.source)
+        }));
+        expect(generated?.resources, `${packName}:${skill.name} resources should preserve mapping`).toEqual(
+          expectedResources
+        );
+      }
+    }
+  });
+
+  it("keeps executable helper-script resources operational when present", () => {
+    const manifest = readCoreManifest();
+    const resources = Object.values(manifest.optionalPacks).flatMap((entry) =>
+      manifestSkills(entry).flatMap((skill) => skill.resources ?? [])
+    );
+
+    for (const resource of resources.filter((item) => isLikelyHelperScript(item.source))) {
+      const sourcePath = resolve(CORE_PACK_ROOT, resource.source);
+      const mode = statSync(sourcePath).mode;
+      const ownerExecutable = (mode & 0o100) !== 0;
+      const body = readCoreAsset(resource.source);
+      expect(body.length, `${resource.source} should not be empty`).toBeGreaterThan(0);
+      if (ownerExecutable) {
+        expect(body, `${resource.source} should include shebang when executable`).toMatch(/^#!/);
       }
     }
   });
@@ -668,6 +833,79 @@ describe("framework asset parity", () => {
     expect(explorer).not.toContain("{{");
     expect(implementation).not.toContain("{{");
     expect(realtime).not.toContain("{{");
+  });
+
+  it("custom agent templates expose direct execution contracts", () => {
+    const roles = roleGuidance();
+    const agent = createSaneAgentTemplate(roles);
+    const reviewer = createSaneReviewerAgentTemplate(roles);
+    const explorer = createSaneExplorerAgentTemplate(roles);
+    const implementation = createSaneImplementationAgentTemplate(roles);
+    const realtime = createSaneRealtimeAgentTemplate(roles);
+
+    expect(agent).toContain('sandbox_mode = "workspace-write"');
+    expect(agent).toContain("use subagents for broad work");
+    expect(agent).toContain("never revert other work");
+    expect(agent).toContain("treat active hooks and guardrails as binding");
+    expect(agent).toContain("verify meaningful changes before claiming success");
+    expect(agent).toContain("coordinator owns final judgment");
+
+    expect(reviewer).toContain('sandbox_mode = "read-only"');
+    expect(reviewer).toContain("findings first");
+    expect(reviewer).toContain("treat active hooks and guardrails as binding");
+    expect(reviewer).toContain("do not propose speculative churn");
+    expect(reviewer).toContain("call out missing validation");
+
+    expect(explorer).toContain('sandbox_mode = "read-only"');
+    expect(explorer).toContain("treat active hooks and guardrails as binding");
+    expect(explorer).toContain("return exact file anchors");
+    expect(explorer).toContain("do not edit files");
+
+    expect(implementation).toContain('sandbox_mode = "workspace-write"');
+    expect(implementation).toContain("own only the assigned files or responsibility");
+    expect(implementation).toContain("inside the write boundary");
+    expect(implementation).toContain("treat active hooks and guardrails as binding");
+    expect(implementation).toContain("return changed paths, tests run, and any blockers");
+
+    expect(realtime).toContain('sandbox_mode = "workspace-write"');
+    expect(realtime).toContain("handle small, independent tasks quickly");
+    expect(realtime).toContain("treat active hooks and guardrails as binding");
+    expect(realtime).toContain("do not touch files outside the assigned scope");
+    expect(realtime).toContain("return changed paths or exact findings");
+  });
+
+  it("rejects shallow generated asset bodies in contract checks", () => {
+    expect(() => expectNonShallowGeneratedAsset("placeholder", "---\nname: placeholder\n---\n")).toThrow();
+    expect(() => expectNonShallowGeneratedAsset("unresolved", "x".repeat(140) + "{{MODEL}}")).toThrow();
+  });
+
+  it("generated-managed core assets are operational, not shallow descriptors", () => {
+    const manifest = readCoreManifest();
+
+    for (const [path, ownership] of Object.entries(manifest.assetOwnership?.items ?? {})) {
+      if (ownership.mode !== "generated-managed") {
+        continue;
+      }
+
+      expectNonShallowGeneratedAsset(path, readCoreAsset(path).replace(/\{\{[^}]+\}\}/g, "filled"));
+    }
+  });
+
+  it("source-managed skill assets are operational, not shallow descriptors", () => {
+    const manifest = readCoreManifest();
+
+    for (const [path, ownership] of Object.entries(manifest.assetOwnership?.items ?? {})) {
+      if (ownership.mode !== "source-managed" || !path.includes("skills/")) {
+        continue;
+      }
+
+      const body = readCoreAsset(path);
+      if (/(\.png|\.jpg|\.jpeg|\.webp|\.gif|\.ico|\.svg)$/u.test(path)) {
+        expect(readCoreAssetBuffer(path).byteLength, `${path} binary asset should not be empty`).toBeGreaterThan(0);
+        continue;
+      }
+      expectOperationalSkillBody(path, body);
+    }
   });
 
   it("custom agent templates enforce enabled caveman pack rules", () => {

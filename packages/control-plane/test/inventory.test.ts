@@ -338,13 +338,13 @@ describe("full inventory and doctor", () => {
         target: "mcp_servers.experimental_sidecar",
         path: codexPaths.configToml,
         message:
-          "unmanaged Codex MCP server 'experimental_sidecar' is outside Sane's known profiles; warning-only, no auto-install or auto-remove"
+          "unmanaged Codex MCP server 'experimental_sidecar' is outside Sane's known tool settings; warning-only, no auto-install or auto-remove"
       },
       {
         kind: "unmanaged_plugin",
         target: "plugins.local_lab",
         path: codexPaths.configToml,
-        message: "enabled Codex plugin 'local_lab' is outside Sane's managed profiles; warning-only, no auto-install or auto-remove"
+        message: "enabled Codex plugin 'local_lab' is outside Sane's managed settings; warning-only, no auto-install or auto-remove"
       }
     ]);
   });
@@ -373,7 +373,7 @@ describe("full inventory and doctor", () => {
         kind: "managed_mcp_server_drift",
         target: "mcp_servers.context7",
         path: codexPaths.configToml,
-        message: "managed Codex MCP server 'context7' differs from Sane's profile; warning-only until you explicitly apply a profile"
+        message: "managed Codex MCP server 'context7' differs from Sane's recommended settings; warning-only until you explicitly apply settings"
       }
     ]);
   });
@@ -484,7 +484,7 @@ describe("full inventory and doctor", () => {
         target: "tui.notification_condition",
         path: codexPaths.configToml,
         message:
-          "Codex TUI notifications 'mentions' differ from Sane's statusline profile 'always'"
+      "Codex TUI notifications 'mentions' differ from Sane's status line setting 'always'"
       }
     ]);
   });

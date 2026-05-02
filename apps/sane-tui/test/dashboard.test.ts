@@ -38,7 +38,7 @@ describe("dashboard view", () => {
 
     expect(view.title).toBe("Sane");
     expect(view.projectLabel).toBe(projectRoot.split("/").at(-1));
-    expect(view.recommendedNextStep).toBe("Get this repo ready for Sane first.");
+    expect(view.recommendedNextStep).toBe("Set up the local Sane files first.");
     expect(view.activeSection.docLabel).toBe("Setup");
     expect(view.actions.map((action) => action.id)).toEqual([
       "install_runtime",
@@ -59,7 +59,7 @@ describe("dashboard view", () => {
     });
     expect(view.chips.find((chip) => chip.id === "drift")).toEqual({
       id: "drift",
-      label: "Drift",
+      label: "Out-of-sync files",
       value: "1 issue(s)",
       tone: "warn"
     });
@@ -90,7 +90,7 @@ describe("dashboard view", () => {
 
     expect(view.chips.find((chip) => chip.id === "phase")).toEqual({
       id: "phase",
-      label: "Phase",
+      label: "Current step",
       value: "setup",
       tone: "muted"
     });
@@ -123,7 +123,7 @@ describe("dashboard view", () => {
     vi.spyOn(home, "loadHomeScreen").mockReturnValue({
       summary: "Home",
       recommendedActionId: "install_runtime",
-      recommendedNextStep: "Get this repo ready for Sane first.",
+      recommendedNextStep: "Set up the local Sane files first.",
       attentionItems: [],
       statusLine:
         "repo setup missing | codex setup missing | Sane skills missing | codex hooks missing | sane add-ons missing",
@@ -165,7 +165,7 @@ describe("dashboard view", () => {
     vi.spyOn(home, "loadHomeScreen").mockReturnValue({
       summary: "Home",
       recommendedActionId: "install_runtime",
-      recommendedNextStep: "Get this repo ready for Sane first.",
+      recommendedNextStep: "Set up the local Sane files first.",
       attentionItems: [],
       statusLine:
         "repo setup missing | codex setup missing | Sane skills missing | codex hooks missing | sane add-ons missing",

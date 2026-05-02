@@ -188,13 +188,13 @@ describe("app view", () => {
 
     const view = loadAppView(shell);
 
-    expect(view.recommendedNextStep).toBe("Get this repo ready for Sane first.");
+    expect(view.recommendedNextStep).toBe("Set up the local Sane files first.");
     expect(view.sectionOverviewLines.join("\n")).toContain("Right now");
     expect(view.sectionOverviewLines.join("\n")).toContain("repo setup missing");
     expect(view.sectionOverviewLines.join("\n")).toContain("saved defaults missing");
     expect(view.sectionOverviewLines.join("\n")).toContain("Codex setup missing");
     expect(view.sectionOverviewLines.join("\n")).toContain("Sane skills missing");
-    expect(view.sectionOverviewLines.join("\n")).toContain("Codex tune-up: missing");
+    expect(view.sectionOverviewLines.join("\n")).toContain("Codex settings changes: missing");
   });
 
   it("surfaces typed codex profile readiness in Home guidance", () => {
@@ -219,7 +219,7 @@ describe("app view", () => {
     const view = loadAppView(shell);
 
     expect(view.sectionOverviewLines.join("\n")).toContain("status counts");
-    expect(view.sectionOverviewLines.join("\n")).toContain("primary surfaces");
+    expect(view.sectionOverviewLines.join("\n")).toContain("main files");
     expect(view.sectionOverviewLines.join("\n")).toContain("setup check");
     expect(view.sectionOverviewLines.join("\n")).toContain("runtime summary");
     expect(view.sectionOverviewLines.join("\n")).toContain("runtime history");
@@ -229,9 +229,9 @@ describe("app view", () => {
     expect(view.sectionOverviewLines.join("\n")).toContain("latest policy snapshot");
     expect(view.sectionOverviewLines.join("\n")).toContain("local config view");
     expect(view.sectionOverviewLines.join("\n")).toContain("Codex config view");
-    expect(view.sectionOverviewLines.join("\n")).toContain("integrations audit");
+    expect(view.sectionOverviewLines.join("\n")).toContain("Codex tool settings");
     expect(view.sectionOverviewLines.join("\n")).toContain("install bundle");
-    expect(view.sectionOverviewLines.join("\n")).toContain("export drift view");
+    expect(view.sectionOverviewLines.join("\n")).toContain("out-of-sync files");
   });
 
   it("uses inspect overview selector instead of unpacking inspect status bundle in app-view", async () => {
@@ -369,7 +369,7 @@ describe("app view", () => {
     expect(view.selectedHelpLines.join("\n")).toContain("grep.app: missing -> recommended");
   });
 
-  it("surfaces typed cloudflare profile readiness in Settings guidance", () => {
+  it("surfaces typed Cloudflare settings readiness in Settings guidance", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()));
     selectSection(shell, "settings");
     for (let index = 0; index < 16 && currentAction(shell).id !== "preview_cloudflare_profile"; index += 1) {
@@ -379,8 +379,8 @@ describe("app view", () => {
     const view = loadAppView(shell);
 
     expect(view.selectedAction.id).toBe("preview_cloudflare_profile");
-    expect(view.sectionOverviewLines.join("\n")).toContain("statusline profile: missing");
-    expect(view.sectionOverviewLines.join("\n")).toContain("cloudflare profile: missing");
+    expect(view.sectionOverviewLines.join("\n")).toContain("status line settings: missing");
+    expect(view.sectionOverviewLines.join("\n")).toContain("Cloudflare settings: missing");
     expect(view.sectionOverviewLines.join("\n")).toContain("explore model: gpt-5.4-mini/low");
     expect(view.sectionOverviewLines.join("\n")).toContain("build model: gpt-5.3-codex/medium");
     expect(view.sectionOverviewLines.join("\n")).toContain("review model:");
@@ -390,7 +390,7 @@ describe("app view", () => {
     expect(view.selectedHelpLines.join("\n")).toContain("audit: missing");
     expect(view.selectedHelpLines.join("\n")).toContain("apply readiness: ready (1 keys)");
     expect(view.selectedHelpLines.join("\n")).toContain(
-      "cloudflare-api: missing -> optional provider profile"
+      "cloudflare-api: missing -> optional provider settings"
     );
   });
 
@@ -703,7 +703,7 @@ describe("app view", () => {
     vi.resetModules();
   });
 
-  it("surfaces preference defaults and enabled packs in the preferences overview", () => {
+  it("surfaces preference defaults and enabled guidance options in the preferences overview", () => {
     const shell = createTuiShell(createProjectPaths(makeTempDir()), createCodexPaths(makeTempDir()), "settings");
 
     const view = loadAppView(shell);
@@ -712,7 +712,7 @@ describe("app view", () => {
     expect(view.sectionOverviewLines.join("\n")).toContain("default model:");
     expect(view.sectionOverviewLines.join("\n")).toContain("local telemetry data:");
     expect(view.sectionOverviewLines.join("\n")).toContain("telemetry files:");
-    expect(view.sectionOverviewLines.join("\n")).toContain("enabled packs:");
+    expect(view.sectionOverviewLines.join("\n")).toContain("enabled guidance options:");
   });
 
   it("surfaces capability-aware routing context in the preferences overview", () => {

@@ -37,7 +37,7 @@ describe("sane bin shim", () => {
     });
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain("Sane / Tune /");
+    expect(result.stdout).toContain("Sane / Configure /");
   }, 15_000);
 
   it("runs section shortcuts through the smart preview shim", () => {
@@ -74,6 +74,6 @@ describe("sane bin shim", () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("Sane / Setup /");
-    expect(result.stdout).toContain("Get this repo ready");
+    expect(result.stdout).toContain("Set up the local Sane files");
   }, 15_000);
 });

@@ -111,8 +111,8 @@ export function formatInspectOverviewLines(snapshot: InspectOverviewSnapshot): s
   const hooksLabel = presentManagedInventoryItem(snapshot.statusBundle.primary.hooks).label;
 
   return [
-    `status counts: installed ${counts.installed}, configured ${counts.configured}, disabled ${counts.disabled}, missing ${counts.missing}, invalid ${counts.invalid}, drift ${snapshot.statusBundle.driftItems.length}`,
-    `primary surfaces: runtime ${primary.runtime}, codex ${primary.codexConfig}, user ${primary.userSkills}, hooks ${hooksLabel}, custom-agents ${primary.customAgents}`,
+    `status counts: installed ${counts.installed}, configured ${counts.configured}, disabled ${counts.disabled}, missing ${counts.missing}, invalid ${counts.invalid}, out-of-sync ${snapshot.statusBundle.driftItems.length}`,
+    `main files: local setup ${primary.runtime}, codex ${primary.codexConfig}, user skills ${primary.userSkills}, hooks ${hooksLabel}, named agents ${primary.customAgents}`,
     `install bundle: ${snapshot.statusBundle.primary.installBundle}`,
     `setup check: ${snapshot.doctorHeadline}`,
     `runtime summary (read-only local visibility): ${snapshot.runtimeSummary.summary}`,
@@ -136,12 +136,12 @@ export function formatInspectOverviewLines(snapshot: InspectOverviewSnapshot): s
     formatInspectOptionalPackProvenanceLine(snapshot.statusBundle.optionalPacks),
     `local config view: ${snapshot.localConfig.summary}`,
     `Codex config view: ${snapshot.codexConfig.summary}`,
-    `integrations audit: ${snapshot.integrationsAudit.status} (${snapshot.integrationsAudit.recommendedChangeCount} recommended changes)`,
-    `integrations apply: ${snapshot.integrationsApply.status} (${snapshot.integrationsApply.appliedKeys.length} keys)`,
-    `integrations preview: ${snapshot.integrationsPreview.summary}`,
-    `statusline profile: ${snapshot.statuslineAudit.status} (${snapshot.statuslineAudit.recommendedChangeCount} recommended changes)`,
-    `statusline apply: ${snapshot.statuslineApply.status} (${snapshot.statuslineApply.appliedKeys.length} keys)`,
-    `statusline preview: ${snapshot.statuslinePreview.summary}`,
+    `Codex tool settings: ${snapshot.integrationsAudit.status} (${snapshot.integrationsAudit.recommendedChangeCount} recommended changes)`,
+    `Codex tool apply readiness: ${snapshot.integrationsApply.status} (${snapshot.integrationsApply.appliedKeys.length} keys)`,
+    `Codex tool preview: ${snapshot.integrationsPreview.summary}`,
+    `status line settings: ${snapshot.statuslineAudit.status} (${snapshot.statuslineAudit.recommendedChangeCount} recommended changes)`,
+    `status line apply readiness: ${snapshot.statuslineApply.status} (${snapshot.statuslineApply.appliedKeys.length} keys)`,
+    `status line preview: ${snapshot.statuslinePreview.summary}`,
     "",
     formatInspectConflictSummaryLine(snapshot.statusBundle.conflictWarnings),
     ...formatInspectConflictWarningLines(snapshot.statusBundle.conflictWarnings),
@@ -210,8 +210,8 @@ export function formatInspectDriftSummaryLine(
   driftItems: InspectDriftItemPresentation[]
 ): string {
   return driftItems.length === 0
-    ? "export drift view: no current drift detected"
-    : `export drift view: ${driftItems.map((item) => item.name).join(", ")}`;
+    ? "out-of-sync files: none"
+    : `out-of-sync files: ${driftItems.map((item) => item.name).join(", ")}`;
 }
 
 export function formatInspectDriftItemLines(
@@ -237,5 +237,5 @@ export function formatInspectOptionalPackProvenanceLine(
     return `${pack.name} ${pack.status} (${exportedSkills}; ${origin})`;
   });
 
-  return `optional pack provenance: ${summary.join("; ")}`;
+  return `optional guidance provenance: ${summary.join("; ")}`;
 }

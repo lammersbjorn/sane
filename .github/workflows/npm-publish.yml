@@ -47,7 +47,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Verify release package
-        run: pnpm run release:verify
+        run: pnpm run accept
 
       - name: Validate npm token
         env:

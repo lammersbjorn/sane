@@ -142,6 +142,37 @@ reasoning_effort = "low"
     });
   });
 
+  it('accepts frontendCraft wire key alias for subagent config', () => {
+    const config = parseLocalConfigToml(`
+version = 1
+
+[subagents.explorer]
+model = "gpt-5.4-mini"
+reasoning_effort = "low"
+
+[subagents.implementation]
+model = "gpt-5.3-codex"
+reasoning_effort = "medium"
+
+[subagents.verifier]
+model = "gpt-5.5"
+reasoning_effort = "high"
+
+[subagents.realtime]
+model = "gpt-5.3-codex-spark"
+reasoning_effort = "low"
+
+[subagents.frontendCraft]
+model = "gpt-5.4"
+reasoning_effort = "xhigh"
+`);
+
+    expect(config.subagents.frontendCraft).toEqual({
+      model: 'gpt-5.4',
+      reasoningEffort: 'xhigh',
+    });
+  });
+
   it('round trips portable settings JSON', () => {
     const config = createDefaultLocalConfig();
     const portable = createPortableSettingsFile(config, '2026-04-29T12:00:00.000Z');

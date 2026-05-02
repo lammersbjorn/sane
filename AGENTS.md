@@ -17,7 +17,7 @@ Keep this file small. Repo-specific detail belongs in targeted skills, not in al
 
 ## Verify
 
-- Default release-bound verify: `rtk pnpm run release:verify`.
+- Default release-bound verify: `rtk pnpm run accept`.
 - For narrow non-package changes, use `rtk pnpm test` and `rtk run 'pnpm typecheck'`. Current RTK native typecheck routing can false-exit while reporting no TypeScript errors, so avoid `rtk pnpm typecheck` until that wrapper is repaired.
 
 ## Done Means
@@ -39,8 +39,9 @@ Keep this file small. Repo-specific detail belongs in targeted skills, not in al
 - Never silently downgrade broad work to solo main-session work.
 - Use the repo's own verify commands before claiming success.
 - Coordinator owns final judgment on subagent output.
-- Caveman pack active: load `sane-caveman` for prose rules
+- Caveman pack active: use `sane-caveman` prose rules; read the skill body before normal narrative when available
 - RTK pack active: load `sane-rtk` for shell/search/test/log routing
 - Frontend-craft pack active: load the matching frontend skill for UI, asset, or visual-review work
+- Docs-craft pack active: load `sane-docs-writing` for README, user-docs, changelog, release-note, migration-note, support-doc, product-doc, or docs review/edit work
 
 <!-- sane:repo-agents:end -->

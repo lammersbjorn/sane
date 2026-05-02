@@ -4,6 +4,7 @@ import { type LocalConfig, type TelemetryLevel } from "@sane/config";
 import { type ProjectPaths } from "@sane/platform";
 import { appendJsonlRecord, readJsonlRecordsSlice } from "@sane/state";
 
+import { parseJsonObject, type PlainRecord } from "./config-object.js";
 import { loadOrDefaultLocalConfig } from "./local-config.js";
 
 export type TelemetryCategory =
@@ -109,12 +110,12 @@ function readTelemetrySummary(paths: ProjectPaths): TelemetrySummary | null {
   }
 
   try {
-    const parsed = JSON.parse(readFileSync(paths.telemetrySummaryPath, "utf8")) as unknown;
-    if (!isRecord(parsed) || parsed.version !== 1) {
+    const parsed = parseJsonObject(readFileSync(paths.telemetrySummaryPath, "utf8"));
+    if (!parsed || parsed.version !== 1) {
       return null;
     }
-    const counts = isRecord(parsed.counts) ? numericRecord(parsed.counts) : {};
-    const lastSeen = isRecord(parsed.lastSeen) ? stringRecord(parsed.lastSeen) : {};
+    const counts = numericRecord(parseRecordField(parsed, "counts"));
+    const lastSeen = stringRecord(parseRecordField(parsed, "lastSeen"));
     return { version: 1, counts, lastSeen };
   } catch {
     return null;
@@ -126,8 +127,8 @@ function inspectRecentTelemetryEvents(paths: ProjectPaths): TelemetryEventRecord
 }
 
 function parseTelemetryEventRecord(raw: string): TelemetryEventRecord {
-  const parsed = JSON.parse(raw) as unknown;
-  if (!isRecord(parsed) || parsed.version !== 1) {
+  const parsed = parseJsonObject(raw);
+  if (!parsed || parsed.version !== 1) {
     throw new Error("invalid telemetry event");
   }
 
@@ -158,13 +159,20 @@ function sanitizeTelemetryToken(value: string): string {
   return value.replace(/[^a-zA-Z0-9._:-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80) || "unknown";
 }
 
-function numericRecord(record: Record<string, unknown>): Record<string, number> {
+function parseRecordField(record: PlainRecord, key: string): PlainRecord {
+  const value = record[key];
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? value as PlainRecord
+    : {};
+}
+
+function numericRecord(record: PlainRecord): Record<string, number> {
   return Object.fromEntries(
     Object.entries(record).filter((entry): entry is [string, number] => typeof entry[1] === "number")
   );
 }
 
-function stringRecord(record: Record<string, unknown>): Record<string, string> {
+function stringRecord(record: PlainRecord): Record<string, string> {
   return Object.fromEntries(
     Object.entries(record).filter((entry): entry is [string, string] => typeof entry[1] === "string")
   );
@@ -191,8 +199,4 @@ function isTelemetryResult(value: unknown): value is TelemetryEventInput["result
     "discarded",
     "submitted"
   ].includes(value);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
 }

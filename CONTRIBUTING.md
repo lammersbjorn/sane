@@ -69,6 +69,7 @@ Useful commands:
 | `pnpm run start:settings` | Go straight to settings/configure mode. |
 | `pnpm run start:status` | Show current managed targets, runtime state, and drift. |
 | `pnpm run start:repair` | Go straight to repair/remove mode. |
+| `pnpm run accept` | Run the current product acceptance gate before release work. |
 | `pnpm run release:verify` | Run full verification, build the packaged CLI, and produce the npm tarball for release checks. |
 | `pnpm run release:npm:dry-run` | Validate npm publish metadata and payload without publishing. |
 
@@ -154,7 +155,7 @@ Before opening a PR, make sure you can explain:
 - Never enable unattended publish without secrets and environment approval.
 - Tag releases as `vX.Y.Z`; this triggers GitHub Release packaging.
 - Beta/prerelease tags must be marked prerelease and must not be marked GitHub Latest.
-- Publish `sane-codex` from `apps/sane-tui/dist` only after `release:verify` passes.
+- Publish `sane-codex` from `apps/sane-tui/dist` only after `accept` passes.
 - Publish beta npm releases with the `beta` dist-tag, never `latest`.
 - Configure `HOMEBREW_TAP_TOKEN` with workflow dispatch access to `lammersbjorn/homebrew-sane`; release artifact CI triggers the tap repo's updater, and that repo validates and commits formula changes from GitHub Release `SHA256SUMS.txt`.
 - Use GitHub Release `SHA256SUMS.txt` as source of truth for winget and Scoop updates.

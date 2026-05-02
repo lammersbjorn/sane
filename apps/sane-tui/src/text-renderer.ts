@@ -1,6 +1,8 @@
 import { compactLines } from "@sane/sane-tui/result-panel.js";
 import { type SaneTuiAppView } from "@sane/sane-tui/app-view.js";
 import { compactActionLabel, compactStatusSummary } from "@sane/sane-tui/presentation-normalizer.js";
+import { isReadOnlyAction } from "./tui-action-semantics.js";
+import { readableOverviewLines, windowLinesAroundSelection } from "./tui-lines.js";
 
 export interface TextViewport {
   width?: number;
@@ -230,18 +232,6 @@ function actionPrompt(view: SaneTuiAppView): string {
   return view.selectedAction.repoMutation ? "preview local change." : "preview Codex change.";
 }
 
-function isReadOnlyAction(action: SaneTuiAppView["selectedAction"]): boolean {
-  return (
-    action.id === "show_status"
-    || action.id === "doctor"
-    || action.id === "show_runtime_summary"
-    || action.id === "show_config"
-    || action.id === "show_codex_config"
-    || action.id === "show_outcome_readiness"
-    || action.id.startsWith("preview_")
-  );
-}
-
 interface ActionRailOptions {
   maxLines?: number;
   compactLabels?: boolean;
@@ -293,7 +283,7 @@ function detailPaneLines(view: SaneTuiAppView): string[] {
     readableHelpLines(view.selectedHelpLines),
     9
   ).filter((line) => !line.trim().startsWith("... "));
-  const overviewLines = compactLines(readableOverviewLines(view.sectionOverviewLines), 6)
+  const overviewLines = compactLines(readableOverviewLinesForText(view.sectionOverviewLines), 6)
     .filter((line) => !line.trim().startsWith("... "));
   const latestStatusLines = shouldShowLatestStatus(view.latestStatusLines)
     ? compactLines(view.latestStatusLines, 2).filter((line) => !line.trim().startsWith("... "))
@@ -327,18 +317,8 @@ function readableHelpLines(lines: string[]): string[] {
   });
 }
 
-function readableOverviewLines(lines: string[]): string[] {
-  return lines.filter((line) => {
-    const trimmed = line.trim();
-    return (
-      trimmed.length > 0
-      && !trimmed.startsWith("latest event")
-      && !trimmed.startsWith("latest decision")
-      && !trimmed.startsWith("latest artifact")
-      && !trimmed.startsWith("runtime history")
-      && !trimmed.startsWith("runtime summary")
-    );
-  }).map(friendlySetupLine);
+function readableOverviewLinesForText(lines: string[]): string[] {
+  return readableOverviewLines(lines).map(friendlySetupLine);
 }
 
 function selectedActionLabel(view: SaneTuiAppView): string {
@@ -433,35 +413,6 @@ function compactDrift(view: SaneTuiAppView): string {
 
 function presentActionLabel(label: string, compact: boolean): string {
   return compact ? compactActionLabel(label) : label;
-}
-
-function windowLinesAroundSelection(
-  lines: string[],
-  selectedIndex: number,
-  availableLines: number
-): string[] {
-  if (availableLines <= 0 || lines.length <= availableLines) {
-    return lines;
-  }
-
-  const windowSize = Math.max(1, availableLines);
-  const halfWindow = Math.floor(windowSize / 2);
-  let start = Math.max(0, selectedIndex - halfWindow);
-  let end = Math.min(lines.length, start + windowSize);
-
-  if (end - start < windowSize) {
-    start = Math.max(0, end - windowSize);
-  }
-
-  const visible = lines.slice(start, end);
-  if (start > 0) {
-    visible[0] = "...";
-  }
-  if (end < lines.length) {
-    visible[visible.length - 1] = "...";
-  }
-
-  return visible;
 }
 
 function friendlySetupLine(line: string): string {
@@ -697,7 +648,7 @@ function isBoxTitle(line: string): boolean {
     content.startsWith("[Overlay: ") ||
     content === "Confirm" ||
     content === "Model Defaults" ||
-    content === "Built-in Packs" ||
+    content === "Guidance Options" ||
     content === "Privacy"
   );
 }

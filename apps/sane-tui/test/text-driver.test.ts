@@ -38,7 +38,7 @@ describe("text driver", () => {
       { launchShortcut: "settings" }
     );
 
-    expect(runtime.render()).toContain("Sane / Tune /");
+    expect(runtime.render()).toContain("Sane / Configure /");
     runtime.handleInput("right");
     expect(runtime.render()).toContain("Sane / Install /");
   });
@@ -80,6 +80,6 @@ describe("text driver", () => {
 
     expect(runtime.app.paths.projectRoot).toBe(projectRoot);
     expect(runtime.app.codexPaths.homeDir).toBe(homeDir);
-    expect(runtime.render()).toContain("Sane / Tune /");
+    expect(runtime.render()).toContain("Sane / Configure /");
   });
 });

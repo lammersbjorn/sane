@@ -5,6 +5,7 @@ import {
   computeOverlayWidth,
   focusHelpLines,
   focusSnapshotLines,
+  inkInputToTuiKeys,
   inkInputToTuiKey,
   inkRenderOptions,
   planInkEditorOverlay,
@@ -57,6 +58,11 @@ describe("ink terminal renderer", () => {
     expect(inkInputToTuiKey("x", baseKey)).toBeNull();
   });
 
+  it("preserves repeated arrow escape sequences delivered in one Ink input chunk", () => {
+    expect(inkInputToTuiKeys("\u001b[B\u001b[B\u001b[B", baseKey)).toEqual(["down", "down", "down"]);
+    expect(inkInputToTuiKeys("\u001b[A\u001b[B", baseKey)).toEqual(["up", "down"]);
+  });
+
   it("uses Ink alternate-screen interactive rendering for the live TTY path", () => {
     const options = inkRenderOptions();
 
@@ -73,14 +79,14 @@ describe("ink terminal renderer", () => {
       help: [
         "Read your current `~/.codex/config.toml` without changing it.",
         "",
-        "Use this before applying profiles."
+        "Use this before applying settings."
       ]
     } as Parameters<typeof focusHelpLines>[0];
 
     expect(focusHelpLines(action as never, 5)).toEqual([
       "Opens details. No files change.",
       "Read your current `~/.codex/config.toml` without changing it.",
-      "Use this before applying profiles."
+      "Use this before applying settings."
     ]);
   });
 
@@ -113,14 +119,14 @@ describe("ink terminal renderer", () => {
   it("plans section navigation as real tabs without inventory wording", () => {
     const tabs = [
       { id: "setup", label: "Setup" },
-      { id: "tune", label: "Tune" },
+      { id: "configure", label: "Configure" },
       { id: "install", label: "Install" },
       { id: "check", label: "Check" },
       { id: "recover", label: "Recover" },
       { id: "remove", label: "Remove" }
     ];
 
-    const fullPlan = planSectionTabs(tabs, "setup", 56);
+    const fullPlan = planSectionTabs(tabs, "setup", 64);
     expect(fullPlan.mode).toBe("full");
     expect(fullPlan.mode === "full" ? fullPlan.items[0] : null).toEqual({
       id: "setup",

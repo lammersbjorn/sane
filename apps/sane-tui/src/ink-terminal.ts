@@ -3,10 +3,51 @@ import { type Instance, type Key, type RenderOptions } from "ink";
 import { loadAppView, type SaneTuiAppView } from "@sane/sane-tui/app-view.js";
 import { type TextTuiRuntime } from "@sane/sane-tui/text-driver.js";
 import { type TuiInputKey } from "@sane/sane-tui/input-driver.js";
+import { parseTerminalInput } from "@sane/sane-tui/terminal-keys.js";
 import { compactLines } from "@sane/sane-tui/result-panel.js";
-import { compactActionLabel } from "@sane/sane-tui/presentation-normalizer.js";
+import { isReadOnlyAction } from "./tui-action-semantics.js";
+import { readableOverviewLines, windowLinesAroundSelection } from "./tui-lines.js";
+import {
+  computeOverlayWidth,
+  limitWithoutOverflowMarker,
+  planInkEditorOverlay,
+  planInkFocusedLayout,
+  planSectionTabs,
+  truncateEnd,
+  wrapForInk
+} from "./ink-terminal-layout.js";
+import type { InkSectionTabItem } from "./ink-terminal-layout.js";
+
+export type {
+  InkEditorOverlayLayout,
+  InkFocusedLayoutPlan,
+  InkSectionTabItem,
+  InkSectionTabsPlan
+} from "./ink-terminal-layout.js";
+export {
+  computeOverlayWidth,
+  limitWithoutOverflowMarker,
+  planInkEditorOverlay,
+  planInkFocusedLayout,
+  planSectionTabs,
+  truncateEnd,
+  wrapForInk,
+  wrapInkLine
+} from "./ink-terminal-layout.js";
 
 export type InkTuiInputKey = TuiInputKey | "quit";
+
+export function inkInputToTuiKeys(input: string, key: Key): InkTuiInputKey[] {
+  const parsedInput = input.length > 1 || input.startsWith("\u001b")
+    ? parseTerminalInput(input)
+    : [];
+  if (parsedInput.length > 0) {
+    return parsedInput;
+  }
+
+  const mapped = inkInputToTuiKey(input, key);
+  return mapped ? [mapped] : [];
+}
 
 export function inkInputToTuiKey(input: string, key: Key): InkTuiInputKey | null {
   if (input === "q" || (input === "c" && key.ctrl)) {
@@ -51,145 +92,6 @@ export function inkRenderOptions(): RenderOptions {
   };
 }
 
-export type InkFocusedLayoutPlan =
-  | {
-      mode: "wide";
-      actionWidth: number;
-      detailWidth: number;
-      topHeight: number;
-      contextHeight: number;
-    }
-  | {
-      mode: "stacked";
-      detailHeight: number;
-      actionHeight: number;
-    }
-  | {
-      mode: "list-only";
-      actionHeight: number;
-    };
-
-export function planInkFocusedLayout(width: number, height: number): InkFocusedLayoutPlan {
-  if (width >= 118 && height >= 18) {
-    const actionWidth = Math.min(48, Math.max(42, Math.floor(width * 0.36)));
-    const detailWidth = Math.max(40, width - actionWidth - 2);
-    const topHeight = Math.min(height, Math.max(14, Math.min(22, Math.floor(height * 0.5))));
-    const contextHeight = Math.max(0, height - topHeight - 1);
-    return { mode: "wide", actionWidth, detailWidth, topHeight, contextHeight };
-  }
-
-  if (height < 11) {
-    return { mode: "list-only", actionHeight: height };
-  }
-
-  const detailHeight = height >= 17 ? 9 : height >= 14 ? 8 : 6;
-  return {
-    mode: "stacked",
-    detailHeight,
-    actionHeight: Math.max(4, height - detailHeight - 1)
-  };
-}
-
-export interface InkEditorOverlayLayout {
-  modalWidth: number;
-  modalHeight: number;
-  compactEditor: boolean;
-  headerSlots: number;
-  fieldSlots: number;
-  detailSlots: number;
-  showHelp: boolean;
-  contentHeight: number;
-}
-
-export interface InkSectionTabItem {
-  id: string;
-  label: string;
-}
-
-export type InkSectionTabsPlan =
-  | {
-      mode: "full";
-      items: Array<InkSectionTabItem & { active: boolean }>;
-    }
-  | {
-      mode: "neighbors";
-      previous: InkSectionTabItem;
-      current: InkSectionTabItem;
-      next: InkSectionTabItem;
-    }
-  | {
-      mode: "current";
-      current: InkSectionTabItem;
-    };
-
-export function planSectionTabs(
-  items: InkSectionTabItem[],
-  selected: string,
-  width: number
-): InkSectionTabsPlan {
-  const safeItems = items.length > 0 ? items : [{ id: "current", label: "Current" }];
-  const selectedIndex = Math.max(0, safeItems.findIndex((item) => item.id === selected));
-  const current = safeItems[selectedIndex] ?? safeItems[0]!;
-  const fullWidth = safeItems.reduce(
-    (total, item, index) => total + (index > 0 ? 1 : 0) + tabCellWidth(item.label, item.id === current.id),
-    0
-  );
-
-  if (fullWidth <= width) {
-    return {
-      mode: "full",
-      items: safeItems.map((item) => ({ ...item, active: item.id === current.id }))
-    };
-  }
-
-  const previous = safeItems[(selectedIndex - 1 + safeItems.length) % safeItems.length]!;
-  const next = safeItems[(selectedIndex + 1) % safeItems.length]!;
-  const neighborWidth = tabCellWidth(previous.label) + tabCellWidth(current.label, true) + tabCellWidth(next.label) + 6;
-  if (neighborWidth <= width) {
-    return { mode: "neighbors", previous, current, next };
-  }
-
-  return { mode: "current", current };
-}
-
-function tabCellWidth(label: string, active = false): number {
-  return label.length + (active ? 4 : 2);
-}
-
-export function planInkEditorOverlay(width: number, height: number): InkEditorOverlayLayout {
-  const modalWidth = computeOverlayWidth(width, 70, 4, 120);
-  const modalHeight = Math.max(4, height);
-  const compactEditor = width < 110 || modalHeight < 16;
-
-  if (compactEditor) {
-    const contentSlots = Math.max(1, modalHeight - 2);
-    const showHelp = contentSlots >= 7;
-    const headerSlots = contentSlots >= 6 ? 1 : 0;
-    const fieldSlots = Math.max(1, contentSlots - 2 - headerSlots - (showHelp ? 2 : 0));
-    return {
-      modalWidth,
-      modalHeight,
-      compactEditor,
-      headerSlots,
-      fieldSlots,
-      detailSlots: showHelp ? 1 : 0,
-      showHelp,
-      contentHeight: contentSlots
-    };
-  }
-
-  const contentHeight = Math.max(1, modalHeight - 5);
-  return {
-    modalWidth,
-    modalHeight,
-    compactEditor,
-    headerSlots: 1,
-    fieldSlots: Math.max(1, contentHeight - 1),
-    detailSlots: Math.max(1, contentHeight - 1),
-    showHelp: true,
-    contentHeight
-  };
-}
 
 export async function startInkTerminalLoop(
   runtime: TextTuiRuntime,
@@ -220,15 +122,17 @@ export async function startInkTerminalLoop(
     }, [stdout]);
 
     useInput((input, key) => {
-      const mapped = inkInputToTuiKey(input, key);
-      if (!mapped) {
+      const mappedKeys = inkInputToTuiKeys(input, key);
+      if (mappedKeys.length === 0) {
         return;
       }
-      if (mapped === "quit") {
-        exit();
-        return;
+      for (const mapped of mappedKeys) {
+        if (mapped === "quit") {
+          exit();
+          return;
+        }
+        runtime.handleInput(mapped);
       }
-      runtime.handleInput(mapped);
       setVersion((version) => version + 1);
     });
 
@@ -480,83 +384,6 @@ export async function startInkTerminalLoop(
     );
   }
 
-  function ActionWindow({ view, width, height }: { view: SaneTuiAppView; width: number; height: number }): InkNode {
-    const selectedIndex = Math.max(0, view.actions.findIndex((action) => action.id === view.selectedAction.id));
-    const slots = Math.max(4, height - 4);
-    const actions = windowAround(view.actions, selectedIndex, slots);
-    const labelWidth = Math.max(8, width - 5);
-    return React.createElement(
-      Box,
-      {
-        borderStyle: "round",
-        borderColor: "cyan",
-        flexDirection: "column",
-        paddingX: 1,
-        width,
-        height
-      },
-      React.createElement(Text, { bold: true, color: "cyan" }, "Next Moves"),
-      ...actions.map((action, index) =>
-        action === null
-          ? React.createElement(Text, { key: `ellipsis-${index}`, color: "gray" }, "...")
-          : React.createElement(
-              Text,
-              {
-                key: action.id,
-                color: action.id === view.selectedAction.id ? "black" : action.id === view.recommendedActionId ? "yellow" : undefined,
-                backgroundColor: action.id === view.selectedAction.id ? "cyan" : undefined,
-                bold: action.id === view.selectedAction.id,
-                wrap: "truncate-end"
-              },
-              truncateEnd(
-                `${action.id === view.selectedAction.id ? "> " : "  "}${compactActionLabel(action.label)}${action.id === view.recommendedActionId && action.id !== view.selectedAction.id ? " *" : ""}`,
-                labelWidth
-              )
-            )
-      )
-    );
-  }
-
-  function FocusWindow({ view, height, compact }: { view: SaneTuiAppView; height: number; compact: boolean }): InkNode {
-    const help = focusHelpLines(view.selectedAction, compact ? 4 : 7);
-    const snapshot = focusSnapshotLines(view.sectionOverviewLines, compact ? 3 : 6);
-    return React.createElement(
-      Box,
-      {
-        borderStyle: "round",
-        borderColor: "blue",
-        flexDirection: "column",
-        paddingX: 1,
-        flexGrow: 1,
-        height
-      },
-      React.createElement(
-        Box,
-        { flexDirection: "column", marginBottom: 1 },
-        React.createElement(Text, { bold: true, color: "blue" }, `${view.activeSection.docLabel} / Next Move`),
-        React.createElement(Text, { bold: true, wrap: "truncate-end" }, view.selectedAction.label)
-      ),
-      React.createElement(
-        Box,
-        { flexDirection: "column", marginBottom: 1 },
-        ...help.map((line, index) => React.createElement(Text, { key: `help-${index}`, wrap: "truncate-end" }, line))
-      ),
-      React.createElement(
-        Box,
-        { marginBottom: 1 },
-        React.createElement(Text, { color: "gray" }, focusActionHint(view.selectedAction))
-      ),
-      React.createElement(
-        Box,
-        { flexDirection: "column" },
-        React.createElement(Text, { bold: true, color: "cyan" }, "Setup at a Glance"),
-        ...snapshot.map((line, index) =>
-          React.createElement(Text, { key: `snapshot-${index}`, color: "gray", wrap: "truncate-end" }, line)
-        )
-      )
-    );
-  }
-
   function OverlayWindow({ view, width, height }: { view: SaneTuiAppView; width: number; height: number }): InkNode {
     const overlay = view.overlay!;
     if (overlay.kind !== "confirm" && overlay.kind !== "notice") {
@@ -721,18 +548,7 @@ export async function startInkTerminalLoop(
   );
 }
 
-function experienceHeroLines(view: SaneTuiAppView): string[] {
-  return [
-    view.experience.title,
-    "",
-    ...view.experience.body,
-    "",
-    `Start here: ${view.experience.primaryActionLabel}`,
-    `Why: ${view.experience.primaryActionHint}`
-  ];
-}
-
-  function experienceActionLines(view: SaneTuiAppView, maxLines: number): string[] {
+function experienceActionLines(view: SaneTuiAppView, maxLines: number): string[] {
   const lines = view.experience.actionGroups.flatMap((group, groupIndex) => [
     ...(groupIndex > 0 ? [""] : []),
     group.title,
@@ -773,35 +589,6 @@ function selectedMoveDetailLines(view: SaneTuiAppView): string[] {
   return lines.length > 0 ? lines.slice(0, 1) : selectedExperienceLines(view, 1);
 }
 
-function windowLinesAroundSelection(
-  lines: string[],
-  selectedIndex: number,
-  availableLines: number
-): string[] {
-  if (availableLines <= 0 || lines.length <= availableLines) {
-    return lines;
-  }
-
-  const windowSize = Math.max(1, availableLines);
-  const halfWindow = Math.floor(windowSize / 2);
-  let start = Math.max(0, selectedIndex - halfWindow);
-  let end = Math.min(lines.length, start + windowSize);
-
-  if (end - start < windowSize) {
-    start = Math.max(0, end - windowSize);
-  }
-
-  const visible = lines.slice(start, end);
-  if (start > 0) {
-    visible[0] = "...";
-  }
-  if (end < lines.length) {
-    visible[visible.length - 1] = "...";
-  }
-
-  return visible;
-}
-
 type FocusAction = SaneTuiAppView["selectedAction"];
 
 export function focusHelpLines(action: FocusAction, maxLines: number): string[] {
@@ -830,25 +617,6 @@ function prioritizeSnapshotLines(lines: string[], maxLines: number): string[] {
   }
 
   return limitWithoutOverflowMarker(lines, maxLines);
-}
-
-function limitWithoutOverflowMarker(lines: string[], maxLines: number): string[] {
-  return lines.filter((line) => !line.trim().startsWith("... ")).slice(0, maxLines);
-}
-
-function readableOverviewLines(lines: string[]): string[] {
-  return lines.filter((line) => {
-    const trimmed = line.trim();
-    return (
-      trimmed.length > 0
-      && !trimmed.startsWith("...")
-      && !trimmed.startsWith("latest event")
-      && !trimmed.startsWith("latest decision")
-      && !trimmed.startsWith("latest artifact")
-      && !trimmed.startsWith("runtime history")
-      && !trimmed.startsWith("runtime summary")
-    );
-  });
 }
 
 function addSnapshotSpacing(lines: string[]): string[] {
@@ -1023,112 +791,6 @@ function focusActionHint(action: FocusAction): string {
   }
 
   return "Enter runs this action.";
-}
-
-function wrapForInk(lines: string[], width: number): string[] {
-  const safeWidth = Math.max(8, width);
-  return lines.flatMap((line) => wrapInkLine(line, safeWidth));
-}
-
-function wrapInkLine(line: string, width: number): string[] {
-  if (line.length === 0) {
-    return [""];
-  }
-
-  const words = line.split(" ");
-  const result: string[] = [];
-  let current = "";
-
-  for (const word of words) {
-    if (current.length === 0) {
-      current = word;
-      continue;
-    }
-
-    if (`${current} ${word}`.length <= width) {
-      current = `${current} ${word}`;
-      continue;
-    }
-
-    result.push(current);
-    current = word;
-  }
-
-  if (current.length > 0) {
-    result.push(current);
-  }
-
-  return result.flatMap((wrappedLine) => {
-    if (wrappedLine.length <= width) {
-      return [wrappedLine];
-    }
-
-    const chunks: string[] = [];
-    for (let index = 0; index < wrappedLine.length; index += width) {
-      chunks.push(wrappedLine.slice(index, index + width));
-    }
-    return chunks;
-  });
-}
-
-function isReadOnlyAction(action: FocusAction): boolean {
-  return (
-    action.id === "show_status"
-    || action.id === "doctor"
-    || action.id === "show_runtime_summary"
-    || action.id === "show_config"
-    || action.id === "show_codex_config"
-    || action.id === "show_outcome_readiness"
-    || action.id.startsWith("preview_")
-  );
-}
-
-function windowAround<T>(items: T[], selectedIndex: number, slots: number): Array<T | null> {
-  if (items.length <= slots) {
-    return items;
-  }
-  const innerSlots = Math.max(1, slots - 2);
-  const start = Math.max(0, Math.min(items.length - innerSlots, selectedIndex - Math.floor(innerSlots / 2)));
-  const end = Math.min(items.length, start + innerSlots);
-  return [
-    ...(start > 0 ? [null] : []),
-    ...items.slice(start, end),
-    ...(end < items.length ? [null] : [])
-  ];
-}
-
-export function computeOverlayWidth(
-  viewportWidth: number,
-  minWidth: number,
-  inset: number,
-  maxWidth: number
-): number {
-  const safeViewportWidth = Math.max(20, viewportWidth);
-  const usableWidth = Math.max(20, safeViewportWidth - Math.max(0, inset));
-  return Math.min(safeViewportWidth, Math.max(20, Math.min(maxWidth, Math.max(minWidth, usableWidth))));
-}
-
-export function truncateEnd(text: string, maxWidth: number): string {
-  if (text.length <= maxWidth) {
-    return text;
-  }
-
-  if (maxWidth <= 3) {
-    return text.slice(0, maxWidth);
-  }
-
-  return `${text.slice(0, maxWidth - 3)}...`;
-}
-
-function chipColor(tone: SaneTuiAppView["chips"][number]["tone"]): "green" | "yellow" | "gray" {
-  switch (tone) {
-    case "ok":
-      return "green";
-    case "warn":
-      return "yellow";
-    case "muted":
-      return "gray";
-  }
 }
 
 function fullStatusline(view: SaneTuiAppView): string {

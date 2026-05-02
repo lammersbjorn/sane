@@ -140,7 +140,7 @@ Stable user preferences stay narrow and explicit: model/reasoning defaults, pack
 
 ## Release Operators
 
-- run `rtk pnpm run release:verify` before tagging
+- run `rtk pnpm run accept` before tagging; it delegates to the release verification gate
 - tag `vX.Y.Z` to trigger GitHub Release artifact upload; beta tags stay prerelease and must not become Latest
 - use manual `NPM Publish` workflow with `NPM_TOKEN` and protected `npm-publish` environment; beta tags publish under `beta`, not `latest`
 - GitHub Release artifact CI triggers the `lammersbjorn/homebrew-sane` updater workflow after tagged assets publish; `HOMEBREW_TAP_TOKEN` must be configured with workflow dispatch access

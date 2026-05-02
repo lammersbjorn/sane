@@ -54,8 +54,12 @@ describe("overlay models", () => {
     if (!overlay || overlay.kind !== "packs") {
       throw new Error("expected packs overlay");
     }
+    expect(overlay.title).toBe("Guidance Options");
+    expect(overlay.headerLines[0]).toBe("Guidance Options");
+    expect(overlay.detailsTitle).toBe("Guidance Summary");
     expect(overlay.fieldLines[0]).toContain("> caveman:");
-    expect(overlay.detailsLines.some((line: string) => line.includes("selected pack: caveman"))).toBe(true);
+    expect(overlay.detailsLines.some((line: string) => line.includes("selected option: caveman"))).toBe(true);
+    expect(overlay.detailsLines).toContain("Updates local guidance config first.");
     expect(overlay.detailsLines).toContain("exports: sane-caveman");
 
     if (shell.activeEditor?.kind !== "packs") {
@@ -67,7 +71,7 @@ describe("overlay models", () => {
     if (!overlay || overlay.kind !== "packs") {
       throw new Error("expected packs overlay");
     }
-    expect(overlay.detailsLines.some((line: string) => line.includes("selected pack: rtk"))).toBe(true);
+    expect(overlay.detailsLines.some((line: string) => line.includes("selected option: rtk"))).toBe(true);
     expect(overlay.detailsLines).toContain(`exports: ${optionalPackSkillNames("rtk").join(", ")}`);
 
     shell.activeEditor.selected = 2;
@@ -76,7 +80,7 @@ describe("overlay models", () => {
     if (!overlay || overlay.kind !== "packs") {
       throw new Error("expected packs overlay");
     }
-    expect(overlay.detailsLines.some((line: string) => line.includes("selected pack: frontend-craft"))).toBe(
+    expect(overlay.detailsLines.some((line: string) => line.includes("selected option: frontend-craft"))).toBe(
       true
     );
     expect(overlay.detailsLines).toContain(

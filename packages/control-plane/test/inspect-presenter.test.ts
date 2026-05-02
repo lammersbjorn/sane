@@ -11,7 +11,7 @@ import {
 } from "../src/inspect-presenter.js";
 
 function expectOptionalPackProvenanceContract(line: string): void {
-  expect(line).toContain("optional pack provenance:");
+    expect(line).toContain("optional guidance provenance:");
   expect(line).toContain("caveman configured");
   expect(line).toContain("derived from caveman");
   expect(line).toContain("rtk disabled (no skills; internal)");
@@ -85,7 +85,7 @@ describe("inspect presenter", () => {
   });
 
   it("formats drift summary and detail lines", () => {
-    expect(formatInspectDriftSummaryLine([])).toBe("export drift view: no current drift detected");
+    expect(formatInspectDriftSummaryLine([])).toBe("out-of-sync files: none");
 
     const driftItems = [
       {
@@ -100,7 +100,7 @@ describe("inspect presenter", () => {
       }
     ];
 
-    expect(formatInspectDriftSummaryLine(driftItems)).toBe("export drift view: config, hooks");
+    expect(formatInspectDriftSummaryLine(driftItems)).toBe("out-of-sync files: config, hooks");
     expect(formatInspectDriftItemLines(driftItems)).toEqual([
       "config: invalid",
       "hooks: unsupported (use WSL)"
@@ -256,7 +256,7 @@ describe("inspect presenter", () => {
     const lines = formatInspectOverviewLines(snapshot);
 
     expect(lines).toContain(
-      "status counts: installed 1, configured 1, disabled 2, missing 3, invalid 1, drift 1"
+      "status counts: installed 1, configured 1, disabled 2, missing 3, invalid 1, out-of-sync 1"
     );
     expect(lines).toContain("latest policy snapshot: missing (current-run-derived read-only view)");
     expect(lines).toContain(
@@ -277,13 +277,13 @@ describe("inspect presenter", () => {
     );
     expect(lines).toContain("last verified outputs (read-only): none");
     expect(lines).toContain("repo verify (read-only): rtk run 'pnpm test && pnpm typecheck'");
-    expect(lines.join("\n")).toContain("optional pack provenance:");
+    expect(lines.join("\n")).toContain("optional guidance provenance:");
     expect(lines.join("\n")).toContain("caveman configured");
     expect(lines.join("\n")).toContain("derived from caveman");
-    expect(lines).toContain("export drift view: hooks");
+    expect(lines).toContain("out-of-sync files: hooks");
     expect(lines).toContain("conflict warnings: none");
     expect(lines).toContain(
-      "primary surfaces: runtime installed, codex configured, user missing, hooks unsupported (use WSL), custom-agents missing"
+      "main files: local setup installed, codex configured, user skills missing, hooks unsupported (use WSL), named agents missing"
     );
     expect(lines.filter((line) => line === "")).toHaveLength(4);
   });

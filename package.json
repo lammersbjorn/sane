@@ -33,6 +33,7 @@
     "start:ts-built-preview:status": "pnpm --filter @sane/sane-tui run build && node ./apps/sane-tui/dist/bin/sane.js status",
     "start:ts-built-preview:inspect": "pnpm --filter @sane/sane-tui run build && node ./apps/sane-tui/dist/bin/sane.js inspect",
     "check": "pnpm typecheck && pnpm test",
+    "accept": "pnpm run release:verify",
     "release:verify": "pnpm check && pnpm --filter @sane/sane-tui run build:smoke && pnpm run pack:sane-tui",
     "release:npm:dry-run": "pnpm run release:verify && cd apps/sane-tui/dist && pnpm publish --dry-run --access public --no-git-checks",
     "release:npm:dry-run:beta": "pnpm run release:verify && cd apps/sane-tui/dist && pnpm publish --dry-run --access public --no-git-checks --tag beta",

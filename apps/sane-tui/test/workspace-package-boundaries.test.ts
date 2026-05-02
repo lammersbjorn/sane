@@ -163,6 +163,25 @@ describe("workspace package boundaries", () => {
     expect(Object.values(saneTuiPackage.scripts ?? {}).join("\n")).not.toMatch(/\bcargo\b/i);
   });
 
+  it("keeps release workflows aligned with the public accept gate and artifacts", () => {
+    const rootPackage = readPackageJson("package.json");
+    const ciWorkflow = readFileSync(join(workspaceRoot, ".github/workflows/ci.yml"), "utf8");
+    const npmWorkflow = readFileSync(join(workspaceRoot, ".github/workflows/npm-publish.yml"), "utf8");
+    const releaseWorkflow = readFileSync(join(workspaceRoot, ".github/workflows/release-artifacts.yml"), "utf8");
+    const workflows = [ciWorkflow, npmWorkflow, releaseWorkflow].join("\n");
+
+    expectScriptIncludes(rootPackage.scripts, "accept", ["pnpm run release:verify"]);
+    expect(ciWorkflow).toContain("run: pnpm run accept");
+    expect(npmWorkflow).toContain("run: pnpm run accept");
+    expect(releaseWorkflow).toContain("run: pnpm run accept");
+    expect(workflows).not.toContain("run: pnpm run release:verify");
+    expect(releaseWorkflow).toContain("artifacts/*.tgz");
+    expect(releaseWorkflow).toContain("artifacts/*.zip");
+    expect(releaseWorkflow).toContain("artifacts/SHA256SUMS.txt");
+    expect(releaseWorkflow).toContain("sha256sum artifacts/* > artifacts/SHA256SUMS.txt");
+    expect(releaseWorkflow).toContain("Trigger Homebrew tap updater");
+  });
+
   it("keeps B8 outcome-runner entrypoints out of workspace scripts and bins", () => {
     const rootPackage = readPackageJson("package.json");
     const saneTuiPackage = readPackageJson("apps/sane-tui/package.json");

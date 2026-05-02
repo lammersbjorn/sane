@@ -344,7 +344,7 @@ describe("tui shell", () => {
 
     expect(pending).toBeNull();
     expect(shell.pendingConfirmation?.title).toBe("Confirm action");
-    expect(shell.pendingConfirmation?.heading).toBe("Apply Codex tune-up");
+    expect(shell.pendingConfirmation?.heading).toBe("Apply Codex settings");
     expect(existsSync(codexPaths.configToml)).toBe(false);
 
     const result = confirmPendingAction(shell);

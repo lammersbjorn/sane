@@ -15,7 +15,7 @@ export interface DashboardChip {
 
 export interface DashboardView {
   title: "Sane";
-  subtitle: "Install, tune, check, and recover Sane in Codex";
+  subtitle: "Install, configure, check, and recover Sane in Codex";
   projectLabel: string;
   recommendedNextStep: string;
   recommendedActionId: ReturnType<typeof homeScreen.loadHomeScreen>["recommendedActionId"];
@@ -71,7 +71,7 @@ export function loadDashboardView(
 
   return {
     title: "Sane",
-    subtitle: "Install, tune, check, and recover Sane in Codex",
+    subtitle: "Install, configure, check, and recover Sane in Codex",
     projectLabel: projectLabel(shell),
     recommendedNextStep: home.recommendedNextStep,
     recommendedActionId: home.recommendedActionId,
@@ -122,7 +122,7 @@ function buildStatusChips(statusSnapshot: TuiShell["statusSnapshot"]): Dashboard
 
   chips.push({
     id: "drift",
-    label: "Drift",
+    label: "Out-of-sync files",
     value: statusBundle.driftItems.length === 0 ? "none" : `${statusBundle.driftItems.length} issue(s)`,
     tone: statusBundle.driftItems.length === 0 ? "ok" : "warn"
   });
@@ -131,7 +131,7 @@ function buildStatusChips(statusSnapshot: TuiShell["statusSnapshot"]): Dashboard
     if (runtimeState.current.phase !== "unknown") {
       chips.push({
         id: "phase",
-        label: "Phase",
+        label: "Current step",
         value: runtimeState.current.phase,
         tone: toneForValue(runtimeState.current.phase)
       });

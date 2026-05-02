@@ -1,6 +1,17 @@
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { loadCorePackManifest, readCoreAsset } from "./core-pack-assets.js";
+import {
+  type CorePackManifest,
+  type CorePackManifestEntry,
+  type CorePackAssetOwnership,
+  type PackAssetProvenance,
+  type PackAssetSourceProvenance
+} from "./core-pack-manifest.js";
+export type {
+  CorePackAssetOwnership,
+  PackAssetProvenance,
+  PackAssetSourceProvenance,
+  PackAssetUpstream
+} from "./core-pack-manifest.js";
 
 export const NAME = "Sane";
 export const SANE_ROUTER_SKILL_NAME = "sane-router";
@@ -52,61 +63,6 @@ export interface ModelRoutingGuidance extends ModelRoleGuidance {
   realtimeReasoning: string;
 }
 
-export interface PackAssetUpstream {
-  name: string;
-  url: string;
-  ref: string | null;
-  role?: string;
-  path?: string | null;
-  license?: string | null;
-}
-
-export type PackAssetProvenance =
-  | {
-      kind: "upstream" | "derived";
-      note: string;
-      upstreams: PackAssetUpstream[];
-      updateStrategy: "pinned-manual" | "manual-curated";
-    }
-  | {
-      kind: "internal";
-      note: string;
-      updateStrategy: "manual-curated";
-    };
-
-export interface PackAssetSourceProvenance {
-  repo: string;
-  path: string;
-  ref: string;
-  license: string;
-  updateStrategy: string;
-}
-
-interface CorePackAssetSources {
-  style: string;
-  items: Record<string, PackAssetSourceProvenance>;
-}
-
-interface CorePackManifestEntry {
-  configKey?: string;
-  skillName?: string;
-  skillPath?: string;
-  skills?: Array<{
-    name: string;
-    path: string;
-    taskKinds?: string[];
-    resources?: Array<{
-      source: string;
-      target: string;
-    }>;
-  }>;
-  policyNote?: string;
-  continuityNote?: string;
-  routerNote?: string;
-  overlayNote?: string;
-  provenance: PackAssetProvenance;
-}
-
 interface OptionalPackSkillAsset {
   name: string;
   path: string;
@@ -117,34 +73,7 @@ interface OptionalPackSkillAsset {
   }>;
 }
 
-interface CorePackManifest {
-  name: string;
-  assets: {
-    routerSkill: string;
-    bootstrapResearchSkill: string;
-    agentLanesSkill: string;
-    outcomeContinuationSkill: string;
-    continueSkill: string;
-    globalOverlay: string;
-    repoOverlay: string;
-    agents: {
-      primary: string;
-      reviewer: string;
-      explorer: string;
-      implementation: string;
-      realtime: string;
-    };
-  };
-  optionalPacks: Record<
-    string,
-    CorePackManifestEntry
-  >;
-  assetSources?: CorePackAssetSources;
-}
-
-const REPO_ROOT = discoverRepoRoot(candidateRepoRootStarts());
-const CORE_PACK_ROOT = resolve(REPO_ROOT, "packs/core");
-const CORE_PACK_MANIFEST = readCorePackManifest();
+const CORE_PACK_MANIFEST = loadCorePackManifest();
 export const OPTIONAL_PACK_METADATA: OptionalPackMetadata[] = optionalPackNames().map((name) =>
   optionalPackMetadata(name)
 );
@@ -393,6 +322,14 @@ export function corePackAssetSourceProvenanceStyle(): string | undefined {
   return CORE_PACK_MANIFEST.assetSources?.style;
 }
 
+export function corePackAssetOwnership(path: string): CorePackAssetOwnership | undefined {
+  return CORE_PACK_MANIFEST.assetOwnership?.items[path];
+}
+
+export function corePackAssetOwnershipStyle(): string | undefined {
+  return CORE_PACK_MANIFEST.assetOwnership?.style;
+}
+
 export function createSaneReviewerAgentTemplate(roles: ModelRoleGuidance): string {
   return renderCoreAsset(CORE_PACK_MANIFEST.assets.agents.reviewer, {
     MODEL: roles.verifierModel,
@@ -486,53 +423,6 @@ export function createSaneRealtimeAgentTemplateWithPacks(
     MODEL_REASONING: roles.realtimeReasoning,
     ENABLED_PACK_AGENT_NOTES: enabledPackAgentNotes(packs)
   });
-}
-
-function readCorePackManifest(): CorePackManifest {
-  return JSON.parse(readCoreAsset("manifest.json")) as CorePackManifest;
-}
-
-function candidateRepoRootStarts(): string[] {
-  const starts = new Set<string>();
-
-  if (process.argv[1]) {
-    starts.add(dirname(resolve(process.argv[1])));
-  }
-
-  try {
-    starts.add(dirname(fileURLToPath(import.meta.url)));
-  } catch {
-    if (typeof __dirname === "string") {
-      starts.add(__dirname);
-    }
-  }
-
-  return [...starts];
-}
-
-function discoverRepoRoot(startDirs: string[]): string {
-  for (const startDir of startDirs) {
-    let current = startDir;
-
-    while (true) {
-      if (existsSync(resolve(current, "packs/core/manifest.json"))) {
-        return current;
-      }
-
-      const parent = resolve(current, "..");
-      if (parent === current) {
-        break;
-      }
-
-      current = parent;
-    }
-  }
-
-  throw new Error(`unable to locate repo root from ${startDirs.join(", ")}`);
-}
-
-function readCoreAsset(path: string): string {
-  return readFileSync(resolve(CORE_PACK_ROOT, path), "utf8");
 }
 
 function renderCoreAsset(path: string, replacements: Record<string, string>): string {

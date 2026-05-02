@@ -8,9 +8,31 @@ import { InventoryScope, InventoryStatus, OperationKind, OperationResult } from 
 import { type CodexPaths, ensureRuntimeDirs, type ProjectPaths } from "@sane/platform";
 import { writeAtomicTextFile } from "@sane/state";
 
+import {
+  applyCloudflareProfileToValue,
+  applyCoreCodexProfileToValue,
+  applyIntegrationsProfileToValue,
+  applyStatuslineProfileToValue,
+  inspectCloudflareProfileApplyResultFromContext,
+  inspectCloudflareProfileAuditFromContext,
+  inspectCodexProfileApplyResultFromContext,
+  inspectCodexProfileAuditFromContext,
+  inspectIntegrationsProfileApplyResultFromContext,
+  inspectIntegrationsProfileAuditFromContext,
+  inspectStatuslineProfileApplyResultFromContext,
+  inspectStatuslineProfileAuditFromContext
+} from "./codex-config-profile-logic.js";
+import {
+  previewCloudflareProfileFromAudit,
+  previewCodexProfileFromAudit,
+  previewIntegrationsProfileFromAudit,
+  previewStatuslineProfileFromAudit
+} from "./codex-config-profile-preview.js";
+import { synthesizeCodexConfigConflictWarnings } from "./codex-config-conflict-warnings.js";
+import { asPlainRecord, clonePlainRecord, isPlainRecord, type PlainRecord } from "./config-object.js";
 import { buildSaneCompactPrompt } from "./session-start-hook.js";
 
-type TomlTable = Record<string, unknown>;
+type TomlTable = PlainRecord;
 
 export interface IntegrationsProfileAudit {
   status: "installed" | "missing" | "invalid";
@@ -110,7 +132,8 @@ export type CodexConfigConflictWarningKind =
   | "managed_mcp_server_drift"
   | "statusline_profile_drift"
   | "unmanaged_mcp_server"
-  | "unmanaged_plugin";
+  | "unmanaged_plugin"
+  | "unsupported_tui_theme";
 
 export interface CodexConfigConflictWarning {
   kind: CodexConfigConflictWarningKind;
@@ -157,28 +180,6 @@ interface CodexConfigContext {
   recommended: LocalConfig;
   config: TomlTable | null;
 }
-
-const RECOMMENDED_STATUSLINE = [
-  "model-with-reasoning",
-  "project-root",
-  "git-branch",
-  "context-remaining",
-  "current-dir",
-  "five-hour-limit",
-  "weekly-limit",
-  "context-window-size",
-  "used-tokens"
-] as const;
-
-const RECOMMENDED_TERMINAL_TITLE = ["project", "spinner"] as const;
-const RECOMMENDED_TUI_NOTIFICATION_CONDITION = "always";
-const SANE_KNOWN_MCP_SERVERS = new Set([
-  "cloudflare-api",
-  "context7",
-  "grep",
-  "grep_app",
-  "playwright"
-]);
 
 export function showCodexConfig(codexPaths: CodexPaths): OperationResult {
   const context = inspectCodexConfigContext(codexPaths);
@@ -263,25 +264,25 @@ export function backupCodexConfig(paths: ProjectPaths, codexPaths: CodexPaths): 
 export function previewCodexProfile(codexPaths: CodexPaths): OperationResult {
   const context = inspectCodexConfigContext(codexPaths);
   const audit = inspectCodexProfileAuditFromContext(context);
-  return previewCodexProfileFromAudit(codexPaths, audit);
+  return previewCodexProfileFromAudit(codexPaths, audit, { inspectCodexConfigInventory });
 }
 
 export function previewIntegrationsProfile(codexPaths: CodexPaths): OperationResult {
   const context = inspectCodexConfigContext(codexPaths);
   const audit = inspectIntegrationsProfileAuditFromContext(context);
-  return previewIntegrationsProfileFromAudit(codexPaths, audit);
+  return previewIntegrationsProfileFromAudit(codexPaths, audit, { inspectCodexConfigInventory });
 }
 
 export function previewCloudflareProfile(codexPaths: CodexPaths): OperationResult {
   const context = inspectCodexConfigContext(codexPaths);
   const audit = inspectCloudflareProfileAuditFromContext(context);
-  return previewCloudflareProfileFromAudit(codexPaths, audit);
+  return previewCloudflareProfileFromAudit(codexPaths, audit, { inspectCodexConfigInventory });
 }
 
 export function previewStatuslineProfile(codexPaths: CodexPaths): OperationResult {
   const context = inspectCodexConfigContext(codexPaths);
   const audit = inspectStatuslineProfileAuditFromContext(context);
-  return previewStatuslineProfileFromAudit(codexPaths, audit);
+  return previewStatuslineProfileFromAudit(codexPaths, audit, { inspectCodexConfigInventory });
 }
 
 export function applyCodexProfile(paths: ProjectPaths, codexPaths: CodexPaths): OperationResult {
@@ -457,7 +458,7 @@ export function applyCloudflareProfile(paths: ProjectPaths, codexPaths: CodexPat
 
   return new OperationResult({
     kind: OperationKind.ApplyCloudflareProfile,
-    summary: "cloudflare-profile apply: wrote optional provider profile",
+summary: "cloudflare-profile apply: wrote optional provider settings",
     details,
     pathsTouched: unique([codexPaths.configToml, backupPath]),
     inventory: [installedCodexConfigInventory(codexPaths)]
@@ -526,7 +527,7 @@ export function inspectCodexProfileSnapshot(codexPaths: CodexPaths): CodexProfil
   return {
     audit,
     apply: inspectCodexProfileApplyResultFromContext(context),
-    preview: previewCodexProfileFromAudit(codexPaths, audit)
+    preview: previewCodexProfileFromAudit(codexPaths, audit, { inspectCodexConfigInventory })
   };
 }
 
@@ -538,7 +539,7 @@ export function inspectIntegrationsProfileSnapshot(
   return {
     audit,
     apply: inspectIntegrationsProfileApplyResultFromContext(context),
-    preview: previewIntegrationsProfileFromAudit(codexPaths, audit)
+    preview: previewIntegrationsProfileFromAudit(codexPaths, audit, { inspectCodexConfigInventory })
   };
 }
 
@@ -548,7 +549,7 @@ export function inspectCloudflareProfileSnapshot(codexPaths: CodexPaths): Cloudf
   return {
     audit,
     apply: inspectCloudflareProfileApplyResultFromContext(context),
-    preview: previewCloudflareProfileFromAudit(codexPaths, audit)
+    preview: previewCloudflareProfileFromAudit(codexPaths, audit, { inspectCodexConfigInventory })
   };
 }
 
@@ -558,7 +559,7 @@ export function inspectStatuslineProfileSnapshot(codexPaths: CodexPaths): Status
   return {
     audit,
     apply: inspectStatuslineProfileApplyResultFromContext(context),
-    preview: previewStatuslineProfileFromAudit(codexPaths, audit)
+    preview: previewStatuslineProfileFromAudit(codexPaths, audit, { inspectCodexConfigInventory })
   };
 }
 
@@ -576,22 +577,22 @@ export function inspectCodexProfileFamilySnapshot(
     core: {
       audit: coreAudit,
       apply: inspectCodexProfileApplyResultFromContext(context),
-      preview: previewCodexProfileFromAudit(codexPaths, coreAudit)
+      preview: previewCodexProfileFromAudit(codexPaths, coreAudit, { inspectCodexConfigInventory })
     },
     integrations: {
       audit: integrationsAudit,
       apply: inspectIntegrationsProfileApplyResultFromContext(context),
-      preview: previewIntegrationsProfileFromAudit(codexPaths, integrationsAudit)
+      preview: previewIntegrationsProfileFromAudit(codexPaths, integrationsAudit, { inspectCodexConfigInventory })
     },
     cloudflare: {
       audit: cloudflareAudit,
       apply: inspectCloudflareProfileApplyResultFromContext(context),
-      preview: previewCloudflareProfileFromAudit(codexPaths, cloudflareAudit)
+      preview: previewCloudflareProfileFromAudit(codexPaths, cloudflareAudit, { inspectCodexConfigInventory })
     },
     statusline: {
       audit: statuslineAudit,
       apply: inspectStatuslineProfileApplyResultFromContext(context),
-      preview: previewStatuslineProfileFromAudit(codexPaths, statuslineAudit)
+      preview: previewStatuslineProfileFromAudit(codexPaths, statuslineAudit, { inspectCodexConfigInventory })
     }
   };
 }
@@ -660,184 +661,11 @@ export function inspectCodexConfigConflictWarnings(
     ];
   }
 
-  return [
-    ...collectUnmanagedMcpWarnings(config, codexPaths),
-    ...collectManagedMcpDriftWarnings(config, codexPaths),
-    ...collectCoreProfileDriftWarnings(config, codexPaths, recommendedLocalConfig(codexPaths)),
-    ...collectCodexAdjacentSetupWarnings(config, codexPaths),
-    ...collectStatuslineDriftWarnings(config, codexPaths),
-    ...collectPluginWarnings(config, codexPaths)
-  ];
-}
-
-function collectUnmanagedMcpWarnings(
-  config: TomlTable,
-  codexPaths: CodexPaths
-): CodexConfigConflictWarning[] {
-  const mcpServers = sortedKeys(asTomlTable(config.mcp_servers));
-  return mcpServers
-    .filter((name) => !SANE_KNOWN_MCP_SERVERS.has(name))
-    .map((name) => ({
-      kind: "unmanaged_mcp_server" as const,
-      target: `mcp_servers.${name}`,
-      path: codexPaths.configToml,
-      message: `unmanaged Codex MCP server '${name}' is outside Sane's known profiles; warning-only, no auto-install or auto-remove`
-    }));
-}
-
-function collectManagedMcpDriftWarnings(
-  config: TomlTable,
-  codexPaths: CodexPaths
-): CodexConfigConflictWarning[] {
-  const mcpServers = asTomlTable(config.mcp_servers);
-  const expected: Record<string, TomlTable> = {
-    "cloudflare-api": { url: "https://mcp.cloudflare.com/mcp" },
-    context7: { url: "https://mcp.context7.com/mcp" },
-    grep_app: { url: "https://mcp.grep.app" },
-    playwright: { command: "npx", args: ["@playwright/mcp@latest"] }
-  };
-
-  return Object.entries(expected).flatMap(([name, expectedValue]) => {
-    const actual = asTomlTable(mcpServers?.[name]);
-    if (!actual || tomlValueEqual(actual, expectedValue)) {
-      return [];
-    }
-
-    return [
-      {
-        kind: "managed_mcp_server_drift" as const,
-        target: `mcp_servers.${name}`,
-        path: codexPaths.configToml,
-        message: `managed Codex MCP server '${name}' differs from Sane's profile; warning-only until you explicitly apply a profile`
-      }
-    ];
+  return synthesizeCodexConfigConflictWarnings({
+    codexConfigPath: codexPaths.configToml,
+    config,
+    recommended: recommendedLocalConfig(codexPaths)
   });
-}
-
-function collectCoreProfileDriftWarnings(
-  config: TomlTable,
-  codexPaths: CodexPaths,
-  recommended: LocalConfig
-): CodexConfigConflictWarning[] {
-  const warnings: CodexConfigConflictWarning[] = [];
-  const currentModel = asString(config.model);
-  const currentReasoning = asString(config.model_reasoning_effort);
-  const features = asTomlTable(config.features);
-
-  if (currentModel !== null && currentModel !== recommended.models.coordinator.model) {
-    warnings.push({
-      kind: "codex_profile_drift",
-      target: "model",
-      path: codexPaths.configToml,
-      message: `Codex model '${currentModel}' differs from Sane's recommended coordinator model '${recommended.models.coordinator.model}'`
-    });
-  }
-
-  if (
-    currentReasoning !== null
-    && currentReasoning !== recommended.models.coordinator.reasoningEffort
-  ) {
-    warnings.push({
-      kind: "codex_profile_drift",
-      target: "model_reasoning_effort",
-      path: codexPaths.configToml,
-      message: `Codex reasoning '${currentReasoning}' differs from Sane's recommended coordinator reasoning '${recommended.models.coordinator.reasoningEffort}'`
-    });
-  }
-
-  if (features?.codex_hooks === false) {
-    warnings.push({
-      kind: "disabled_codex_hooks",
-      target: "features.codex_hooks",
-      path: codexPaths.configToml,
-      message:
-        "Codex hooks are disabled, so Sane-managed hook exports will not run until features.codex_hooks is enabled"
-    });
-  }
-
-  return warnings;
-}
-
-function collectCodexAdjacentSetupWarnings(
-  config: TomlTable,
-  codexPaths: CodexPaths
-): CodexConfigConflictWarning[] {
-  const features = asTomlTable(config.features);
-  if (features?.memories !== true) {
-    return [];
-  }
-
-  return [
-    {
-      kind: "codex_native_memories_enabled",
-      target: "features.memories",
-      path: codexPaths.configToml,
-      message:
-        "Codex native memories are enabled; Sane keeps default continuity in scoped exports plus .sane state instead"
-    }
-  ];
-}
-
-function collectStatuslineDriftWarnings(
-  config: TomlTable,
-  codexPaths: CodexPaths
-): CodexConfigConflictWarning[] {
-  const tui = asTomlTable(config.tui);
-  if (!tui) {
-    return [];
-  }
-
-  const warnings: CodexConfigConflictWarning[] = [];
-  const notificationCondition = asString(tui.notification_condition);
-  const statusLine = asStringArray(tui.status_line);
-  const terminalTitle = asStringArray(tui.terminal_title);
-
-  if (
-    notificationCondition !== null
-    && notificationCondition !== RECOMMENDED_TUI_NOTIFICATION_CONDITION
-  ) {
-    warnings.push({
-      kind: "statusline_profile_drift",
-      target: "tui.notification_condition",
-      path: codexPaths.configToml,
-      message: `Codex TUI notifications '${notificationCondition}' differ from Sane's statusline profile '${RECOMMENDED_TUI_NOTIFICATION_CONDITION}'`
-    });
-  }
-
-  if (statusLine !== null && !stringArraysEqual(statusLine, RECOMMENDED_STATUSLINE)) {
-    warnings.push({
-      kind: "statusline_profile_drift",
-      target: "tui.status_line",
-      path: codexPaths.configToml,
-      message: "Codex TUI status line differs from Sane's statusline profile"
-    });
-  }
-
-  if (terminalTitle !== null && !stringArraysEqual(terminalTitle, RECOMMENDED_TERMINAL_TITLE)) {
-    warnings.push({
-      kind: "statusline_profile_drift",
-      target: "tui.terminal_title",
-      path: codexPaths.configToml,
-      message: "Codex TUI terminal title differs from Sane's statusline profile"
-    });
-  }
-
-  return warnings;
-}
-
-function collectPluginWarnings(
-  config: TomlTable,
-  codexPaths: CodexPaths
-): CodexConfigConflictWarning[] {
-  const plugins = asTomlTable(config.plugins);
-  return sortedKeys(plugins)
-    .filter((name) => asTomlTable(plugins?.[name])?.enabled === true)
-    .map((name) => ({
-      kind: "unmanaged_plugin" as const,
-      target: `plugins.${name}`,
-      path: codexPaths.configToml,
-      message: `enabled Codex plugin '${name}' is outside Sane's managed profiles; warning-only, no auto-install or auto-remove`
-    }));
 }
 
 function recommendedLocalConfig(codexPaths: CodexPaths): LocalConfig {
@@ -883,10 +711,10 @@ function writeCodexConfig(path: string, config: TomlTable): void {
 function readCodexConfig(path: string): TomlTable {
   try {
     const decoded = parseToml(readFileSync(path, "utf8"));
-    if (!isTomlTable(decoded)) {
+    if (!isPlainRecord(decoded)) {
       throw new Error("config.toml root must be a table");
     }
-    return decoded as TomlTable;
+    return decoded;
   } catch (error) {
     throw new Error(`invalid config.toml: ${messageOf(error)}`);
   }
@@ -949,366 +777,6 @@ function parseCodexConfigBackupEntry(
   };
 }
 
-function previewCodexProfileFromAudit(
-  codexPaths: CodexPaths,
-  audit: CodexProfileAudit
-): OperationResult {
-  const summary =
-    audit.status === "invalid"
-      ? "codex-profile preview: blocked by invalid config"
-      : `codex-profile preview: ${audit.recommendedChangeCount} recommended change(s)`;
-
-  return new OperationResult({
-    kind: OperationKind.PreviewCodexProfile,
-    summary,
-    details: audit.details,
-    pathsTouched: [codexPaths.configToml],
-    inventory: [inspectCodexConfigInventory(codexPaths)]
-  });
-}
-
-function previewIntegrationsProfileFromAudit(
-  codexPaths: CodexPaths,
-  audit: IntegrationsProfileAudit
-): OperationResult {
-  const summary =
-    audit.status === "invalid"
-      ? "integrations-profile preview: blocked by invalid config"
-      : `integrations-profile preview: ${audit.recommendedChangeCount} recommended change(s)`;
-
-  return new OperationResult({
-    kind: OperationKind.PreviewIntegrationsProfile,
-    summary,
-    details: audit.details,
-    pathsTouched: [codexPaths.configToml],
-    inventory: [inspectCodexConfigInventory(codexPaths)]
-  });
-}
-
-function previewCloudflareProfileFromAudit(
-  codexPaths: CodexPaths,
-  audit: CloudflareProfileAudit
-): OperationResult {
-  const summary =
-    audit.status === "invalid"
-      ? "cloudflare-profile preview: blocked by invalid config"
-      : `cloudflare-profile preview: ${audit.recommendedChangeCount} recommended change(s)`;
-
-  return new OperationResult({
-    kind: OperationKind.PreviewCloudflareProfile,
-    summary,
-    details: audit.details,
-    pathsTouched: [codexPaths.configToml],
-    inventory: [inspectCodexConfigInventory(codexPaths)]
-  });
-}
-
-function previewStatuslineProfileFromAudit(
-  codexPaths: CodexPaths,
-  audit: StatuslineProfileAudit
-): OperationResult {
-  const summary =
-    audit.status === "invalid"
-      ? "statusline-profile preview: blocked by invalid config"
-      : `statusline-profile preview: ${audit.recommendedChangeCount} recommended change(s)`;
-
-  return new OperationResult({
-    kind: OperationKind.PreviewStatuslineProfile,
-    summary,
-    details: audit.details,
-    pathsTouched: [codexPaths.configToml],
-    inventory: [inspectCodexConfigInventory(codexPaths)]
-  });
-}
-
-function inspectIntegrationsProfileAuditFromContext(
-  context: CodexConfigContext
-): IntegrationsProfileAudit {
-  if (context.inventory.status === InventoryStatus.Invalid) {
-    return {
-      status: "invalid",
-      recommendedChangeCount: 0,
-      recommendedTargets: [],
-      optionalTargets: [],
-      details: [
-        "cannot preview integrations profile until ~/.codex/config.toml parses cleanly",
-        "repair current config first"
-      ]
-    };
-  }
-
-  if (context.inventory.status === InventoryStatus.Missing) {
-    return {
-      status: "missing",
-      recommendedChangeCount: 3,
-      recommendedTargets: ["context7", "playwright", "grep.app"],
-      optionalTargets: [],
-      details: [
-        "context7: missing -> recommended",
-        "playwright: missing -> recommended",
-        "grep.app: missing -> recommended"
-      ]
-    };
-  }
-
-  return integrationProfileAuditFromConfig(context.config ?? {});
-}
-
-function inspectIntegrationsProfileApplyResultFromContext(
-  context: CodexConfigContext
-): IntegrationsProfileApplyResult {
-  if (context.inventory.status === InventoryStatus.Invalid) {
-    return {
-      status: "blocked_invalid",
-      recommendedChangeCount: 0,
-      appliedKeys: [],
-      details: [
-        "repair ~/.codex/config.toml first",
-        "Sane only writes after a clean parse"
-      ]
-    };
-  }
-
-  const appliedKeys = applyIntegrationsProfileToValue(cloneTable(context.config ?? {}));
-  const audit = inspectIntegrationsProfileAuditFromContext(context);
-  return {
-    status: appliedKeys.length === 0 ? "already_satisfied" : "ready",
-    recommendedChangeCount: audit.recommendedChangeCount,
-    appliedKeys,
-    details: [...audit.details]
-  };
-}
-
-function inspectCodexProfileAuditFromContext(context: CodexConfigContext): CodexProfileAudit {
-  if (context.inventory.status === InventoryStatus.Invalid) {
-    return {
-      status: "invalid",
-      recommendedChangeCount: 0,
-      changes: [],
-      details: [
-        "cannot preview managed profile until ~/.codex/config.toml parses cleanly",
-        "repair current config first"
-      ]
-    };
-  }
-
-  if (context.inventory.status === InventoryStatus.Missing) {
-    return codexProfileAuditFromCurrentValues(
-      context.recommended,
-      {
-        model: null,
-        modelReasoningEffort: null,
-        codexHooks: null,
-        compactPrompt: null
-      },
-      "missing"
-    );
-  }
-
-  const features = asTomlTable(context.config?.features);
-  return codexProfileAuditFromCurrentValues(
-    context.recommended,
-    {
-      model: asString(context.config?.model),
-      modelReasoningEffort: asString(context.config?.model_reasoning_effort),
-      codexHooks: displayHooks(features?.codex_hooks),
-      compactPrompt: compactPromptStatus(context.config?.compact_prompt)
-    },
-    "missing"
-  );
-}
-
-function inspectCodexProfileApplyResultFromContext(context: CodexConfigContext): CodexProfileApplyResult {
-  if (context.inventory.status === InventoryStatus.Invalid) {
-    return {
-      status: "blocked_invalid",
-      recommendedChangeCount: 0,
-      appliedKeys: [],
-      details: [
-        "repair ~/.codex/config.toml first",
-        "Sane only writes after a clean parse"
-      ]
-    };
-  }
-
-  const audit = inspectCodexProfileAuditFromContext(context);
-  return {
-    status: audit.recommendedChangeCount === 0 ? "already_satisfied" : "ready",
-    recommendedChangeCount: audit.recommendedChangeCount,
-    appliedKeys: audit.changes.map((change) => change.key),
-    details: codexProfileApplyDetails(audit)
-  };
-}
-
-function inspectCloudflareProfileAuditFromContext(
-  context: CodexConfigContext
-): CloudflareProfileAudit {
-  if (context.inventory.status === InventoryStatus.Invalid) {
-    return {
-      status: "invalid",
-      recommendedChangeCount: 0,
-      target: "cloudflare-api",
-      details: [
-        "cannot preview cloudflare profile until ~/.codex/config.toml parses cleanly",
-        "repair current config first"
-      ]
-    };
-  }
-
-  if (context.inventory.status === InventoryStatus.Missing) {
-    return {
-      status: "missing",
-      recommendedChangeCount: 1,
-      target: "cloudflare-api",
-      details: [
-        "cloudflare-api: missing -> optional provider profile",
-        "oauth and permissions stay explicit at connect time",
-        "note: not part of the broad recommended integrations profile"
-      ]
-    };
-  }
-
-  return cloudflareProfileAuditFromConfig(context.config ?? {});
-}
-
-function inspectCloudflareProfileApplyResultFromContext(
-  context: CodexConfigContext
-): CloudflareProfileApplyResult {
-  if (context.inventory.status === InventoryStatus.Invalid) {
-    return {
-      status: "blocked_invalid",
-      recommendedChangeCount: 0,
-      appliedKeys: [],
-      details: [
-        "repair ~/.codex/config.toml first",
-        "Sane only writes after a clean parse"
-      ]
-    };
-  }
-
-  const appliedKeys = applyCloudflareProfileToValue(cloneTable(context.config ?? {}));
-  const audit = inspectCloudflareProfileAuditFromContext(context);
-  return {
-    status: appliedKeys.length === 0 ? "already_satisfied" : "ready",
-    recommendedChangeCount: audit.recommendedChangeCount,
-    appliedKeys,
-    details: [...audit.details]
-  };
-}
-
-function inspectStatuslineProfileAuditFromContext(
-  context: CodexConfigContext
-): StatuslineProfileAudit {
-  if (context.inventory.status === InventoryStatus.Invalid) {
-    return {
-      status: "invalid",
-      recommendedChangeCount: 0,
-      details: [
-        "cannot preview statusline profile until ~/.codex/config.toml parses cleanly",
-        "repair current config first"
-      ]
-    };
-  }
-
-  const current = context.inventory.status === InventoryStatus.Missing ? {} : (context.config ?? {});
-  return statuslineProfileAuditFromConfig(current);
-}
-
-function inspectStatuslineProfileApplyResultFromContext(
-  context: CodexConfigContext
-): StatuslineProfileApplyResult {
-  if (context.inventory.status === InventoryStatus.Invalid) {
-    return {
-      status: "blocked_invalid",
-      recommendedChangeCount: 0,
-      appliedKeys: [],
-      details: [
-        "repair ~/.codex/config.toml first",
-        "Sane only writes after a clean parse"
-      ]
-    };
-  }
-
-  const appliedKeys = applyStatuslineProfileToValue(cloneTable(context.config ?? {}));
-  const audit = inspectStatuslineProfileAuditFromContext(context);
-  return {
-    status: appliedKeys.length === 0 ? "already_satisfied" : "ready",
-    recommendedChangeCount: audit.recommendedChangeCount,
-    appliedKeys,
-    details: [...audit.details]
-  };
-}
-
-function applyCoreCodexProfileToValue(config: TomlTable, recommended: LocalConfig): void {
-  config.model = recommended.models.coordinator.model;
-  config.model_reasoning_effort = recommended.models.coordinator.reasoningEffort;
-  config.compact_prompt = buildSaneCompactPrompt();
-
-  const features = ensureChildTable(config, "features", "[features] must be a table");
-  features.codex_hooks = true;
-}
-
-function applyIntegrationsProfileToValue(config: TomlTable): IntegrationsProfileAppliedKey[] {
-  const mcpServers = ensureChildTable(config, "mcp_servers", "[mcp_servers] must be a table");
-  const appliedKeys: IntegrationsProfileAppliedKey[] = [];
-
-  if (!Object.hasOwn(mcpServers, "context7")) {
-    mcpServers.context7 = { url: "https://mcp.context7.com/mcp" };
-    appliedKeys.push("mcp_servers.context7");
-  }
-
-  if (!Object.hasOwn(mcpServers, "playwright")) {
-    mcpServers.playwright = {
-      command: "npx",
-      args: ["@playwright/mcp@latest"]
-    };
-    appliedKeys.push("mcp_servers.playwright");
-  }
-
-  if (!Object.hasOwn(mcpServers, "grep") && !Object.hasOwn(mcpServers, "grep_app")) {
-    mcpServers.grep_app = { url: "https://mcp.grep.app" };
-    appliedKeys.push("mcp_servers.grep_app");
-  }
-
-  return appliedKeys;
-}
-
-function applyCloudflareProfileToValue(config: TomlTable): CloudflareProfileAppliedKey[] {
-  const mcpServers = ensureChildTable(config, "mcp_servers", "[mcp_servers] must be a table");
-  const appliedKeys: CloudflareProfileAppliedKey[] = [];
-  if (Object.hasOwn(mcpServers, "cloudflare-api")) {
-    return appliedKeys;
-  }
-
-  mcpServers["cloudflare-api"] = { url: "https://mcp.cloudflare.com/mcp" };
-  appliedKeys.push("mcp_servers.cloudflare-api");
-  return appliedKeys;
-}
-
-function applyStatuslineProfileToValue(config: TomlTable): StatuslineProfileAppliedKey[] {
-  const tui = ensureChildTable(config, "tui", "[tui] must be a table");
-  const appliedKeys: StatuslineProfileAppliedKey[] = [];
-  const desiredStatusLine = [...RECOMMENDED_STATUSLINE];
-  const desiredTerminalTitle = [...RECOMMENDED_TERMINAL_TITLE];
-
-  if (asString(tui.notification_condition) !== RECOMMENDED_TUI_NOTIFICATION_CONDITION) {
-    tui.notification_condition = RECOMMENDED_TUI_NOTIFICATION_CONDITION;
-    appliedKeys.push("tui.notification_condition");
-  }
-
-  if (!stringArraysEqual(asStringArray(tui.status_line), desiredStatusLine)) {
-    tui.status_line = desiredStatusLine;
-    appliedKeys.push("tui.status_line");
-  }
-
-  if (!stringArraysEqual(asStringArray(tui.terminal_title), desiredTerminalTitle)) {
-    tui.terminal_title = desiredTerminalTitle;
-    appliedKeys.push("tui.terminal_title");
-  }
-
-  return appliedKeys;
-}
-
 function codexConfigDetails(config: TomlTable): string[] {
   const features = asTomlTable(config.features);
   const mcpServers = sortedKeys(asTomlTable(config.mcp_servers));
@@ -1334,124 +802,8 @@ function codexConfigDetails(config: TomlTable): string[] {
     `tui status line: ${displayStringArray(tui?.status_line)}`,
     `tui terminal title: ${displayStringArray(tui?.terminal_title)}`,
     `tui notifications: ${asString(tui?.notification_condition) ?? "unset"}`,
-    `tui theme: ${asString(tui?.theme) ?? "unset"}`
+    `tui theme: ${asString(tui?.theme) ? `${asString(tui?.theme)} (display-only, not Sane-managed)` : "unset"}`
   ];
-}
-
-function codexProfileApplyDetails(audit: CodexProfileAudit): string[] {
-  if (audit.status !== "missing") {
-    return [...audit.details];
-  }
-
-  return audit.details.filter(
-    (line) => line !== "note: integrations stay outside bare core profile"
-  );
-}
-
-function codexProfileAuditFromCurrentValues(
-  recommended: LocalConfig,
-  current: {
-    model: string | null;
-    modelReasoningEffort: string | null;
-    codexHooks: string | null;
-    compactPrompt: string | null;
-  },
-  status: CodexProfileAudit["status"]
-): CodexProfileAudit {
-  const changes: CodexProfileChange[] = [];
-  const details: string[] = [];
-
-  pushCodexProfileChange(
-    changes,
-    details,
-    "model",
-    "model",
-    current.model,
-    recommended.models.coordinator.model
-  );
-  pushCodexProfileChange(
-    changes,
-    details,
-    "model_reasoning_effort",
-    "reasoning",
-    current.modelReasoningEffort,
-    recommended.models.coordinator.reasoningEffort
-  );
-  pushCodexProfileChange(
-    changes,
-    details,
-    "compact_prompt",
-    "compact prompt",
-    current.compactPrompt,
-    "Sane continuity prompt"
-  );
-  pushCodexProfileChange(
-    changes,
-    details,
-    "features.codex_hooks",
-    "codex hooks",
-    current.codexHooks,
-    "enabled"
-  );
-
-  if (changes.length === 0) {
-    details.push("core profile already matches current recommendation");
-  }
-
-  details.push("note: this writes the single-session Codex baseline only");
-  details.push("note: broader execution and realtime routing stays derived outside config.toml");
-  details.push("note: Codex native memories stay outside Sane's default continuity path");
-  details.push("note: integrations stay outside bare core profile");
-
-  return {
-    status: changes.length === 0 ? "installed" : status,
-    recommendedChangeCount: changes.length,
-    changes,
-    details
-  };
-}
-
-function statuslineProfileAuditFromConfig(config: TomlTable): StatuslineProfileAudit {
-  const tui = asTomlTable(config.tui);
-  const currentStatusLine = asStringArray(tui?.status_line);
-  const currentTerminalTitle = asStringArray(tui?.terminal_title);
-  const currentNotifications = asString(tui?.notification_condition);
-  const details: string[] = [];
-  let recommendedChangeCount = 0;
-
-  if (currentNotifications !== RECOMMENDED_TUI_NOTIFICATION_CONDITION) {
-    details.push(
-      `tui.notification_condition: ${currentNotifications ?? "<missing>"} -> ${RECOMMENDED_TUI_NOTIFICATION_CONDITION}`
-    );
-    recommendedChangeCount += 1;
-  }
-
-  if (!stringArraysEqual(currentStatusLine, RECOMMENDED_STATUSLINE)) {
-    details.push(
-      `tui.status_line: ${displayStringArray(currentStatusLine)} -> ${RECOMMENDED_STATUSLINE.join(", ")}`
-    );
-    recommendedChangeCount += 1;
-  }
-
-  if (!stringArraysEqual(currentTerminalTitle, RECOMMENDED_TERMINAL_TITLE)) {
-    details.push(
-      `tui.terminal_title: ${displayStringArray(currentTerminalTitle)} -> ${RECOMMENDED_TERMINAL_TITLE.join(", ")}`
-    );
-    recommendedChangeCount += 1;
-  }
-
-  if (recommendedChangeCount === 0) {
-    details.push("statusline profile already matches current recommendation");
-  }
-
-  details.push("note: native Codex statusline/title config only");
-  details.push("note: this stays additive inside ~/.codex/config.toml");
-
-  return {
-    status: recommendedChangeCount === 0 ? "installed" : "missing",
-    recommendedChangeCount,
-    details
-  };
 }
 
 function displayEnabled(value: unknown): string {
@@ -1486,87 +838,14 @@ function stringArraysEqual(
   return left.every((entry, index) => entry === right[index]);
 }
 
-function tomlValueEqual(left: unknown, right: unknown): boolean {
-  return JSON.stringify(left) === JSON.stringify(right);
-}
-
-function integrationProfileAuditFromConfig(config: TomlTable): IntegrationsProfileAudit {
-  const mcpServers = asTomlTable(config.mcp_servers);
-  const hasContext7 = hasTableKey(mcpServers, "context7");
-  const hasPlaywright = hasTableKey(mcpServers, "playwright");
-  const hasGrep = hasTableKey(mcpServers, "grep") || hasTableKey(mcpServers, "grep_app");
-  const recommendedTargets = [
-    hasContext7 ? null : "context7",
-    hasPlaywright ? null : "playwright",
-    hasGrep ? null : "grep.app"
-  ].filter((value): value is string => value !== null);
-
-  return {
-    status: recommendedTargets.length === 0 ? "installed" : "missing",
-    recommendedChangeCount: recommendedTargets.length,
-    recommendedTargets,
-    optionalTargets: [],
-    details: [
-      hasContext7 ? "context7: keep installed" : "context7: missing -> recommended",
-      hasPlaywright ? "playwright: keep installed" : "playwright: missing -> recommended",
-      hasGrep ? "grep.app: keep installed" : "grep.app: missing -> recommended"
-    ]
-  };
-}
-
-function cloudflareProfileAuditFromConfig(config: TomlTable): CloudflareProfileAudit {
-  const mcpServers = asTomlTable(config.mcp_servers);
-  const hasCloudflare = hasTableKey(mcpServers, "cloudflare-api");
-  return {
-    status: hasCloudflare ? "installed" : "missing",
-    recommendedChangeCount: hasCloudflare ? 0 : 1,
-    target: "cloudflare-api",
-    details: [
-      hasCloudflare
-        ? "cloudflare-api: keep installed"
-        : "cloudflare-api: missing -> optional provider profile",
-      "oauth and permissions stay explicit at connect time",
-      "note: not part of the broad recommended integrations profile"
-    ]
-  };
-}
-
 function pushProfileChange(details: string[], label: string, current: string, recommended: string): void {
   details.push(
     current === recommended ? `${label}: keep ${recommended}` : `${label}: ${current} -> ${recommended}`
   );
 }
 
-function pushCodexProfileChange(
-  changes: CodexProfileChange[],
-  details: string[],
-  key: CodexProfileChange["key"],
-  label: string,
-  current: string | null,
-  recommended: string
-): void {
-  const displayCurrent = current ?? "<missing>";
-  if (current !== recommended) {
-    changes.push({ key, current, recommended });
-  }
-  pushProfileChange(details, label, displayCurrent, recommended);
-}
-
-function ensureChildTable(parent: TomlTable, key: string, errorMessage: string): TomlTable {
-  const existing = parent[key];
-  if (existing === undefined) {
-    const created: TomlTable = {};
-    parent[key] = created;
-    return created;
-  }
-  if (!isTomlTable(existing)) {
-    throw new Error(errorMessage);
-  }
-  return existing;
-}
-
 function cloneTable(value: TomlTable): TomlTable {
-  return JSON.parse(JSON.stringify(value)) as TomlTable;
+  return clonePlainRecord(value);
 }
 
 function sortedKeys(table: TomlTable | null | undefined): string[] {
@@ -1578,7 +857,7 @@ function hasTableKey(table: TomlTable | null | undefined, key: string): boolean 
 }
 
 function asTomlTable(value: unknown): TomlTable | null {
-  return isTomlTable(value) ? value : null;
+  return asPlainRecord(value);
 }
 
 function asString(value: unknown): string | null {
@@ -1600,10 +879,6 @@ function compactPromptStatus(value: unknown): string | null {
     return null;
   }
   return value === buildSaneCompactPrompt() ? "Sane continuity prompt" : "custom";
-}
-
-function isTomlTable(value: unknown): value is TomlTable {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function codexPathsParent(path: string): string {

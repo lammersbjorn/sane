@@ -393,7 +393,7 @@ function runCommand(shell: TuiShell, commandId: UiCommandId): OperationResult | 
       shell.activeEditor = createPackEditorState(loadEditablePreferencesConfig(shell).current);
       shell.lastResult = buildLastResultView(
         null,
-        "Guidance packs open. Up/down picks pack. Space toggles optional packs. Enter saves. r resets optional packs."
+        "Guidance options open. Up/down picks option. Space toggles optional guidance. Enter saves. r resets optional guidance."
       );
       shell.notice = null;
       return null;

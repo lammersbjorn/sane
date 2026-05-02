@@ -105,14 +105,14 @@ export function loadOverlayModel(shell: TuiShell): OverlayModel {
     case "packs":
       return {
         kind: "packs",
-        title: "Built-in Packs",
+        title: "Guidance Options",
         headerLines: [
-          "Built-in Packs",
+          "Guidance Options",
           "Space toggles. Enter save. Esc close."
         ],
         fieldLines: packFieldLines(shell.activeEditor),
         outputLines: shell.lastResult.lines,
-        detailsTitle: "Pack Summary",
+        detailsTitle: "Guidance Summary",
         detailsLines: packLines(shell.activeEditor)
       };
   }
@@ -217,14 +217,14 @@ function packLines(editor: PackEditorState): string[] {
   const selected = editor.fields[editor.selected]!;
   const skillNames = selectedPackSkillNames(selected);
   return [
-    `enabled packs: ${enabledPackNames(editor)}`,
+      `enabled guidance options: ${enabledPackNames(editor)}`,
     "",
-    `selected pack: ${packFieldLabel(selected)}`,
+    `selected option: ${packFieldLabel(selected)}`,
     packFieldExplanation(selected),
     `exports: ${skillNames.length === 0 ? "no dedicated skills" : skillNames.join(", ")}`,
     "",
     "Effect",
-    "Updates local pack config first.",
+    "Updates local guidance config first.",
     "Some exports may need rerunning after save.",
     "No marketplace or third-party plugin API yet."
   ];

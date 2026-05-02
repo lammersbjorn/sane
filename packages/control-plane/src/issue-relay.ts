@@ -6,6 +6,7 @@ import { type IssueRelayMode, type LocalConfig } from "@sane/config";
 import { OperationKind, OperationResult } from "@sane/core";
 import { type ProjectPaths } from "@sane/platform";
 
+import { asPlainRecord, parseJsonValue } from "./config-object.js";
 import { loadOrDefaultLocalConfig } from "./local-config.js";
 import { recordTelemetryEvent } from "./telemetry.js";
 
@@ -416,25 +417,41 @@ function trySearchDuplicateIssues(
         "--limit",
         "5"
       ]);
-      const parsed = JSON.parse(output) as IssueRelayDuplicateCandidate[];
-      for (const candidate of parsed) {
-        if (
-          Number.isInteger(candidate.number)
-          && typeof candidate.title === "string"
-          && typeof candidate.url === "string"
-        ) {
-          candidates.set(candidate.number, {
-            number: candidate.number,
-            title: candidate.title.slice(0, 120),
-            url: candidate.url
-          });
-        }
+      for (const candidate of parseDuplicateCandidates(output)) {
+        candidates.set(candidate.number, candidate);
       }
     }
   } catch {
     return null;
   }
   return [...candidates.values()].slice(0, 5);
+}
+
+function parseDuplicateCandidates(output: string): IssueRelayDuplicateCandidate[] {
+  const parsed = parseJsonValue(output);
+  if (!Array.isArray(parsed)) {
+    return [];
+  }
+
+  return parsed.flatMap((entry) => {
+    const candidate = asPlainRecord(entry);
+    const number = candidate?.number;
+    if (
+      !candidate
+      || typeof number !== "number"
+      || !Number.isInteger(number)
+      || typeof candidate.title !== "string"
+      || typeof candidate.url !== "string"
+    ) {
+      return [];
+    }
+
+    return [{
+      number,
+      title: candidate.title.slice(0, 120),
+      url: candidate.url
+    }];
+  });
 }
 
 function sanitizeSteps(steps: string[], paths: ProjectPaths): string[] {

@@ -229,6 +229,37 @@ describe("codex-native skills and agents", () => {
     expect(readFileSync(projectPaths.repoAgentsMd, "utf8")).toBe("# Repo notes\n");
   });
 
+  it("exports repo skills and repo AGENTS blocks idempotently", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const projectPaths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+    const config = createDefaultLocalConfig();
+    config.packs.rtk = true;
+    writeLocalConfig(projectPaths.configPath, config);
+    writeFileSync(projectPaths.repoAgentsMd, "# Repo notes\n", "utf8");
+
+    const firstSkills = exportRepoSkills(projectPaths, codexPaths);
+    const firstAgents = exportRepoAgents(projectPaths, codexPaths);
+    const firstRouter = readFileSync(
+      join(projectPaths.repoSkillsDir, "sane-router", "SKILL.md"),
+      "utf8"
+    );
+    const firstAgentsBody = readFileSync(projectPaths.repoAgentsMd, "utf8");
+
+    const secondSkills = exportRepoSkills(projectPaths, codexPaths);
+    const secondAgents = exportRepoAgents(projectPaths, codexPaths);
+
+    expect(secondSkills.summary).toBe(firstSkills.summary);
+    expect(secondSkills.pathsTouched).toEqual(firstSkills.pathsTouched);
+    expect(secondAgents.summary).toBe(firstAgents.summary);
+    expect(secondAgents.pathsTouched).toEqual(firstAgents.pathsTouched);
+    expect(readFileSync(join(projectPaths.repoSkillsDir, "sane-router", "SKILL.md"), "utf8")).toBe(firstRouter);
+    expect(readFileSync(projectPaths.repoAgentsMd, "utf8")).toBe(firstAgentsBody);
+    expect(firstAgentsBody.match(new RegExp(SANE_REPO_AGENTS_BEGIN, "g"))).toHaveLength(1);
+    expect(firstAgentsBody.match(new RegExp(SANE_REPO_AGENTS_END, "g"))).toHaveLength(1);
+  });
+
   it("uninstalls repo and user skills including optional pack skills", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
