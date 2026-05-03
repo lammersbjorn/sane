@@ -51,9 +51,9 @@ Broad work route:
 - Coordinator owns final judgment and verification.
 
 Route subagent classes with current exported defaults:
-- coordinator/main session: gpt-5.5 (medium)
+- coordinator/main session: gpt-5.5 (low)
 - explorer lane: gpt-5.4-mini (low)
-- implementation lane: gpt-5.3-codex (medium)
+- implementation lane: gpt-5.5 (low)
 - verifier lane: gpt-5.5 (high)
 - realtime lane: gpt-5.3-codex-spark (low)
 
@@ -75,15 +75,17 @@ Pack-specific trigger routes:
 - frontend-craft task picks: frontend-build, redesign, ui-implementation, visual-polish -> sane-frontend-craft
 - frontend-craft task picks: image-generation, visual-assets, hero-media, art-direction -> sane-frontend-visual-assets
 - frontend-craft task picks: frontend-review, responsive-qa, visual-audit, polish -> sane-frontend-review
+- docs-craft task picks: documentation-writing, readme, user-docs, product-docs, changelog, docs-editing, docs-review, release-notes -> sane-docs-writing
 
 Command lane for Sane-managed operations:
 - run Sane CLI first: `sane status`, `sane preview ...`, `sane export ...`, `sane uninstall ...`
 - if `sane` is unavailable in PATH, use `node apps/sane-tui/bin/sane.mjs ...`
 - avoid direct manual edits to managed exports unless you are fixing Sane internals
 
-- Caveman pack active: load `sane-caveman` for prose rules
+- Caveman pack active: use `sane-caveman` prose rules; read the skill body before normal narrative when available
 - RTK pack active: load `sane-rtk` for shell/search/test/log routing
 - Frontend-craft pack active: load the matching frontend skill for UI, asset, or visual-review work
+- Docs-craft pack active: load `sane-docs-writing` for README, user-docs, changelog, release-note, migration-note, support-doc, product-doc, or docs review/edit work
 
 ## Verification
 
