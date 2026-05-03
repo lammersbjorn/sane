@@ -117,6 +117,7 @@ export interface TuiShell {
   activeEditor: ConfigEditorState | PackEditorState | PrivacyEditorState | null;
   pendingConfirmation: PendingConfirmation | null;
   notice: (NoticeView & { section: TuiSectionId }) | null;
+  helpOpen: boolean;
   lastResult: LastResultView;
 }
 
@@ -147,6 +148,7 @@ export function createTuiShell(
     activeEditor: null,
     pendingConfirmation: null,
     notice: null,
+    helpOpen: false,
     lastResult: buildLastResultView(
       null,
       lastSummary
@@ -613,6 +615,23 @@ function buildPendingConfirmation(shell: TuiShell, action: SectionActionMetadata
     label: action.label,
     section: action.section
   };
+}
+
+export function openHelp(shell: TuiShell): void {
+  shell.helpOpen = true;
+}
+
+export function closeHelp(shell: TuiShell): void {
+  shell.helpOpen = false;
+}
+
+export function jumpToFirst(shell: TuiShell): void {
+  shell.activeActionIndex = 0;
+}
+
+export function jumpToLast(shell: TuiShell): void {
+  const actions = currentActions(shell);
+  shell.activeActionIndex = Math.max(0, actions.length - 1);
 }
 
 function wrapIndex(index: number, length: number): number {

@@ -21,7 +21,10 @@ const TERMINAL_KEY_MAP: Record<string, TerminalInputKey> = {
   r: "r",
   d: "d",
   y: "y",
-  n: "n"
+  n: "n",
+  g: "g",
+  G: "G",
+  "?": "?"
 };
 
 export function parseTerminalKey(input: string): TerminalInputKey | null {

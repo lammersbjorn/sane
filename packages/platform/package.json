@@ -1,7 +1,7 @@
 {
   "name": "@sane/platform",
   "private": true,
-  "version": "1.0.0-beta.9",
+  "version": "1.0.0-beta.10",
   "description": "Cross-platform path and filesystem layout helpers for Sane.",
   "license": "MIT OR Apache-2.0",
   "type": "module",

@@ -59,12 +59,14 @@ describe('local config parity', () => {
     const config = createDefaultLocalConfig();
 
     expect(config.models.coordinator.model).toBe('gpt-5.5');
-    expect(config.models.coordinator.reasoningEffort).toBe('medium');
+    expect(config.models.coordinator.reasoningEffort).toBe('low');
     expect(config.models.sidecar.model).toBe('gpt-5.4-mini');
+    expect(config.models.sidecar.reasoningEffort).toBe('low');
     expect(config.models.verifier.model).toBe('gpt-5.5');
     expect(config.models.verifier.reasoningEffort).toBe('high');
     expect(config.subagents.explorer.model).toBe('gpt-5.4-mini');
-    expect(config.subagents.implementation.model).toBe('gpt-5.3-codex');
+    expect(config.subagents.implementation.model).toBe('gpt-5.5');
+    expect(config.subagents.implementation.reasoningEffort).toBe('low');
     expect(config.subagents.verifier.model).toBe('gpt-5.5');
     expect(config.subagents.realtime.model).toBe('gpt-5.3-codex-spark');
     expect(config.subagents.frontendCraft.model).toBe('gpt-5.5');

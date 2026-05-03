@@ -63,7 +63,7 @@ describe("codex config control plane", () => {
 
     expect(result.summary).toBe("codex-profile preview: 4 recommended change(s)");
     expect(result.details).toContain("model: <missing> -> gpt-5.5");
-    expect(result.details).toContain("reasoning: <missing> -> medium");
+    expect(result.details).toContain("reasoning: <missing> -> low");
     expect(result.details).toContain("compact prompt: <missing> -> Sane continuity prompt");
     expect(result.details).toContain("codex hooks: <missing> -> enabled");
     expect(result.details).toContain("note: this writes the single-session Codex baseline only");
@@ -202,7 +202,7 @@ describe("codex config control plane", () => {
     expect(result.details).toContain("note: this writes the single-session Codex baseline only");
     expect(result.details).toContain("backup: skipped (no prior config existed)");
     expect(body).toContain('model = "gpt-5.5"');
-    expect(body).toContain('model_reasoning_effort = "medium"');
+    expect(body).toContain('model_reasoning_effort = "low"');
     expect(body).toContain("compact_prompt =");
     expect(body).toContain("Fresh Rules");
     expect(body).toContain("Do not add generated repo overviews");
@@ -659,7 +659,7 @@ describe("codex config control plane", () => {
       recommendedChangeCount: 4,
       changes: [
         { key: "model", current: null, recommended: "gpt-5.5" },
-        { key: "model_reasoning_effort", current: null, recommended: "medium" },
+        { key: "model_reasoning_effort", current: null, recommended: "low" },
         { key: "compact_prompt", current: null, recommended: "Sane continuity prompt" },
         { key: "features.codex_hooks", current: null, recommended: "enabled" }
       ]
@@ -726,14 +726,13 @@ describe("codex config control plane", () => {
 
     expect(audit).toMatchObject({
       status: "missing",
-      recommendedChangeCount: 3,
+      recommendedChangeCount: 2,
       changes: [
         { key: "model", current: "gpt-5.4", recommended: "gpt-5.5" },
-        { key: "model_reasoning_effort", current: "low", recommended: "medium" },
         { key: "compact_prompt", current: null, recommended: "Sane continuity prompt" }
       ]
     });
-    expect(preview.summary).toBe("codex-profile preview: 3 recommended change(s)");
+    expect(preview.summary).toBe("codex-profile preview: 2 recommended change(s)");
   });
 
   it("keeps cloudflare-profile preview summary count aligned with structured audit", () => {

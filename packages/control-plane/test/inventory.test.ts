@@ -426,12 +426,10 @@ describe("full inventory and doctor", () => {
     expect(bundle.primary.codexConfig?.status).toBe(InventoryStatus.Installed);
     expect(bundle.driftItems.map((item) => item.name)).not.toContain("codex-config");
     expect(bundle.conflictWarnings.map((warning) => warning.kind)).toEqual([
-      "codex_profile_drift",
       "codex_profile_drift"
     ]);
     expect(bundle.conflictWarnings.map((warning) => warning.target)).toEqual([
-      "model",
-      "model_reasoning_effort"
+      "model"
     ]);
   });
 

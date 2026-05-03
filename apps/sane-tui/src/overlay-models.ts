@@ -39,7 +39,16 @@ export interface NoticeOverlayModel {
   footer: string;
 }
 
-export type OverlayModel = EditorOverlayModel | ConfirmOverlayModel | NoticeOverlayModel | null;
+export interface HelpOverlayModel {
+  kind: "help";
+  title: string;
+  sections: Array<{
+    heading: string;
+    rows: Array<[string, string]>;
+  }>;
+}
+
+export type OverlayModel = EditorOverlayModel | ConfirmOverlayModel | NoticeOverlayModel | HelpOverlayModel | null;
 const PACK_FIELD_EXPLANATIONS: Record<PackFieldId, string> = {
   caveman:
     "Compressed communication guidance. Useful when you want less token-heavy prose by default.",
@@ -50,7 +59,58 @@ const PACK_FIELD_EXPLANATIONS: Record<PackFieldId, string> = {
     "Documentation guidance. Keeps README, user docs, changelogs, and release notes source-verified and concise."
 };
 
+function buildHelpOverlay(): HelpOverlayModel {
+  return {
+    kind: "help",
+    title: "Keyboard Reference",
+    sections: [
+      {
+        heading: "Browse",
+        rows: [
+          ["↑ / k", "move up"],
+          ["↓ / j", "move down"],
+          ["← / →", "change section"],
+          ["Tab / Shift+Tab", "change section"],
+          ["g", "jump to first action"],
+          ["G", "jump to last action"],
+          ["Enter", "run selected action"],
+          ["?", "show this help"],
+          ["q / Ctrl-C", "quit"]
+        ]
+      },
+      {
+        heading: "Confirm",
+        rows: [
+          ["Enter / y", "confirm"],
+          ["Esc / n", "cancel"]
+        ]
+      },
+      {
+        heading: "Notice",
+        rows: [
+          ["Enter / Space / Esc", "dismiss"]
+        ]
+      },
+      {
+        heading: "Editor (config / packs / privacy)",
+        rows: [
+          ["↑ / ↓", "pick field"],
+          ["← / →", "change value"],
+          ["Space", "toggle (packs)"],
+          ["Enter", "save"],
+          ["r", "reset to defaults"],
+          ["Esc", "close without saving"]
+        ]
+      }
+    ]
+  };
+}
+
 export function loadOverlayModel(shell: TuiShell): OverlayModel {
+  if (shell.helpOpen) {
+    return buildHelpOverlay();
+  }
+
   if (shell.notice) {
     return {
       kind: "notice",

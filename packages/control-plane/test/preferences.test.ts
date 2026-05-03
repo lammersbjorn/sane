@@ -60,8 +60,8 @@ describe("preferences control plane", () => {
     expect(result.summary).toBe(`config: ok at ${paths.configPath}`);
     expect(result.details).toEqual([
       "version: 1",
-      "coordinator: gpt-5.5 (medium)",
-      "sidecar: gpt-5.4-mini (medium)",
+      "coordinator: gpt-5.5 (low)",
+      "sidecar: gpt-5.4-mini (low)",
       "verifier: gpt-5.5 (high)",
       "derived routing: inspect Preferences for explorer, execution, realtime, and frontend-craft defaults from detected model availability",
       "telemetry: off",
@@ -83,20 +83,20 @@ describe("preferences control plane", () => {
 
     expect(result.details).toEqual([
       "version: 1",
-      "coordinator: gpt-5.5 (medium)",
-      "sidecar: gpt-5.4-mini (medium)",
+      "coordinator: gpt-5.5 (low)",
+      "sidecar: gpt-5.4-mini (low)",
       "verifier: gpt-5.5 (high)",
       "model availability: no Codex model cache; using Sane defaults (plan unknown)",
       "available models: unknown",
-      "coordinator capability: gpt-5.5 not in detected cache; selected medium",
-      "sidecar capability: gpt-5.4-mini not in detected cache; selected medium",
+      "coordinator capability: gpt-5.5 not in detected cache; selected low",
+      "sidecar capability: gpt-5.4-mini not in detected cache; selected low",
       "verifier capability: gpt-5.5 not in detected cache; selected high",
       "explorer capability: gpt-5.4-mini not in detected cache; selected low",
-      "implementation capability: gpt-5.3-codex not in detected cache; selected medium",
+      "implementation capability: gpt-5.5 not in detected cache; selected low",
       "realtime capability: gpt-5.3-codex-spark not in detected cache; selected low",
       "frontend-craft capability: gpt-5.5 not in detected cache; selected high",
       "explorer: gpt-5.4-mini (low) (derived)",
-      "execution: gpt-5.3-codex (medium) (derived)",
+      "execution: gpt-5.5 (low) (derived)",
       "reviewer: gpt-5.5 (high) (derived)",
       "realtime: gpt-5.3-codex-spark (low) (derived)",
       "frontend-craft: gpt-5.5 (high) (derived)",
@@ -244,8 +244,8 @@ describe("preferences control plane", () => {
       source: "recommended",
       derivedRouting: {
         execution: {
-          model: "gpt-5.3-codex",
-          reasoningEffort: "medium"
+          model: "gpt-5.5",
+          reasoningEffort: "low"
         },
         realtime: {
           model: "gpt-5.3-codex-spark",
@@ -258,8 +258,8 @@ describe("preferences control plane", () => {
           reasoningEffort: "low"
         },
         implementation: {
-          model: "gpt-5.3-codex",
-          reasoningEffort: "medium"
+          model: "gpt-5.5",
+          reasoningEffort: "low"
         },
         realtime: {
           model: "gpt-5.3-codex-spark",
@@ -297,7 +297,7 @@ describe("preferences control plane", () => {
       enabledPacks: ["core", "caveman"],
       derivedRouting: {
         execution: {
-          model: "gpt-5.3-codex"
+          model: "gpt-5.5"
         },
         realtime: {
           model: "gpt-5.3-codex-spark"
@@ -308,7 +308,7 @@ describe("preferences control plane", () => {
           model: "gpt-5.4-mini"
         },
         implementation: {
-          model: "gpt-5.3-codex"
+          model: "gpt-5.5"
         },
         realtime: {
           model: "gpt-5.3-codex-spark"
@@ -336,7 +336,7 @@ describe("preferences control plane", () => {
       codexPaths.modelsCacheJson,
       JSON.stringify({
         models: [
-          { slug: "gpt-5.5", supported_reasoning_levels: ["medium", "high", "xhigh"] },
+          { slug: "gpt-5.5", supported_reasoning_levels: ["low", "medium", "high", "xhigh"] },
           { slug: "gpt-5.4-mini", supported_reasoning_levels: ["low", "medium"] },
           { slug: "gpt-5.3-codex", supported_reasoning_levels: ["medium", "high"] }
         ]
@@ -356,21 +356,21 @@ describe("preferences control plane", () => {
       planType: "pro",
       availableModelCount: 3,
       availableModels: [
-        { slug: "gpt-5.5", reasoningEfforts: ["medium", "high", "xhigh"] },
+        { slug: "gpt-5.5", reasoningEfforts: ["low", "medium", "high", "xhigh"] },
         { slug: "gpt-5.4-mini", reasoningEfforts: ["low", "medium"] },
         { slug: "gpt-5.3-codex", reasoningEfforts: ["medium", "high"] }
       ]
     });
     expect(snapshot.modelCapabilities.details).toEqual([
       "model availability: detected 3 model(s) from Codex cache (plan pro)",
-      "available models: gpt-5.5 [medium, high, xhigh], gpt-5.4-mini [low, medium], gpt-5.3-codex [medium, high]",
-      "coordinator capability: gpt-5.5 supports medium/high/xhigh; selected medium",
-      "sidecar capability: gpt-5.4-mini supports low/medium; selected medium",
-      "verifier capability: gpt-5.5 supports medium/high/xhigh; selected high",
+      "available models: gpt-5.5 [low, medium, high, xhigh], gpt-5.4-mini [low, medium], gpt-5.3-codex [medium, high]",
+      "coordinator capability: gpt-5.5 supports low/medium/high/xhigh; selected low",
+      "sidecar capability: gpt-5.4-mini supports low/medium; selected low",
+      "verifier capability: gpt-5.5 supports low/medium/high/xhigh; selected high",
       "explorer capability: gpt-5.4-mini supports low/medium; selected low",
-      "implementation capability: gpt-5.3-codex supports medium/high; selected medium",
+      "implementation capability: gpt-5.5 supports low/medium/high/xhigh; selected low",
       "realtime capability: gpt-5.4-mini supports low/medium; selected low",
-      "frontend-craft capability: gpt-5.5 supports medium/high/xhigh; selected high"
+      "frontend-craft capability: gpt-5.5 supports low/medium/high/xhigh; selected high"
     ]);
   });
 

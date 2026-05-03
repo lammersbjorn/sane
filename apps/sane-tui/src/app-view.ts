@@ -71,7 +71,7 @@ export interface SaneTuiAppView {
   latestStatusTitle: string;
   latestStatusLines: string[];
   mode: {
-    id: "browse" | "confirm" | "notice" | "config" | "packs" | "privacy";
+    id: "browse" | "confirm" | "notice" | "config" | "packs" | "privacy" | "help";
     label: string;
     hint: string;
   };
@@ -276,6 +276,14 @@ function homeOverviewTitle(home: ReturnType<typeof loadHomeScreenFromStatusBundl
 }
 
 function currentMode(shell: TuiShell): SaneTuiAppView["mode"] {
+  if (shell.helpOpen) {
+    return {
+      id: "help",
+      label: "Help",
+      hint: "? or esc closes help"
+    };
+  }
+
   if (shell.notice) {
     return {
       id: "notice",

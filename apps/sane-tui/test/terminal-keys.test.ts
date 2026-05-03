@@ -24,6 +24,9 @@ describe("terminal keys", () => {
     expect(parseTerminalKey("d")).toBe("d");
     expect(parseTerminalKey("y")).toBe("y");
     expect(parseTerminalKey("n")).toBe("n");
+    expect(parseTerminalKey("g")).toBe("g");
+    expect(parseTerminalKey("G")).toBe("G");
+    expect(parseTerminalKey("?")).toBe("?");
     expect(parseTerminalKey("q")).toBe("quit");
     expect(parseTerminalKey("x")).toBeNull();
   });

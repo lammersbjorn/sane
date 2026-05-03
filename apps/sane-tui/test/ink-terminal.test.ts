@@ -147,12 +147,12 @@ describe("ink terminal renderer", () => {
   });
 
   it("uses terminal-safe action glyphs to add scan targets", () => {
-    expect(actionIconForCommand("show_codex_config")).toBe("i");
-    expect(actionIconForCommand("preview_codex_profile")).toBe("i");
-    expect(actionIconForCommand("open_config_editor")).toBe("~");
-    expect(actionIconForCommand("install_runtime")).toBe("+");
-    expect(actionIconForCommand("export_all")).toBe("+");
-    expect(actionIconForCommand("uninstall_all")).toBe("!");
+    expect(actionIconForCommand("show_codex_config")).toBe("◎");
+    expect(actionIconForCommand("preview_codex_profile")).toBe("◎");
+    expect(actionIconForCommand("open_config_editor")).toBe("⚙");
+    expect(actionIconForCommand("install_runtime")).toBe("→");
+    expect(actionIconForCommand("export_all")).toBe("→");
+    expect(actionIconForCommand("uninstall_all")).toBe("⚠");
   });
 
   it("uses roomy side-by-side panes only when the viewport can actually breathe", () => {

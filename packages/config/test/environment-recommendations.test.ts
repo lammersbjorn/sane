@@ -36,13 +36,13 @@ afterEach(() => {
 });
 
 describe('environment-aware recommendations', () => {
-  it('uses gpt-5.5 for high-value coordination and verification when available', () => {
+  it('uses scored gpt-5.5 low for ordinary coordination and execution when available', () => {
     const environment: CodexEnvironment = {
       planType: 'plus',
       availableModels: [
         {
           slug: 'gpt-5.5',
-          reasoningEfforts: ['medium', 'high', 'xhigh'],
+          reasoningEfforts: ['low', 'medium', 'high', 'xhigh'],
         },
         {
           slug: 'gpt-5.4',
@@ -66,15 +66,15 @@ describe('environment-aware recommendations', () => {
     expect(createRecommendedModelRoutingPresets(environment)).toEqual({
       coordinator: {
         model: 'gpt-5.5',
-        reasoningEffort: 'medium',
+        reasoningEffort: 'low',
       },
       execution: {
-        model: 'gpt-5.3-codex',
-        reasoningEffort: 'medium',
+        model: 'gpt-5.5',
+        reasoningEffort: 'low',
       },
       sidecar: {
         model: 'gpt-5.4-mini',
-        reasoningEffort: 'medium',
+        reasoningEffort: 'low',
       },
       verifier: {
         model: 'gpt-5.5',
@@ -92,8 +92,8 @@ describe('environment-aware recommendations', () => {
         reasoningEffort: 'low',
       },
       implementation: {
-        model: 'gpt-5.3-codex',
-        reasoningEffort: 'medium',
+        model: 'gpt-5.5',
+        reasoningEffort: 'low',
       },
       verifier: {
         model: 'gpt-5.5',
@@ -169,7 +169,7 @@ describe('environment-aware recommendations', () => {
       },
       sidecar: {
         model: 'gpt-5.4-mini',
-        reasoningEffort: 'medium',
+        reasoningEffort: 'low',
       },
       verifier: {
         model: 'gpt-5.4',
@@ -208,11 +208,58 @@ describe('environment-aware recommendations', () => {
     });
     expect(routing.sidecar).toEqual({
       model: 'gpt-5.4-mini',
-      reasoningEffort: 'medium',
+      reasoningEffort: 'low',
     });
     expect(routing.coordinator).toEqual({
       model: 'gpt-5.4',
       reasoningEffort: 'high',
+    });
+  });
+
+  it('scores routing candidates independently of detected model order', () => {
+    const availableModels: CodexEnvironment['availableModels'] = [
+      {
+        slug: 'gpt-5.3-codex-spark',
+        reasoningEfforts: ['low', 'medium'],
+      },
+      {
+        slug: 'gpt-5.4-mini',
+        reasoningEfforts: ['low', 'medium'],
+      },
+      {
+        slug: 'gpt-5.3-codex',
+        reasoningEfforts: ['medium', 'high'],
+      },
+      {
+        slug: 'gpt-5.5',
+        reasoningEfforts: ['low', 'medium', 'high', 'xhigh'],
+      },
+    ];
+
+    expect(createRecommendedModelRoutingPresets({ availableModels })).toEqual(
+      createRecommendedModelRoutingPresets({ availableModels: [...availableModels].reverse() }),
+    );
+    expect(createRecommendedSubagentRoutingPresets({ availableModels })).toEqual({
+      explorer: {
+        model: 'gpt-5.4-mini',
+        reasoningEffort: 'low',
+      },
+      implementation: {
+        model: 'gpt-5.5',
+        reasoningEffort: 'low',
+      },
+      verifier: {
+        model: 'gpt-5.5',
+        reasoningEffort: 'high',
+      },
+      realtime: {
+        model: 'gpt-5.3-codex-spark',
+        reasoningEffort: 'low',
+      },
+      frontendCraft: {
+        model: 'gpt-5.5',
+        reasoningEffort: 'high',
+      },
     });
   });
 
@@ -460,7 +507,7 @@ describe('environment-aware recommendations', () => {
       },
       sidecar: {
         model: 'gpt-5.4-mini',
-        reasoningEffort: 'medium',
+        reasoningEffort: 'low',
       },
       verifier: {
         model: 'gpt-5.4',
@@ -493,7 +540,7 @@ describe('environment-aware recommendations', () => {
       },
       sidecar: {
         model: 'gpt-5.4-mini',
-        reasoningEffort: 'medium',
+        reasoningEffort: 'low',
       },
       verifier: {
         model: 'gpt-5.4-mini',
@@ -530,7 +577,7 @@ describe('environment-aware recommendations', () => {
       },
       sidecar: {
         model: 'gpt-5.4-mini',
-        reasoningEffort: 'medium',
+        reasoningEffort: 'low',
       },
       verifier: {
         model: 'gpt-5.4',

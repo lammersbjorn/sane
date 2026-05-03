@@ -82,10 +82,10 @@ describe("policy preview", () => {
     const result = previewPolicy(paths);
     const featureLine = result.details.find((line) => line.startsWith("multi-file-feature:")) ?? "";
 
-    expect(featureLine).toContain("coordinator=gpt-5.2/medium");
+    expect(featureLine).toContain("coordinator=gpt-5.2/low");
     expect(featureLine).toContain("explorer=gpt-5.4-mini/low");
     expect(featureLine).toContain("verifier=gpt-5.1-codex-mini/high");
-    expect(featureLine).toContain("execution=gpt-5.3-codex/medium");
+    expect(featureLine).toContain("execution=gpt-5.5/low");
     expect(featureLine).toContain("realtime=gpt-5.3-codex-spark/low");
     expect(featureLine).toContain("frontend-craft=gpt-5.5/high");
   });
@@ -99,7 +99,7 @@ describe("policy preview", () => {
     const result = previewPolicy(paths, { HOME: codexHome });
     const featureLine = result.details.find((line) => line.startsWith("multi-file-feature:")) ?? "";
 
-    expect(featureLine).toContain("execution=gpt-5.3-codex/medium");
+    expect(featureLine).toContain("execution=gpt-5.5/low");
     expect(featureLine).toContain("realtime=gpt-5.3-codex-spark/low");
     expect(featureLine).toContain("frontend-craft=gpt-5.5/high");
   });

@@ -382,7 +382,7 @@ describe("app view", () => {
     expect(view.sectionOverviewLines.join("\n")).toContain("status line settings: missing");
     expect(view.sectionOverviewLines.join("\n")).toContain("Cloudflare settings: missing");
     expect(view.sectionOverviewLines.join("\n")).toContain("explore model: gpt-5.4-mini/low");
-    expect(view.sectionOverviewLines.join("\n")).toContain("build model: gpt-5.3-codex/medium");
+    expect(view.sectionOverviewLines.join("\n")).toContain("build model: gpt-5.5/low");
     expect(view.sectionOverviewLines.join("\n")).toContain("review model:");
     expect(view.sectionOverviewLines.join("\n")).not.toContain("reviewer agent:");
     expect(view.sectionOverviewLines.join("\n")).toContain("quick helper model: gpt-5.3-codex-spark/low");
@@ -437,7 +437,7 @@ describe("app view", () => {
     expect(view.selectedAction.id).toBe("show_config");
     expect(view.selectedHelpLines.join("\n")).toContain("version: 1");
     expect(view.selectedHelpLines.join("\n")).toContain("explorer: gpt-5.4-mini (low) (derived)");
-    expect(view.selectedHelpLines.join("\n")).toContain("execution: gpt-5.3-codex (medium) (derived)");
+    expect(view.selectedHelpLines.join("\n")).toContain("execution: gpt-5.5 (low) (derived)");
     expect(view.selectedHelpLines.join("\n")).toContain("realtime: gpt-5.3-codex-spark (low) (derived)");
   });
 
@@ -452,7 +452,7 @@ describe("app view", () => {
       codexPaths.modelsCacheJson,
       JSON.stringify({
         models: [
-          { slug: "gpt-5.5", supported_reasoning_levels: ["medium", "high", "xhigh"] },
+          { slug: "gpt-5.5", supported_reasoning_levels: ["low", "medium", "high", "xhigh"] },
           { slug: "gpt-5.4-mini", supported_reasoning_levels: ["low", "medium"] },
           { slug: "gpt-5.3-codex", supported_reasoning_levels: ["medium", "high"] }
         ]
@@ -482,7 +482,7 @@ describe("app view", () => {
       "model availability: detected 3 model(s) from Codex cache"
     );
     expect(view.selectedHelpLines.join("\n")).toContain(
-      "available models: gpt-5.5 [medium, high, xhigh], gpt-5.4-mini [low, medium], gpt-5.3-codex [medium, high]"
+      "available models: gpt-5.5 [low, medium, high, xhigh], gpt-5.4-mini [low, medium], gpt-5.3-codex [medium, high]"
     );
   });
 
@@ -725,7 +725,7 @@ describe("app view", () => {
       codexPaths.modelsCacheJson,
       JSON.stringify({
         models: [
-          { slug: "gpt-5.5", supported_reasoning_levels: ["medium", "high", "xhigh"] },
+          { slug: "gpt-5.5", supported_reasoning_levels: ["low", "medium", "high", "xhigh"] },
           { slug: "gpt-5.4-mini", supported_reasoning_levels: ["low", "medium"] },
           { slug: "gpt-5.3-codex", supported_reasoning_levels: ["medium", "high"] }
         ]
@@ -738,8 +738,8 @@ describe("app view", () => {
     const overview = view.sectionOverviewLines.join("\n");
 
     expect(overview).toContain("model availability: detected 3 model(s) from Codex cache");
-    expect(overview).toContain("coordinator capability: gpt-5.5 supports medium/high/xhigh; selected medium");
-    expect(overview).toContain("implementation capability: gpt-5.3-codex supports medium/high; selected medium");
+    expect(overview).toContain("coordinator capability: gpt-5.5 supports low/medium/high/xhigh; selected low");
+    expect(overview).toContain("implementation capability: gpt-5.5 supports low/medium/high/xhigh; selected low");
   });
 
   it("surfaces rollback availability and removable installs in the repair overview", () => {

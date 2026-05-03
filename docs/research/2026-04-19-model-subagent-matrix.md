@@ -126,7 +126,7 @@ Current provider docs still do not publish:
 - one neutral cross-provider benchmark table we can use to hard-rank OpenAI and non-OpenAI models together for `explorer` / `implementation` / `verifier` / `realtime`
 - one official frontend/UI benchmark proving which model has best visual taste
 
-So class ordering below is Sane inference, not published benchmark truth.
+So routing scores below are Sane inference, not published benchmark truth.
 
 ## Sane Routing Policy
 
@@ -135,10 +135,11 @@ Sane should not lock one fixed model and should not use one static fallback chai
 Sane should:
 - detect available models and runtime support first
 - map work to capability class
-- choose the cheapest model that safely fits the class
+- score available candidates by class fit, economy, latency, review strength, and visual strength
+- choose the cheapest model that safely fits the class when scores are close enough
 - escalate only when task shape or risk justifies it
-- reserve `gpt-5.5` for high-value coordination, verification, complex synthesis, and fallback implementation when Codex-specialized execution models are missing or insufficient
-- default `gpt-5.5` coordinator routing to `medium` reasoning unless the task explicitly needs extra depth; OpenAI's launch evals used `xhigh` in a research environment, but Sane should not make every parent session pay that cost by default
+- use `gpt-5.5/low` as the ordinary starting point for coordination and implementation when low reasoning is supported
+- reserve `gpt-5.5/high` or `xhigh` for verification, high-risk synthesis, and visual approval where extra depth is worth the cost
 - skip models that are known spawn-unsupported in the current auth/runtime surface
 - treat cross-provider additions as capability candidates, not universal rank overrides
 
@@ -154,8 +155,8 @@ Task-shaped preset classes for spawned work:
 Coordinator is still the parent/session-level role for synthesis and final authority. It is not a spawned preset class.
 
 Important:
-- candidate order inside each class is a Sane routing heuristic
-- these orders are not an OpenAI-published benchmark ranking
+- candidate score profiles inside each class are Sane routing heuristics
+- these scores are not an OpenAI-published benchmark ranking
 - cross-provider candidate additions must stay runtime/auth gated and benchmark-caveated
 
 ### Coordinator
@@ -166,14 +167,12 @@ Use for:
 - final authority across subagent outputs
 - high-ambiguity decisions
 
-Working order (heuristic):
-1. `gpt-5.5` when detected in the current Codex picker
-2. `gpt-5.4`
-3. `gpt-5.3-codex`
-4. `gpt-5.2`
+Default scored winner:
+- `gpt-5.5/low` when detected and low reasoning is supported
+- `gpt-5.4/high` when `gpt-5.5` is unavailable
+- lighter fallback models keep medium/low coordinator reasoning instead of automatically burning high reasoning
 
 Reasoning default:
-- `medium` for `gpt-5.5`
 - `high` for `gpt-5.4` fallback
 - escalate to `high` or `xhigh` only for unusually risky, broad, or under-specified coordination
 
@@ -184,15 +183,13 @@ Use for:
 - isolated read-heavy tasks
 - narrow scoped discovery questions
 
-Working order (heuristic):
-1. `gpt-5.4-mini`
-2. `gpt-5.3-codex-spark`
-3. `gpt-5.1-codex-mini`
-4. fallback to coordinator model only if no lighter viable option exists, including `gpt-5.5` only as a last-resort expensive sidecar
+Default scored winner:
+- `gpt-5.4-mini/low` for cheap read-heavy exploration
+- `gpt-5.3-codex-spark/low` stays preferred for realtime, not normal exploration
+- fallback to coordinator model only if no lighter viable option exists
 
 Reasoning default:
-- `medium`
-- drop to `low` for trivial read-only exploration
+- `low` where supported, otherwise `medium`
 
 ### Implementation
 
@@ -201,14 +198,14 @@ Use for:
 - broad refactors
 - bounded worker runs where coding depth matters more than broad synthesis
 
-Working order (heuristic):
-1. `gpt-5.3-codex`
-2. `gpt-5.5` for ambiguous, high-risk, multi-system implementation or when `gpt-5.3-codex` is unavailable
-3. `gpt-5.4`
-4. `gpt-5.2`
+Default scored winner:
+- `gpt-5.5/low` for ordinary implementation when low reasoning is supported
+- `gpt-5.3-codex/medium` remains a strong fallback when `gpt-5.5` is unavailable or low reasoning is not exposed
+- `gpt-5.2` should outrank mini models for non-trivial implementation fallback
 
 Reasoning default:
-- `medium` for straightforward execution
+- `low` for `gpt-5.5` ordinary execution
+- `medium` for Codex-specialized execution fallback
 - `high` when task is risky or under-specified
 
 ### Frontend UI
@@ -219,11 +216,10 @@ Use for:
 - game, canvas, WebGL, and animation-heavy surfaces
 - final visual QA and product-taste approval
 
-Working order (heuristic):
-1. `gpt-5.5`
-2. `gpt-5.4`
-3. `gpt-5.3-codex`
-4. `gpt-5.4-mini` only for tiny non-visual source discovery or mechanical fixes
+Default scored winner:
+- `gpt-5.5/high`
+- `gpt-5.4/high` when `gpt-5.5` is unavailable
+- mini models only for tiny non-visual source discovery or mechanical fixes
 
 Reasoning default:
 - `high` for normal UI subagent work
@@ -241,12 +237,10 @@ Use for:
 - test/readiness verification
 - regression scanning
 
-Working order (heuristic):
-1. `gpt-5.5`
-2. `gpt-5.4`
-3. `gpt-5.3-codex`
-4. `gpt-5.4-mini` for low-risk bounded reviews
-5. `gpt-5.2`
+Default scored winner:
+- `gpt-5.5/high`
+- `gpt-5.4/high` when `gpt-5.5` is unavailable
+- `gpt-5.4-mini/medium` only for low-risk bounded reviews when stronger review models are absent
 
 Reasoning default:
 - `high` for risky changes
@@ -258,11 +252,10 @@ Use for:
 - near-instant iterative coding loops
 - fast probe/fix cycles where latency dominates
 
-Working order (heuristic):
-1. `gpt-5.3-codex-spark`
-2. `gpt-5.4-mini`
-3. `gpt-5.3-codex`
-4. `gpt-5.5` only when realtime routes have no cheaper viable option
+Default scored winner:
+- `gpt-5.3-codex-spark/low`
+- `gpt-5.4-mini/low` when Spark is unavailable
+- `gpt-5.5` only when realtime routes have no cheaper viable option
 
 Reasoning default:
 - `low` or `medium` depending on risk and ambiguity
@@ -320,7 +313,7 @@ Popular-but-unverified rule:
 Sane config should store:
 - preferred capability class mapping
 - available model set
-- class-level candidate order plus runtime gates
+- class-level score profiles plus runtime gates
 - default reasoning per class
 - hard disable/enable flags per model
 
@@ -337,9 +330,10 @@ Sane config should not store:
 - Codex-specialized models should remain first-class options where runtime support allows.
 - documented model positioning and local spawnable-here support must be tracked separately.
 - new popular models can be added as researched candidates without changing the caveat policy.
-- class candidate order is implementation inference, not benchmark certainty.
+- class score profiles are implementation inference, not benchmark certainty.
 
 Implementation status note:
 - these task-shaped classes are now wired through config + policy-preview surfaces
+- Codex recommendations use a small internal scored selector under the existing config shape; no new user-facing score UX or persistence layer is required
 - legacy role-default fields may remain for compatibility, but they are not the routing truth
 - OpenCode Go full-pack export uses benchmark-reviewed defaults: `glm-5.1` for coordinator and implementation, `qwen3.6-plus` for explorer, `deepseek-v4-pro` for verifier, and `deepseek-v4-flash` for realtime

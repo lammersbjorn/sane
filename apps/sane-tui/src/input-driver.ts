@@ -3,11 +3,15 @@ import { type OperationResult } from "@sane/core";
 import {
   cancelActiveEditor,
   cancelPendingAction,
+  closeHelp,
   confirmPendingAction,
   dismissNotice,
   editActiveValue,
+  jumpToFirst,
+  jumpToLast,
   moveEditorSelection,
   moveSelection,
+  openHelp,
   requestTelemetryResetConfirmation,
   resetActiveEditor,
   runSelectedAction,
@@ -28,9 +32,20 @@ export type TuiInputKey =
   | "r"
   | "d"
   | "y"
-  | "n";
+  | "n"
+  | "g"
+  | "G"
+  | "?";
 
 export function handleTuiInput(shell: TuiShell, key: TuiInputKey): OperationResult | null {
+  // Help overlay: dismiss on ?, esc, or enter
+  if (shell.helpOpen) {
+    if (key === "?" || key === "escape" || key === "enter") {
+      closeHelp(shell);
+    }
+    return null;
+  }
+
   if (shell.notice) {
     if (key === "enter" || key === "space" || key === "escape") {
       dismissNotice(shell);
@@ -80,6 +95,15 @@ export function handleTuiInput(shell: TuiShell, key: TuiInputKey): OperationResu
       return null;
     case "enter":
       return runSelectedAction(shell);
+    case "g":
+      jumpToFirst(shell);
+      return null;
+    case "G":
+      jumpToLast(shell);
+      return null;
+    case "?":
+      openHelp(shell);
+      return null;
     default:
       return null;
   }

@@ -265,7 +265,7 @@ describe("tui shell", () => {
 
     expect(result?.summary).toBe("codex-profile preview: 3 recommended change(s)");
     expect(result?.details).toContain("model: gpt-5.4 -> gpt-5.5");
-    expect(result?.details).toContain("reasoning: high -> medium");
+    expect(result?.details).toContain("reasoning: high -> low");
     expect(result?.details).toContain("compact prompt: <missing> -> Sane continuity prompt");
     expect(result?.details).toContain("codex hooks: keep enabled");
   });

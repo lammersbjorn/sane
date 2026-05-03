@@ -37,10 +37,10 @@ describe("settings screen model", () => {
     expect(screen.source).toBe("recommended");
     expect(screen.models.coordinator.model).toBe("gpt-5.5");
     expect(screen.models.sidecar.model).toBe("gpt-5.4-mini");
-    expect(screen.derivedRouting.execution.model).toBe("gpt-5.3-codex");
+    expect(screen.derivedRouting.execution.model).toBe("gpt-5.5");
     expect(screen.derivedRouting.realtime.model).toBe("gpt-5.3-codex-spark");
     expect(screen.subagents.explorer.model).toBe("gpt-5.4-mini");
-    expect(screen.subagents.implementation.model).toBe("gpt-5.3-codex");
+    expect(screen.subagents.implementation.model).toBe("gpt-5.5");
     expect(screen.subagents.realtime.model).toBe("gpt-5.3-codex-spark");
     expect(screen.subagents.frontendCraft.model).toBe("gpt-5.5");
     expect(screen.subagents.frontendCraft.reasoningEffort).toBe("high");
@@ -87,7 +87,7 @@ describe("settings screen model", () => {
 
     expect(screen.source).toBe("local");
     expect(screen.models.coordinator.model).toBe("gpt-5.2");
-    expect(screen.derivedRouting.execution.model).toBe("gpt-5.3-codex");
+    expect(screen.derivedRouting.execution.model).toBe("gpt-5.5");
     expect(screen.derivedRouting.realtime.model).toBe("gpt-5.3-codex-spark");
     expect(screen.subagents.explorer.model).toBe("gpt-5.4-mini");
     expect(screen.subagents.frontendCraft.model).toBe("gpt-5.5");
@@ -155,7 +155,7 @@ describe("settings screen model", () => {
       codexPaths.modelsCacheJson,
       JSON.stringify({
         models: [
-          { slug: "gpt-5.5", supported_reasoning_levels: ["medium", "high", "xhigh"] },
+          { slug: "gpt-5.5", supported_reasoning_levels: ["low", "medium", "high", "xhigh"] },
           { slug: "gpt-5.4-mini", supported_reasoning_levels: ["low", "medium"] },
           { slug: "gpt-5.3-codex", supported_reasoning_levels: ["medium", "high"] }
         ]
@@ -169,13 +169,13 @@ describe("settings screen model", () => {
       "model availability: detected 3 model(s) from Codex cache (plan unknown)"
     );
     expect(screen.modelCapabilities.details).toContain(
-      "implementation capability: gpt-5.3-codex supports medium/high; selected medium"
+      "implementation capability: gpt-5.5 supports low/medium/high/xhigh; selected low"
     );
     expect(screen.modelCapabilities.details).toContain(
       "explorer capability: gpt-5.4-mini supports low/medium; selected low"
     );
     expect(screen.modelCapabilities.details).toContain(
-      "frontend-craft capability: gpt-5.5 supports medium/high/xhigh; selected high"
+      "frontend-craft capability: gpt-5.5 supports low/medium/high/xhigh; selected high"
     );
   });
 });

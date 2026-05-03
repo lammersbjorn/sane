@@ -80,7 +80,9 @@ function renderOverlayLayout(
         ]
       : overlay.kind === "notice"
         ? [...overlay.bodyLines, "", overlay.footer]
-        : editorOverlayBodyLines(overlay);
+        : overlay.kind === "help"
+          ? overlay.sections.flatMap((s) => [s.heading, ...s.rows.map(([k, d]) => `  ${k}  ${d}`), ""])
+          : editorOverlayBodyLines(overlay);
 
   const box = renderBox(
     `[Overlay: ${overlay.title}]`,
