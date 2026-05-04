@@ -4,9 +4,9 @@ import { join } from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { createProjectPaths, createCodexPaths } from "@sane/platform";
+import { createProjectPaths, createCodexPaths } from "../src/platform.js";
 import { readCurrentRunState, readRunSummary } from "@sane/state";
-import { installRuntime } from "../src/index.js";
+import { installRuntime } from "../src/features/install/install-runtime.js";
 
 const tempDirs: string[] = [];
 

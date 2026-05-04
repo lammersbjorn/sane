@@ -16,10 +16,10 @@ Choose the next Sane surface with minimal context: concrete skill, lane class, o
 - selecting concrete skills by trigger
 - running Sane-managed install/export/config/routing-default operations
 
-## Don't Use When
+## Use Main Session When
 
-- handling a tiny direct answer that needs no Sane surface
-- bypassing a concrete skill that already clearly matches the task
+- the task is a tiny direct answer that needs no Sane surface
+- a concrete skill already clearly matches the task
 
 ## Inputs
 
@@ -39,14 +39,14 @@ Choose the next Sane surface with minimal context: concrete skill, lane class, o
 
 ## How To Run
 
-Make one routing decision. Do not restate workflows owned by concrete skills.
+Make one routing decision. Let concrete skills own their workflows.
 
 Broad work route:
 - Broad work means multi-file cleanup, refactor, feature work, product pass, research pass, repair loop, or ambiguous repo work.
 - Load `sane-agent-lanes`; it owns lane planning, subagent handoff, edit boundaries, and auth gates.
-- Do not pre-ask for subagents when a handoff can be attempted. `sane-agent-lanes` should attempt the first lane handoff, then ask only if the tool, runtime, or higher-priority policy blocks launch.
-- If subagent launch is blocked, unavailable, or requires explicit authorization, do not route broad work to "main session only"; `sane-agent-lanes` must report the blocker, ask once, and stop.
-- Follow-up implementation after research/planning is broad work again; prior research lanes do not satisfy the implementation handoff.
+- Attempt handoff before asking about subagents. `sane-agent-lanes` should attempt the first lane handoff, then ask only if the tool, runtime, or higher-priority policy blocks launch.
+- If subagent launch is blocked, unavailable, or requires explicit authorization, keep broad work in `sane-agent-lanes`; report the blocker, ask once, and wait for direction.
+- Follow-up implementation after research/planning is broad work again; require a fresh implementation handoff.
 - For review convergence, require findings triage as `confirmed`, `needs-verify`, or `rejected`, then route to smallest implementation lane that closes `confirmed` items plus required verification.
 - Coordinator owns final judgment and verification.
 
@@ -95,7 +95,7 @@ Command lane for Sane-managed operations:
 
 ## Gotchas / Safety
 
-- do not pre-load `continue` or `sane-outcome-continuation` on every task
-- do not route by vague pack umbrella when a concrete skill exists
-- do not add repo overviews or discoverable facts to startup context
+- Load `continue` or `sane-outcome-continuation` only on matching task triggers
+- Route by concrete skill when one exists, not by vague pack umbrella
+- Keep repo overviews and discoverable facts out of startup context
 - keep managed exports additive and reversible

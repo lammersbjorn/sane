@@ -1,13 +1,13 @@
 ---
 name: continue
-description: Use when the user says continue, keep going, resume, don't stop, or wants autonomous progress on the current plan. Confirm the workstream once only if truly ambiguous, then keep moving until a real blocker or explicit user input is required.
+description: Use when the user says continue, keep going, resume, don't stop, or wants autonomous progress on the current plan. Confirm the workstream once only if truly ambiguous, then keep moving through verified slices until a true blocker or explicit user input is required.
 ---
 
 # Continue
 
 ## Goal
 
-Keep the current mainline moving through verified slices until done or truly blocked.
+Keep the current mainline moving through verified slices until done or a true blocker needs user input.
 
 ## Use When
 
@@ -34,7 +34,7 @@ Keep the current mainline moving through verified slices until done or truly blo
 - verified slices of progress
 - checkpoint commits between meaningful phases when implementation is underway
 - short milestone updates while work continues
-- one explicit blocker only when progress truly cannot continue safely
+- one explicit blocker when progress needs user input to continue safely
 
 ## How To Run
 
@@ -45,7 +45,7 @@ Keep the current mainline moving through verified slices until done or truly blo
 5. Use repo-local agents, tools, skills, local state, and routing defaults when present.
 6. Preserve the repo's own terminology and current surface names. If the user points at a file, command, path, screen, or label, inspect it before arguing from memory.
 7. Use parallel read/research lanes aggressively when safe.
-8. For broad or multi-file work, load `sane-agent-lanes`, make a lane plan, and attempt a subagent handoff before deep work. Broad reviews need explorer/reviewer lanes; broad edits need at least one implementation lane with a disjoint write scope. Do not pre-ask just because work is broad when a handoff can be attempted. If launch is unavailable, denied, missing, at thread cap, or blocked by higher-priority policy requiring explicit user authorization before invocation, report the exact blocker, ask once, and stop instead of doing a tiny solo substitute.
+8. For broad or multi-file work, load `sane-agent-lanes`, make a lane plan, and attempt a subagent handoff before deep work. Broad reviews use explorer/reviewer lanes; broad edits use at least one implementation lane with a disjoint write scope. Attempt handoff first. If launch cannot happen, surface the blocker, ask once for direction, and wait.
 9. Delegate side tasks and bounded side lanes by default when possible so mainline progress does not stall.
 10. If the user injects a side task:
    - delegate it when possible
@@ -60,8 +60,8 @@ Keep the current mainline moving through verified slices until done or truly blo
    - brief milestone updates only
    - answer from context directly when no extra tooling is needed
 15. If you reread or re-edit the same area twice without real progress, switch approach instead of looping.
-16. After any side answer, research result, checkpoint, or verify pass, keep going on the mainline unless the user explicitly paused or a real blocker exists.
-17. Stop only for a real blocker:
+16. After any side answer, research result, checkpoint, or verify pass, keep going on the mainline unless the user explicitly paused or a true blocker exists.
+17. Treat these as true blockers:
    - missing required decision the repo/context does not answer
    - missing credential or dependency with no workaround
    - destructive risk requiring approval
@@ -80,10 +80,10 @@ Keep the current mainline moving through verified slices until done or truly blo
 - a side task is not a blocker if you can do it and return
 - answering the user's side question is not a blocker
 - finishing research is not a blocker if implementation can continue from it
-- do not keep asking whether to continue
-- do not over-tool trivial asks just because you are in continuation mode
-- do not replace current evidence with a generated repo overview
-- do not leave idle subagents open after their result is no longer needed
+- ask about continuation once only when the workstream is genuinely ambiguous
+- keep trivial asks lightweight
+- use current evidence instead of generated repo overviews
+- close idle subagents after their result is no longer needed
 
 ## Examples
 

@@ -1,220 +1,59 @@
-import { readFileSync, statSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-
 import { describe, expect, it } from "vitest";
 
 import {
-  SANE_CONTINUE_SKILL_NAME,
+  COMMIT_STYLE_RULE,
+  FRONTEND_CRAFT_SELECTION_LINES,
+  FRONTEND_CRAFT_SKILL_NAMES,
   SANE_AGENT_LANES_SKILL_NAME,
   SANE_AGENT_NAME,
   SANE_BOOTSTRAP_RESEARCH_SKILL_NAME,
   SANE_CAVEMAN_PACK_SKILL_NAME,
+  SANE_CONTINUE_SKILL_NAME,
   SANE_DOCS_WRITING_PACK_SKILL_NAME,
   SANE_EXPLORER_AGENT_NAME,
   SANE_FRONTEND_CRAFT_PACK_SKILL_NAME,
-  SANE_FRONTEND_VISUAL_ASSETS_PACK_SKILL_NAME,
   SANE_FRONTEND_REVIEW_PACK_SKILL_NAME,
+  SANE_FRONTEND_VISUAL_ASSETS_PACK_SKILL_NAME,
   SANE_IMPLEMENTATION_AGENT_NAME,
   SANE_OUTCOME_CONTINUATION_SKILL_NAME,
   SANE_REALTIME_AGENT_NAME,
-  SANE_ROUTER_SKILL_NAME,
   SANE_REVIEWER_AGENT_NAME,
+  SANE_ROUTER_SKILL_NAME,
   createCoreSkills,
-  createOptionalPackSkills,
   createDefaultGuidancePacks,
   createOptionalPackSkill,
+  createOptionalPackSkills,
   createSaneAgentLanesSkill,
-  createSaneBootstrapResearchSkill,
-  createSaneContinueSkill,
-  createSaneOutcomeContinuationSkill,
   createSaneAgentTemplate,
   createSaneAgentTemplateWithPacks,
+  createSaneBootstrapResearchSkill,
+  createSaneContinueSkill,
   createSaneExplorerAgentTemplate,
   createSaneExplorerAgentTemplateWithPacks,
+  createSaneGlobalAgentsOverlay,
   createSaneImplementationAgentTemplate,
   createSaneImplementationAgentTemplateWithPacks,
-  createSaneGlobalAgentsOverlay,
+  createSaneOutcomeContinuationSkill,
   createSaneRealtimeAgentTemplate,
   createSaneRealtimeAgentTemplateWithPacks,
   createSaneRepoAgentsOverlay,
   createSaneReviewerAgentTemplate,
   createSaneReviewerAgentTemplateWithPacks,
   createSaneRouterSkill,
-  corePackAssetSourceProvenance,
-  corePackAssetSourceProvenanceStyle,
-  corePackAssetOwnership,
-  corePackAssetOwnershipStyle,
+  manifestSkillPath,
+  manifestSkills,
   optionalPackConfigKey,
   optionalPackNames,
   optionalPackSkillName,
   optionalPackSkillNames,
-  optionalPackProvenance,
-  type GuidancePacks,
-  type PackAssetProvenance,
-  type ModelRoutingGuidance
-} from "../src/index.js";
-import { parseCorePackManifest } from "../src/core-pack-manifest.js";
+  readCoreAsset,
+  readCoreManifest,
+  renderTemplate,
+  roleGuidance,
+  type GuidancePacks
+} from "./framework-assets-helpers.js";
 
-const TEST_DIR = dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = resolve(TEST_DIR, "../../..");
-const CORE_PACK_ROOT = resolve(REPO_ROOT, "packs/core");
-const FRONTEND_CRAFT_SKILL_NAMES = [
-  SANE_FRONTEND_CRAFT_PACK_SKILL_NAME,
-  SANE_FRONTEND_VISUAL_ASSETS_PACK_SKILL_NAME,
-  SANE_FRONTEND_REVIEW_PACK_SKILL_NAME
-] as const;
-const FRONTEND_CRAFT_SELECTION_LINES = [
-  "- frontend-craft task picks: frontend-build, redesign, ui-implementation, visual-polish -> sane-frontend-craft",
-  "- frontend-craft task picks: image-generation, visual-assets, hero-media, art-direction -> sane-frontend-visual-assets",
-  "- frontend-craft task picks: frontend-review, responsive-qa, visual-audit, polish -> sane-frontend-review"
-] as const;
-const COMMIT_STYLE_RULE =
-  "When committing, copy the repo's commit message style; if none exists or it is poor, default to Conventional Commits";
-const LOWERCASE_COMMIT_STYLE_RULE = COMMIT_STYLE_RULE.replace("When", "when");
-
-interface CorePackManifest {
-  name: string;
-  assets: {
-    routerSkill: string;
-    bootstrapResearchSkill: string;
-    agentLanesSkill: string;
-    outcomeContinuationSkill: string;
-    continueSkill: string;
-    globalOverlay: string;
-    repoOverlay: string;
-    agents: {
-      primary: string;
-      reviewer: string;
-      explorer: string;
-      implementation: string;
-      realtime: string;
-    };
-  };
-  optionalPacks: Record<
-    string,
-    {
-      configKey?: keyof GuidancePacks;
-      skillName?: string;
-      skillPath?: string;
-      skills?: Array<{
-        name: string;
-        path: string;
-        taskKinds?: string[];
-        resources?: Array<{
-          source: string;
-          target: string;
-        }>;
-      }>;
-      policyNote?: string;
-      routerNote?: string;
-      overlayNote?: string;
-      provenance: PackAssetProvenance;
-    }
-  >;
-  assetSources?: {
-    style: string;
-    items: Record<
-      string,
-      {
-        repo: string;
-        path: string;
-        ref: string;
-        license: string;
-        updateStrategy: string;
-      }
-    >;
-  };
-  assetOwnership?: {
-    style: string;
-    items: Record<
-      string,
-      {
-        owner: "sane";
-        mode: "source-managed" | "generated-managed";
-        writeMode?: "overwrite";
-      }
-    >;
-  };
-}
-
-function roleGuidance(): ModelRoutingGuidance {
-  return {
-    coordinatorModel: "gpt-5.4",
-    coordinatorReasoning: "high",
-    executionModel: "gpt-5.3-codex",
-    executionReasoning: "medium",
-    sidecarModel: "gpt-5.4-mini",
-    sidecarReasoning: "medium",
-    verifierModel: "gpt-5.4",
-    verifierReasoning: "medium",
-    realtimeModel: "gpt-5.3-codex-spark",
-    realtimeReasoning: "low"
-  };
-}
-
-function readCoreManifest(): CorePackManifest {
-  return JSON.parse(readFileSync(resolve(CORE_PACK_ROOT, "manifest.json"), "utf8")) as CorePackManifest;
-}
-
-function readCoreAsset(path: string): string {
-  return readFileSync(resolve(CORE_PACK_ROOT, path), "utf8");
-}
-
-function readCoreAssetBuffer(path: string): Buffer {
-  return readFileSync(resolve(CORE_PACK_ROOT, path));
-}
-
-function isLikelyHelperScript(path: string): boolean {
-  return /(^|\/)scripts\//.test(path) || /\.(?:sh|bash|zsh|py|js|mjs|cjs|ts)$/u.test(path);
-}
-
-function manifestSkills(entry: CorePackManifest["optionalPacks"][string]) {
-  return entry.skills ?? (entry.skillName && entry.skillPath ? [{ name: entry.skillName, path: entry.skillPath }] : []);
-}
-
-function manifestSkillPath(entry: CorePackManifest["optionalPacks"][string], skillName: string): string {
-  const skill = manifestSkills(entry).find((candidate) => candidate.name === skillName);
-  if (!skill) {
-    throw new Error(`missing manifest skill ${skillName}`);
-  }
-  return skill.path;
-}
-
-function frontmatterField(body: string, field: string): string | undefined {
-  const match = body.match(new RegExp(`^${field}:\\s*(.+)$`, "m"));
-  return match?.[1]?.trim().replace(/^["']|["']$/g, "");
-}
-
-function renderTemplate(template: string, replacements: Record<string, string>): string {
-  return Object.entries(replacements).reduce(
-    (body, [key, value]) => body.replaceAll(`{{${key}}}`, value),
-    template
-  );
-}
-
-function expectNonShallowGeneratedAsset(path: string, body: string): void {
-  const trimmed = body.trim();
-  expect(trimmed.length, `${path} should not be placeholder-only`).toBeGreaterThan(120);
-  expect(trimmed, `${path} should not leave template tokens unresolved`).not.toMatch(/\{\{[^}]+\}\}/);
-  expect(trimmed, `${path} should include operational contract prose`).toMatch(
-    /instruction hierarchy|managed block|Sane philosophy|Load skills|repo-local evidence/
-  );
-}
-
-function expectOperationalSkillBody(path: string, body: string): void {
-  const trimmed = body.trim();
-  expect(trimmed.length, `${path} should not be shallow`).toBeGreaterThan(220);
-  expect(trimmed, `${path} should include frontmatter`).toMatch(/^---\n[\s\S]+?\n---\n/m);
-  expect(trimmed, `${path} should include operational sections`).toMatch(
-    /^## (Goal|Use When|How To Run|Inputs|Rules|Workflow|Verification|Safety|Boundaries)/m
-  );
-  expect(trimmed, `${path} should include concrete execution language`).toMatch(
-    /\b(must|should|do not|prefer|use)\b/i
-  );
-}
-
-describe("framework asset parity", () => {
+describe("framework asset manifest and pack contracts", () => {
   it("core pack manifest describes the managed asset files", () => {
     const manifest = readCoreManifest();
 
@@ -253,6 +92,7 @@ describe("framework asset parity", () => {
     }
   });
 
+
   it("exposes one shared optional-pack roster and config-key mapping", () => {
     const manifest = readCoreManifest();
     expect(optionalPackNames()).toEqual(Object.keys(manifest.optionalPacks));
@@ -265,6 +105,7 @@ describe("framework asset parity", () => {
       expect(optionalPackConfigKey(packName)).toBe(entry.configKey);
     }
   });
+
 
   it("router skill renders from the checked-in core template", () => {
     const roles = roleGuidance();
@@ -301,11 +142,12 @@ describe("framework asset parity", () => {
     expect(body).toBe(expected);
     expect(body).toContain("Choose the next Sane surface with minimal context");
     expect(body).toContain("Load `sane-agent-lanes`; it owns lane planning");
-    expect(body).toContain("do not route broad work to \"main session only\"");
+    expect(body).toContain("keep broad work in `sane-agent-lanes`");
     expect(body).toContain("Load skills by trigger only:");
     expect(body).not.toContain("Broad read-only review still needs explorer");
     expect(body).not.toContain("{{");
   });
+
 
   it("core always-on skills resolve directly from checked-in files", () => {
     const manifest = readCoreManifest();
@@ -345,23 +187,24 @@ describe("framework asset parity", () => {
     expect(createSaneBootstrapResearchSkill()).toContain("Choose a current, defensible project stack");
     expect(createSaneAgentLanesSkill()).toContain("name: sane-agent-lanes");
     expect(createSaneAgentLanesSkill()).toContain("owned lanes");
-    expect(createSaneAgentLanesSkill()).toContain("Do not start broad edits before an implementation lane owns a disjoint write scope.");
-    expect(createSaneAgentLanesSkill()).toContain("Research/planning lanes do not authorize later implementation");
-    expect(createSaneAgentLanesSkill()).toContain("Do not count earlier research or planning lanes as the implementation handoff");
-    expect(createSaneAgentLanesSkill()).toContain("Do not do a tiny solo pass for broad review");
-    expect(createSaneAgentLanesSkill()).toContain("Do not pre-ask just because work is broad");
-    expect(createSaneAgentLanesSkill()).toContain("Blocked, missing, or unauthorized subagent launch is never a reason to route broad work to \"main session only\"");
+    expect(createSaneAgentLanesSkill()).toContain("Begin broad edits only after an implementation lane owns a disjoint write scope.");
+    expect(createSaneAgentLanesSkill()).toContain("After research/planning, require a fresh implementation or read-only reviewer handoff");
+    expect(createSaneAgentLanesSkill()).toContain("earlier research or planning lanes are context only");
+    expect(createSaneAgentLanesSkill()).toContain("Use reviewer lanes for broad, whole-codebase, release, or architecture review");
+    expect(createSaneAgentLanesSkill()).toContain("Attempt handoff for broad work before asking about subagents");
+    expect(createSaneAgentLanesSkill()).toContain("keep broad work in the lane flow");
     expect(createSaneOutcomeContinuationSkill()).toContain("name: sane-outcome-continuation");
     expect(createSaneOutcomeContinuationSkill()).toContain("plain-language outcome");
-    expect(createSaneOutcomeContinuationSkill()).toContain("Broad reviews need explorer/reviewer lanes");
-    expect(createSaneOutcomeContinuationSkill()).toContain("ask once, and stop");
-    expect(createSaneOutcomeContinuationSkill()).toContain("do not inspect, verify, patch, or continue broad work locally as a substitute");
+    expect(createSaneOutcomeContinuationSkill()).toContain("Broad reviews use explorer/reviewer lanes");
+    expect(createSaneOutcomeContinuationSkill()).toContain("ask once, and wait for user input");
+    expect(createSaneOutcomeContinuationSkill()).toContain("before inspecting, verifying, patching, or continuing broad work locally");
     expect(createSaneOutcomeContinuationSkill()).not.toContain("smallest solo fallback");
     expect(createSaneOutcomeContinuationSkill()).not.toContain("advance_outcome");
     expect(createSaneContinueSkill()).toContain("name: continue");
     expect(createSaneContinueSkill()).toContain("Keep the current mainline moving");
     expect(createSaneContinueSkill()).toContain(`${COMMIT_STYLE_RULE}.`);
   });
+
 
   it("global overlay renders from the checked-in core template", () => {
     const roles = roleGuidance();
@@ -385,19 +228,19 @@ describe("framework asset parity", () => {
       VERIFIER_REASONING: roles.verifierReasoning,
       REALTIME_MODEL: roles.realtimeModel,
       REALTIME_REASONING: roles.realtimeReasoning,
-      ENABLED_PACK_OVERLAY_NOTES: [
-        "- Frontend-craft pack active: load the matching frontend skill for UI, asset, or visual-review work"
-      ].join("\n"),
+      ENABLED_PACK_OVERLAY_NOTES: "",
       ENABLED_PACK_SKILL_SELECTIONS: FRONTEND_CRAFT_SELECTION_LINES.join("\n")
     });
 
     expect(body).toBe(expected);
-    expect(body).toContain("Load `sane-router` or concrete skills only when triggered");
-    expect(body).toContain("Frontend-craft pack active");
+    expect(body).toContain("Load `sane-router` for Sane routing or concrete skills by trigger");
+    expect(body).toContain("Broad work, continuation, pack behavior, and verification detail live in their matching skills.");
+    expect(body).not.toContain("Frontend-craft pack active");
     expect(body).not.toContain("task picks:");
     expect(body).not.toContain("Current coordinator default");
     expect(body).not.toContain("{{");
   });
+
 
   it("repo overlay renders from the checked-in repo template and stays distinct from the global overlay", () => {
     const roles = roleGuidance();
@@ -421,9 +264,7 @@ describe("framework asset parity", () => {
       VERIFIER_REASONING: roles.verifierReasoning,
       REALTIME_MODEL: roles.realtimeModel,
       REALTIME_REASONING: roles.realtimeReasoning,
-      ENABLED_PACK_OVERLAY_NOTES: [
-        "- RTK pack active: load `sane-rtk` for shell/search/test/log routing"
-      ].join("\n"),
+      ENABLED_PACK_OVERLAY_NOTES: "",
       ENABLED_PACK_SKILL_SELECTIONS: "- rtk task picks: shell, search, test, logs -> sane-rtk"
     });
 
@@ -432,14 +273,16 @@ describe("framework asset parity", () => {
     expect(body).toContain("Use the repo's own verify commands");
     expect(body).toContain("Sane repo overlay");
     expect(body).toContain("Use `sane-router` for Sane routing");
-    expect(body).toContain("RTK pack active");
-    expect(body).toContain("sane-rtk");
+    expect(body).toContain("enabled pack skills by trigger");
+    expect(body).not.toContain("RTK pack active");
+    expect(body).not.toContain("sane-rtk");
     expect(body).not.toContain("Current coordinator default");
     expect(body).not.toBe(createSaneGlobalAgentsOverlay(packs, roles));
     expect(body).not.toContain("{{");
   });
 
-  it("derives router and overlay policy prose from one canonical manifest field", () => {
+
+  it("derives router policy prose from one canonical manifest field while overlays keep only trigger pointers", () => {
     const roles = roleGuidance();
     const manifest = readCoreManifest();
     const packs: GuidancePacks = {
@@ -457,10 +300,13 @@ describe("framework asset parity", () => {
 
     for (const note of expectedNotes) {
       expect(router).toContain(note);
-      expect(globalOverlay).toContain(note);
-      expect(repoOverlay).toContain(note);
+      expect(globalOverlay).not.toContain(note);
+      expect(repoOverlay).not.toContain(note);
     }
+    expect(globalOverlay).toContain("concrete skills by trigger");
+    expect(repoOverlay).toContain("enabled pack skills by trigger");
   });
+
 
   it("optional pack skills resolve directly from checked-in files", () => {
     const manifest = readCoreManifest();
@@ -532,247 +378,6 @@ describe("framework asset parity", () => {
     expect(docsWriting).toContain("Do not present the TUI as the normal prompting interface");
   });
 
-  it("exposes pinned provenance seam for optional packs", () => {
-    const caveman = optionalPackProvenance("caveman");
-    const frontendCraft = optionalPackProvenance("frontend-craft");
-    const docsCraft = optionalPackProvenance("docs-craft");
-    const rtk = optionalPackProvenance("rtk");
-
-    expect(caveman?.kind).toBe("derived");
-    expect(frontendCraft?.kind).toBe("derived");
-    expect(docsCraft?.kind).toBe("derived");
-    expect(rtk?.kind).toBe("internal");
-    if (
-      caveman?.kind !== "derived" ||
-      frontendCraft?.kind !== "derived" ||
-      docsCraft?.kind !== "derived" ||
-      rtk?.kind !== "internal"
-    ) {
-      throw new Error("unexpected optional pack provenance shape");
-    }
-
-    expect(caveman).toMatchObject({
-      kind: "derived",
-      updateStrategy: "pinned-manual",
-      upstreams: [
-        expect.objectContaining({
-          name: "caveman",
-          role: "primary",
-          url: "https://github.com/JuliusBrussee/caveman"
-        })
-      ]
-    });
-    expect(caveman?.upstreams?.[0]?.ref).toMatch(/^v\d+\.\d+\.\d+$/);
-    expect(frontendCraft).toMatchObject({
-      kind: "derived",
-      updateStrategy: "manual-curated",
-      upstreams: [
-        expect.objectContaining({ name: "taste-skill", role: "inspiration" }),
-        expect.objectContaining({ name: "impeccable", role: "inspiration" }),
-        expect.objectContaining({ name: "make-interfaces-feel-better", role: "inspiration" })
-      ]
-    });
-    expect(frontendCraft?.note).toContain("Sane-owned compact frontend craft pack");
-    expect(frontendCraft?.upstreams?.filter((upstream) => upstream.ref).length).toBeGreaterThanOrEqual(2);
-    expect(docsCraft).toMatchObject({
-      kind: "derived",
-      updateStrategy: "manual-curated",
-      upstreams: [
-        expect.objectContaining({ name: "google-gemini-docs-writer", role: "inspiration" }),
-        expect.objectContaining({ name: "aiskillstore-writing-docs", role: "inspiration" }),
-        expect.objectContaining({ name: "inkeep-docs-skill", role: "inspiration" }),
-        expect.objectContaining({ name: "obra-writing-plans", role: "inspiration" })
-      ]
-    });
-    expect(docsCraft?.note).toContain("ETH-aligned instruction-surface research");
-    expect(rtk).toMatchObject({
-      kind: "internal",
-      updateStrategy: "manual-curated"
-    });
-    expect(rtk?.note).toContain("RTK-aware shell routing");
-    expect(optionalPackProvenance("missing-pack")).toBeUndefined();
-  });
-
-  it("exposes source provenance seam for core pack assets", () => {
-    const manifest = readCoreManifest();
-    const requiredAssetPaths = [
-      manifest.assets.routerSkill,
-      manifest.assets.bootstrapResearchSkill,
-      manifest.assets.agentLanesSkill,
-      manifest.assets.outcomeContinuationSkill,
-      manifest.assets.continueSkill,
-      manifest.assets.globalOverlay,
-      manifest.assets.repoOverlay,
-      manifest.assets.agents.primary,
-      manifest.assets.agents.reviewer,
-      manifest.assets.agents.explorer,
-      manifest.assets.agents.implementation,
-      manifest.assets.agents.realtime,
-      ...Object.values(manifest.optionalPacks).flatMap((entry) =>
-        manifestSkills(entry).flatMap((skill) => [
-          skill.path,
-          ...((skill.resources ?? []).map((resource) => resource.source))
-        ])
-      )
-    ];
-    const requiredAssetPathSet = new Set(requiredAssetPaths);
-
-    expect(manifest.assetSources?.style).toBe("mixed-source-provenance");
-    expect(corePackAssetSourceProvenanceStyle()).toBe("mixed-source-provenance");
-    expect(Object.keys(manifest.assetSources?.items ?? {}).sort()).toEqual(
-      [...requiredAssetPathSet].sort()
-    );
-
-    for (const path of requiredAssetPaths) {
-      const source = corePackAssetSourceProvenance(path);
-      expect(source).toEqual(manifest.assetSources?.items[path]);
-      expect(source?.repo.startsWith("https://")).toBe(true);
-      expect(source?.path.length).toBeGreaterThan(0);
-      expect(source?.ref.length).toBeGreaterThan(0);
-      if (source?.repo === "https://github.com/lammersbjorn/sane") {
-        expect(source.ref).toBe("workspace");
-      }
-      expect(source?.license.length).toBeGreaterThan(0);
-      expect(source?.updateStrategy).toContain("manual");
-    }
-
-    expect(corePackAssetSourceProvenance("missing/file")).toBeUndefined();
-  });
-
-  it("exposes ownership seam for core managed assets", () => {
-    const manifest = readCoreManifest();
-    const requiredAssetPaths = [
-      manifest.assets.routerSkill,
-      manifest.assets.bootstrapResearchSkill,
-      manifest.assets.agentLanesSkill,
-      manifest.assets.outcomeContinuationSkill,
-      manifest.assets.continueSkill,
-      manifest.assets.globalOverlay,
-      manifest.assets.repoOverlay,
-      manifest.assets.agents.primary,
-      manifest.assets.agents.reviewer,
-      manifest.assets.agents.explorer,
-      manifest.assets.agents.implementation,
-      manifest.assets.agents.realtime,
-      ...Object.values(manifest.optionalPacks).flatMap((entry) =>
-        manifestSkills(entry).flatMap((skill) => [
-          skill.path,
-          ...((skill.resources ?? []).map((resource) => resource.source))
-        ])
-      )
-    ];
-    const requiredAssetPathSet = new Set(requiredAssetPaths);
-
-    expect(manifest.assetOwnership?.style).toBe("sane-managed-asset-ownership");
-    expect(corePackAssetOwnershipStyle()).toBe("sane-managed-asset-ownership");
-    expect(Object.keys(manifest.assetOwnership?.items ?? {}).sort()).toEqual(
-      [...requiredAssetPathSet].sort()
-    );
-
-    for (const path of requiredAssetPathSet) {
-      const ownership = corePackAssetOwnership(path);
-      expect(ownership).toEqual(manifest.assetOwnership?.items[path]);
-      expect(ownership?.owner).toBe("sane");
-      if (path.endsWith(".tmpl")) {
-        expect(ownership?.mode).toBe("generated-managed");
-        expect(ownership?.writeMode).toBe("overwrite");
-      } else {
-        expect(ownership?.mode).toBe("source-managed");
-        expect(ownership?.writeMode).toBeUndefined();
-      }
-    }
-
-    expect(corePackAssetOwnership("missing/file")).toBeUndefined();
-  });
-
-  it("rejects malformed ownership metadata", () => {
-    const manifest = readCoreManifest();
-    const ownedPath = manifest.assets.routerSkill;
-
-    const wrongOwner = structuredClone(manifest);
-    wrongOwner.assetOwnership!.items[ownedPath] = {
-      owner: "not-sane" as "sane",
-      mode: "generated-managed",
-      writeMode: "overwrite"
-    };
-    expect(() => parseCorePackManifest(JSON.stringify(wrongOwner))).toThrow(
-      `core pack asset ownership ${ownedPath} owner must be sane`
-    );
-
-    const missingGeneratedWriteMode = structuredClone(manifest);
-    missingGeneratedWriteMode.assetOwnership!.items[ownedPath] = {
-      owner: "sane",
-      mode: "generated-managed"
-    };
-    expect(() => parseCorePackManifest(JSON.stringify(missingGeneratedWriteMode))).toThrow(
-      `core pack asset ownership ${ownedPath} generated-managed writeMode must be overwrite`
-    );
-
-    const sourceWithWriteMode = structuredClone(manifest);
-    sourceWithWriteMode.assetOwnership!.items[manifest.assets.bootstrapResearchSkill] = {
-      owner: "sane",
-      mode: "source-managed",
-      writeMode: "overwrite"
-    };
-    expect(() => parseCorePackManifest(JSON.stringify(sourceWithWriteMode))).toThrow(
-      `core pack asset ownership ${manifest.assets.bootstrapResearchSkill} source-managed must not define writeMode`
-    );
-  });
-
-  it("keeps every manifest-exported skill path current", () => {
-    const manifest = readCoreManifest();
-
-    for (const [packName, entry] of Object.entries(manifest.optionalPacks)) {
-      for (const skill of manifestSkills(entry)) {
-        const body = readCoreAsset(skill.path);
-        expect(body, `${packName}:${skill.path}`).toMatch(/^---\n/);
-        expect(frontmatterField(body, "name"), `${packName}:${skill.path}`).toBe(skill.name);
-        expect(frontmatterField(body, "description"), `${packName}:${skill.path}`).toBeTruthy();
-      }
-    }
-  });
-
-  it("preserves optional skill support files exactly as manifest declares", () => {
-    const manifest = readCoreManifest();
-
-    for (const [packName, entry] of Object.entries(manifest.optionalPacks)) {
-      const generatedSkills = createOptionalPackSkills(packName);
-      const manifestDeclaredSkills = manifestSkills(entry);
-      expect(generatedSkills.map((skill) => skill.name)).toEqual(
-        manifestDeclaredSkills.map((skill) => skill.name)
-      );
-
-      for (const skill of manifestDeclaredSkills) {
-        const generated = generatedSkills.find((candidate) => candidate.name === skill.name);
-        expect(generated, `${packName}:${skill.name} should be exported`).toBeTruthy();
-        const expectedResources = (skill.resources ?? []).map((resource) => ({
-          path: resource.target,
-          content: readCoreAsset(resource.source)
-        }));
-        expect(generated?.resources, `${packName}:${skill.name} resources should preserve mapping`).toEqual(
-          expectedResources
-        );
-      }
-    }
-  });
-
-  it("keeps executable helper-script resources operational when present", () => {
-    const manifest = readCoreManifest();
-    const resources = Object.values(manifest.optionalPacks).flatMap((entry) =>
-      manifestSkills(entry).flatMap((skill) => skill.resources ?? [])
-    );
-
-    for (const resource of resources.filter((item) => isLikelyHelperScript(item.source))) {
-      const sourcePath = resolve(CORE_PACK_ROOT, resource.source);
-      const mode = statSync(sourcePath).mode;
-      const ownerExecutable = (mode & 0o100) !== 0;
-      const body = readCoreAsset(resource.source);
-      expect(body.length, `${resource.source} should not be empty`).toBeGreaterThan(0);
-      if (ownerExecutable) {
-        expect(body, `${resource.source} should include shebang when executable`).toMatch(/^#!/);
-      }
-    }
-  });
 
   it("custom agent templates render from checked-in files", () => {
     const roles = roleGuidance();
@@ -835,6 +440,7 @@ describe("framework asset parity", () => {
     expect(realtime).not.toContain("{{");
   });
 
+
   it("custom agent templates expose direct execution contracts", () => {
     const roles = roleGuidance();
     const agent = createSaneAgentTemplate(roles);
@@ -874,39 +480,6 @@ describe("framework asset parity", () => {
     expect(realtime).toContain("return changed paths or exact findings");
   });
 
-  it("rejects shallow generated asset bodies in contract checks", () => {
-    expect(() => expectNonShallowGeneratedAsset("placeholder", "---\nname: placeholder\n---\n")).toThrow();
-    expect(() => expectNonShallowGeneratedAsset("unresolved", "x".repeat(140) + "{{MODEL}}")).toThrow();
-  });
-
-  it("generated-managed core assets are operational, not shallow descriptors", () => {
-    const manifest = readCoreManifest();
-
-    for (const [path, ownership] of Object.entries(manifest.assetOwnership?.items ?? {})) {
-      if (ownership.mode !== "generated-managed") {
-        continue;
-      }
-
-      expectNonShallowGeneratedAsset(path, readCoreAsset(path).replace(/\{\{[^}]+\}\}/g, "filled"));
-    }
-  });
-
-  it("source-managed skill assets are operational, not shallow descriptors", () => {
-    const manifest = readCoreManifest();
-
-    for (const [path, ownership] of Object.entries(manifest.assetOwnership?.items ?? {})) {
-      if (ownership.mode !== "source-managed" || !path.includes("skills/")) {
-        continue;
-      }
-
-      const body = readCoreAsset(path);
-      if (/(\.png|\.jpg|\.jpeg|\.webp|\.gif|\.ico|\.svg)$/u.test(path)) {
-        expect(readCoreAssetBuffer(path).byteLength, `${path} binary asset should not be empty`).toBeGreaterThan(0);
-        continue;
-      }
-      expectOperationalSkillBody(path, body);
-    }
-  });
 
   it("custom agent templates enforce enabled caveman pack rules", () => {
     const roles = roleGuidance();
@@ -932,5 +505,6 @@ describe("framework asset parity", () => {
       expect(body).not.toContain("{{ENABLED_PACK_AGENT_NOTES}}");
     }
   });
+
 
 });

@@ -16,7 +16,7 @@ Choose a current, defensible project stack before code gets built around stale d
 - the task depends on current ecosystem state
 - experimental tools may be useful if they are proven enough for semi-production use
 
-## Don't Use When
+## Use Existing Stack When
 
 - the user already chose the stack and it is reasonable
 - the work is a small change inside an existing project
@@ -54,8 +54,8 @@ Choose a current, defensible project stack before code gets built around stale d
 
 ## Gotchas
 
-- Do not research every new package for tiny edits.
-- Do not chase novelty when a boring stable choice fits better.
-- Do not ignore a user-selected stack unless it is clearly wrong for the task.
-- Do not cite trend claims without current evidence.
-- Do not write broad generated context files as a research output.
+- Keep tiny edits on the existing stack.
+- Prefer stable choices when novelty has no clear payoff.
+- Follow a user-selected stack unless it is clearly wrong for the task.
+- Cite trend claims only with current evidence.
+- Return focused decisions rather than broad generated context files.

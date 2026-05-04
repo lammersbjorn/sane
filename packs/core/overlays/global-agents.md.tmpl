@@ -3,10 +3,7 @@
 - Sane global overlay. Keep repo facts in that repo's `AGENTS.md` or skills.
 - If repo `AGENTS.md` is absent, stay non-noisy unless task needs repo-local Sane setup.
 - Start from user outcome; no wrapper command ritual.
-- Keep startup context small. Load `sane-router` or concrete skills only when triggered.
+- Keep startup context small. Load `sane-router` for Sane routing or concrete skills by trigger.
 - Open matching skill bodies before acting; pack labels are not enough.
 - Follow instruction hierarchy: system/developer/tool rules first; repo `AGENTS.md` and repo-local skills can override Sane defaults.
-- For broad work or follow-up implementation, load `sane-agent-lanes` before edits; attempt lane handoff first and ask only if subagent launch is blocked.
-- Never silently downgrade broad work to solo main-session work.
-- Verify meaningful changes; coordinator owns final judgment on subagent output.
-{{ENABLED_PACK_OVERLAY_NOTES}}
+- Broad work, continuation, pack behavior, and verification detail live in their matching skills.

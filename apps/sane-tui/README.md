@@ -9,7 +9,7 @@ This package owns:
 - render-ready view models plus text and Ink terminal drivers
 - CLI parsing that dispatches to `@sane/control-plane`
 
-It should stay thin around backend behavior. Install/export/status/repair logic belongs in `@sane/control-plane`; config, platform, state, policy, and asset logic belong in their packages.
+It should stay thin around backend behavior. Install/export/status/repair logic, platform path discovery, and policy primitives belong in `@sane/control-plane`; config, state, and framework asset logic stay in their packages.
 
 Stable imports should prefer the package barrel:
 
@@ -22,9 +22,9 @@ Root scripts such as `pnpm start`, `pnpm run start:settings`, and `pnpm run star
 Verify with:
 
 ```bash
-pnpm --filter @sane/sane-tui test
-pnpm --filter @sane/sane-tui typecheck
-pnpm --filter @sane/sane-tui run build:smoke
+rtk pnpm --filter @sane/sane-tui test
+rtk run 'pnpm --filter @sane/sane-tui typecheck'
+rtk pnpm --filter @sane/sane-tui run build:smoke
 ```
 
 Real Codex smoke (requires Codex CLI plus auth at `~/.codex/auth.json` or `SANE_CODEX_SMOKE_AUTH_JSON`):

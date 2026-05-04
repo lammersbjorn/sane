@@ -1,4 +1,4 @@
-import { type HostPlatform } from "@sane/platform";
+import { type HostPlatform } from "@sane/control-plane/platform.js";
 
 import { COMMAND_METADATA_REGISTRY } from "./command-registry-registry.js";
 import { WINDOWS_EXPORT_ALL_FILES_TOUCHED, WINDOWS_EXPORT_ALL_INCLUDES } from "./command-registry-platform-paths.js";

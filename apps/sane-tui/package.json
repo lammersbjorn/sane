@@ -4,7 +4,7 @@
   "description": "Terminal onboarding and setup surface for Codex.",
   "license": "MIT OR Apache-2.0",
   "type": "module",
-  "version": "1.0.0-beta.10",
+  "version": "1.0.0-beta.11",
   "bin": {
     "sane": "./bin/sane.mjs"
   },
@@ -72,9 +72,7 @@
   "dependencies": {
     "@sane/config": "workspace:*",
     "@sane/control-plane": "workspace:*",
-    "@sane/core": "workspace:*",
     "@sane/framework-assets": "workspace:*",
-    "@sane/platform": "workspace:*",
     "@sane/state": "workspace:*",
     "ink": "7.0.1",
     "react": "19.2.5"

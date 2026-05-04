@@ -2,7 +2,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { createCodexPaths, createProjectPaths } from "@sane/platform";
+import { createCodexPaths, createProjectPaths } from "@sane/control-plane/platform.js";
 
 import {
   createTuiShell,

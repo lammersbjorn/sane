@@ -1,4 +1,4 @@
-import { detectPlatform, type CodexPaths, type HostPlatform, type ProjectPaths } from "@sane/platform";
+import { detectPlatform, type CodexPaths, type HostPlatform, type ProjectPaths } from "@sane/control-plane/platform.js";
 
 import { uninstallAll } from "@sane/control-plane/bundles.js";
 import {
@@ -6,7 +6,12 @@ import {
   restoreCodexConfig
 } from "@sane/control-plane/codex-config.js";
 import { executeOperation } from "@sane/control-plane/history.js";
-import { uninstallGlobalAgents, uninstallUserSkills } from "@sane/control-plane/codex-native.js";
+import {
+  uninstallGlobalAgents,
+  uninstallRepoAgents,
+  uninstallRepoSkills,
+  uninstallUserSkills
+} from "@sane/control-plane/codex-native.js";
 import { uninstallCustomAgents, uninstallHooks } from "@sane/control-plane/hooks-custom-agents.js";
 import {
   inspectRepairStatusFromStatusBundle,
@@ -15,8 +20,7 @@ import {
   type RepairActionStatusId
 } from "@sane/control-plane/repair-status.js";
 import { inspectStatusBundle } from "@sane/control-plane/inventory.js";
-import { uninstallRepoAgents, uninstallRepoSkills } from "@sane/control-plane";
-import { installRuntime } from "@sane/control-plane";
+import { installRuntime } from "@sane/control-plane/install-runtime.js";
 import { resetTelemetryData } from "@sane/control-plane/preferences.js";
 import { listSectionActions } from "@sane/sane-tui/command-registry.js";
 import { buildRepairActionRows } from "@sane/sane-tui/section-action-rows.js";

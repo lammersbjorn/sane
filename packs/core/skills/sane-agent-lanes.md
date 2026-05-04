@@ -16,12 +16,12 @@ Turn broad work into small owned lanes with clear write boundaries, verification
 - the work needs scoped tests, review, and a human pick/merge decision
 - there are multiple independent code areas with clear ownership boundaries
 
-## Don't Use When
+## Use Main Session When
 
 - the task is a small single-file fix
-- the user only asked for a tiny direct answer, narrow status check, or narrow research answer
-- the research/product pass is not broad enough to need owned parallel lanes
-- ownership boundaries cannot be described before implementation starts
+- the user asked for a tiny direct answer, narrow status check, or narrow research answer
+- the research/product pass is small enough for one owned thread
+- ownership boundaries need more discovery before implementation lanes can be assigned
 
 ## Inputs
 
@@ -33,7 +33,7 @@ Turn broad work into small owned lanes with clear write boundaries, verification
 
 ## Output
 
-Produce a compact lane plan. Keep it task-specific; do not include repo overviews.
+Produce a compact lane plan. Keep it task-specific and skip repo overviews.
 
 | Lane | Owner | Scope | Write Boundary | Test First | Verify | Review |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -45,7 +45,7 @@ Also include:
 - which lanes can run now and which must wait
 - the first successful subagent handoff needed before broad work continues
 - whether this is a new implementation phase after research/planning, and the first implementation/review handoff needed before edits
-- the blocked-handoff fallback question to ask only if launch is blocked, unavailable, or requires explicit user authorization
+- the launch-failure fallback question to ask only when subagent launch is blocked, unavailable, or requires explicit user authorization
 - the merge/review order
 - review-lane convergence format: each finding labeled `confirmed`, `needs-verify`, or `rejected` with one-line reason/evidence
 - coordinator step that picks smallest implementation lane that resolves all `confirmed` findings and only required `needs-verify` checks
@@ -59,24 +59,24 @@ Also include:
 4. Give each lane a small write boundary and a matching verify command.
 5. Require failing or focused tests before implementation when behavior changes.
 6. Attempt to spawn at least one lane before broad work continues. Use explorer/reviewer lanes for broad reviews and implementation lanes when files will change.
-7. Treat each phase change as a new lane decision. Research/planning lanes do not authorize later implementation; before broad edits, spawn an implementation lane or a read-only reviewer lane with exact boundaries.
-8. Ask for subagent authorization only after a handoff is blocked. If launch is unavailable, denied, missing, at thread cap, or higher-priority policy requires explicit user authorization before invocation, report the exact blocker, ask once, and stop. Do not inspect, verify, patch, or continue broad work locally as a substitute.
+7. Treat each phase change as a new lane decision. After research/planning, require a fresh implementation or read-only reviewer handoff with exact boundaries before broad edits.
+8. Attempt handoff before asking for subagent authorization. If launch is unavailable, denied, missing, at thread cap, or higher-priority policy requires explicit user authorization before invocation, report the exact blocker, ask once, and wait for user input before inspecting, verifying, patching, or continuing broad work locally.
 9. If spawn fails or thread cap is hit, close completed agents and retry once with either `message` or `items`, not both.
 10. Keep one coordinator lane responsible for integration and review.
-11. Stop and ask when write boundaries conflict or the next step needs a human choice.
+11. Ask and wait when write boundaries conflict or the next step needs a human choice.
 12. Keep review verdicts compact; avoid long narrative sprawl once findings are classified.
 
 ## Safety
 
-- Subagent-first for every lane plan. Stay single-agent only for tiny direct answers.
-- Do not let two lanes own the same files unless one is explicitly read-only.
-- Do not start broad edits before an implementation lane owns a disjoint write scope.
-- Do not count earlier research or planning lanes as the implementation handoff for a later "add it", "build it", "fix it", or "redo it" turn.
-- Do not create lanes for broad repo summaries; create lanes for decisions, files, tests, or reviews.
-- Do not do a tiny solo pass for broad review, whole-codebase review, release review, or architecture review.
-- Do not pre-ask just because work is broad when a subagent handoff can be attempted.
-- Blocked, missing, or unauthorized subagent launch is never a reason to route broad work to "main session only"; ask and stop instead.
-- Do not create hidden background loops.
-- Do not skip verification just because lanes ran in parallel.
-- Do not leave review findings as unclassified prose; classify as `confirmed`, `needs-verify`, or `rejected`.
-- Do not turn Sane into the daily prompting interface; this is exported workflow guidance.
+- Start every lane plan with subagent handoff unless the request is a tiny direct answer.
+- Give overlapping file ownership to one writing lane; make any second lane explicitly read-only.
+- Begin broad edits only after an implementation lane owns a disjoint write scope.
+- Treat later "add it", "build it", "fix it", or "redo it" turns as new implementation handoffs; earlier research or planning lanes are context only.
+- Create lanes for decisions, files, tests, or reviews instead of broad repo summaries.
+- Use reviewer lanes for broad, whole-codebase, release, or architecture review.
+- Attempt handoff for broad work before asking about subagents.
+- When subagent launch is blocked, missing, or unauthorized, keep broad work in the lane flow: report the blocker, ask once, and wait for direction.
+- Keep background work visible as explicit lanes.
+- Verify changed behavior even when lanes ran in parallel.
+- Classify review findings as `confirmed`, `needs-verify`, or `rejected`.
+- Keep Sane as exported workflow guidance, not the daily prompting interface.

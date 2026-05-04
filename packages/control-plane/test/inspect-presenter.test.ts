@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { InventoryScope, InventoryStatus } from "@sane/core";
+import { InventoryScope, InventoryStatus } from "@sane/control-plane/core.js";
 import { optionalPackSkillNames } from "@sane/framework-assets";
 
 import {

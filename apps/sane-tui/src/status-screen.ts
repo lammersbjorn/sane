@@ -1,14 +1,18 @@
-import { detectPlatform, type CodexPaths, type HostPlatform, type ProjectPaths } from "@sane/platform";
+import { detectPlatform, type CodexPaths, type HostPlatform, type ProjectPaths } from "@sane/control-plane/platform.js";
 
 import {
   formatInspectOverviewLines as formatSharedInspectOverviewLines,
+  type InspectOverviewSnapshot
+} from "@sane/control-plane/inspect-presenter.js";
+import {
   formatInspectPolicyPreviewLines as formatSharedInspectPolicyPreviewLines,
   formatLatestPolicyPreviewInputLines as formatSharedLatestPolicyPreviewInputLines,
-  formatLatestPolicyPreviewLines as formatSharedLatestPolicyPreviewLines,
+  formatLatestPolicyPreviewLines as formatSharedLatestPolicyPreviewLines
+} from "@sane/control-plane/policy-preview-presenter.js";
+import {
   inspectSnapshotFromStatusBundle,
-  inspectSnapshot,
-  type InspectOverviewSnapshot
-} from "@sane/control-plane";
+  inspectSnapshot
+} from "@sane/control-plane/inspect-runtime.js";
 import { inspectStatusBundle } from "@sane/control-plane/inventory.js";
 import { listSectionActions, type UiCommandId } from "@sane/sane-tui/command-registry.js";
 

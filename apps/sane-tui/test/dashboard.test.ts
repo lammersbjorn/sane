@@ -2,12 +2,12 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { createCodexPaths, createProjectPaths } from "@sane/platform";
-import { InventoryScope, InventoryStatus, OperationKind, OperationResult } from "@sane/core";
+import { createCodexPaths, createProjectPaths } from "@sane/control-plane/platform.js";
+import { InventoryScope, InventoryStatus, OperationKind, OperationResult } from "@sane/control-plane/core.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as inventory from "@sane/control-plane/inventory.js";
 
-import { installRuntime } from "@sane/control-plane";
+import { installRuntime } from "@sane/control-plane/install-runtime.js";
 import { exportAll } from "@sane/control-plane";
 import { loadDashboardView } from "@sane/sane-tui/dashboard.js";
 import * as home from "@sane/sane-tui/home-screen.js";

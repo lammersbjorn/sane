@@ -34,6 +34,10 @@ Research and video context:
 
 - https://www.sri.inf.ethz.ch/publications/gloaguen2026agentsmd
 - https://arxiv.org/abs/2602.11988
+- https://arxiv.org/abs/2603.00822
+- https://research.ibm.com/publications/measuring-agents-in-production
+- https://developers.openai.com/codex/skills
+- https://developers.openai.com/codex/learn/best-practices
 - https://www.youtube.com/watch?v=GcNu6wrLTJc
 - https://github.com/obra/superpowers
 - https://raw.githubusercontent.com/obra/superpowers/main/skills/writing-plans/SKILL.md
@@ -66,6 +70,18 @@ Research and video context:
 8. Task-specific skills beat vague pack umbrellas.
    Router or pack glue should point to the exact concrete skill or agent. It should not try to become a second system prompt.
 
+9. Positive capability framing is the default.
+   Agents tend to follow context-file instructions, including incidental constraints. Phrase guidance as the desired action, path, output, and verification. Reserve negative wording for true safety boundaries and risky operations.
+
+10. Natural-language guardrails need executable support.
+   ContextCov (arXiv:2603.00822) frames AGENTS.md-style files as passive text and argues for deriving executable constraints from instruction files. Prompt surfaces should point to hooks, validators, tests, and output contracts rather than repeating safety prose.
+
+11. Production agent reliability is systems work.
+   IBM MAP research reports reliability as the top production-agent challenge and shows practitioners addressing it with systems-level design. Treat prompt wording as one layer beside scoped tools, checks, observability, and repair paths.
+
+12. Skills use progressive disclosure.
+   OpenAI Codex skills docs state that Codex initially sees skill names, descriptions, and paths, then reads full `SKILL.md` only after selecting a skill. Skill descriptions must be concise, trigger-oriented, and scoped because they are the always-visible matching surface.
+
 ## Hard Rules For Sane
 
 ### Rewrite Rules (ETH-aligned)
@@ -88,6 +104,15 @@ Research and video context:
 6. Verification is mandatory and explicit.
    Every editing surface must declare verification command(s) and completion criteria before done is claimed.
 
+7. Capability-first language.
+   Prefer "use X for Y", "surface blocker Z", and "verify with command C" over repeated "do not" lists. Keep hard prohibitions close to destructive or security-sensitive actions.
+
+8. Executable checks over repeated prose.
+   Put recurring enforcement in hooks, validators, tests, or typed contracts when possible. Instruction text should name the check and when to run it.
+
+9. Description-first skill design.
+   Since skill descriptions are the initial discovery surface, write them as compact trigger contracts. Put workflow detail in the skill body and bulky references under `references/` or scripts.
+
 ### Root `AGENTS.md`
 
 - Keep it short.
@@ -97,8 +122,8 @@ Research and video context:
   - exact verify commands
   - hard repo boundaries
   - done criteria
-- Do not put long workflow prose here.
-- Do not include generated repository overviews.
+- Keep long workflow prose in triggered skills or docs.
+- Keep generated repository overviews out of always-on context.
 
 ### Repo-local skills in `.agents/skills`
 
@@ -123,7 +148,7 @@ Research and video context:
 - Router skills should:
   - tell Codex when to use Sane-managed surfaces
   - point to concrete pack skills or agents
-  - avoid broad daily-wrapper behavior
+  - stay scoped to routing rather than daily-wrapper behavior
 - Every surface must define its prompt contract:
   - role and non-goals
   - authority and edit boundary
@@ -142,8 +167,8 @@ Research and video context:
 - Prefer one job per skill or agent.
 - Prefer exact validators and exact paths over broad advice.
 - Prefer small static instruction surfaces and dynamic task state later.
-- Avoid unverified marketing-style claims inside skills.
-- Do not copy vendor skill doctrine into repo-local always-on surfaces.
+- Keep unverified marketing-style claims out of skills.
+- Keep vendor skill doctrine out of repo-local always-on surfaces.
 - Prefer changing Sane-owned routing/export layers before editing vendored upstream mirrors.
 
 ## Current Local Fixes Required

@@ -2,7 +2,10 @@
 
 Last updated: 2026-04-29
 
-This document defines the thin backend contract the proper `Sane` TUI must wrap.
+> [!WARNING]
+> Historical contract snapshot. Use this file for legacy backend verb context only. Current framework artifact ownership, source-record architecture, and manifest-backed status behavior live in `docs/specs/2026-05-04-source-record-framework-spine.md`.
+
+This document captured the thin backend contract that the TUI wrapped during the April 2026 implementation phase.
 
 It is not a promise that these operations remain exposed as user-facing CLI commands. Per locked product decisions, the primary UX is the onboarding-first TUI, with backend verbs kept as escape hatches.
 
@@ -123,15 +126,14 @@ These are the backend actions the TUI is allowed to call in the current phase.
   - compute read-only recommended integrations changes separately from the core profile
   - return structured audit details for install/config surfaces (recommended adds, existing entries, skips, and touched config scopes)
   - current recommended set:
-    - `context7`
     - `playwright`
-    - `grep.app`
+  - optional, non-default helpers:
+    - `context7-cli` should be installed through its upstream CLI path when docs lookup is needed
+    - `grep.app` stays optional for environments without RTK/local search
 - `apply_integrations_profile`
   - backup current `~/.codex/config.toml` first when it exists
   - write only missing recommended integrations:
-    - `mcp_servers.context7`
     - `mcp_servers.playwright`
-    - `mcp_servers.grep_app`
   - preserve all unrelated user config
   - emit post-apply structured audit details that match preview categories
 
@@ -332,7 +334,7 @@ Current implementation note:
 
 ## TUI Boundary Rule
 
-The future TUI should not invent logic separate from this backend contract.
+The TUI should not invent logic separate from its backend contract. Verify the current contract against the 2026-05-04 source-record spine and code before using this historical section as implementation guidance.
 
 The TUI may:
 

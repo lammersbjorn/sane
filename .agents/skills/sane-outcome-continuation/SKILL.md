@@ -1,6 +1,6 @@
 ---
 name: sane-outcome-continuation
-description: Use when the user gives a plain-language outcome and wants Sane to keep planning, implementing, verifying, repairing, and resuming until that outcome is done or truly blocked.
+description: Use when the user gives a plain-language outcome and wants Sane to keep planning, implementing, verifying, repairing, and resuming until that outcome is done or a true blocker needs user input.
 ---
 
 # Sane Outcome Continuation
@@ -33,7 +33,7 @@ Turn a plain-language outcome into verified progress without exposing a runner c
 
 - the next concrete slice toward the requested outcome
 - durable plan or TODO updates when the outcome must survive the session
-- implementation, verification, and self-repair attempts until done or blocked
+- implementation, verification, and self-repair attempts until done or user input is needed
 - a concise final state: changed files, verification, and any real blocker
 
 ## How To Run
@@ -45,12 +45,12 @@ Turn a plain-language outcome into verified progress without exposing a runner c
 5. Pick the smallest useful slice that moves the outcome forward.
 6. Research only when the next slice depends on current external facts, new stack choices, stale tool choices, or unknown repo shape.
 7. Plan only as much as needed, then implement through the most specific available skill, agent, or tool.
-8. Use subagents by default for anything beyond a tiny direct answer. For broad or multi-file outcomes, load `sane-agent-lanes`, write a lane plan, and attempt at least one subagent handoff before deep work. Broad reviews need explorer/reviewer lanes; broad edits need at least one disjoint implementation lane before the main session edits overlapping code. Do not pre-ask just because work is broad when a handoff can be attempted. If subagent launch is unavailable, denied, missing, at thread cap, or blocked by higher-priority policy requiring explicit user authorization before invocation, report the exact blocker, ask once, and stop; do not inspect, verify, patch, or continue broad work locally as a substitute. If `spawn_agent` fails or thread cap is hit, close completed agents and retry once with either `message` or `items`, not both. If the harness still blocks subagents after retry, state the broad-work blocker; continue solo only for a tiny direct answer or explicitly narrowed fallback.
+8. Use subagents by default for anything beyond a tiny direct answer. For broad or multi-file outcomes, load `sane-agent-lanes`, write a lane plan, and attempt at least one subagent handoff before deep work. Broad reviews use explorer/reviewer lanes; broad edits use at least one disjoint implementation lane before the main session edits overlapping code. Attempt handoff before asking about subagents. If subagent launch is unavailable, denied, missing, at thread cap, or blocked by higher-priority policy requiring explicit user authorization before invocation, report the exact blocker, ask once, and wait for user input before inspecting, verifying, patching, or continuing broad work locally. If `spawn_agent` fails or thread cap is hit, close completed agents and retry once with either `message` or `items`, not both. If the harness still blocks subagents after retry, state the broad-work blocker; continue solo only for a tiny direct answer or explicitly narrowed fallback.
 9. Verify with the matching local checks or evidence for the changed behavior.
 10. If verification fails, diagnose the failing path and repair once before changing approach.
 11. Persist durable TODO or plan state when the remaining work spans sessions.
 12. Resume from interruption, rate-limit, or handoff state when present.
-13. Stop only when the outcome is done, the user redirects, or a real blocker remains.
+13. Finish only when the outcome is done, the user redirects, or a true blocker remains.
 
 ## Stop Conditions
 
@@ -61,9 +61,9 @@ Turn a plain-language outcome into verified progress without exposing a runner c
 
 ## Gotchas / Safety
 
-- do not expose or recommend a public runner command for this loop
-- do not market internal state plumbing as a shipped full-auto runner
-- do not treat subagent output as verified truth without checking it
-- do not turn outcome state into a generated repo overview
-- do not mutate unrelated files just to show progress
-- do not overwrite worktree edits from other agents
+- keep this loop internal instead of exposing a public runner command
+- describe internal state plumbing as internal until shipped as product behavior
+- verify subagent output before treating it as true
+- keep outcome state focused instead of turning it into a generated repo overview
+- mutate only files required by the outcome
+- preserve worktree edits from other agents

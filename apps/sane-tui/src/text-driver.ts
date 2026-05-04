@@ -1,11 +1,11 @@
-import { type OperationResult } from "@sane/core";
+import { type OperationResult } from "@sane/control-plane/core.js";
 import {
   type CodexPaths,
   discoverCodexPaths,
   discoverProjectPaths,
   type HomeDirEnv,
   type ProjectPaths
-} from "@sane/platform";
+} from "@sane/control-plane/platform.js";
 
 import { type LaunchShortcut } from "@sane/sane-tui/command-registry.js";
 import { loadAppView } from "@sane/sane-tui/app-view.js";

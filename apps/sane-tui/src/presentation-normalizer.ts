@@ -22,5 +22,44 @@ export function compactActionLabel(label: string): string {
 }
 
 export function compactStatusSummary(summary: string): string {
-  return summary.replace(/\S+\/\.sane\b/g, ".sane");
+  let result = "";
+  let token = "";
+  for (const char of summary) {
+    if (isWhitespace(char)) {
+      result += compactPathToken(token);
+      result += char;
+      token = "";
+      continue;
+    }
+    token += char;
+  }
+  return result + compactPathToken(token);
+}
+
+function compactPathToken(token: string): string {
+  const marker = "/.sane";
+  const markerIndex = token.indexOf(marker);
+  if (markerIndex < 0) {
+    return token;
+  }
+  const afterMarker = markerIndex + marker.length;
+  const next = token[afterMarker];
+  if (next !== undefined && isWordChar(next)) {
+    return token;
+  }
+  return `.sane${token.slice(afterMarker)}`;
+}
+
+function isWhitespace(char: string): boolean {
+  return char === " " || char === "\t" || char === "\n" || char === "\r";
+}
+
+function isWordChar(char: string): boolean {
+  const code = char.charCodeAt(0);
+  return (
+    (code >= 48 && code <= 57)
+    || (code >= 65 && code <= 90)
+    || (code >= 97 && code <= 122)
+    || char === "_"
+  );
 }

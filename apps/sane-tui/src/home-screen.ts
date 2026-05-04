@@ -1,4 +1,4 @@
-import { detectPlatform, type CodexPaths, type HostPlatform, type ProjectPaths } from "@sane/platform";
+import { detectPlatform, type CodexPaths, type HostPlatform, type ProjectPaths } from "@sane/control-plane/platform.js";
 
 import {
   inspectCodexProfileFamilySnapshot

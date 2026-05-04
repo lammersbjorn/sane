@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createDefaultLocalConfig } from "@sane/config";
-import { createProjectPaths } from "@sane/platform";
+import { createProjectPaths } from "../src/platform.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -66,6 +66,23 @@ describe("issue relay", () => {
     expect(draft.body).not.toContain("private answer");
     expect(draft.body).not.toContain("ghp_123456789abcdef");
     expect(draft.duplicateSearchTerms).toContain(draft.fingerprint);
+  });
+
+  it("sanitizes long untrusted draft tokens without regex backtracking", () => {
+    const projectRoot = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const config = createDefaultLocalConfig();
+    config.issueRelay.mode = "issue-review";
+
+    const draft = buildIssueRelayDraft(paths, {
+      category: `${" ".repeat(1000)}self ${"!".repeat(1000)}repair`,
+      sourceCommand: `${" ".repeat(1000)}doctor ${"!".repeat(1000)}run`,
+      summary: "Hooks invalid"
+    }, config);
+
+    expect(draft.title).toContain("[self-repair]");
+    expect(draft.body).toContain("- category: self-repair");
+    expect(draft.body).toContain("- source command: doctor-run");
   });
 
   it("does not write a draft while issue relay is off", () => {

@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createDefaultLocalConfig } from "@sane/config";
-import { createCodexPaths, createProjectPaths } from "@sane/platform";
+import { createCodexPaths, createProjectPaths } from "@sane/control-plane/platform.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import * as codexConfig from "@sane/control-plane/codex-config.js";

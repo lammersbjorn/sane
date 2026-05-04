@@ -3,8 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createDefaultLocalConfig } from "@sane/config";
-import { InventoryStatus, OperationKind } from "@sane/core";
-import { createCodexPaths, createProjectPaths } from "@sane/platform";
+import { InventoryStatus, OperationKind } from "@sane/control-plane/core.js";
+import { createCodexPaths, createProjectPaths } from "../src/platform.js";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { exportAll, uninstallAll } from "../src/bundles.js";
@@ -50,7 +50,7 @@ describe("bundled install/remove operations", () => {
     expect(result.summary).toBe("export all: installed managed targets");
     expect(result.details).toContain("export user-skills: installed core skills");
     expect(result.details).toContain("export global-agents: installed managed block");
-    expect(result.details).toContain("export hooks: installed managed SessionStart hook");
+    expect(result.details).toContain("export hooks: installed managed SessionStart and safety hooks");
     expect(result.details).toContain(
       "export custom-agents: installed Sane custom agents"
     );
@@ -122,7 +122,7 @@ describe("bundled install/remove operations", () => {
     expect(result.details).toContain(
       "export custom-agents: installed Sane custom agents"
     );
-    expect(result.details).not.toContain("export hooks: installed managed SessionStart hook");
+    expect(result.details).not.toContain("export hooks: installed managed SessionStart and safety hooks");
     expect(result.inventory.find((item) => item.name === "user-skills")?.status).toBe(
       InventoryStatus.Installed
     );

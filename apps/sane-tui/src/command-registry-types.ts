@@ -1,4 +1,4 @@
-import { type OperationKind } from "@sane/core";
+import { type OperationKind } from "@sane/control-plane/core.js";
 
 export type TuiSectionId = "home" | "settings" | "add_to_codex" | "status" | "repair" | "uninstall";
 export type LaunchShortcut = "default" | "install" | "settings" | "status" | "repair" | "uninstall";

@@ -2,7 +2,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { createCodexPaths, createProjectPaths } from "@sane/platform";
+import { createCodexPaths, createProjectPaths } from "../src/platform.js";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { applyIntegrationsProfile } from "../src/codex-config.js";
@@ -40,7 +40,7 @@ describe("install status snapshot", () => {
         bundleStatus: "missing",
         missingTargets: [...CORE_INSTALL_BUNDLE_TARGETS],
         integrationsStatus: { kind: "missing", label: "missing" },
-        integrationsRecommendedChangeCount: 3,
+        integrationsRecommendedChangeCount: 1,
         recommendedActionId: "export_all",
         actionStatus: expect.objectContaining({
           export_user_skills: { kind: "missing", label: "missing" },
@@ -67,7 +67,7 @@ describe("install status snapshot", () => {
         bundleStatus: "installed",
         missingTargets: [],
         integrationsStatus: { kind: "missing", label: "missing" },
-        integrationsRecommendedChangeCount: 3,
+        integrationsRecommendedChangeCount: 1,
         recommendedActionId: "apply_integrations_profile",
         actionStatus: expect.objectContaining({
           export_all: { kind: "installed", label: "installed" },

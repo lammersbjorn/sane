@@ -3,17 +3,19 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createDefaultLocalConfig } from "@sane/config";
-import { createCodexPaths, createProjectPaths } from "@sane/platform";
+import { createCodexPaths, createProjectPaths } from "../src/platform.js";
 import { appendJsonlRecord, createDecisionRecord, stringifyDecisionRecord } from "@sane/state";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
   applyCodexProfile,
   formatInspectOverviewLines,
-  inspectSnapshotFromStatusBundle,
-  inspectSnapshot,
   installRuntime
 } from "../src/index.js";
+import {
+  inspectSnapshotFromStatusBundle,
+  inspectSnapshot
+} from "../src/features/status/inspect-runtime.js";
 import { exportHooks } from "../src/hooks-custom-agents.js";
 import { inspectStatusBundle, showStatusFromStatusBundle } from "../src/inventory.js";
 import { saveConfig } from "../src/preferences.js";

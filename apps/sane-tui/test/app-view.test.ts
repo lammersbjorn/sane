@@ -2,10 +2,11 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { createCodexPaths, createProjectPaths } from "@sane/platform";
+import { createCodexPaths, createProjectPaths } from "@sane/control-plane/platform.js";
 import { appendJsonlRecord, createDecisionRecord, stringifyDecisionRecord } from "@sane/state";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { applyCodexProfile, installRuntime } from "@sane/control-plane";
+import { applyCodexProfile } from "@sane/control-plane";
+import { installRuntime } from "@sane/control-plane/install-runtime.js";
 import { createDefaultLocalConfig } from "@sane/config";
 import { saveConfig } from "@sane/control-plane/preferences.js";
 
@@ -363,10 +364,10 @@ describe("app view", () => {
 
     expect(view.selectedAction.id).toBe("preview_integrations_profile");
     expect(view.selectedHelpLines.join("\n")).toContain("audit: missing");
-    expect(view.selectedHelpLines.join("\n")).toContain("apply readiness: ready (3 keys)");
-    expect(view.selectedHelpLines.join("\n")).toContain("context7: missing -> recommended");
+    expect(view.selectedHelpLines.join("\n")).toContain("apply readiness: ready (1 keys)");
     expect(view.selectedHelpLines.join("\n")).toContain("playwright: missing -> recommended");
-    expect(view.selectedHelpLines.join("\n")).toContain("grep.app: missing -> recommended");
+    expect(view.selectedHelpLines.join("\n")).toContain("context7-cli: optional upstream CLI install");
+    expect(view.selectedHelpLines.join("\n")).toContain("grep.app: optional when RTK/local search is unavailable");
   });
 
   it("surfaces typed Cloudflare settings readiness in Settings guidance", () => {
@@ -660,9 +661,9 @@ describe("app view", () => {
 
     expect(view.selectedAction.id).toBe("apply_integrations_profile");
     expect(view.selectedHelpLines.join("\n")).toContain("audit: missing");
-    expect(view.selectedHelpLines.join("\n")).toContain("context7: missing -> recommended");
     expect(view.selectedHelpLines.join("\n")).toContain("playwright: missing -> recommended");
-    expect(view.selectedHelpLines.join("\n")).toContain("grep.app: missing -> recommended");
+    expect(view.selectedHelpLines.join("\n")).toContain("context7-cli: optional upstream CLI install");
+    expect(view.selectedHelpLines.join("\n")).toContain("grep.app: optional when RTK/local search is unavailable");
   });
 
   it("surfaces live install-state guidance in the install section overview", () => {
@@ -675,7 +676,7 @@ describe("app view", () => {
     expect(overview).not.toContain("Current Codex setup bundle:");
     expect(overview).toContain("codex add-ons state:");
     expect(overview).toContain("setup targets missing:");
-    expect(overview).toContain("optional Codex tools: missing (3 recommended changes)");
+    expect(overview).toContain("optional Codex tools: missing (1 recommended changes)");
   });
 
   it("loads inspect snapshot once when install overview and selected help both need it", async () => {

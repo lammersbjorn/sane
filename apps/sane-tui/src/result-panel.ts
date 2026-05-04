@@ -1,4 +1,4 @@
-import { type OperationResult } from "@sane/core";
+import { type OperationResult } from "@sane/control-plane/core.js";
 
 import { getCommandSpec, type UiCommandId } from "@sane/sane-tui/command-registry.js";
 

@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createDefaultLocalConfig } from "@sane/config";
-import { createProjectPaths } from "@sane/platform";
+import { createProjectPaths } from "../src/platform.js";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { recordTelemetryEvent } from "../src/telemetry.js";
@@ -88,5 +88,22 @@ describe("telemetry ledger", () => {
     expect(existsSync(paths.telemetryQueuePath)).toBe(false);
     expect(readFileSync(paths.telemetryEventsPath, "utf8")).toContain("runtime-check");
     expect(readFileSync(paths.telemetryEventsPath, "utf8")).not.toContain(paths.projectRoot);
+  });
+
+  it("sanitizes long untrusted telemetry tokens without regex backtracking", () => {
+    const paths = createProjectPaths(makeTempDir());
+    const config = createDefaultLocalConfig();
+    config.privacy.telemetry = "local-only";
+    saveConfig(paths, config);
+
+    const snapshot = recordTelemetryEvent(paths, {
+      category: "config",
+      action: `${" ".repeat(1000)}set ${"!".repeat(1000)}value`,
+      result: "success",
+      surface: `${"panel/".repeat(400)}status`
+    });
+
+    expect(Object.keys(snapshot.summary?.counts ?? {})).toContain("config.set-value.success");
+    expect(snapshot.recentEvents[0]?.surface.length).toBeLessThanOrEqual(80);
   });
 });

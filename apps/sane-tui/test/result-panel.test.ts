@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { OperationKind, OperationResult } from "@sane/core";
+import { OperationKind, OperationResult } from "@sane/control-plane/core.js";
 
 import { buildLastResultView, buildNotice } from "@sane/sane-tui/result-panel.js";
 

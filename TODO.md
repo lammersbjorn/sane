@@ -8,7 +8,9 @@ High-signal handoff for current `Sane` cleanup. Keep detailed history in dated d
 - `.agents/skills/sane-self-hosting/SKILL.md`
 - `docs/decisions/2026-04-19-sane-decision-log.md`
 - `docs/specs/2026-04-27-codebase-cleanup-current-standards.md`
+- `docs/plans/2026-05-04-maintainability-architecture-reset.md`
 - `docs/specs/2026-05-02-sane-product-acceptance-standard.md`
+- `docs/specs/2026-05-04-source-record-framework-spine.md`
 - `docs/specs/2026-04-25-sane-tui-control-center-redesign.md`
 - `docs/what-sane-does.md`
 
@@ -30,7 +32,7 @@ Do not re-litigate locked product philosophy unless a new decision log changes i
 ## Verified Current State
 
 - TypeScript-first workspace is active.
-- Main packages: `@sane/sane-tui`, `@sane/config`, `@sane/control-plane`, `@sane/core`, `@sane/framework-assets`, `@sane/platform`, `@sane/policy`, `@sane/state`.
+- Main packages: `@sane/sane-tui`, `@sane/config`, `@sane/control-plane`, `@sane/framework-assets`, `@sane/state`.
 - Root public start scripts build and run the TypeScript TUI path.
 - TUI sections are `Home`, `Settings`, `Add to Codex`, `Status`, `Repair`, and `Uninstall`.
 - Launch behavior is part of the contract: first run opens guided Home, installed no-args opens Status, `sane install` opens the guided wizard, and `sane status` opens Status.
@@ -100,8 +102,92 @@ Acceptance:
   - [x] winget artifact/update plan stub
   - [x] Scoop artifact/update plan stub
 
+## Source-Record Framework Spine
+
+- [x] Land first source-record slice:
+  - typed source records for `sane-router`, `sane-agent`, and managed
+    `SessionStart`
+  - Codex renderer emits artifact objects with `provider`, `path`,
+    `mode=file|config`, `ownershipMode`, `hash`, `sourceId`, executable flag,
+    structured keys, block marker, provenance, and content
+  - manifest-owned artifact plan previews, deploys, and uninstalls the slice in
+    fixture roots
+  - fixture tests prove deploy, uninstall preservation, stale manifest
+    preservation, same-name overwrite blocking, and hook execution
+- [x] Extend source records and manifest-owned artifact plan to every Sane
+      custom agent: `sane-agent`, `sane-reviewer`, `sane-explorer`,
+      `sane-implementation`, and `sane-realtime`
+- [x] Extend source records and manifest-owned artifact plan to every core
+      skill: `sane-router`, `sane-bootstrap-research`, `sane-agent-lanes`,
+      `sane-outcome-continuation`, and `continue`
+- [x] Extend source records and manifest-owned artifact plan to global and repo
+      `AGENTS.md` managed blocks
+- [x] Extend source records and manifest-owned artifact plan to optional pack
+      skills, including multi-skill packs and support-file path ownership
+- [x] Extend source records and manifest-owned artifact plan to config/profile
+      fragments with structured key ownership for `codex-profile` and
+      `integrations-profile`
+- [x] Extend optional manifest-owned config/profile fragments to
+      `cloudflare-profile` and `statusline-profile` when explicitly enabled in
+      artifact-plan options
+- [x] Add hook runtime v2 guard slice as source records and managed executable
+      hooks: command safety, generated-surface edit guard, weak `BLOCKED`
+      guard, and optional RTK command guard
+- [x] Surface `framework-artifacts` manifest status in Status, Doctor, and
+      Repair backend snapshots
+- [x] Add per-artifact drift diagnostics for `framework-artifacts` status,
+      including changed files, missing hooks, changed config keys, stale
+      source ids, and manifest hash drift
+- [ ] Extend source-record spine after this slice:
+  - route/evidence guard records once Codex exposes stable route payloads
+
 ## Next Slice
 
+- [x] Start maintainability architecture reset:
+  - baseline metrics on 2026-05-04 local state:
+    323 tracked files, 9 workspace package manifests under `apps/` and
+    `packages/`, `cloc --vcs=git` 50,361 code LOC across 285 files, and
+    18,944 test LOC under `apps/` and `packages/`
+  - baseline verification: `rtk pnpm test` passed; `rtk run 'pnpm typecheck'`
+    passed; `rtk pnpm test -- --runInBand` failed because Vitest 4 rejects
+    `--runInBand`
+  - dirty worktree was present before reset work continued; preserve existing
+    source-record/hook-runtime slice edits and review them before package moves
+  - launched audit lanes for packages, control-plane, framework assets, TUI,
+    tests, dead/broken code, instruction surfaces, docs, and source-record
+    review
+  - keep/move/delete/rewrite decisions are recorded in lane outputs; first
+    confirmed delete is `packages/control-plane/src/opencode.ts`
+- [x] Continue maintainability architecture reset:
+  - [x] collapsed shallow package boundaries into control-plane where they no
+        longer needed separate package ownership; current app/package manifests
+        are `apps/sane-tui`, `packages/control-plane`, `packages/config`,
+        `packages/framework-assets`, and `packages/state`
+  - [x] kept `packages/config`, `packages/state`, and
+        `packages/framework-assets` after read-only lanes confirmed each owns a
+        broad shared contract used by both TUI and control-plane
+  - [x] moved control-plane behavior behind feature-owned modules under
+        `packages/control-plane/src/features/` with thin compatibility shims and
+        focused package subpaths
+  - [x] reduced the root control-plane barrel from 642 lines to 144 lines by
+        moving runtime installation and inspect/runtime-summary/outcome helpers
+        into explicit feature modules
+  - [x] moved TUI source imports off the root `@sane/control-plane` barrel when
+        focused subpaths exist; remaining root imports are compatibility tests
+  - [x] split broad package tests into focused behavior, fixture-root,
+        generated-artifact, and smoke tests; removed the obsolete workspace
+        package-boundary test
+  - [x] shrank first instruction-surface overlap by reducing generated overlay
+        templates to routing/trigger pointers; concrete skills own detailed
+        lane, continuation, and pack policy
+  - [x] wrote `docs/architecture.md` as the current package, feature, import,
+        and verification map
+  - [x] finished final docs audit and acceptance run; current docs no longer
+        point to deleted package boundaries, `docs/architecture.md` is the
+        current structure reference, and `rtk pnpm run accept` passed
+  - [x] tracked `framework-artifacts-manifest.json` as a durable state-format
+        risk in `docs/architecture.md`; `features/framework-artifacts` owns
+        schema-sensitive deploy, uninstall, status, and repair coverage
 - [ ] Wire remaining channel repos after first stable `v1` tag:
   - winget manifest PR
   - Scoop bucket update PR
@@ -206,7 +292,6 @@ not widen the TUI into a daily prompting interface.
   - `rtk vitest packages/control-plane/test/codex-native-skills-agents.test.ts`
   - `rtk vitest packages/framework-assets/test/framework-assets.test.ts`
   - `rtk vitest apps/sane-tui/test/command-metadata-registry.test.ts`
-  - `rtk vitest apps/sane-tui/test/workspace-package-boundaries.test.ts`
   - `rtk vitest packages/control-plane/test/inspect-presenter.test.ts apps/sane-tui/test/command-metadata-registry.test.ts apps/sane-tui/test/ink-terminal.test.ts packages/control-plane/test/inventory.test.ts packages/control-plane/test/inspect.test.ts`
 
 ### Hook And Route Quality Gates

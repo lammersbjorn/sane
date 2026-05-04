@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createDefaultLocalConfig, writeLocalConfig } from "@sane/config";
-import { InventoryStatus } from "@sane/core";
+import { InventoryStatus } from "@sane/control-plane/core.js";
 import {
   SANE_AGENT_LANES_SKILL_NAME,
   SANE_BOOTSTRAP_RESEARCH_SKILL_NAME,
@@ -20,7 +20,7 @@ import {
   createSaneRepoAgentsOverlay,
   createSaneRouterSkill
 } from "@sane/framework-assets";
-import { createProjectPaths, createCodexPaths } from "@sane/platform";
+import { createProjectPaths, createCodexPaths } from "../src/platform.js";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {

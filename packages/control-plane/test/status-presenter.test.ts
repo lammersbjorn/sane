@@ -1,4 +1,4 @@
-import { InventoryStatus } from "@sane/core";
+import { InventoryStatus } from "@sane/control-plane/core.js";
 import { describe, expect, it } from "vitest";
 
 import {

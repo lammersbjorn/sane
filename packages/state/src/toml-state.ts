@@ -65,7 +65,7 @@ function parseTomlDocument(raw: string): TomlTable {
     const key = parseTomlKey(line.slice(0, separatorIndex).trim());
     const rawValue = line.slice(separatorIndex + 1).trim();
     const table = ensureTomlTable(result, currentPath);
-    table[key] = parseTomlValue(rawValue);
+    setTomlKey(table, key, parseTomlValue(rawValue));
   }
 
   return result;
@@ -112,10 +112,10 @@ function appendTomlTable(target: string[], path: string[], table: TomlTable): vo
 function ensureTomlTable(root: TomlTable, path: string[]): TomlTable {
   let cursor = root;
   for (const segment of path) {
-    const current = cursor[segment];
+    const current = hasTomlKey(cursor, segment) ? cursor[segment] : undefined;
     if (current === undefined) {
       const next: TomlTable = {};
-      cursor[segment] = next;
+      setTomlKey(cursor, segment, next);
       cursor = next;
       continue;
     }
@@ -125,6 +125,19 @@ function ensureTomlTable(root: TomlTable, path: string[]): TomlTable {
     cursor = current;
   }
   return cursor;
+}
+
+function hasTomlKey(table: TomlTable, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(table, key);
+}
+
+function setTomlKey(table: TomlTable, key: string, value: TomlValue): void {
+  Object.defineProperty(table, key, {
+    configurable: true,
+    enumerable: true,
+    value,
+    writable: true,
+  });
 }
 
 function parseTomlKey(value: string): string {

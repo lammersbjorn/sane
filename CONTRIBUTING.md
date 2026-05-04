@@ -8,8 +8,9 @@ Product truth lives here:
 
 - [README.md](./README.md)
 - [docs/what-sane-does.md](./docs/what-sane-does.md)
+- [docs/architecture.md](./docs/architecture.md)
 - [docs/decisions/2026-04-19-sane-decision-log.md](./docs/decisions/2026-04-19-sane-decision-log.md)
-- [docs/specs/2026-04-19-sane-backend-contract.md](./docs/specs/2026-04-19-sane-backend-contract.md)
+- [docs/specs/2026-05-04-source-record-framework-spine.md](./docs/specs/2026-05-04-source-record-framework-spine.md)
 - [TODO.md](./TODO.md)
 
 Use the decision log to separate locked product direction, flexible recommendations, and open future questions. Do not present an open idea as shipped behavior.
@@ -56,8 +57,8 @@ Install the local Conventional Commits hook:
 Baseline loop:
 
 ```bash
-pnpm test
-pnpm typecheck
+rtk pnpm test
+rtk run 'pnpm typecheck'
 pnpm start
 ```
 
@@ -82,15 +83,14 @@ If your change affects preview, apply, export, status, repair, restore, or unins
 | [README.md](./README.md) | Public product story and setup path. |
 | [docs/what-sane-does.md](./docs/what-sane-does.md) | Plain-English walkthrough of how Sane changes Codex. |
 | [TODO.md](./TODO.md) | Current state, guardrails, and next slices. |
+| [docs/architecture.md](./docs/architecture.md) | Current package boundaries, control-plane feature map, import rules, and verification commands. |
 | [docs/decisions/2026-04-19-sane-decision-log.md](./docs/decisions/2026-04-19-sane-decision-log.md) | Locked product decisions. |
-| [docs/specs/2026-04-19-sane-backend-contract.md](./docs/specs/2026-04-19-sane-backend-contract.md) | Current backend contract the control surface uses. |
+| [docs/specs/2026-05-04-source-record-framework-spine.md](./docs/specs/2026-05-04-source-record-framework-spine.md) | Current source-record and managed-artifact contract. |
 | [apps/sane-tui/README.md](./apps/sane-tui/README.md) | Terminal install/config/status/repair service package. |
-| [packages/control-plane/src](./packages/control-plane/src) | Install/export/status/repair behavior the control surface uses. |
+| [packages/control-plane/src](./packages/control-plane/src) | Install/export/status/repair behavior, feature-owned backend modules, collapsed core/platform/policy primitives, and small shared runtime primitives the control surface uses. |
 | [packages/config/src](./packages/config/src) | Saved Sane settings and Codex environment detection. |
 | [packages/framework-assets/src](./packages/framework-assets/src) | Bundled skills, overlays, agents, and pack metadata. |
-| [packages/platform/src](./packages/platform/src) | Cross-platform path and filesystem layout rules. |
 | [packages/state/src](./packages/state/src) | Thin local state and persistence. |
-| [packages/policy/src](./packages/policy/src) | Adaptive policy groundwork. |
 
 ## Keeping Docs In Sync
 

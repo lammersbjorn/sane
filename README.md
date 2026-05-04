@@ -153,6 +153,7 @@ Telemetry remains aggregate product-improvement signal. GitHub issue relay is se
 ## Learn More
 
 - [What Sane does](./docs/what-sane-does.md)
+- [Architecture](./docs/architecture.md)
 - [Contributing guide](./CONTRIBUTING.md)
 - [Support guide](./SUPPORT.md)
 - [Security policy](./SECURITY.md)

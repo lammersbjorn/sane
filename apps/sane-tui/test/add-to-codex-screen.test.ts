@@ -2,7 +2,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { createCodexPaths, createProjectPaths } from "@sane/platform";
+import { createCodexPaths, createProjectPaths } from "@sane/control-plane/platform.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { applyIntegrationsProfile } from "@sane/control-plane/codex-config.js";
@@ -44,7 +44,7 @@ describe("add-to-codex screen model", () => {
       "custom-agents"
     ]);
     expect(screen.integrationsStatus).toEqual({ kind: "missing", label: "missing" });
-    expect(screen.integrationsRecommendedChangeCount).toBe(3);
+    expect(screen.integrationsRecommendedChangeCount).toBe(1);
     expect(screen.actions.map((action) => action.id)).toEqual([
       "export_all",
       "export_user_skills",
@@ -88,7 +88,7 @@ describe("add-to-codex screen model", () => {
     expect(screen.bundleStatus).toBe("installed");
     expect(screen.missingTargets).toEqual([]);
     expect(screen.integrationsStatus).toEqual({ kind: "missing", label: "missing" });
-    expect(screen.integrationsRecommendedChangeCount).toBe(3);
+    expect(screen.integrationsRecommendedChangeCount).toBe(1);
     expect(screen.actions.find((action) => action.id === "export_user_skills")?.status).toEqual({
       kind: "installed",
       label: "installed"

@@ -12,7 +12,38 @@ export type {
   PackAssetSourceProvenance,
   PackAssetUpstream
 } from "./core-pack-manifest.js";
-
+export {
+  SANE_GLOBAL_AGENTS_BEGIN,
+  SANE_GLOBAL_AGENTS_BLOCK_ID,
+  SANE_GLOBAL_AGENTS_END,
+  SANE_BLOCKED_RESPONSE_GUARD_HOOK_NAME,
+  SANE_CLOUDFLARE_PROFILE_FRAGMENT_ID,
+  SANE_COMMAND_SAFETY_GUARD_HOOK_NAME,
+  SANE_GENERATED_SURFACE_GUARD_HOOK_NAME,
+  SANE_REPO_AGENTS_BEGIN,
+  SANE_REPO_AGENTS_BLOCK_ID,
+  SANE_REPO_AGENTS_END,
+  SANE_CODEX_PROFILE_FRAGMENT_ID,
+  SANE_INTEGRATIONS_PROFILE_FRAGMENT_ID,
+  SANE_RTK_COMMAND_GUARD_HOOK_NAME,
+  SANE_SESSION_START_HOOK_NAME,
+  SANE_STATUSLINE_PROFILE_FRAGMENT_ID,
+  createFrameworkSourceRecords,
+  frameworkSourceRecordById,
+  sourceRecordHash,
+  sourceRecordSourceId
+} from "./source-records.js";
+export type {
+  FrameworkGuidancePacks,
+  FrameworkConfigFragments,
+  FrameworkSourceKind,
+  FrameworkSourceMode,
+  FrameworkSourceProvider,
+  FrameworkSourceRecord,
+  FrameworkSourceRecordOptions
+} from "./source-records.js";
+export { renderCodexArtifacts } from "./codex-artifacts.js";
+export type { CodexArtifact, RenderCodexArtifactsOptions } from "./codex-artifacts.js";
 export const NAME = "Sane";
 export const SANE_ROUTER_SKILL_NAME = "sane-router";
 export const SANE_BOOTSTRAP_RESEARCH_SKILL_NAME = "sane-bootstrap-research";
@@ -29,10 +60,6 @@ export const SANE_REVIEWER_AGENT_NAME = "sane-reviewer";
 export const SANE_EXPLORER_AGENT_NAME = "sane-explorer";
 export const SANE_IMPLEMENTATION_AGENT_NAME = "sane-implementation";
 export const SANE_REALTIME_AGENT_NAME = "sane-realtime";
-export const SANE_GLOBAL_AGENTS_BEGIN = "<!-- sane:global-agents:start -->";
-export const SANE_GLOBAL_AGENTS_END = "<!-- sane:global-agents:end -->";
-export const SANE_REPO_AGENTS_BEGIN = "<!-- sane:repo-agents:start -->";
-export const SANE_REPO_AGENTS_END = "<!-- sane:repo-agents:end -->";
 export type OptionalPackName = string;
 export interface OptionalPackMetadata {
   name: OptionalPackName;

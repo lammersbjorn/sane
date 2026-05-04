@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { createCodexPaths, createProjectPaths } from "@sane/platform";
+import { createCodexPaths, createProjectPaths } from "@sane/control-plane/platform.js";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { stepTerminalDriver } from "@sane/sane-tui/terminal-driver.js";

@@ -1,45 +1,23 @@
-import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { createDefaultLocalConfig } from "@sane/config";
-import { InventoryStatus } from "@sane/core";
+import { InventoryStatus } from "@sane/control-plane/core.js";
 import { optionalPackSkillNames } from "@sane/framework-assets";
-import { createCodexPaths, createProjectPaths } from "@sane/platform";
-import { afterEach, describe, expect, it } from "vitest";
+import { createCodexPaths, createProjectPaths } from "../src/platform.js";
+import { describe, expect, it } from "vitest";
 
-import { applyCodexProfile } from "../src/codex-config.js";
 import { exportAll } from "../src/bundles.js";
+import { applyCodexProfile } from "../src/codex-config.js";
 import { exportGlobalAgents, exportUserSkills } from "../src/codex-native.js";
+import { deployCodexFrameworkArtifactPlan } from "../src/framework-artifact-plan.js";
 import { exportCustomAgents, exportHooks } from "../src/hooks-custom-agents.js";
-import {
-  doctor,
-  doctorForStatusBundle,
-  inspectDoctorSnapshot,
-  inspectOnboardingSnapshot,
-  inspectOnboardingSnapshotFromStatusBundle,
-  inspectStatusBundle,
-  showStatusFromStatusBundle,
-  showStatus
-} from "../src/inventory.js";
 import { installRuntime } from "../src/index.js";
+import { inspectStatusBundle, showStatus, showStatusFromStatusBundle } from "../src/inventory.js";
 import { saveConfig } from "../src/preferences.js";
+import { makeTempDir } from "./inventory-helpers.js";
 
-const tempDirs: string[] = [];
-
-function makeTempDir(): string {
-  const dir = mkdtempSync(join(tmpdir(), "sane-inventory-"));
-  tempDirs.push(dir);
-  return dir;
-}
-
-afterEach(() => {
-  while (tempDirs.length > 0) {
-    rmSync(tempDirs.pop()!, { recursive: true, force: true });
-  }
-});
-
-describe("full inventory and doctor", () => {
+describe("inventory status bundle behavior", () => {
   it("builds a canonical status bundle with grouped scopes and drift items", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
@@ -65,8 +43,7 @@ describe("full inventory and doctor", () => {
       "pack-frontend-craft",
       "pack-docs-craft"
     ]);
-    const codexNativeNames = bundle.codexNative.map((item) => item.name);
-    expect(codexNativeNames).toEqual(
+    expect(bundle.codexNative.map((item) => item.name)).toEqual(
       expect.arrayContaining([
         "codex-config",
         "user-skills",
@@ -74,7 +51,8 @@ describe("full inventory and doctor", () => {
         "repo-agents",
         "global-agents",
         "hooks",
-        "custom-agents"
+        "custom-agents",
+        "framework-artifacts"
       ])
     );
     expect(bundle.compatibility).toEqual([]);
@@ -88,9 +66,7 @@ describe("full inventory and doctor", () => {
         status: "configured",
         skillName: "sane-caveman",
         skillNames: ["sane-caveman"],
-        provenance: expect.objectContaining({
-          kind: "derived"
-        })
+        provenance: expect.objectContaining({ kind: "derived" })
       }),
       expect.objectContaining({
         name: "rtk",
@@ -98,9 +74,7 @@ describe("full inventory and doctor", () => {
         status: "disabled",
         skillName: "sane-rtk",
         skillNames: ["sane-rtk"],
-        provenance: expect.objectContaining({
-          kind: "internal"
-        })
+        provenance: expect.objectContaining({ kind: "internal" })
       }),
       expect.objectContaining({
         name: "frontend-craft",
@@ -108,9 +82,7 @@ describe("full inventory and doctor", () => {
         status: "disabled",
         skillName: "sane-frontend-craft",
         skillNames: optionalPackSkillNames("frontend-craft"),
-        provenance: expect.objectContaining({
-          kind: "derived"
-        })
+        provenance: expect.objectContaining({ kind: "derived" })
       }),
       expect.objectContaining({
         name: "docs-craft",
@@ -118,26 +90,42 @@ describe("full inventory and doctor", () => {
         status: "disabled",
         skillName: "sane-docs-writing",
         skillNames: optionalPackSkillNames("docs-craft"),
-        provenance: expect.objectContaining({
-          kind: "derived"
-        })
+        provenance: expect.objectContaining({ kind: "derived" })
       })
     ]);
     expect(bundle.primary.runtime?.status).toBe(InventoryStatus.Installed);
-    expect(bundle.runtimeState.current).toEqual(
-      expect.objectContaining({
-        phase: "setup"
-      })
-    );
+    expect(bundle.runtimeState.current).toEqual(expect.objectContaining({ phase: "setup" }));
     expect(bundle.primary.codexConfig?.status).toBe(InventoryStatus.Missing);
     expect(bundle.primary.userSkills?.status).toBe(InventoryStatus.Missing);
     expect(bundle.primary.hooks?.status).toBe(InventoryStatus.Missing);
     expect(bundle.primary.customAgents?.status).toBe(InventoryStatus.Missing);
+    expect(bundle.inventory.find((item) => item.name === "framework-artifacts")?.status).toBe(InventoryStatus.Missing);
     expect(bundle.primary.installBundle).toBe("missing");
     expect(bundle.counts.installed).toBeGreaterThan(0);
     expect(bundle.counts.missing).toBeGreaterThan(0);
     expect(bundle.driftItems).toEqual([]);
     expect(bundle.conflictWarnings).toEqual([]);
+  });
+
+  it("surfaces manifest-owned framework artifacts in status", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    expect(inspectStatusBundle(paths, codexPaths).inventory.find((item) => item.name === "framework-artifacts")?.status).toBe(
+      InventoryStatus.Missing
+    );
+
+    deployCodexFrameworkArtifactPlan(paths, codexPaths, {
+      configFragments: { cloudflare: true, statusline: true }
+    });
+
+    const bundle = inspectStatusBundle(paths, codexPaths);
+
+    expect(bundle.inventory.find((item) => item.name === "framework-artifacts")?.status).toBe(
+      InventoryStatus.Installed
+    );
   });
 
   it("reports optional packs as configured before export", () => {
@@ -155,77 +143,12 @@ describe("full inventory and doctor", () => {
     const result = showStatus(paths, codexPaths);
 
     expect(result.summary).toContain("managed targets inspected");
-    expect(result.inventory.find((item) => item.name === "pack-core")?.status).toBe(
-      InventoryStatus.Installed
-    );
-    expect(result.inventory.find((item) => item.name === "pack-caveman")?.status).toBe(
-      InventoryStatus.Configured
-    );
-    expect(result.inventory.find((item) => item.name === "pack-rtk")?.status).toBe(
-      InventoryStatus.Configured
-    );
-    expect(result.inventory.find((item) => item.name === "user-skills")?.status).toBe(
-      InventoryStatus.Missing
-    );
-    expect(result.inventory.find((item) => item.name === "repo-skills")?.status).toBe(
-      InventoryStatus.Disabled
-    );
-    expect(result.inventory.find((item) => item.name === "hooks")?.status).toBe(
-      InventoryStatus.Missing
-    );
-  });
-
-  it("surfaces missing RTK binary when the RTK pack is enabled", () => {
-    const projectRoot = makeTempDir();
-    const homeDir = makeTempDir();
-    const paths = createProjectPaths(projectRoot);
-    const codexPaths = createCodexPaths(homeDir);
-    const config = createDefaultLocalConfig();
-    config.packs.rtk = true;
-
-    installRuntime(paths, codexPaths);
-    saveConfig(paths, config);
-
-    const bundle = inspectStatusBundle(paths, codexPaths, "linux", { PATH: "" });
-    const rtkBinary = bundle.compatibility.find((item) => item.name === "rtk-binary");
-    const doctorSnapshot = inspectDoctorSnapshot(paths, codexPaths, bundle);
-
-    expect(rtkBinary).toEqual(
-      expect.objectContaining({
-        status: InventoryStatus.Missing,
-        path: "PATH",
-        repairHint: "install upstream RTK (`brew install rtk`, upstream install script, or Cargo) and ensure `rtk` is on PATH"
-      })
-    );
-    expect(doctorSnapshot.lines).toContain(
-      "rtk-binary: missing (install upstream RTK (`brew install rtk`, upstream install script, or Cargo) and ensure `rtk` is on PATH; Homebrew packaging: future Sane Homebrew formula should depend on upstream `rtk`)"
-    );
-  });
-
-  it("marks RTK binary installed when a PATH executable exists", () => {
-    const projectRoot = makeTempDir();
-    const homeDir = makeTempDir();
-    const binDir = makeTempDir();
-    const paths = createProjectPaths(projectRoot);
-    const codexPaths = createCodexPaths(homeDir);
-    const config = createDefaultLocalConfig();
-    config.packs.rtk = true;
-    const rtkPath = join(binDir, "rtk");
-
-    installRuntime(paths, codexPaths);
-    saveConfig(paths, config);
-    writeFileSync(rtkPath, "#!/bin/sh\nexit 0\n", "utf8");
-    chmodSync(rtkPath, 0o755);
-
-    const bundle = inspectStatusBundle(paths, codexPaths, "linux", { PATH: binDir });
-
-    expect(bundle.compatibility.find((item) => item.name === "rtk-binary")).toEqual(
-      expect.objectContaining({
-        status: InventoryStatus.Installed,
-        path: rtkPath,
-        repairHint: null
-      })
-    );
+    expect(result.inventory.find((item) => item.name === "pack-core")?.status).toBe(InventoryStatus.Installed);
+    expect(result.inventory.find((item) => item.name === "pack-caveman")?.status).toBe(InventoryStatus.Configured);
+    expect(result.inventory.find((item) => item.name === "pack-rtk")?.status).toBe(InventoryStatus.Configured);
+    expect(result.inventory.find((item) => item.name === "user-skills")?.status).toBe(InventoryStatus.Missing);
+    expect(result.inventory.find((item) => item.name === "repo-skills")?.status).toBe(InventoryStatus.Disabled);
+    expect(result.inventory.find((item) => item.name === "hooks")?.status).toBe(InventoryStatus.Missing);
   });
 
   it("keeps bundle-based show-status aligned with the wrapper", () => {
@@ -239,54 +162,6 @@ describe("full inventory and doctor", () => {
     const bundle = inspectStatusBundle(paths, codexPaths);
 
     expect(showStatusFromStatusBundle(bundle)).toEqual(showStatus(paths, codexPaths));
-  });
-
-  it("keeps bundle-based onboarding snapshot aligned with the wrapper", () => {
-    const projectRoot = makeTempDir();
-    const homeDir = makeTempDir();
-    const paths = createProjectPaths(projectRoot);
-    const codexPaths = createCodexPaths(homeDir);
-
-    installRuntime(paths, codexPaths);
-
-    const bundle = inspectStatusBundle(paths, codexPaths);
-
-    expect(inspectOnboardingSnapshotFromStatusBundle(paths, bundle)).toEqual(
-      inspectOnboardingSnapshot(paths, codexPaths)
-    );
-  });
-
-  it("keeps bundle-based doctor aligned with the wrapper", () => {
-    const projectRoot = makeTempDir();
-    const homeDir = makeTempDir();
-    const paths = createProjectPaths(projectRoot);
-    const codexPaths = createCodexPaths(homeDir);
-
-    installRuntime(paths, codexPaths);
-    writeBackupSiblings(paths.configPath, "config.local.toml.bak");
-    writeBackupSiblings(paths.summaryPath, "summary.json.bak");
-
-    const bundle = inspectStatusBundle(paths, codexPaths);
-
-    expect(doctorForStatusBundle(paths, codexPaths, bundle)).toEqual(doctor(paths, codexPaths));
-  });
-
-  it("keeps bundle-based doctor backup history snapshot-consistent", () => {
-    const projectRoot = makeTempDir();
-    const homeDir = makeTempDir();
-    const paths = createProjectPaths(projectRoot);
-    const codexPaths = createCodexPaths(homeDir);
-
-    installRuntime(paths, codexPaths);
-
-    const bundle = inspectStatusBundle(paths, codexPaths);
-    writeBackupSiblings(paths.configPath, "config.local.toml.bak");
-    writeBackupSiblings(paths.summaryPath, "summary.json.bak");
-
-    const doctorSnapshot = inspectDoctorSnapshot(paths, codexPaths, bundle);
-
-    expect(doctorSnapshot.lines).toContain("config-backups: none");
-    expect(doctorSnapshot.lines).toContain("summary-backups: none");
   });
 
   it("surfaces invalid and unmanaged drift in the canonical bundle", () => {
@@ -314,8 +189,9 @@ describe("full inventory and doctor", () => {
     writeFileSync(
       codexPaths.configToml,
       [
-        "[mcp_servers.context7]",
-        'url = "https://mcp.context7.com/mcp"',
+        "[mcp_servers.playwright]",
+        'command = "npx"',
+        'args = ["@playwright/mcp@latest"]',
         "",
         "[mcp_servers.experimental_sidecar]",
         'command = "experimental"',
@@ -356,13 +232,7 @@ describe("full inventory and doctor", () => {
     const codexPaths = createCodexPaths(homeDir);
 
     mkdirSync(join(homeDir, ".codex"), { recursive: true });
-    writeFileSync(
-      codexPaths.configToml,
-      [
-        "[mcp_servers.context7]",
-        'command = "context7"'
-      ].join("\n")
-    );
+    writeFileSync(codexPaths.configToml, ["[mcp_servers.playwright]", 'command = "playwright"'].join("\n"));
 
     const bundle = inspectStatusBundle(paths, codexPaths);
 
@@ -371,9 +241,9 @@ describe("full inventory and doctor", () => {
     expect(bundle.conflictWarnings).toEqual([
       {
         kind: "managed_mcp_server_drift",
-        target: "mcp_servers.context7",
+        target: "mcp_servers.playwright",
         path: codexPaths.configToml,
-        message: "managed Codex MCP server 'context7' differs from Sane's recommended settings; warning-only until you explicitly apply settings"
+        message: "managed Codex MCP server 'playwright' differs from Sane's recommended settings; warning-only until you explicitly apply settings"
       }
     ]);
   });
@@ -413,24 +283,14 @@ describe("full inventory and doctor", () => {
     const codexPaths = createCodexPaths(homeDir);
 
     mkdirSync(join(homeDir, ".codex"), { recursive: true });
-    writeFileSync(
-      codexPaths.configToml,
-      [
-        'model = "old-model"',
-        'model_reasoning_effort = "low"'
-      ].join("\n")
-    );
+    writeFileSync(codexPaths.configToml, ['model = "old-model"', 'model_reasoning_effort = "low"'].join("\n"));
 
     const bundle = inspectStatusBundle(paths, codexPaths);
 
     expect(bundle.primary.codexConfig?.status).toBe(InventoryStatus.Installed);
     expect(bundle.driftItems.map((item) => item.name)).not.toContain("codex-config");
-    expect(bundle.conflictWarnings.map((warning) => warning.kind)).toEqual([
-      "codex_profile_drift"
-    ]);
-    expect(bundle.conflictWarnings.map((warning) => warning.target)).toEqual([
-      "model"
-    ]);
+    expect(bundle.conflictWarnings.map((warning) => warning.kind)).toEqual(["codex_profile_drift"]);
+    expect(bundle.conflictWarnings.map((warning) => warning.target)).toEqual(["model"]);
   });
 
   it("does not warn for absent optional statusline or memories settings", () => {
@@ -456,13 +316,7 @@ describe("full inventory and doctor", () => {
     mkdirSync(join(homeDir, ".codex"), { recursive: true });
     writeFileSync(
       codexPaths.configToml,
-      [
-        "[features]",
-        "memories = true",
-        "",
-        "[tui]",
-        'notification_condition = "mentions"'
-      ].join("\n")
+      ["[features]", "memories = true", "", "[tui]", 'notification_condition = "mentions"'].join("\n")
     );
 
     const bundle = inspectStatusBundle(paths, codexPaths);
@@ -474,15 +328,13 @@ describe("full inventory and doctor", () => {
         kind: "codex_native_memories_enabled",
         target: "features.memories",
         path: codexPaths.configToml,
-        message:
-          "Codex native memories are enabled; Sane keeps default continuity in scoped exports plus .sane state instead"
+        message: "Codex native memories are enabled; Sane keeps default continuity in scoped exports plus .sane state instead"
       },
       {
         kind: "statusline_profile_drift",
         target: "tui.notification_condition",
         path: codexPaths.configToml,
-        message:
-      "Codex TUI notifications 'mentions' differ from Sane's status line setting 'always'"
+        message: "Codex TUI notifications 'mentions' differ from Sane's status line setting 'always'"
       }
     ]);
   });
@@ -494,13 +346,7 @@ describe("full inventory and doctor", () => {
     const codexPaths = createCodexPaths(homeDir);
 
     mkdirSync(join(homeDir, ".codex"), { recursive: true });
-    writeFileSync(
-      codexPaths.configToml,
-      [
-        "[features]",
-        "codex_hooks = false"
-      ].join("\n")
-    );
+    writeFileSync(codexPaths.configToml, ["[features]", "codex_hooks = false"].join("\n"));
 
     const bundle = inspectStatusBundle(paths, codexPaths);
 
@@ -511,8 +357,7 @@ describe("full inventory and doctor", () => {
         kind: "disabled_codex_hooks",
         target: "features.codex_hooks",
         path: codexPaths.configToml,
-        message:
-          "Codex hooks are disabled, so Sane-managed hook exports will not run until features.codex_hooks is enabled"
+        message: "Codex hooks are disabled, so Sane-managed hook exports will not run until features.codex_hooks is enabled"
       }
     ]);
   });
@@ -539,94 +384,6 @@ describe("full inventory and doctor", () => {
     ]);
   });
 
-  it("marks hooks invalid but does not block the install bundle on native Windows", () => {
-    const projectRoot = makeTempDir();
-    const homeDir = makeTempDir();
-    const paths = createProjectPaths(projectRoot);
-    const codexPaths = createCodexPaths(homeDir);
-
-    exportUserSkills(paths, codexPaths);
-    exportGlobalAgents(paths, codexPaths);
-    exportCustomAgents(paths, codexPaths);
-
-    const bundle = inspectStatusBundle(paths, codexPaths, "windows");
-
-    expect(bundle.primary.hooks?.status).toBe(InventoryStatus.Invalid);
-    expect(bundle.primary.status.hooks).toBe("invalid");
-    expect(bundle.primary.installBundle).toBe("installed");
-  });
-
-  it("formats native Windows hooks as unsupported in doctor output", () => {
-    const projectRoot = makeTempDir();
-    const homeDir = makeTempDir();
-    const paths = createProjectPaths(projectRoot);
-    const codexPaths = createCodexPaths(homeDir);
-
-    exportUserSkills(paths, codexPaths);
-    exportGlobalAgents(paths, codexPaths);
-    exportCustomAgents(paths, codexPaths);
-
-    const bundle = inspectStatusBundle(paths, codexPaths, "windows");
-    const doctorSnapshot = inspectDoctorSnapshot(paths, codexPaths, bundle);
-
-    expect(doctorSnapshot.lines).toContain("hooks: unsupported (use WSL)");
-  });
-
-  it("does not keep unsupported native Windows hooks in onboarding attention once the bundle is installed", () => {
-    const projectRoot = makeTempDir();
-    const homeDir = makeTempDir();
-    const paths = createProjectPaths(projectRoot);
-    const codexPaths = createCodexPaths(homeDir);
-
-    installRuntime(paths, codexPaths);
-    applyCodexProfile(paths, codexPaths);
-    exportAll(paths, codexPaths, "windows");
-
-    const bundle = inspectStatusBundle(paths, codexPaths, "windows");
-    const onboarding = inspectOnboardingSnapshotFromStatusBundle(paths, bundle);
-
-    expect(onboarding.recommendedActionId).toBeNull();
-    expect(onboarding.attentionItems.map((item) => item.id)).not.toContain("hooks");
-  });
-
-  it("formats doctor install and export hints with exact labels", () => {
-    const projectRoot = makeTempDir();
-    const homeDir = makeTempDir();
-    const paths = createProjectPaths(projectRoot);
-    const codexPaths = createCodexPaths(homeDir);
-
-    const doctorSnapshot = inspectDoctorSnapshot(paths, codexPaths);
-
-    expect(doctorSnapshot.lines).toContain("current-run: missing current-run.json (rerun install)");
-    expect(doctorSnapshot.lines).toContain("summary: missing summary.json (rerun install)");
-    expect(doctorSnapshot.lines).toContain("codex-config: missing (run `apply codex-profile`)");
-    expect(doctorSnapshot.lines).toContain("repo-skills: disabled (optional repo export)");
-    expect(doctorSnapshot.lines).toContain("repo-agents: disabled (optional repo export)");
-    expect(doctorSnapshot.lines).toContain("hooks: missing (run `export hooks`)");
-    expect(doctorSnapshot.lines).toContain("custom-agents: missing (run `export custom-agents`)");
-  });
-
-  it("formats overflowed backup history in the doctor snapshot", () => {
-    const projectRoot = makeTempDir();
-    const homeDir = makeTempDir();
-    const paths = createProjectPaths(projectRoot);
-    const codexPaths = createCodexPaths(homeDir);
-
-    installRuntime(paths, codexPaths);
-    writeBackupSiblings(paths.configPath, "config.local.toml.bak");
-    writeBackupSiblings(paths.summaryPath, "summary.json.bak");
-
-    const doctorSnapshot = inspectDoctorSnapshot(paths, codexPaths);
-
-    expect(doctorSnapshot.lines).toEqual(
-      expect.arrayContaining([
-        expect.stringContaining("config-backups: 4 (config.local.toml.bak.4"),
-        expect.stringContaining("summary-backups: 4 (summary.json.bak.4")
-      ])
-    );
-    expect(doctorSnapshot.lines.join("\n")).toContain("+1 more)");
-  });
-
   it("reports installed codex-native surfaces and enabled exported packs", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
@@ -644,137 +401,27 @@ describe("full inventory and doctor", () => {
     exportCustomAgents(paths, codexPaths);
 
     const status = showStatus(paths, codexPaths);
-    const doctorResult = doctor(paths, codexPaths);
-    const doctorSnapshot = inspectDoctorSnapshot(paths, codexPaths);
 
-    expect(status.inventory.find((item) => item.name === "pack-caveman")?.status).toBe(
-      InventoryStatus.Installed
-    );
-    expect(status.inventory.find((item) => item.name === "codex-config")?.status).toBe(
-      InventoryStatus.Installed
-    );
-    expect(status.inventory.find((item) => item.name === "user-skills")?.status).toBe(
-      InventoryStatus.Installed
-    );
-    expect(status.inventory.find((item) => item.name === "global-agents")?.status).toBe(
-      InventoryStatus.Installed
-    );
-    expect(status.inventory.find((item) => item.name === "hooks")?.status).toBe(
-      InventoryStatus.Installed
-    );
-    expect(status.inventory.find((item) => item.name === "custom-agents")?.status).toBe(
-      InventoryStatus.Installed
-    );
-    expect(doctorResult.summary).toContain("pack-caveman: enabled");
-    expect(doctorResult.summary).toContain("codex-config: installed");
-    expect(doctorResult.summary).toContain("user-skills: installed");
-    expect(doctorResult.summary).toContain("global-agents: installed");
-    expect(doctorResult.summary).toContain("hooks: installed");
-    expect(doctorResult.summary).toContain("custom-agents: installed");
-    expect(doctorSnapshot.headline).toBe("runtime: ok");
-    expect(doctorSnapshot.lines[0]).toBe("runtime: ok");
+    expect(status.inventory.find((item) => item.name === "pack-caveman")?.status).toBe(InventoryStatus.Installed);
+    expect(status.inventory.find((item) => item.name === "codex-config")?.status).toBe(InventoryStatus.Installed);
+    expect(status.inventory.find((item) => item.name === "user-skills")?.status).toBe(InventoryStatus.Installed);
+    expect(status.inventory.find((item) => item.name === "global-agents")?.status).toBe(InventoryStatus.Installed);
+    expect(status.inventory.find((item) => item.name === "hooks")?.status).toBe(InventoryStatus.Installed);
+    expect(status.inventory.find((item) => item.name === "custom-agents")?.status).toBe(InventoryStatus.Installed);
   });
 
-  it("does not mark a multi-skill pack installed when only one exported skill matches", () => {
+  it("keeps installed native Windows bundle status clean when unsupported hooks are exported", () => {
     const projectRoot = makeTempDir();
     const homeDir = makeTempDir();
     const paths = createProjectPaths(projectRoot);
     const codexPaths = createCodexPaths(homeDir);
-    const config = createDefaultLocalConfig();
-    config.packs.frontendCraft = true;
 
     installRuntime(paths, codexPaths);
-    saveConfig(paths, config);
-    exportUserSkills(paths, codexPaths);
-    rmSync(join(codexPaths.userSkillsDir, "sane-frontend-review"), { recursive: true, force: true });
-
-    const bundle = inspectStatusBundle(paths, codexPaths);
-
-    expect(bundle.optionalPacks.find((item) => item.name === "frontend-craft")).toEqual(
-      expect.objectContaining({
-        status: "configured",
-        skillNames: optionalPackSkillNames("frontend-craft")
-      })
-    );
-    expect(bundle.inventory.find((item) => item.name === "pack-frontend-craft")?.status).toBe(
-      InventoryStatus.Configured
-    );
-  });
-
-  it("marks a pack invalid when a shipped frontend skill goes missing", () => {
-    const projectRoot = makeTempDir();
-    const homeDir = makeTempDir();
-    const paths = createProjectPaths(projectRoot);
-    const codexPaths = createCodexPaths(homeDir);
-    const config = createDefaultLocalConfig();
-    config.packs.frontendCraft = true;
-
-    installRuntime(paths, codexPaths);
-    saveConfig(paths, config);
-    exportUserSkills(paths, codexPaths);
-    writeFileSync(
-      join(codexPaths.userSkillsDir, "sane-frontend-visual-assets", "SKILL.md"),
-      "stale frontend asset skill",
-      "utf8"
-    );
-
-    const bundle = inspectStatusBundle(paths, codexPaths);
-
-    expect(bundle.optionalPacks.find((item) => item.name === "frontend-craft")).toEqual(
-      expect.objectContaining({
-        status: "invalid",
-        skillNames: optionalPackSkillNames("frontend-craft")
-      })
-    );
-    expect(bundle.inventory.find((item) => item.name === "pack-frontend-craft")?.status).toBe(
-      InventoryStatus.Invalid
-    );
-  });
-
-  it("derives onboarding recommendations from a narrow backend snapshot", () => {
-    const projectRoot = makeTempDir();
-    const homeDir = makeTempDir();
-    const paths = createProjectPaths(projectRoot);
-    const codexPaths = createCodexPaths(homeDir);
-    const config = createDefaultLocalConfig();
-
-    expect(inspectOnboardingSnapshot(paths, codexPaths)).toMatchObject({
-      recommendedActionId: "install_runtime",
-      recommendedReason: "install_runtime",
-      primaryStatuses: {
-        runtime: "missing",
-        codexConfig: "missing",
-        userSkills: "missing",
-        hooks: "missing",
-        installBundle: "missing"
-      },
-      attentionItems: [
-        { id: "runtime", status: "missing" },
-        { id: "config", status: "missing" },
-        { id: "codex-config", status: "missing" },
-        { id: "user-skills", status: "missing" },
-        { id: "hooks", status: "missing" },
-        { id: "custom-agents", status: "missing" }
-      ]
-    });
-
-    installRuntime(paths, codexPaths);
-    expect(inspectOnboardingSnapshot(paths, codexPaths)).toMatchObject({
-      recommendedActionId: "show_codex_config",
-      recommendedReason: "show_codex_config"
-    });
-
-    saveConfig(paths, config);
     applyCodexProfile(paths, codexPaths);
-    expect(inspectOnboardingSnapshot(paths, codexPaths)).toMatchObject({
-      recommendedActionId: "export_all",
-      recommendedReason: "export_all"
-    });
+    exportAll(paths, codexPaths, "windows");
+
+    const bundle = inspectStatusBundle(paths, codexPaths, "windows");
+
+    expect(bundle.primary.installBundle).toBe("installed");
   });
 });
-
-function writeBackupSiblings(basePath: string, prefix: string): void {
-  for (let index = 1; index <= 4; index += 1) {
-    writeFileSync(`${basePath}.bak.${index}`, `${prefix}.${index}\n`, "utf8");
-  }
-}

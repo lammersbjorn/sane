@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { OperationKind } from "@sane/core";
+import { OperationKind } from "@sane/control-plane/core.js";
 import {
   checkForUpdates,
   detectSaneInstallSource,

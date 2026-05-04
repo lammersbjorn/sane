@@ -1,4 +1,4 @@
-import { OperationKind, OperationResult } from "@sane/core";
+import { OperationKind, OperationResult } from "@sane/control-plane/core.js";
 import { describe, expect, it } from "vitest";
 
 import type { UiCommandId } from "@sane/sane-tui/command-registry.js";

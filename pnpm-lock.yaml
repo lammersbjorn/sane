@@ -36,15 +36,9 @@ importers:
       '@sane/control-plane':
         specifier: workspace:*
         version: link:../../packages/control-plane
-      '@sane/core':
-        specifier: workspace:*
-        version: link:../../packages/core
       '@sane/framework-assets':
         specifier: workspace:*
         version: link:../../packages/framework-assets
-      '@sane/platform':
-        specifier: workspace:*
-        version: link:../../packages/platform
       '@sane/state':
         specifier: workspace:*
         version: link:../../packages/state
@@ -98,18 +92,9 @@ importers:
       '@sane/config':
         specifier: workspace:*
         version: link:../config
-      '@sane/core':
-        specifier: workspace:*
-        version: link:../core
       '@sane/framework-assets':
         specifier: workspace:*
         version: link:../framework-assets
-      '@sane/platform':
-        specifier: workspace:*
-        version: link:../platform
-      '@sane/policy':
-        specifier: workspace:*
-        version: link:../policy
       '@sane/state':
         specifier: workspace:*
         version: link:../state
@@ -124,41 +109,7 @@ importers:
         specifier: 4.1.5
         version: 4.1.5(@types/node@25.6.0)(vite@8.0.9(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))
 
-  packages/core:
-    devDependencies:
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-      vitest:
-        specifier: 4.1.5
-        version: 4.1.5(@types/node@25.6.0)(vite@8.0.9(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))
-
   packages/framework-assets:
-    devDependencies:
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-      vitest:
-        specifier: 4.1.5
-        version: 4.1.5(@types/node@25.6.0)(vite@8.0.9(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))
-
-  packages/platform:
-    devDependencies:
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-      vitest:
-        specifier: 4.1.5
-        version: 4.1.5(@types/node@25.6.0)(vite@8.0.9(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0))
-
-  packages/policy:
-    dependencies:
-      '@sane/config':
-        specifier: workspace:*
-        version: link:../config
-      '@sane/platform':
-        specifier: workspace:*
-        version: link:../platform
     devDependencies:
       typescript:
         specifier: ^5.9.3

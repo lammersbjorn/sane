@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createDefaultLocalConfig } from "@sane/config";
-import { createProjectPaths } from "@sane/platform";
+import { createProjectPaths } from "../src/platform.js";
 import { writeCurrentRunState } from "@sane/state";
 import { afterEach, describe, expect, it } from "vitest";
 

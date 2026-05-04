@@ -3,8 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createDefaultLocalConfig, readLocalConfig } from "@sane/config";
-import { InventoryStatus } from "@sane/core";
-import { createCodexPaths, createProjectPaths } from "@sane/platform";
+import { InventoryStatus } from "@sane/control-plane/core.js";
+import { createCodexPaths, createProjectPaths } from "../src/platform.js";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {

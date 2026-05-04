@@ -2,8 +2,8 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { InventoryStatus } from "@sane/core";
-import { createProjectPaths, createCodexPaths } from "@sane/platform";
+import { InventoryStatus } from "@sane/control-plane/core.js";
+import { createProjectPaths, createCodexPaths } from "../src/platform.js";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { doctorRuntime, installRuntime, showRuntimeStatus } from "../src/index.js";

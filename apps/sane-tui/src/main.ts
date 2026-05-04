@@ -6,7 +6,7 @@ import {
   type CodexPaths,
   type HomeDirEnv,
   type ProjectPaths
-} from "@sane/platform";
+} from "@sane/control-plane/platform.js";
 
 import { type LaunchShortcut } from "@sane/sane-tui/command-registry.js";
 import { loadDashboardView, type DashboardView } from "@sane/sane-tui/dashboard.js";

@@ -2,8 +2,8 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { createProjectPaths, createCodexPaths } from "@sane/platform";
-import { InventoryStatus } from "@sane/core";
+import { createProjectPaths, createCodexPaths } from "../src/platform.js";
+import { InventoryStatus } from "@sane/control-plane/core.js";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
@@ -205,7 +205,7 @@ describe("codex config control plane", () => {
     expect(body).toContain('model_reasoning_effort = "low"');
     expect(body).toContain("compact_prompt =");
     expect(body).toContain("Fresh Rules");
-    expect(body).toContain("Do not add generated repo overviews");
+    expect(body).toContain("Keep generated repo overviews");
     expect(body).toContain("[features]");
     expect(body).toContain("codex_hooks = true");
   });
@@ -220,13 +220,11 @@ describe("codex config control plane", () => {
     const body = readFileSync(codexPaths.configToml, "utf8");
 
     expect(result.summary).toBe("integrations-profile apply: wrote recommended integrations");
-    expect(body).toContain("[mcp_servers.context7]");
-    expect(body).toContain('url = "https://mcp.context7.com/mcp"');
     expect(body).toContain("[mcp_servers.playwright]");
     expect(body).toContain('command = "npx"');
     expect(body).toContain('"@playwright/mcp@latest"');
-    expect(body).toContain("[mcp_servers.grep_app]");
-    expect(body).toContain('url = "https://mcp.grep.app"');
+    expect(body).not.toContain("[mcp_servers.context7]");
+    expect(body).not.toContain("[mcp_servers.grep_app]");
   });
 
   it("backs up and restores the latest codex config snapshot", () => {
@@ -261,7 +259,7 @@ describe("codex config control plane", () => {
 
     expect(backup.summary).toContain("codex-config backup: wrote");
     expect(previewIntegrationsProfile(codexPaths).summary).toBe(
-      "integrations-profile preview: 3 recommended change(s)"
+      "integrations-profile preview: 1 recommended change(s)"
     );
     expect(inspectCodexConfigBackupSnapshot(projectPaths)).toEqual({
       restoreAvailable: true,
@@ -367,9 +365,9 @@ describe("codex config control plane", () => {
 
     expect(inspectIntegrationsProfileAudit(codexPaths)).toMatchObject({
       status: "missing",
-      recommendedChangeCount: 3,
-      recommendedTargets: ["context7", "playwright", "grep.app"],
-      optionalTargets: []
+      recommendedChangeCount: 1,
+      recommendedTargets: ["playwright"],
+      optionalTargets: ["context7-cli", "grep.app"]
     });
 
     applyIntegrationsProfile(projectPaths, codexPaths);
@@ -378,7 +376,7 @@ describe("codex config control plane", () => {
       status: "installed",
       recommendedChangeCount: 0,
       recommendedTargets: [],
-      optionalTargets: []
+      optionalTargets: ["context7-cli", "grep.app"]
     });
   });
 
@@ -409,10 +407,10 @@ describe("codex config control plane", () => {
       })
     });
     expect(inspectIntegrationsProfileSnapshot(codexPaths)).toMatchObject({
-      audit: expect.objectContaining({ status: "missing", recommendedChangeCount: 3 }),
-      apply: expect.objectContaining({ status: "ready", recommendedChangeCount: 3 }),
+      audit: expect.objectContaining({ status: "missing", recommendedChangeCount: 1 }),
+      apply: expect.objectContaining({ status: "ready", recommendedChangeCount: 1 }),
       preview: expect.objectContaining({
-        summary: "integrations-profile preview: 3 recommended change(s)"
+        summary: "integrations-profile preview: 1 recommended change(s)"
       })
     });
     expect(inspectCloudflareProfileSnapshot(codexPaths)).toMatchObject({
@@ -523,8 +521,8 @@ describe("codex config control plane", () => {
 
     expect(inspectIntegrationsProfileApplyResult(codexPaths)).toMatchObject({
       status: "ready",
-      recommendedChangeCount: 3,
-      appliedKeys: ["mcp_servers.context7", "mcp_servers.playwright", "mcp_servers.grep_app"]
+      recommendedChangeCount: 1,
+      appliedKeys: ["mcp_servers.playwright"]
     });
 
     applyIntegrationsProfile(projectPaths, codexPaths);

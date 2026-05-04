@@ -3,11 +3,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createDefaultLocalConfig } from "@sane/config";
-import { createCodexPaths, createProjectPaths } from "@sane/platform";
+import { createCodexPaths, createProjectPaths } from "../src/platform.js";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { applyCodexProfile, backupCodexConfig } from "../src/codex-config.js";
 import { CORE_INSTALL_BUNDLE_TARGETS } from "../src/core-install-bundle-targets.js";
+import { deployCodexFrameworkArtifactPlan } from "../src/framework-artifact-plan.js";
 import { exportAll } from "../src/index.js";
 import {
   inspectRepairStatus,
@@ -69,6 +70,32 @@ describe("repair status snapshot", () => {
         uninstall_all: { kind: "missing", label: "missing" }
       })
     });
+  });
+
+  it("surfaces framework-artifacts repair status without adding it to uninstall-all", () => {
+    const projectRoot = makeTempDir();
+    const homeDir = makeTempDir();
+    const paths = createProjectPaths(projectRoot);
+    const codexPaths = createCodexPaths(homeDir);
+
+    expect(inspectRepairStatus(paths, codexPaths).actionStatus.uninstall_framework_artifacts).toEqual({
+      kind: "missing",
+      label: "missing"
+    });
+
+    deployCodexFrameworkArtifactPlan(paths, codexPaths, {
+      configFragments: {
+        cloudflare: true,
+        statusline: true
+      }
+    });
+    const repair = inspectRepairStatus(paths, codexPaths);
+
+    expect(repair.actionStatus.uninstall_framework_artifacts).toEqual({
+      kind: "installed",
+      label: "installed"
+    });
+    expect(repair.removableInstalls).not.toContain("framework-artifacts");
   });
 
   it("reports repair affordances from backend state without raw inventory consumers", () => {

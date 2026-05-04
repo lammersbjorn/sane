@@ -3,8 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createDefaultLocalConfig } from "@sane/config";
-import { OperationKind, OperationResult } from "@sane/core";
-import { createProjectPaths, createCodexPaths } from "@sane/platform";
+import { OperationKind, OperationResult } from "@sane/control-plane/core.js";
+import { createProjectPaths, createCodexPaths } from "../src/platform.js";
 import {
   parseArtifactRecordJson,
   parseDecisionRecordJson,

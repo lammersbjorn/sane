@@ -1,7 +1,7 @@
 # Sane Design Spec
 
 > [!WARNING]
-> Historical planning snapshot (dated 2026-04-19). Use this document for archived design intent only. Current product surface and naming live in `README.md`, `docs/what-sane-does.md`, and newer dated specs.
+> Historical planning snapshot (dated 2026-04-19). Use this document for archived design intent only. Current framework architecture and source-record ownership live in `docs/specs/2026-05-04-source-record-framework-spine.md`; current TUI naming and launch behavior live in `docs/specs/2026-04-25-sane-tui-control-center-redesign.md`.
 
 ## Vision
 

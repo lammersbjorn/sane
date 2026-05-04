@@ -2,15 +2,15 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { InventoryStatus } from "@sane/core";
-import { createCodexPaths, createProjectPaths } from "@sane/platform";
+import { InventoryStatus } from "@sane/control-plane/core.js";
+import { createCodexPaths, createProjectPaths } from "@sane/control-plane/platform.js";
 import { parseEventRecordJson, readJsonlRecords } from "@sane/state";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import * as controlPlane from "@sane/control-plane";
 import { exportAll } from "@sane/control-plane/bundles.js";
 import * as codexConfig from "@sane/control-plane/codex-config.js";
 import { executeOperation } from "@sane/control-plane/history.js";
+import { installRuntime } from "@sane/control-plane/install-runtime.js";
 import * as inventory from "@sane/control-plane/inventory.js";
 import { saveConfig } from "@sane/control-plane/preferences.js";
 import * as preferencesControlPlane from "@sane/control-plane/preferences.js";
@@ -67,7 +67,7 @@ describe("tui shell", () => {
     const paths = createProjectPaths(projectRoot);
     const codexPaths = createCodexPaths(homeDir);
 
-    controlPlane.installRuntime(paths, codexPaths);
+  installRuntime(paths, codexPaths);
     codexConfig.applyCodexProfile(paths, codexPaths);
     exportAll(paths, codexPaths);
     const shell = createTuiShell(paths, codexPaths);
@@ -159,7 +159,7 @@ describe("tui shell", () => {
     const paths = createProjectPaths(projectRoot);
     const codexPaths = createCodexPaths(homeDir);
 
-    controlPlane.installRuntime(paths, codexPaths);
+  installRuntime(paths, codexPaths);
     const runtimeStateSpy = vi.spyOn(runtimeState, "inspectRuntimeState");
     const shell = createTuiShell(paths, codexPaths);
 
@@ -188,7 +188,7 @@ describe("tui shell", () => {
       moveSelection(shell, "section", 1);
     }
 
-    controlPlane.installRuntime(paths, codexPaths);
+  installRuntime(paths, codexPaths);
     const statusResult = runSelectedAction(shell);
 
     expect(statusResult?.inventory.find((item) => item.name === "runtime")?.status).toBe(
@@ -208,7 +208,7 @@ describe("tui shell", () => {
       moveSelection(doctorShell, "action", 1);
     }
 
-    controlPlane.installRuntime(doctorPaths, doctorCodexPaths);
+  installRuntime(doctorPaths, doctorCodexPaths);
     const doctorResult = runSelectedAction(doctorShell);
 
     expect(doctorResult?.summary).toContain("runtime: missing");
@@ -228,7 +228,7 @@ describe("tui shell", () => {
       moveSelection(shell, "action", 1);
     }
 
-    controlPlane.installRuntime(paths, codexPaths);
+  installRuntime(paths, codexPaths);
     const result = runSelectedAction(shell);
 
     expect(result?.policyPreview?.scenarios.map((scenario) => scenario.id)).not.toContain(

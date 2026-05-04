@@ -3,12 +3,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createDefaultLocalConfig } from "@sane/config";
-import { createCodexPaths, createProjectPaths } from "@sane/platform";
+import { createCodexPaths, createProjectPaths } from "@sane/control-plane/platform.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { applyCodexProfile, backupCodexConfig } from "@sane/control-plane/codex-config.js";
 import { exportAll } from "@sane/control-plane";
-import { installRuntime } from "@sane/control-plane";
+import { installRuntime } from "@sane/control-plane/install-runtime.js";
 import * as inventory from "@sane/control-plane/inventory.js";
 import { saveConfig } from "@sane/control-plane/preferences.js";
 import * as repairStatus from "@sane/control-plane/repair-status.js";

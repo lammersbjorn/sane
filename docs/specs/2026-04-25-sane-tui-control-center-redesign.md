@@ -2,6 +2,9 @@
 
 Date: 2026-04-25
 
+> [!IMPORTANT]
+> Current for TUI labels, launch behavior, and task-first screen responsibilities only. Do not use this file as the active framework architecture or artifact-ownership spec; those live in `docs/specs/2026-05-04-source-record-framework-spine.md`.
+
 Purpose:
 - remake the TUI for users who already use Codex and want better defaults without learning Sane internals
 - replace weird/internal labels with plain language
@@ -263,6 +266,8 @@ Later import/export support:
 - keep this out of the current remake unless needed by the implementation
 
 ## Implementation TODO
+
+Historical implementation checklist. Keep for traceability; verify current status in code and newer specs before starting work from any item below.
 
 1. Add tests for the new TUI section names and launch routing before renaming code.
 2. Choose Ink for live TTY path and keep Rezi deferred behind later spike.

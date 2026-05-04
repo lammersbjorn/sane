@@ -7,7 +7,7 @@ description: Use when building, changing, reviewing, or documenting Sane itself,
 
 ## Goal
 
-Work on `Sane` itself without turning this repo's self-hosting setup into a generic default for other repos.
+Work on `Sane` itself while keeping this repo's self-hosting setup distinct from generic repo defaults.
 
 ## Use When
 
@@ -48,7 +48,7 @@ Work on `Sane` itself without turning this repo's self-hosting setup into a gene
 
 1. Start from repo truth and local state, not memory alone.
 2. RTK is mandatory in this repo. Prefer RTK-native commands (`rtk grep`, `rtk read`, `rtk diff`, `rtk test`, `rtk pnpm`, `rtk git`); use `rtk run '<command>'` only when no native command fits.
-3. Keep root `AGENTS.md` small. Put recurring procedure detail here or in docs, not in always-on startup context.
+3. Keep root `AGENTS.md` small. Put recurring procedure detail here or in docs so startup context stays lean.
 4. Treat `Sane` as an agent framework for Codex, not a daily wrapper. The TUI remains install/config/update/export/status/repair/doctor.
 5. When self-hosting on the Sane repo itself, use the repo's own local-state-defined agents, tools, skills, and routing where they exist.
 6. Prefer Sane-owned routing/export changes before editing vendored upstream mirrors.
@@ -59,11 +59,11 @@ Work on `Sane` itself without turning this repo's self-hosting setup into a gene
    - progressive disclosure instead of giant bodies
    - no duplicated policy across root guidance, skills, overlays, and agents
 8. When the user says `continue`, `keep going`, or `resume`, also load `.agents/skills/continue/SKILL.md`.
-9. Do not present future work as shipped behavior.
+9. Mark future work as planned until the matching behavior ships.
 10. When committing, copy the repo's commit message style; if none exists or it is poor, default to Conventional Commits.
 11. Keep managed Codex-native surfaces additive and reversible.
 12. Suggest a release when the completed slice changes public behavior, install/update/package flows, managed exported surfaces, docs that users rely on, or tap/npm artifacts. Name the likely release size or prerelease channel, and say what verification/tag/publish steps remain.
-13. Do not suggest a release for internal-only churn unless it unblocks a pending release or fixes a released regression.
+13. Suggest a release for internal-only churn only when it unblocks a pending release or fixes a released regression.
 
 ## Verification
 
@@ -73,9 +73,9 @@ Work on `Sane` itself without turning this repo's self-hosting setup into a gene
 
 ## Gotchas / Safety
 
-- do not copy this repo's self-hosting shape into every repo by default
-- do not widen the TUI into the normal prompting interface
-- do not restate discoverable repo facts in multiple prompt surfaces
+- keep this repo's self-hosting shape separate from generic repo defaults
+- keep the TUI scoped to install/config/update/export/status/repair/doctor
+- keep discoverable repo facts in one prompt surface
 - if a skill starts growing large, split detail into docs or `references/` instead
 - if a vendor skill is broad or heavy, fix Sane-owned routing first before patching the mirror
 

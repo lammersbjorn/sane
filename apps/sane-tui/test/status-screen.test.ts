@@ -3,19 +3,22 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createDefaultLocalConfig } from "@sane/config";
-import { InventoryScope, InventoryStatus } from "@sane/core";
+import { InventoryScope, InventoryStatus } from "@sane/control-plane/core.js";
 import { optionalPackSkillNames } from "@sane/framework-assets";
-import { createCodexPaths, createProjectPaths } from "@sane/platform";
+import { createCodexPaths, createProjectPaths } from "@sane/control-plane/platform.js";
 import { appendJsonlRecord, createDecisionRecord, stringifyDecisionRecord } from "@sane/state";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { applyCodexProfile } from "@sane/control-plane/codex-config.js";
 import { exportHooks } from "@sane/control-plane/hooks-custom-agents.js";
-import * as controlPlane from "@sane/control-plane";
+import {
+  formatInspectOverviewLines as formatSharedInspectOverviewLines,
+  type InspectOverviewSnapshot
+} from "@sane/control-plane/inspect-presenter.js";
+import * as inspectRuntime from "@sane/control-plane/inspect-runtime.js";
 import * as inventory from "@sane/control-plane/inventory.js";
-import { formatInspectOverviewLines as formatSharedInspectOverviewLines, installRuntime } from "@sane/control-plane";
+import { installRuntime } from "@sane/control-plane/install-runtime.js";
 import { saveConfig } from "@sane/control-plane/preferences.js";
-import { type InspectOverviewSnapshot } from "@sane/control-plane";
 import { statusOverviewLines, loadStatusScreen, loadStatusScreenFromStatusBundle } from "@sane/sane-tui/status-screen.js";
 
 const tempDirs: string[] = [];
@@ -295,16 +298,13 @@ describe("status screen model", () => {
     expect(screen.localConfig.summary).toContain("config: ok");
     expect(screen.codexConfig.summary).toContain("codex-config: ok");
     expect(screen.integrationsPreview.summary).toContain("integrations-profile preview");
-    expect(screen.integrationsPreview.details).toContain("context7: missing -> recommended");
+    expect(screen.integrationsPreview.details).toContain("context7-cli: optional upstream CLI install");
     expect(screen.integrationsAudit.status).toBe("missing");
-    expect(screen.integrationsAudit.recommendedChangeCount).toBe(3);
-    expect(screen.integrationsAudit.recommendedTargets).toEqual(["context7", "playwright", "grep.app"]);
+    expect(screen.integrationsAudit.recommendedChangeCount).toBe(1);
+    expect(screen.integrationsAudit.recommendedTargets).toEqual(["playwright"]);
+    expect(screen.integrationsAudit.optionalTargets).toEqual(["context7-cli", "grep.app"]);
     expect(screen.integrationsApply.status).toBe("ready");
-    expect(screen.integrationsApply.appliedKeys).toEqual([
-      "mcp_servers.context7",
-      "mcp_servers.playwright",
-      "mcp_servers.grep_app"
-    ]);
+    expect(screen.integrationsApply.appliedKeys).toEqual(["mcp_servers.playwright"]);
     expect(screen.statuslineAudit.status).toBe("missing");
     expect(screen.statuslineAudit.recommendedChangeCount).toBe(3);
     expect(screen.statuslineApply.status).toBe("ready");
@@ -536,7 +536,7 @@ describe("status screen model", () => {
     const paths = createProjectPaths(projectRoot);
     const codexPaths = createCodexPaths(homeDir);
     const bundle = inventory.inspectStatusBundle(paths, codexPaths);
-    const fromBundleSpy = vi.spyOn(controlPlane, "inspectSnapshotFromStatusBundle");
+    const fromBundleSpy = vi.spyOn(inspectRuntime, "inspectSnapshotFromStatusBundle");
     const screen = loadStatusScreenFromStatusBundle(paths, codexPaths, bundle);
 
     expect(fromBundleSpy).toHaveBeenCalledTimes(1);

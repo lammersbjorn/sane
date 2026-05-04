@@ -5,6 +5,6 @@ Configuration schema, defaults, TOML parsing, and Codex environment detection fo
 Verify with:
 
 ```bash
-pnpm --filter @sane/config test
-pnpm --filter @sane/config typecheck
+rtk pnpm --filter @sane/config test
+rtk run 'pnpm --filter @sane/config typecheck'
 ```

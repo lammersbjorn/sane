@@ -24,7 +24,12 @@ export function omitTomlKeys(record: TomlTable, keys: string[]): TomlTable {
   const result: TomlTable = {};
   for (const [key, value] of Object.entries(record)) {
     if (!excluded.has(key)) {
-      result[key] = value;
+      Object.defineProperty(result, key, {
+        configurable: true,
+        enumerable: true,
+        value,
+        writable: true,
+      });
     }
   }
   return result;

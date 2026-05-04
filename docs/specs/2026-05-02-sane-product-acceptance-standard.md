@@ -125,7 +125,7 @@ Purpose:
 ### Current Standard
 
 - Sane-managed Codex profile keys are limited to `model`, `model_reasoning_effort`, `compact_prompt`, and `features.codex_hooks`.
-- Sane-managed integration keys are limited to `mcp_servers.context7`, `mcp_servers.playwright`, `mcp_servers.grep_app`, and optional `mcp_servers.cloudflare-api`.
+- Sane-managed integration keys are limited to `mcp_servers.playwright` and optional `mcp_servers.cloudflare-api`; context7 stays CLI-first and grep.app stays optional when RTK/local search is unavailable.
 - Sane-managed statusline keys are limited to `tui.notification_condition`, `tui.status_line`, and `tui.terminal_title`.
 - `features.memories`, enabled `plugins.*`, unmanaged `mcp_servers.*`, and `tui.theme` are warning-only or display-only surfaces; Sane does not auto-apply or auto-remove them.
 - `tools_view_image`, broader hook/profile feature flags, and a separate long-runtime profile are not shipped Sane-managed config surfaces.

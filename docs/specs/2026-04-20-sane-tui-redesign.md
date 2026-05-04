@@ -13,11 +13,11 @@ Related:
 
 Status:
 - superseded for naming, launch lifecycle, renderer selection, and next implementation order by `docs/specs/2026-04-25-sane-tui-control-center-redesign.md`
-- keep this file as historical context for the current TypeScript TUI layering and earlier visual rules
+- keep this file as historical context for TypeScript TUI layering and earlier visual rules
 - historical only: do not implement current labels, launch flow, or renderer work from this file
 
 > [!IMPORTANT]
-> This file preserves earlier design context. For active TUI work, use `docs/specs/2026-04-25-sane-tui-control-center-redesign.md` and the current cleanup spec.
+> This file preserves earlier design context. For current TUI labels and launch behavior, use `docs/specs/2026-04-25-sane-tui-control-center-redesign.md`. For current framework architecture and artifact ownership, use `docs/specs/2026-05-04-source-record-framework-spine.md`.
 
 ## Product Goal
 

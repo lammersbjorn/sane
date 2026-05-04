@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 
-import { type HomeDirEnv, discoverCodexPaths, discoverProjectPaths } from "@sane/platform";
+import { type HomeDirEnv, discoverCodexPaths, discoverProjectPaths } from "@sane/control-plane/platform.js";
 
 import {
   renderSessionEndHookOutput,

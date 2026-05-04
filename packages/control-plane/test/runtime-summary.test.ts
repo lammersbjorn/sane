@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { createCodexPaths, createProjectPaths } from "@sane/platform";
+import { createCodexPaths, createProjectPaths } from "../src/platform.js";
 import {
   appendJsonlRecord,
   createArtifactRecord,
@@ -15,15 +15,17 @@ import {
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
+  installRuntime
+} from "../src/index.js";
+import {
   inspectLatestPolicyPreview,
-  installRuntime,
   showRuntimeHistory,
   showRuntimeHistoryFromRuntimeState,
   showRuntimeProgress,
   showRuntimeProgressFromRuntimeState,
   showRuntimeSummary,
   showRuntimeSummaryFromRuntimeState
-} from "../src/index.js";
+} from "../src/features/status/inspect-runtime.js";
 import { inspectRuntimeState } from "../src/runtime-state.js";
 
 const tempDirs: string[] = [];

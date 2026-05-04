@@ -1,7 +1,7 @@
 import { basename } from "node:path";
 
-import { OperationResult } from "@sane/core";
-import { detectPlatform, type CodexPaths, type HostPlatform, type ProjectPaths } from "@sane/platform";
+import { OperationResult } from "@sane/control-plane/core.js";
+import { detectPlatform, type CodexPaths, type HostPlatform, type ProjectPaths } from "@sane/control-plane/platform.js";
 
 import { exportAll, exportOpencodeCore, uninstallAll } from "@sane/control-plane/bundles.js";
 import {
@@ -40,10 +40,10 @@ import {
   doctorForStatusBundle,
   inspectOnboardingSnapshotFromStatusBundle,
   inspectStatusBundle,
+  showStatus,
   showStatusFromStatusBundle
 } from "@sane/control-plane/inventory.js";
 import { inspectInstallStatusFromStatusBundle } from "@sane/control-plane/install-status.js";
-import { showStatus } from "@sane/control-plane";
 import { previewPolicy, previewPolicyForCurrentRun } from "@sane/control-plane/policy-preview.js";
 import {
   exportPortableSettings,
@@ -56,14 +56,13 @@ import {
 } from "@sane/control-plane/preferences.js";
 import {
   advanceOutcome,
-  installRuntime,
   showOutcomeReadiness,
   showOutcomeReadinessFromRuntimeState,
   showRuntimeSummary,
-  showRuntimeSummaryFromRuntimeState,
-  uninstallRepoAgents,
-  uninstallRepoSkills
-} from "@sane/control-plane";
+  showRuntimeSummaryFromRuntimeState
+} from "@sane/control-plane/inspect-runtime.js";
+import { installRuntime } from "@sane/control-plane/install-runtime.js";
+import { uninstallRepoAgents, uninstallRepoSkills } from "@sane/control-plane/codex-native.js";
 
 import {
   COMMAND_METADATA_REGISTRY,

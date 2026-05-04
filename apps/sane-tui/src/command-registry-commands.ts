@@ -1,4 +1,4 @@
-import { OperationKind } from "@sane/core";
+import { OperationKind } from "@sane/control-plane/core.js";
 
 import type { CommandSpec, UiCommandId } from "./command-registry-types.js";
 

@@ -28,7 +28,7 @@ describe("session-start hook helper", () => {
       });
       const context = JSON.parse(execSync(command, { encoding: "utf8", shell: "/bin/sh" }))
         .hookSpecificOutput.additionalContext;
-      expect(context).toContain("do not report when absent");
+      expect(context).toContain("stay quiet when absent");
       expect(context).toContain("Load `sane-router` skill body");
       expect(context).toContain("read that matching SKILL.md before acting");
       expect(context).toContain("Use subagents by default");
@@ -36,12 +36,12 @@ describe("session-start hook helper", () => {
       expect(context).toContain("including follow-up implementation after research");
       expect(context).toContain("Attempt lane handoff first");
       expect(context).toContain("ask only if subagent launch is blocked");
-      expect(context).toContain("Never silently downgrade broad work");
+      expect(context).toContain("Broad work uses a lane handoff");
       expect(context).toContain("before broad edits");
       expect(context).toContain("Sane obligation receipt:");
       expect(context).toContain("skills=read sane-router + triggered SKILL.md bodies");
       expect(context).toContain("broad_work=visible lane plan + spawn_agent handoff before broad edits");
-      expect(context).toContain("blocked_handoff=report blocker + ask once + stop");
+      expect(context).toContain("blocked_handoff=report blocker + ask once + wait");
       expect(context).toContain("style=normal");
       expect(context).toContain("packs=");
       expect(context).toContain("caveman:off");
@@ -56,8 +56,14 @@ describe("session-start hook helper", () => {
     expect(buildManagedSessionStartHookCommand("/tmp/Sane Bin/sane")).toBe(
       "'/tmp/Sane Bin/sane' hook session-start"
     );
-    expect(buildManagedSessionStartHookCommand("/tmp/it's/sane")).toBe(
-      "'/tmp/it'\"'\"'s/sane' hook session-start"
+  });
+
+  it("rejects unsafe executable characters in managed hook commands", () => {
+    expect(() => buildManagedSessionStartHookCommand("/tmp/sane; touch /tmp/pwned")).toThrow(
+      "unsafe shell characters"
+    );
+    expect(() => buildManagedSessionEndHookCommand("/tmp/it's/sane")).toThrow(
+      "unsafe shell characters"
     );
   });
 
@@ -85,7 +91,7 @@ describe("session-start hook helper", () => {
       }
     });
     expect(JSON.parse(renderSessionStartHookOutput()).hookSpecificOutput.additionalContext).toContain(
-      "do not report when absent"
+      "stay quiet when absent"
     );
     expect(JSON.parse(renderSessionStartHookOutput()).hookSpecificOutput.additionalContext).toContain(
       "Load `sane-router` skill body"
@@ -118,7 +124,7 @@ describe("session-start hook helper", () => {
     expect(prompt).toContain("3. Obligation Receipt: Sane obligation receipt:");
     expect(prompt).toContain("skills=read sane-router + triggered SKILL.md bodies");
     expect(prompt).toContain("broad_work=visible lane plan + spawn_agent handoff before broad edits");
-    expect(prompt).toContain("blocked_handoff=report blocker + ask once + stop");
+    expect(prompt).toContain("blocked_handoff=report blocker + ask once + wait");
     expect(prompt).toContain("style=sane-caveman");
     expect(prompt).toContain("packs=");
     expect(prompt).toContain("caveman:on");
@@ -138,9 +144,9 @@ describe("session-start hook helper", () => {
     expect(JSON.parse(renderSessionEndHookOutput({ rateLimitResume: true }))).toEqual({
       hookSpecificOutput: {
         hookEventName: "Stop",
-        additionalContext:
-          "Sane managed Stop hook loaded. Rate-limit auto-resume is enabled, but Codex did not provide a reset timestamp in this hook payload."
+        additionalContext: expect.stringMatching(/rate-limit.*resume/i)
       }
     });
+    expect(JSON.parse(renderSessionEndHookOutput())).toEqual({});
   });
 });

@@ -106,6 +106,7 @@ describe("section action rows", () => {
         uninstall_repo_agents: { kind: "missing", label: "missing" },
         uninstall_hooks: { kind: "missing", label: "missing" },
         uninstall_custom_agents: { kind: "missing", label: "missing" },
+        uninstall_framework_artifacts: { kind: "missing", label: "missing" },
         uninstall_all: { kind: "missing", label: "missing" }
       })
     ).toEqual([

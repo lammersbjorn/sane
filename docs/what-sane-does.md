@@ -106,6 +106,7 @@ Sane keeps a small `.sane/` folder for operational state:
 - brief handoff context
 - backups
 - policy/readiness metadata
+- framework artifact ownership manifest for managed source-record deployments
 
 Readiness and blocker checks use this Sane-owned state only. Sane does not mine raw Codex logs.
 
@@ -154,6 +155,10 @@ Already in place:
 - core Codex-native exports
 - optional packs
 - local `.sane/` runtime
+- source-record artifact-plan coverage for core skills, Sane custom agents,
+  managed `AGENTS.md` blocks, optional pack skills, config/profile fragments,
+  managed hooks, safety guard hooks, and manifest-backed framework artifact
+  status/repair visibility
 - preview/apply/backup/restore for narrow Codex profiles
 - recommended integrations, Cloudflare, and native statusline/title profiles
 - status, repair, and uninstall flows
