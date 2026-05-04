@@ -39,24 +39,18 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
           registry-url: https://registry.npmjs.org
+
+      - name: Setup npm for trusted publishing
+        run: npm install --global npm@11.5.1
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Verify release package
         run: pnpm run accept
-
-      - name: Validate npm token
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          if [ -z "${NPM_TOKEN}" ]; then
-            echo "NPM_TOKEN secret missing. Configure repository or environment secret before publishing."
-            exit 1
-          fi
 
       - name: Validate npm dist-tag
         run: |
@@ -68,6 +62,4 @@ jobs:
 
       - name: Publish sane-codex package
         working-directory: apps/sane-tui/dist
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: pnpm publish --access public --no-git-checks --provenance --tag "${{ inputs.npm_tag }}"
+        run: npm publish --access public --tag "${{ inputs.npm_tag }}"
