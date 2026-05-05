@@ -10,7 +10,8 @@ Developer template:
 Purpose:
 - keep Sane aligned with current Codex app, OpenAI, OpenCode, agent-framework,
   benchmark, competitor, and prompt-surface practice
-- create reviewable draft PRs with proposals, not hidden core mutations
+- create reviewable draft PRs for implementation-ready recommendations, not
+  hidden core mutations or raw triage
 - give a main Codex agent a clear implementation prompt after human review
 
 This automation is for this repository's maintenance workflow. It is not a Sane
@@ -26,11 +27,15 @@ reviewed or closed.
 
 ## Expected Output
 
-The automation opens a draft PR only when it has useful findings. The PR should
-contain research and proposals. It should not implement major code changes.
+The automation opens a draft PR only when it has useful, implementation-ready
+recommendations. The PR body is the primary artifact and must stand alone: it
+must explain what should change, why, affected surfaces, compatibility posture,
+verification, completed audits, and a main-agent implementation prompt.
 
-Small repo-local documentation updates are allowed only when they make the
-research PR easier to review, such as adding a dated memo under `docs/research/`.
+Docs-only and prompt-template-only recommendations should be implemented in the
+branch. Core package behavior, exported-surface compatibility, risky
+prompt-surface, package, or architecture changes should stay proposal-only in
+the PR body with exact implementation instructions.
 
 ## Research Scope And PR Contract
 
@@ -38,12 +43,13 @@ Use the developer template at
 `docs/templates/codex-app/sane-current-practices-research-automation.md`.
 
 The template owns the required research lanes, subagent expectations, PR body
-shape, evidence rules, copyable-idea matrix, and maintainer decision table.
+shape, evidence rules, copyable-idea matrix, Recommended Changes table, private
+discarded set, completed audit notes, and maintainer decision path.
 
 ## Decision Rules
 
-- `accept now`: small, high-confidence, backwards-compatible change.
-- `proposal only`: core package, exported surface, prompt-surface, package,
+- `implement now`: small, high-confidence, backwards-compatible change.
+- `needs human review`: core package, exported surface, prompt-surface, package,
   architecture, or behavior change needing human review first.
 - `watch`: plausible signal without enough evidence.
 - `reject`: conflicts with Sane's product boundary, lacks evidence, or adds
@@ -75,6 +81,8 @@ Recommended fields:
 - reasoning: high
 - prompt: the `Prompt` section in the developer template
 
-The automation needs repository and PR access. If GitHub tooling is unavailable
-inside the run, it should leave the branch and PR-ready summary instead of
-pretending a PR was opened.
+The automation needs repository and PR access. If GitHub tooling, labels,
+assignment, or branch creation is unavailable inside the run, it should state
+the blocker in the PR body or final run summary instead of pretending the action
+succeeded. When available, draft PRs should be assigned to `lammersbjorn` and
+labeled `automation`, `research`, and `codex-automation`.
