@@ -27,17 +27,17 @@ jobs:
     environment: npm-publish
     steps:
       - name: Checkout tag
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           ref: ${{ inputs.tag }}
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v5
+        uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v5
         with:
           version: 10.33.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: 24
           cache: pnpm
@@ -52,15 +52,20 @@ jobs:
         run: pnpm run accept
 
       - name: Validate npm dist-tag
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          NPM_TAG: ${{ inputs.npm_tag }}
         run: |
           set -euo pipefail
-          if [[ "${{ inputs.tag }}" == *-* && "${{ inputs.npm_tag }}" == "latest" ]]; then
+          if [[ "$RELEASE_TAG" == *-* && "$NPM_TAG" == "latest" ]]; then
             echo "Prerelease tags must not publish under npm latest."
             exit 1
           fi
 
       - name: Publish sane-codex package
         working-directory: apps/sane-tui/dist
+        env:
+          NPM_TAG: ${{ inputs.npm_tag }}
         run: |
           unset NODE_AUTH_TOKEN
-          npm publish --access public --tag "${{ inputs.npm_tag }}"
+          npm publish --access public --tag "$NPM_TAG"

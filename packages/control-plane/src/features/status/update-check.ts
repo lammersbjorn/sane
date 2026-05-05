@@ -62,7 +62,7 @@ export function inspectUpdateCheck(input: UpdateCheckInput): UpdateCheckSnapshot
     enabled: input.autoUpdate ?? false,
     status,
     installSource,
-    updateCommand,
+    packageName,
     spawn: input.spawn ?? spawnSync
   });
 
@@ -131,11 +131,23 @@ function updateCommandForSource(source: SaneInstallSource, packageName: string):
   }
 }
 
+function updateCommandArgsForSource(
+  source: Exclude<SaneInstallSource, "local" | "unknown">,
+  packageName: string
+): [string, string[]] {
+  switch (source) {
+    case "homebrew":
+      return ["brew", ["upgrade", packageName]];
+    case "pnpm":
+      return ["pnpm", ["add", "-g", packageName]];
+  }
+}
+
 function runAutoUpdateIfNeeded(input: {
   enabled: boolean;
   status: UpdateCheckSnapshot["status"];
   installSource: SaneInstallSource;
-  updateCommand: string;
+  packageName: string;
   spawn: typeof spawnSync;
 }): { status: UpdateCheckSnapshot["autoUpdate"]; details: string[] } {
   if (!input.enabled) {
@@ -151,8 +163,8 @@ function runAutoUpdateIfNeeded(input: {
     };
   }
 
-  const [command, ...args] = input.updateCommand.split(" ");
-  const result = input.spawn(command!, args, {
+  const [command, args] = updateCommandArgsForSource(input.installSource, input.packageName);
+  const result = input.spawn(command, args, {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
     timeout: 120_000
