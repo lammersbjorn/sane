@@ -17,7 +17,7 @@ describe("session-start hook helper", () => {
   it("builds a self-contained managed SessionStart hook command by default", () => {
     const command = buildManagedSessionStartHookCommand();
 
-    expect(command).toContain(process.execPath);
+    expect(command).toContain("node -e");
     expect(command).toContain("hook session-start");
     if (process.platform !== "win32") {
       expect(JSON.parse(execSync(command, { encoding: "utf8", shell: "/bin/sh" }))).toEqual({

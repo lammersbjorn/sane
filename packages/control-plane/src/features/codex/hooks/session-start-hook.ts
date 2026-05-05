@@ -9,6 +9,7 @@ import {
 const MANAGED_SESSION_START_HOOK_COMMAND_SUFFIX = "hook session-start";
 const MANAGED_SESSION_END_HOOK_COMMAND_SUFFIX = "hook session-end";
 const DEFAULT_MANAGED_SESSION_START_HOOK_EXECUTABLE = "sane";
+const INLINE_NODE_HOOK_EXECUTABLE = "node";
 
 export const MANAGED_SESSION_START_STATUS_MESSAGE = "Loading Sane session defaults";
 export const MANAGED_SESSION_END_STATUS_MESSAGE = "Closing Sane session";
@@ -160,8 +161,7 @@ function buildInlineNodeHookCommand(output: string, managedMarker: string): stri
 }
 
 function buildInlineNodeCommand(script: string, managedMarker: string): string {
-  const nodeExecutable = validateLifecycleHookExecutable(process.execPath);
-  return `${shellQuote(nodeExecutable)} -e ${shellQuote(script)} # ${managedMarker}`;
+  return `${INLINE_NODE_HOOK_EXECUTABLE} -e ${shellQuote(script)} # ${managedMarker}`;
 }
 
 function validateLifecycleHookExecutable(value: string): string {
