@@ -10,7 +10,8 @@ Developer template:
 Purpose:
 - keep Sane aligned with current Codex app, OpenAI, OpenCode, agent-framework,
   benchmark, competitor, and prompt-surface practice
-- create reviewable draft PRs with proposals, not hidden core mutations
+- create reviewable draft PRs with implementation-ready recommended changes,
+  not raw research triage or hidden core mutations
 - give a main Codex agent a clear implementation prompt after human review
 
 This automation is for this repository's maintenance workflow. It is not a Sane
@@ -26,8 +27,10 @@ reviewed or closed.
 
 ## Expected Output
 
-The automation opens a draft PR only when it has useful findings. The PR should
-contain research and proposals. It should not implement major code changes.
+The automation opens a draft PR only when it finds changes Sane should actually
+make now. The PR should focus on recommended changes, the evidence behind them,
+completed audit work, compatibility posture, and verification. It should not ask
+the maintainer to do the research audit that the automation was supposed to do.
 
 Small repo-local documentation updates are allowed only when they make the
 research PR easier to review, such as adding a dated memo under `docs/research/`.
@@ -38,20 +41,25 @@ Use the developer template at
 `docs/templates/codex-app/sane-current-practices-research-automation.md`.
 
 The template owns the required research lanes, subagent expectations, PR body
-shape, evidence rules, copyable-idea matrix, and maintainer decision table.
+shape, evidence rules, copyable-idea matrix, and recommended-change table.
 
 ## Decision Rules
 
-- `accept now`: small, high-confidence, backwards-compatible change.
-- `proposal only`: core package, exported surface, prompt-surface, package,
-  architecture, or behavior change needing human review first.
-- `watch`: plausible signal without enough evidence.
+- `implement now`: high-confidence, actionable, source-backed change that Sane
+  should make now.
+- `needs more research`: plausible but not audit-complete. Keep out of the main
+  PR recommendation unless it explains an omission.
+- `watch`: plausible signal without enough evidence. Keep out of the main PR
+  recommendation unless it explains an omission.
 - `reject`: conflicts with Sane's product boundary, lacks evidence, or adds
-  hidden automation/mutation.
+  hidden automation/mutation. Keep out of the main PR recommendation unless it
+  explains an omission.
 
-Major changes should be proposed, not implemented. Backwards compatibility must
-be handled through an additive path, migration plan, feature flag, deprecation
-window, or explicit breaking-change proposal.
+Major code or exported-surface changes should be recommended with exact target
+files and a main-agent implementation prompt, not implemented directly by the
+research automation. Backwards compatibility must be handled through an additive
+path, migration plan, feature flag, deprecation window, or explicit
+breaking-change proposal.
 
 ## Automation Prompt
 

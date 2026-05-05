@@ -12,7 +12,7 @@ It is not part of Sane's shipped product, exported packs, or managed runtime.
 - execution environment: worktree
 - model: strongest current Codex-capable model available in the Codex app
 - reasoning: high
-- expected result: draft PR with decision-grade research proposals
+- expected result: draft PR with implementation-ready recommended changes
 - PR assignee: `lammersbjorn`
 - PR labels: `automation`, `research`
 
@@ -20,8 +20,8 @@ The automation needs repository, web, and PR access. If GitHub tooling is
 unavailable inside a run, the agent should leave a branch and PR-ready summary
 instead of claiming that it opened a PR.
 
-The PR description is the primary artifact. Do not hide the proposal in a large
-committed research document and leave only a summary in the PR body.
+The PR description is the primary artifact. Do not hide the recommendation in a
+large committed research document and leave only a summary in the PR body.
 
 Every PR opened by this automation must be visibly marked as automated and must
 assign `lammersbjorn` so GitHub sends a review notification.
@@ -31,9 +31,11 @@ assign `lammersbjorn` so GitHub sends a review notification.
 ```text
 Research whether Sane should change based on latest Codex app, OpenAI, OpenCode, agent-framework, benchmark, competitor, prompt-engineering, token/context-saving, and public workflow signals.
 
-This is a repo-maintenance automation for Sane. It must open a draft PR with decision-grade proposals and a main-agent implementation prompt. It must not implement major code changes.
+This is a repo-maintenance automation for Sane. Its job is to keep Sane current and as strong as possible. It must do the research and audits itself, then open a draft PR only for implementation-ready changes it actually recommends.
 
-The PR body must stand alone. A reviewer must be able to understand what would change, why it would change, which files or surfaces are affected, and what compatibility plan is required without opening a committed research document. Do not write "included in docs/..." as a substitute for the detailed PR description.
+The PR body must stand alone. A reviewer must be able to understand what changed or should change, why, which files or surfaces are affected, and what compatibility plan is required without opening a committed research document. Do not write "included in docs/..." as a substitute for the detailed PR description.
+
+Do not make the maintainer sort through raw triage. The PR must focus on changes Sane should actually make now. Watch, rejected, hype-only, and weak-signal ideas belong in the agent's private notes. Mention them only when a short "Not included" note prevents confusion about an obvious non-change.
 
 Mandatory process:
 1. Start from repo truth:
@@ -41,8 +43,9 @@ Mandatory process:
    - inspect README.md, TODO.md, docs/research, docs/plans, docs/decisions, packs/core, .agents/skills, packages, and apps
    - treat prior Sane research as memory to re-check, not authority
 2. Use explicit research lanes. Launch subagents when the Codex app allows it. If subagent launch is blocked, unavailable, or permission-limited, state that in the PR body and final run summary.
-3. Do not write the PR body until lane outputs have been merged into confirmed, needs-verify, rejected, and watch buckets.
-4. Use at least one verifier/reviewer lane or reviewer pass after synthesis. The reviewer must check source quality, boundary fit, shallow claims, and whether the proposed changes are actually actionable.
+3. Audit before proposing. If a lane says "audit X", perform that audit in the same run unless blocked by access or runtime limits. Do not open a PR that merely asks the maintainer or a future agent to do the research audit.
+4. Do not write the PR body until lane outputs have been merged into one recommended-change set and a private discarded set.
+5. Use at least one verifier/reviewer lane or reviewer pass after synthesis. The reviewer must remove weak, speculative, duplicate, already-handled, or non-actionable items before the PR is opened.
 
 Required lanes:
 - Public takes lane: X/Twitter, YouTube, transcripts, newsletters, and mirrors. Extract workflow pressure only. Mark every item as commentary unless corroborated.
@@ -51,16 +54,16 @@ Required lanes:
 - Codex improvements lane: official OpenAI/Codex docs, release notes, cookbook examples, model docs, Codex app/CLI behavior, Codex repo issues/PRs, skills, plugins, hooks, automations, web search, worktrees, browser/computer-use, and current model/runtime guidance.
 - Competitor lane: OpenCode, Superpowers, OpenAgentLayer/Agent Layer, Cursor, Windsurf, Claude Code, Copilot skills, dotagents, and adjacent AGENTS.md / skills / MCP ecosystems. Produce copy / adapt / reject decisions.
 - Benchmarks/evals lane: SWE-bench variants, Terminal-Bench, BrowserGym/WebArena/WorkArena, Artificial Analysis, Aider leaderboard, Passmark-style browser evals, agentevals, and any agent-flow eval tools. Map each eval to Sane workflow surfaces; do not use external leaderboards as marketing claims.
-- Integration lane: merge findings into exact proposal IDs, affected surfaces, compatibility notes, verification needs, and main-agent prompt.
-- Reviewer lane: classify each proposal as confirmed, needs-verify, rejected, or watch. Reject shallow or hype-only items.
+- Integration lane: merge findings into exact recommended change IDs, affected surfaces, compatibility notes, verification needs, and main-agent prompt.
+- Reviewer lane: classify each candidate privately as implement now, needs more research, reject, or watch. Only implement-now items may appear in the main PR decision table.
 
 Each lane output must include:
 - direct source links and access dates
 - what changed since prior Sane notes
 - source class: official docs, repo source, benchmark/eval, competitor pattern, public commentary, or copyable idea
 - Sane impact in one sentence
-- copyability: direct copy, adapt only, watch, or reject
-- boundary fit: safe for Sane's Codex-native framework boundary, risky, or rejected
+- copyability: direct copy or adapt only for recommended items
+- boundary fit: safe for Sane's Codex-native framework boundary; exclude risky or rejected items from the main PR body
 
 Research scope:
 - official OpenAI/Codex docs, release notes, cookbook examples, model docs, Codex app/CLI behavior, and OpenAI Codex repository issues/PRs
@@ -69,12 +72,12 @@ Research scope:
 - public takes: X/Twitter, YouTube, transcripts, newsletters, and mirrors, clearly separated from source-backed claims
 - competitors: OpenCode, Superpowers, OpenAgentLayer/Agent Layer, Cursor, Windsurf, Claude Code, Copilot skills, dotagents, and adjacent skill/agent frameworks
 - benchmarks/evals: SWE-bench variants, Terminal-Bench, BrowserGym/WebArena/WorkArena, Artificial Analysis, Aider leaderboard, Passmark-style browser evals, agentevals, and relevant agent-flow eval tools
-- copyable ideas distilled from all lanes, with explicit boundary notes and what must not be copied
+- copyable ideas distilled from all lanes, with explicit boundary notes and what must not be copied for each recommended change
 
-Open a draft PR only when useful findings exist. The PR description must include:
+Open a draft PR only when there are changes Sane should actually make now. The PR description must include:
 - automation notice at the top: "Automated Sane current-practices research run"
-- maintainer decision table with proposal ID, status, exact change, affected files/surfaces, signal class, source quality, copyability, boundary fit, risk, verification, and default recommendation
-- executive summary that names the default decision requested from the maintainer
+- maintainer decision table with change ID, exact change, affected files/surfaces, signal class, source quality, copyability, boundary fit, risk, verification, and default recommendation
+- executive summary that names the recommended merge/review decision
 - lane evidence sections:
   - Public Takes
   - Prompt / Instruction Surfaces
@@ -84,8 +87,8 @@ Open a draft PR only when useful findings exist. The PR description must include
   - Benchmarks / Evals
   - Copyable Ideas
 - prior Sane research rechecked, with file paths and confirmed/stale/contradicted notes
-- rejected ideas and why
-- skeptical-reviewer checklist: what still needs verification before implementation
+- short "Not included" section only when needed to explain why an obvious tempting idea was excluded
+- completed audit notes: what the automation checked before opening the PR
 - detailed implementation prompt for a main Codex agent
 - suggested lane plan for implementation when work is broad
 
@@ -95,10 +98,10 @@ Evidence rules:
   success and increase inference cost when they add unnecessary requirements.
   Treat every new always-loaded instruction as suspect until it has a clear,
   task-relevant payoff.
-- Public commentary cannot be sole evidence for an `accept now` proposal.
+- Public commentary cannot be sole evidence for a recommended change.
 - Benchmarks cannot be used as Sane marketing claims unless Sane ran the exact harness.
 - A copyable competitor idea must map to a Sane surface and include what not to copy.
-- A proposal is not actionable unless it names affected files or surfaces, compatibility posture, and verification.
+- A recommended change is not actionable unless it names affected files or surfaces, compatibility posture, and verification.
 - Reject any idea that turns Sane into a daily chat shell, wrapper-first workflow, hidden autonomous mutation loop, or opaque memory system.
 - For prompt, `AGENTS.md`, skill, overlay, hook, or agent-template changes:
   - prefer deleting, shortening, splitting, or moving rules behind skills before adding text
@@ -106,11 +109,11 @@ Evidence rules:
   - explain why the instruction must be always-loaded or why progressive disclosure is enough
   - require an eval, fixture, or review check when the change could increase always-on context
 
-Committed files are optional and secondary:
-- Prefer a draft PR with an empty research/proposal commit when the platform allows it.
-- If a file is required, keep it short and make it an appendix or pointer, not the full proposal.
-- Do not add a large docs/research memo unless the PR body also contains the same actionable proposal detail.
-- Do not make documentation changes look like implementation unless the accepted proposal is actually docs-only.
+Committed files should match the recommendation:
+- If the recommended change is docs-only or prompt-template-only, make the actual file edits in the branch.
+- If the recommended change touches core package behavior, exported surfaces, compatibility, or risky prompt surfaces, keep code changes out of the automation branch and provide a main-agent implementation prompt with exact target files and verification.
+- Do not add a large docs/research memo unless it is needed as a compact appendix and the PR body already contains the actionable recommendation detail.
+- Do not make documentation changes look like implementation unless the recommended change is actually docs-only.
 
 After opening the PR:
 - mark it as draft
@@ -124,7 +127,7 @@ For the main-agent implementation prompt, require:
 - re-check current repo state first
 - load repo-local skills that match the accepted work
 - use sane-agent-lanes and subagents for broad work before edits
-- map every accepted item to a concrete Sane surface
+- map every recommended item to a concrete Sane surface
 - preserve backwards compatibility or write an explicit migration/breaking-change plan
 - update docs when behavior, responsibilities, or exported surfaces change
 - verify with rtk pnpm test, rtk run 'pnpm typecheck', and rtk pnpm run accept when package/export behavior changes
@@ -144,16 +147,16 @@ Body:
 > Automated Sane current-practices research run.
 > Requested reviewer/assignee: @lammersbjorn.
 
-## Maintainer Decision
+## Recommended Changes
 
-| ID | Status | Exact change | Affected files/surfaces | Signal class | Source quality | Copyability | Boundary fit | Risk | Verification | Recommendation |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| P1 | accept now / proposal only / watch / reject | One concrete sentence. | Paths or surfaces. | official docs / competitor / benchmark / commentary / repo source | high / medium / low | direct / adapt / watch / reject | safe / risky / rejected | low / medium / high | command or review needed | approve / edit / reject |
+| ID | Exact change | Affected files/surfaces | Signal class | Source quality | Copyability | Boundary fit | Risk | Verification | Recommendation |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| C1 | One concrete sentence. | Paths or surfaces. | official docs / competitor / benchmark / commentary / repo source | high / medium / low | direct / adapt | safe | low / medium / high | command or review done/needed | approve / edit |
 
 ## Executive Summary
 
-One screen or less. Name the highest-value recommendations and the default
-decision requested from the maintainer.
+One screen or less. Name the concrete changes this PR recommends and the
+default maintainer action.
 
 ## Public Takes
 
@@ -167,8 +170,8 @@ agents, hooks, compact prompts, and docs.
 
 ## Token / Context Tools
 
-List token-saving or context-saving ideas. Mark direct copy, adapt only, watch,
-or reject.
+List token-saving or context-saving ideas that survived review. Mark direct
+copy or adapt only.
 
 ## Codex Improvements
 
@@ -185,7 +188,8 @@ Map evals to Sane workflow surfaces. Do not make marketing claims.
 
 ## Copyable Ideas
 
-List portable patterns only. Include boundary notes and what must not be copied.
+List portable patterns only when they support a recommended change. Include
+boundary notes and what must not be copied.
 
 ## Prior Sane Research Rechecked
 
@@ -195,18 +199,21 @@ For each touched prior note:
 - stale or contradicted:
 - follow-up:
 
-## Rejected Ideas
+## Completed Audits
 
-List rejected ideas with reasons.
+List the repo surfaces, prior research files, competitor claims, benchmark
+claims, prompt surfaces, token/context tools, and Codex changes the automation
+actually checked before opening the PR.
 
-## Skeptical Reviewer Checklist
+## Not Included
 
-What would a skeptical reviewer still need to verify before implementation?
+Optional. Keep this short. Include only obvious tempting ideas that were excluded
+so reviewers do not wonder whether they were missed.
 
 ## Main Agent Implementation Prompt
 
 Paste a complete prompt that a maintainer can hand to a main Codex agent after
-review. Include accepted proposal IDs, lane plan, compatibility constraints,
+review. Include recommended change IDs, lane plan, compatibility constraints,
 docs sync, and verification commands.
 
 ## Sources
@@ -215,19 +222,23 @@ Use direct links. Mark public commentary separately from primary docs, source,
 issues, benchmarks, and release notes.
 ```
 
-## Proposal Classes
+## Candidate Handling
 
-- `accept now`: small, high-confidence, backwards-compatible change with source
-  support beyond public commentary.
-- `proposal only`: core package, exported surface, prompt-surface, package,
-  architecture, or behavior change needing human review first.
-- `watch`: plausible signal without enough evidence.
+- `implement now`: high-confidence, actionable, source-backed change that Sane
+  should make now. Only these appear in the main PR recommendation table.
+- `needs more research`: plausible but not audit-complete. Keep out of the PR
+  unless it is a one-line omission note.
+- `watch`: plausible signal without enough evidence. Keep out of the PR unless
+  needed as a one-line omission note.
 - `reject`: conflicts with Sane's product boundary, lacks evidence, is hype-only,
-  or adds hidden automation/mutation.
+  or adds hidden automation/mutation. Keep out of the PR unless needed as a
+  one-line omission note.
 
-Major changes should be proposed, not implemented. Backwards compatibility must
-be handled through an additive path, migration plan, feature flag, deprecation
-window, or explicit breaking-change proposal.
+Major code or exported-surface changes should be recommended with exact target
+files and a main-agent implementation prompt, not implemented directly by the
+research automation. Backwards compatibility must be handled through an additive
+path, migration plan, feature flag, deprecation window, or explicit
+breaking-change proposal.
 
 Prompt-surface proposals must also follow the ETH AGENTS.md finding: smaller,
 task-relevant context first; generated or broad context last; executable checks
