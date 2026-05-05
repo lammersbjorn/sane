@@ -140,6 +140,10 @@ function updateCommandArgsForSource(
       return ["brew", ["upgrade", packageName]];
     case "pnpm":
       return ["pnpm", ["add", "-g", packageName]];
+    default: {
+      const _never: never = source;
+      throw new Error(`unexpected install source for auto-update: ${_never}`);
+    }
   }
 }
 
