@@ -10,8 +10,9 @@ Developer template:
 Purpose:
 - keep Sane aligned with current Codex app, OpenAI, OpenCode, agent-framework,
   benchmark, competitor, and prompt-surface practice
-- create reviewable draft PRs with implementation-ready recommended changes,
-  not raw research triage or hidden core mutations
+- create reviewable draft PRs with implementation-ready Sane product, package,
+  exported-surface, prompt-surface, workflow, eval, or docs recommendations,
+  not raw research triage, automation churn, or hidden core mutations
 - give a main Codex agent a clear implementation prompt after human review
 
 This automation is for this repository's maintenance workflow. It is not a Sane
@@ -27,10 +28,16 @@ reviewed or closed.
 
 ## Expected Output
 
-The automation opens a draft PR only when it finds changes Sane should actually
-make now. The PR should focus on recommended changes, the evidence behind them,
-completed audit work, compatibility posture, and verification. It should not ask
-the maintainer to do the research audit that the automation was supposed to do.
+The automation opens a draft PR only when it finds meaningful Sane changes to
+recommend. The PR should focus on recommended Sane changes, the evidence behind
+them, completed audit work, compatibility posture, and verification. It should
+not ask the maintainer to do the research audit that the automation was supposed
+to do.
+
+If the only surviving change is about the automation template, prompt, labels,
+cadence, or this plan, the automation should not open a current-practices
+research PR. It should write memory/final notes instead, or use a separate
+maintenance PR only when the automation itself is broken.
 
 Small repo-local documentation updates are allowed only when they make the
 research PR easier to review, such as adding a dated memo under `docs/research/`.
@@ -47,6 +54,10 @@ shape, evidence rules, copyable-idea matrix, and recommended-change table.
 
 - `implement now`: high-confidence, actionable, source-backed change that Sane
   should make now.
+- `main-agent lane`: high-confidence, source-backed change Sane should make
+  next, but broad implementation, exported-surface risk, compatibility, or
+  verification means a main Codex agent should implement it after maintainer
+  review.
 - `needs more research`: plausible but not audit-complete. Keep out of the main
   PR recommendation unless it explains an omission.
 - `watch`: plausible signal without enough evidence. Keep out of the main PR
@@ -55,11 +66,11 @@ shape, evidence rules, copyable-idea matrix, and recommended-change table.
   hidden automation/mutation. Keep out of the main PR recommendation unless it
   explains an omission.
 
-Major code or exported-surface changes should be recommended with exact target
-files and a main-agent implementation prompt, not implemented directly by the
-research automation. Backwards compatibility must be handled through an additive
-path, migration plan, feature flag, deprecation window, or explicit
-breaking-change proposal.
+Major code or exported-surface changes should be recommended as `main-agent
+lane` items with exact target files and a main-agent implementation prompt, not
+implemented directly by the research automation. Backwards compatibility must be
+handled through an additive path, migration plan, feature flag, deprecation
+window, or explicit breaking-change proposal.
 
 ## Automation Prompt
 
