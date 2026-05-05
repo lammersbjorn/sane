@@ -151,7 +151,7 @@ export function renderSessionEndHookOutput(options: { rateLimitResume?: boolean 
 }
 
 function shellQuote(value: string): string {
-  return `'${value}'`;
+  return `'${value.replaceAll("'", "'\"'\"'")}'`;
 }
 
 function buildInlineNodeHookCommand(output: string, managedMarker: string): string {
@@ -160,7 +160,8 @@ function buildInlineNodeHookCommand(output: string, managedMarker: string): stri
 }
 
 function buildInlineNodeCommand(script: string, managedMarker: string): string {
-  return `${shellQuote(validateLifecycleHookExecutable(process.execPath))} -e ${shellQuoteNodeScript(script)} # ${managedMarker}`;
+  const nodeExecutable = validateLifecycleHookExecutable(process.execPath);
+  return `${shellQuote(nodeExecutable)} -e ${shellQuote(script)} # ${managedMarker}`;
 }
 
 function validateLifecycleHookExecutable(value: string): string {
@@ -187,12 +188,4 @@ function isSafeLifecycleHookExecutableChar(char: string): boolean {
     || char === "-"
     || char === " "
   );
-}
-
-function shellQuoteNodeScript(script: string): string {
-  let quoted = "'";
-  for (const char of script) {
-    quoted += char === "'" ? "'\"'\"'" : char;
-  }
-  return `${quoted}'`;
 }

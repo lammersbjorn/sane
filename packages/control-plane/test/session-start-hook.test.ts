@@ -52,6 +52,21 @@ describe("session-start hook helper", () => {
     }
   });
 
+  it("escapes inline hook payloads before embedding them in shell commands", () => {
+    const command = buildManagedSessionStartHookCommand(undefined, {
+      additionalContext: "quote ' and command ; $(touch /tmp/sane-pwned)"
+    });
+
+    if (process.platform !== "win32") {
+      expect(JSON.parse(execSync(command, { encoding: "utf8", shell: "/bin/sh" }))).toEqual({
+        hookSpecificOutput: {
+          hookEventName: "SessionStart",
+          additionalContext: "quote ' and command ; $(touch /tmp/sane-pwned)"
+        }
+      });
+    }
+  });
+
   it("builds a shell-quoted managed SessionStart hook command", () => {
     expect(buildManagedSessionStartHookCommand("/tmp/Sane Bin/sane")).toBe(
       "'/tmp/Sane Bin/sane' hook session-start"
