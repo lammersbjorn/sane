@@ -85,11 +85,13 @@ function buildOptionalPackStateReceipt(packs: GuidancePacks): string {
 
 export function buildManagedSessionStartHookCommand(
   executable?: string,
-  options: { additionalContext?: string } = {}
+  options: { packs?: SaneContinuityPackState } = {}
 ): string {
   if (executable === undefined) {
     return buildInlineNodeHookCommand(
-      renderSessionStartHookOutput({ additionalContext: options.additionalContext }),
+      renderSessionStartHookOutput({
+        additionalContext: options.packs === undefined ? undefined : buildSaneContinuityContext(options.packs)
+      }),
       MANAGED_SESSION_START_HOOK_COMMAND_SUFFIX
     );
   }

@@ -250,9 +250,9 @@ export function exportHooks(
   }
 
   const lifecycleHooks = loadLifecycleHooks(paths, codexPaths);
-  const { packs, roles } = activeGuidance(paths, codexPaths);
+  const { packs } = activeGuidance(paths, codexPaths);
   const sessionStartCommand = buildManagedSessionStartHookCommand(undefined, {
-    additionalContext: managedSessionStartContext(packs, roles)
+    packs
   });
   mkdirSync(join(codexPaths.homeDir, ".codex"), { recursive: true });
   let root: PlainRecord;
@@ -583,10 +583,10 @@ export function inspectHooksInventory(
   const preToolUse = Array.isArray(hooks?.PreToolUse) ? hooks.PreToolUse : [];
   const stop = Array.isArray(hooks?.Stop) ? hooks.Stop : [];
   const hasAnyManagedSessionStart = sessionStart.some((hook: unknown) => containsManagedSessionStartHook(hook));
-  const { packs, roles } = activeGuidance(paths, codexPaths);
+  const { packs } = activeGuidance(paths, codexPaths);
   const hasSessionStart = sessionStart.some((hook: unknown) =>
     containsExpectedHookCommand(hook, buildManagedSessionStartHookCommand(undefined, {
-      additionalContext: managedSessionStartContext(packs, roles)
+      packs
     }))
   );
   const hasRateLimitStop =
@@ -627,10 +627,6 @@ export function inspectHooksInventory(
 function loadLifecycleHooks(paths: ProjectPaths, codexPaths: CodexPaths): LifecycleHooksConfig {
   const environment = detectCodexEnvironment(codexPaths.modelsCacheJson, codexPaths.authJson);
   return loadOrDefaultConfig(paths, environment).lifecycleHooks;
-}
-
-function managedSessionStartContext(packs: GuidancePacks, _roles: ModelRoutingGuidance): string {
-  return buildSaneContinuityContext(packs);
 }
 
 function activeGuidance(paths: ProjectPaths, codexPaths: CodexPaths): {

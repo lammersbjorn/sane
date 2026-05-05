@@ -52,16 +52,16 @@ describe("session-start hook helper", () => {
     }
   });
 
-  it("escapes inline hook payloads before embedding them in shell commands", () => {
+  it("builds inline hook payloads from fixed continuity pack context", () => {
     const command = buildManagedSessionStartHookCommand(undefined, {
-      additionalContext: "quote ' and command ; $(touch /tmp/sane-pwned)"
+      packs: { caveman: true }
     });
 
     if (process.platform !== "win32") {
       expect(JSON.parse(execSync(command, { encoding: "utf8", shell: "/bin/sh" }))).toEqual({
         hookSpecificOutput: {
           hookEventName: "SessionStart",
-          additionalContext: "quote ' and command ; $(touch /tmp/sane-pwned)"
+          additionalContext: expect.stringContaining("caveman:on")
         }
       });
     }
