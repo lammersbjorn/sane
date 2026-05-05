@@ -20,13 +20,15 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Print Homebrew / winget / Scoop rollout checklist
+        env:
+          VERSION: ${{ inputs.version }}
+          GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          VERSION="${{ inputs.version }}"
           TAG="v${VERSION}"
-          TGZ_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/sane-codex-${VERSION}.tgz"
-          ZIP_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/sane-codex-${VERSION}.zip"
-          CHECKSUM_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/SHA256SUMS.txt"
+          TGZ_URL="https://github.com/${GH_REPO}/releases/download/${TAG}/sane-codex-${VERSION}.tgz"
+          ZIP_URL="https://github.com/${GH_REPO}/releases/download/${TAG}/sane-codex-${VERSION}.zip"
+          CHECKSUM_URL="https://github.com/${GH_REPO}/releases/download/${TAG}/SHA256SUMS.txt"
 
           cat <<EOF
           Distribution plan for ${TAG}
