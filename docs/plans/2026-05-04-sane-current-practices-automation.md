@@ -54,11 +54,11 @@ prompt requirements.
 
 ## Recommendation Classes
 
-- `implement now`: small, high-confidence, source-backed change that can be
+- `small direct change`: small, high-confidence, source-backed change that can be
   committed safely by the automation when it is docs-only or Sane
   prompt-template-only. This does not include this automation's own template,
   prompt, cadence, or labels.
-- `implement through main-agent lane`: high-confidence, source-backed change
+- `main-agent change`: high-confidence, source-backed change
   Sane should make next, but broad implementation, exported-surface risk,
   package behavior, compatibility, or verification requires a main Codex agent.
 - `needs more research`: plausible but not audit-complete.
@@ -66,8 +66,8 @@ prompt requirements.
 - `reject`: conflicts with Sane's product boundary, lacks evidence, is hype-only,
   or adds hidden automation/mutation.
 
-The main recommendation table should include `implement now` and `implement
-through main-agent lane` items. `watch`, `reject`, and `needs more research`
+The main recommendation table should include `small direct change` and
+`main-agent change` items. `watch`, `reject`, and `needs more research`
 belong in short side sections so maintainers know they were considered without
 having to sort raw triage.
 

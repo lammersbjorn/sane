@@ -68,8 +68,8 @@ Mandatory process:
    - Reviewer lane: challenge evidence quality, shallow claims, missing repo audits, over-filtering, product-boundary fit, and whether the PR answers the original maintenance goal.
 4. Do the audit before writing the PR. Do not ask the maintainer to audit a surface that this automation could inspect in the run.
 5. Write the PR only after lane outputs have been merged into:
-   - implement now
-   - implement through main-agent lane
+   - small direct change
+   - main-agent change
    - watch
    - reject
 6. Aim for three or more meaningful Sane recommendations so the run does not over-filter to one safe item. Do not invent filler. If fewer than three survive, explain why in the executive summary with concrete evidence and name the strongest discarded candidates.
@@ -86,7 +86,7 @@ Each lane output must include:
 
 Evidence rules:
 - Follow ETH Zurich / LogicStar AGENTS.md research (https://arxiv.org/abs/2602.11988): repository context files can reduce task success and increase inference cost when they add unnecessary requirements. Treat new always-loaded instruction as suspect.
-- Public commentary cannot be sole evidence for implement-now or main-agent-lane recommendations.
+- Public commentary cannot be sole evidence for small direct changes or main-agent changes.
 - Benchmarks cannot be used as Sane marketing claims unless Sane ran the exact harness.
 - A competitor idea is actionable only when it maps to a Sane surface and says what not to copy.
 - A recommendation is actionable only when it names affected files or surfaces, compatibility posture, and verification.
@@ -109,8 +109,8 @@ PR body sections:
 2. Recommended Sane Changes
    - table with ID, readiness, exact change, affected files/surfaces, evidence class, source quality, copy/adapt decision, compatibility posture, risk, verification, and maintainer action
    - readiness values:
-     - `implement now`: small/high-confidence change this automation may commit if docs-only or prompt-template-only
-     - `implement through main-agent lane`: high-confidence change that should be implemented by a main Codex agent because it is broad, package-affecting, exported-surface-affecting, or compatibility-sensitive
+    - `small direct change`: small/high-confidence change this automation may commit if docs-only or Sane prompt-template-only
+    - `main-agent change`: high-confidence change that should be implemented by a main Codex agent because it is broad, package-affecting, exported-surface-affecting, or compatibility-sensitive
 3. Why Now
    - what changed in Codex/OpenAI/competitors/research since prior Sane notes
 4. Lane Evidence
@@ -151,7 +151,7 @@ PR body sections:
 Committed files:
 - If the recommendation is a small Sane docs-only change, make the actual doc edit.
 - If the recommendation touches core package behavior, exported surfaces, Sane prompt surfaces, compatibility, or architecture, keep implementation out of the automation branch and provide the main-agent prompt.
-- Do not edit this automation template, automation plan, cadence, labels, or prompt as an `implement now` item in a current-practices research PR.
+- Do not edit this automation template, automation plan, cadence, labels, or prompt as a `small direct change` item in a current-practices research PR.
 - Empty proposal commits are acceptable when the PR body is the artifact and the platform requires a branch.
 - Do not add a large docs/research memo unless the PR body already contains the same actionable detail.
 
