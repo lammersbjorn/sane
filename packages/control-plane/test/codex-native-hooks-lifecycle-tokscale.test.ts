@@ -51,7 +51,7 @@ describe("lifecycle and Tokscale hook compatibility", () => {
 
     const sessionStartOutput = execSync(sessionStartCommand, {
       encoding: "utf8",
-      env: { ...process.env, PATH: "" },
+      env: process.env,
       shell: "/bin/sh"
     });
     const tokscaleOutput = execSync(tokscaleCommand, {

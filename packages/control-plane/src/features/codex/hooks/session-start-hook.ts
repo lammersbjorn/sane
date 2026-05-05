@@ -9,6 +9,7 @@ import {
 const MANAGED_SESSION_START_HOOK_COMMAND_SUFFIX = "hook session-start";
 const MANAGED_SESSION_END_HOOK_COMMAND_SUFFIX = "hook session-end";
 const DEFAULT_MANAGED_SESSION_START_HOOK_EXECUTABLE = "sane";
+const INLINE_NODE_HOOK_EXECUTABLE = "node";
 
 export const MANAGED_SESSION_START_STATUS_MESSAGE = "Loading Sane session defaults";
 export const MANAGED_SESSION_END_STATUS_MESSAGE = "Closing Sane session";
@@ -84,11 +85,13 @@ function buildOptionalPackStateReceipt(packs: GuidancePacks): string {
 
 export function buildManagedSessionStartHookCommand(
   executable?: string,
-  options: { additionalContext?: string } = {}
+  options: { packs?: SaneContinuityPackState } = {}
 ): string {
   if (executable === undefined) {
     return buildInlineNodeHookCommand(
-      renderSessionStartHookOutput({ additionalContext: options.additionalContext }),
+      renderSessionStartHookOutput({
+        additionalContext: options.packs === undefined ? undefined : buildSaneContinuityContext(options.packs)
+      }),
       MANAGED_SESSION_START_HOOK_COMMAND_SUFFIX
     );
   }
@@ -151,7 +154,7 @@ export function renderSessionEndHookOutput(options: { rateLimitResume?: boolean 
 }
 
 function shellQuote(value: string): string {
-  return `'${value}'`;
+  return `'${value.replaceAll("'", "'\"'\"'")}'`;
 }
 
 function buildInlineNodeHookCommand(output: string, managedMarker: string): string {
@@ -160,7 +163,7 @@ function buildInlineNodeHookCommand(output: string, managedMarker: string): stri
 }
 
 function buildInlineNodeCommand(script: string, managedMarker: string): string {
-  return `${shellQuote(validateLifecycleHookExecutable(process.execPath))} -e ${shellQuoteNodeScript(script)} # ${managedMarker}`;
+  return `${INLINE_NODE_HOOK_EXECUTABLE} -e ${shellQuote(script)} # ${managedMarker}`;
 }
 
 function validateLifecycleHookExecutable(value: string): string {
@@ -187,12 +190,4 @@ function isSafeLifecycleHookExecutableChar(char: string): boolean {
     || char === "-"
     || char === " "
   );
-}
-
-function shellQuoteNodeScript(script: string): string {
-  let quoted = "'";
-  for (const char of script) {
-    quoted += char === "'" ? "'\"'\"'" : char;
-  }
-  return `${quoted}'`;
 }

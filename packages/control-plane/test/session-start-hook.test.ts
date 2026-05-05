@@ -17,7 +17,7 @@ describe("session-start hook helper", () => {
   it("builds a self-contained managed SessionStart hook command by default", () => {
     const command = buildManagedSessionStartHookCommand();
 
-    expect(command).toContain(process.execPath);
+    expect(command).toContain("node -e");
     expect(command).toContain("hook session-start");
     if (process.platform !== "win32") {
       expect(JSON.parse(execSync(command, { encoding: "utf8", shell: "/bin/sh" }))).toEqual({
@@ -49,6 +49,21 @@ describe("session-start hook helper", () => {
       expect(context).not.toContain("Sane command lane:");
       expect(context).not.toContain("sane-outcome-continuation");
       expect(context).not.toContain("continue/SKILL.md");
+    }
+  });
+
+  it("builds inline hook payloads from fixed continuity pack context", () => {
+    const command = buildManagedSessionStartHookCommand(undefined, {
+      packs: { caveman: true }
+    });
+
+    if (process.platform !== "win32") {
+      expect(JSON.parse(execSync(command, { encoding: "utf8", shell: "/bin/sh" }))).toEqual({
+        hookSpecificOutput: {
+          hookEventName: "SessionStart",
+          additionalContext: expect.stringContaining("caveman:on")
+        }
+      });
     }
   });
 
